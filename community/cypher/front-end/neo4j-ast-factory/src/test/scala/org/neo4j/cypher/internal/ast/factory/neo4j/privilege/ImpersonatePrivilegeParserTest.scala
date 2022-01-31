@@ -57,19 +57,26 @@ class ImpersonatePrivilegeParserTest extends AdministrationCommandParserTestBase
   ).foreach {
     case (verb: String, preposition: String, func: impersonatePrivilegeFunc) =>
       test(s"$verb IMPERSONATE ON DBMS $preposition role") {
-        yields(func(List(ast.UserAllQualifier()(pos)), List(Left("role"))))
+        assertAst(func(List(ast.UserAllQualifier()(pos)), List(Left("role")))(defaultPos), comparePosition = false)
       }
 
       test(s"$verb IMPERSONATE (*) ON DBMS $preposition role") {
-        yields(func(List(ast.UserAllQualifier()(pos)), List(Left("role"))))
+        assertAst(func(List(ast.UserAllQualifier()(pos)), List(Left("role")))(defaultPos), comparePosition = false)
       }
 
       test(s"$verb IMPERSONATE (foo) ON DBMS $preposition role") {
-        yields(func(List(ast.UserQualifier(Left("foo"))(pos)), List(Left("role"))))
+        assertAst(func(List(ast.UserQualifier(Left("foo"))(pos)), List(Left("role")))(defaultPos), comparePosition = false)
       }
 
       test(s"$verb IMPERSONATE (foo, $$userParam) ON DBMS $preposition role") {
-        yields(func(List(ast.UserQualifier(Left("foo"))(pos), ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)(pos)))(pos)), List(Left("role"))))
+        val fooColumn:Int = verb.length + " IMPERSONATE (".length
+        val useParamColumn: Int = fooColumn + "foo $".length
+        assertAst(func(List(
+          ast.UserQualifier(Left("foo"))(1, fooColumn + 1, fooColumn),
+          ast.UserQualifier(Right(ExplicitParameter("userParam", CTString)(1, useParamColumn + 1, useParamColumn)))
+          (defaultPos)),
+          List(Left("role")))
+        (defaultPos))
       }
   }
 }

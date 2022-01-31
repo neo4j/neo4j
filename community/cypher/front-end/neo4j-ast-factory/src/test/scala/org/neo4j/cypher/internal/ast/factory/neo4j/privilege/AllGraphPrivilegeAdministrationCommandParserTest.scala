@@ -123,37 +123,51 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationCom
       }
 
       test(s"$verb GRAPH ON GRAPH foo $preposition role") {
-        failsToParse
+        val expected =
+          """Invalid input 'GRAPH': expected
+            |  "ACCESS"""".stripMargin
+        assertFailsWithMessageStart(testName, expected)
       }
 
       test(s"$verb GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-        failsToParse
+        val expected =
+          """Invalid input 'GRAPH': expected
+            |  "ACCESS"""".stripMargin
+        assertFailsWithMessageStart(testName, expected)
       }
 
       test(s"$verb PRIVILEGES ON GRAPH foo $preposition role") {
-        failsToParse
+        val expected =
+          """Invalid input 'PRIVILEGES': expected
+            |  "ACCESS"""".stripMargin
+        assertFailsWithMessageStart(testName, expected)
       }
 
       // Database/dbms instead of graph keyword
 
       test(s"$verb ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
-        failsToParse
+        val offset = verb.length+25
+        assertFailsWithMessage(testName, s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset+1} (offset: $offset))""")
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
-        failsToParse
+        val offset = verb.length+25
+        assertFailsWithMessage(testName, s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset+1} (offset: $offset))""")
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
-        failsToParse
+        val offset = verb.length+25
+        assertFailsWithMessage(testName, s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset+1} (offset: $offset))""")
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
-        failsToParse
+        val offset = verb.length+25
+        assertFailsWithMessage(testName, s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset+1} (offset: $offset))""")
       }
 
       test(s"$verb ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
-        failsToParse
+        val offset = verb.length+25
+        assertFailsWithMessage(testName, s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset+1} (offset: $offset))""")
       }
   }
 

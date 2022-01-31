@@ -153,11 +153,13 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
       // DEFAULT and HOME together with plural GRAPHS
 
       test(s"$verb WRITE ON HOME GRAPHS $preposition role") {
-        failsToParse
+        val offset = verb.length + 15
+        assertFailsWithMessage(testName, s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb WRITE ON DEFAULT GRAPHS $preposition role") {
-        failsToParse
+        val offset = verb.length + 18
+        assertFailsWithMessage(testName, s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       // Default and home graph with named graph
@@ -183,11 +185,13 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationComman
       // Database instead of graph keyword
 
       test(s"$verb WRITE ON DATABASES * $preposition role") {
-        failsToParse
+        val offset = verb.length + 10
+        assertFailsWithMessage(testName, s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb WRITE ON DATABASE foo $preposition role") {
-        failsToParse
+        val offset = verb.length + 10
+        assertFailsWithMessage(testName, s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb WRITE ON HOME DATABASE $preposition role") {

@@ -104,7 +104,9 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
           }
 
           test(s"$verb $createOrDelete ON DATABASE blah $preposition role") {
-            failsToParse
+            val offset = verb.length + createOrDelete.length + 5
+            assertFailsWithMessage(testName,
+              s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
           }
       }
   }

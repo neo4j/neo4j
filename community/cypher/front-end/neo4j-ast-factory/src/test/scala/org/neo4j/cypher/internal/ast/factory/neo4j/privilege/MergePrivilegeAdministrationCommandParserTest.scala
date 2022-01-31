@@ -124,11 +124,15 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationComman
       // Database instead of graph keyword
 
       test(s"$verb MERGE { prop } ON DATABASES * $preposition role") {
-        failsToParse
+        val offset = verb.length + 19
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb MERGE { prop } ON DATABASE foo $preposition role") {
-        failsToParse
+        val offset = verb.length + 19
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb MERGE { prop } ON HOME DATABASE $preposition role") {

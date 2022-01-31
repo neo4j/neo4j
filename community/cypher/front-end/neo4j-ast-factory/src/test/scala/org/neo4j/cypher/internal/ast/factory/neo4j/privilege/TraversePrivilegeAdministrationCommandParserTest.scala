@@ -249,11 +249,15 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationCom
       // Database instead of graph keyword
 
       test(s"$verb TRAVERSE ON DATABASES * $preposition role") {
-        failsToParse
+        val offset = verb.length + 13
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
       }
 
       test(s"$verb TRAVERSE ON DATABASE foo $preposition role") {
-        failsToParse
+        val offset = verb.length + 13
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
       }
 
       test(s"$verb TRAVERSE ON HOME DATABASE $preposition role") {

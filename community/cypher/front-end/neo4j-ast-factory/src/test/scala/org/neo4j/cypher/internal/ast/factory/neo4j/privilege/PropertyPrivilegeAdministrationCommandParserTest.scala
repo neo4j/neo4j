@@ -128,21 +128,41 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationCom
       // PROPERTYS/PROPERTIES instead of PROPERTY
 
       test(s"$verb SET PROPERTYS { prop } ON GRAPH * $preposition role") {
-        failsToParse
+        val offset = verb.length + 5
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'PROPERTYS': expected
+             |  "DATABASE"
+             |  "LABEL"
+             |  "PASSWORD"
+             |  "PASSWORDS"
+             |  "PROPERTY"
+             |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
       }
 
       test(s"$verb SET PROPERTIES { prop } ON GRAPH * $preposition role") {
-        failsToParse
+        val offset = verb.length + 5
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'PROPERTIES': expected
+             |  "DATABASE"
+             |  "LABEL"
+             |  "PASSWORD"
+             |  "PASSWORDS"
+             |  "PROPERTY"
+             |  "USER" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin)
       }
 
       // Database instead of graph keyword
 
       test(s"$verb SET PROPERTY { prop } ON DATABASES * $preposition role") {
-        failsToParse
+        val offset = verb.length + 26
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb SET PROPERTY { prop } ON DATABASE foo $preposition role") {
-        failsToParse
+        val offset = verb.length + 26
+        assertFailsWithMessage(testName,
+          s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""")
       }
 
       test(s"$verb SET PROPERTY { prop } ON HOME DATABASE $preposition role") {
