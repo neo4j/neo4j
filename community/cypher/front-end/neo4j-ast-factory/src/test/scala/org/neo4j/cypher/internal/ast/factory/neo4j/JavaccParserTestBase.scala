@@ -75,6 +75,15 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
     }
   }
 
+  def assertFailsWithException(s: String, expected: Exception)(implicit p: JavaccRule[T]): Unit = {
+    parseRule(p, s) match {
+      case Failure(exception) =>
+        exception.getClass should be(expected.getClass)
+        exception.getMessage shouldBe fixLineSeparator(expected.getMessage)
+      case Success(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
+    }
+  }
+
   def assertFailsWithMessage(s: String, expectedMessage: String)(implicit p: JavaccRule[T]): Unit = {
     parseRule(p, s) match {
       case Failure(exception) =>

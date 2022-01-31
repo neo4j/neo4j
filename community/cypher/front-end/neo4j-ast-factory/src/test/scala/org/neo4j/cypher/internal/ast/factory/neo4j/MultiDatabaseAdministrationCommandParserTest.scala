@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.parser
+package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AllDatabasesScope
+import org.neo4j.cypher.internal.ast.AlterDatabase
+import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.DefaultDatabaseScope
 import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DumpData
@@ -29,10 +31,15 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
+import org.neo4j.cypher.internal.ast.ReadOnlyAccess
+import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.symbols.CTMap
+import org.neo4j.cypher.internal.util.symbols.CTString
 
 class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommandParserTestBase {
   private val literalFooBar = literal("foo.bar")
@@ -116,10 +123,18 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("SHOW DATABASE") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
   }
 
   test("SHOW DATABASE blah YIELD *,blah RETURN user") {
+    failsToParse
+  }
+
+  test("SHOW DATABASE YIELD (123 + xyz)") {
+    failsToParse
+  }
+
+  test("SHOW DATABASE YIELD (123 + xyz) AS foo") {
     failsToParse
   }
 
@@ -138,32 +153,40 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(paramFoo, ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
-  test("CREATE DATABASE `foo.bar`") {
-    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait))
+  test("CREATE DATABASE $wait") {
+    yields(ast.CreateDatabase(param("wait"), ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
-  test("CREATE DATABASE foo WAIT") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, IndefiniteWait))
+  test("CREATE DATABASE `nowait.sec`") {
+    yields(ast.CreateDatabase(literal("nowait.sec"), ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
-  test("CREATE DATABASE foo WAIT 12") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+  test("CREATE DATABASE second WAIT") {
+    yields(ast.CreateDatabase(literal("second"), ast.IfExistsThrowError, NoOptions, IndefiniteWait))
   }
 
-  test("CREATE DATABASE foo WAIT 12 SEC") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+  test("CREATE DATABASE seconds WAIT 12") {
+    yields(ast.CreateDatabase(literal("seconds"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
   }
 
-  test("CREATE DATABASE foo WAIT 12 SECOND") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+  test("CREATE DATABASE dump WAIT 12 SEC") {
+    yields(ast.CreateDatabase(literal("dump"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
   }
 
-  test("CREATE DATABASE foo WAIT 12 SECONDS") {
-    yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+  test("CREATE DATABASE destroy WAIT 12 SECOND") {
+    yields(ast.CreateDatabase(literal("destroy"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
+  }
+
+  test("CREATE DATABASE data WAIT 12 SECONDS") {
+    yields(ast.CreateDatabase(literal("data"), ast.IfExistsThrowError, NoOptions, TimeoutAfter(12)))
   }
 
   test("CREATE DATABASE foo NOWAIT") {
     yields(ast.CreateDatabase(literal("foo"), ast.IfExistsThrowError, NoOptions, NoWait))
+  }
+
+  test("CREATE DATABASE `foo.bar`") {
+    yields(ast.CreateDatabase(literalFooBar, ast.IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE DATABASE foo.bar") {
@@ -230,23 +253,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     yields(ast.CreateDatabase(literalFoo, ast.IfExistsInvalidSyntax, NoOptions, NoWait))
   }
 
-  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}") {
-    yields(ast.CreateDatabase(Left("foo"), IfExistsThrowError,  OptionsMap(Map("existingData" -> literalString("use"),
-        "existingDataSeedInstance" -> literalString("84c3ee6f-260e-47db-a4b6-589c807f2c2e"))), NoWait))
-  }
-
-  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT") {
-    yields(ast.CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> literalString("use"),
-        "existingDataSeedInstance" -> literalString("84c3ee6f-260e-47db-a4b6-589c807f2c2e"))), IndefiniteWait))
-  }
-
-  test("CREATE DATABASE foo OPTIONS $param") {
-    yields(ast.CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(parameter("param", CTMap)), NoWait))
-  }
-
   test("CREATE DATABASE") {
     // missing db name but parses as 'normal' cypher CREATE...
-    yields(_ => query(create(expressions.InvalidNodePattern(varFor("DATABASE"), Seq(), None)(pos))))
+    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 16 (offset: 15))""")
   }
 
   test("CREATE DATABASE \"foo.bar\"") {
@@ -270,7 +279,16 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE  IF NOT EXISTS") {
-    failsToParse
+    val exceptionMessage =
+      s"""Invalid input 'NOT': expected
+         |  "."
+         |  "IF"
+         |  "NOWAIT"
+         |  "OPTIONS"
+         |  "WAIT"
+         |  <EOF> (line 1, column 21 (offset: 20))""".stripMargin
+
+    assertFailsWithMessage(testName, exceptionMessage)
   }
 
   test("CREATE DATABASE foo IF EXISTS") {
@@ -282,7 +300,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE DATABASE foo WAIT 3.14") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '3.14': expected <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 26 (offset: 25))")
   }
 
   test("CREATE DATABASE foo WAIT bar") {
@@ -294,13 +312,50 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("CREATE OR REPLACE DATABASE") {
-    failsToParse
+    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 27 (offset: 26))""")
+  }
+
+  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'}") {
+    assertAst(
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
+        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), NoWait)(defaultPos))
+  }
+
+  test("CREATE DATABASE foo OPTIONS {existingData: 'use', existingDataSeedInstance: '84c3ee6f-260e-47db-a4b6-589c807f2c2e'} WAIT") {
+    assertAst(
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsMap(Map("existingData" -> StringLiteral("use")(1, 44, 43),
+        "existingDataSeedInstance" -> StringLiteral("84c3ee6f-260e-47db-a4b6-589c807f2c2e")(1, 77, 76))), IndefiniteWait)(defaultPos))
+  }
+
+  test("CREATE DATABASE foo OPTIONS $param") {
+    assertAst(
+      CreateDatabase(Left("foo"), IfExistsThrowError, OptionsParam(Parameter("param", CTMap)(1, 29, 28)), NoWait)(defaultPos))
+  }
+
+  test("CREATE DATABASE alias") {
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsThrowError, NoOptions, NoWait)(pos))
+  }
+
+  test("CREATE DATABASE alias IF NOT EXISTS") {
+    yields(_ => ast.CreateDatabase(literal("alias"), ast.IfExistsDoNothing, NoOptions, NoWait)(pos))
   }
 
   // DROP DATABASE
 
   test("DROP DATABASE foo") {
     yields(ast.DropDatabase(literalFoo, ifExists = false, DestroyData, NoWait))
+  }
+
+  test("DROP DATABASE alias") {
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, NoWait))
+  }
+
+  test("DROP DATABASE alias WAIT") {
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, IndefiniteWait))
+  }
+
+  test("DROP DATABASE alias NOWAIT") {
+    yields(ast.DropDatabase(literal("alias"), ifExists = false, DestroyData, NoWait))
   }
 
   test("DROP DATABASE $foo") {
@@ -372,7 +427,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("DROP DATABASE") {
-    failsToParse
+    assertFailsWithMessage(testName, s"""Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))""")
   }
 
   test("DROP DATABASE  IF EXISTS") {
@@ -383,8 +438,104 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
     failsToParse
   }
 
-  test("DROP DATABASE  KEEP DATA") {
-    failsToParse
+  test("DROP DATABASE KEEP DATA") {
+    val exceptionMessage =
+      s"""Invalid input 'DATA': expected
+         |  "."
+         |  "DESTROY"
+         |  "DUMP"
+         |  "IF"
+         |  "NOWAIT"
+         |  "WAIT"
+         |  <EOF> (line 1, column 20 (offset: 19))""".stripMargin
+
+    assertFailsWithMessage(testName, exceptionMessage)
+  }
+
+  // ALTER DATABASE
+  Seq(
+    ("READ ONLY", ReadOnlyAccess),
+    ("READ WRITE", ReadWriteAccess)
+  ).foreach {
+    case (accessKeyword, accessType) =>
+
+      test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
+        assertAst(AlterDatabase(literalFoo, ifExists = false, accessType)(defaultPos))
+      }
+
+      test(s"ALTER DATABASE $$foo SET ACCESS $accessKeyword") {
+        assertAst(AlterDatabase( Right(expressions.Parameter("foo", CTString)(1, 16, 15)), ifExists = false, accessType)(defaultPos))
+      }
+
+      test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
+        assertAst(AlterDatabase(literalFooBar, ifExists = false, accessType)(defaultPos))
+      }
+
+      test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
+        // can parse USE clause, but is not included in AST
+        assertAst(AlterDatabase(literalFoo, ifExists = false, accessType)(1, 12, 11))
+      }
+
+      test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
+        assertAst(AlterDatabase(literalFoo, ifExists = true, accessType)(defaultPos))
+      }
+  }
+
+  test("ALTER DATABASE") {
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
+  }
+
+  test("ALTER DATABASE foo") {
+    assertFailsWithMessage(testName, "Invalid input '': expected \".\", \"IF\" or \"SET\" (line 1, column 19 (offset: 18))")
+  }
+
+  test("ALTER DATABASE foo SET READ ONLY") {
+    assertFailsWithMessage(testName, "Invalid input 'READ': expected \"ACCESS\" (line 1, column 24 (offset: 23))")
+  }
+
+  test("ALTER DATABASE foo ACCESS READ WRITE") {
+    assertFailsWithMessage(testName, "Invalid input 'ACCESS': expected \".\", \"IF\" or \"SET\" (line 1, column 20 (offset: 19))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ") {
+    assertFailsWithMessage(testName, "Invalid input '': expected \"ONLY\" or \"WRITE\" (line 1, column 35 (offset: 34))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READWRITE'") {
+    assertFailsWithMessage(testName, "Invalid input 'READWRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS READ_ONLY") {
+    assertFailsWithMessage(testName, "Invalid input 'READ_ONLY': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  test("ALTER DATABASE foo SET ACCESS WRITE") {
+    assertFailsWithMessage(testName, "Invalid input 'WRITE': expected \"READ\" (line 1, column 31 (offset: 30))")
+  }
+
+  // Set ACCESS multiple times in the same command
+  test("ALTER DATABASE foo SET ACCESS READ ONLY SET ACCESS READ WRITE") {
+    assertFailsWithMessage(testName, "Invalid input 'SET': expected <EOF> (line 1, column 41 (offset: 40))")
+  }
+
+  // Wrong order between IF EXISTS and SET
+  test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
+    assertFailsWithMessage(testName, "Invalid input 'IF': expected <EOF> (line 1, column 41 (offset: 40))")
+  }
+
+  // IF NOT EXISTS instead of IF EXISTS
+  test("ALTER DATABASE foo IF NOT EXISTS SET ACCESS READ ONLY") {
+    assertFailsWithMessage(testName, "Invalid input 'NOT': expected \"EXISTS\" (line 1, column 23 (offset: 22))")
+  }
+
+  // ALTER with OPTIONS
+  test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
+    assertFailsWithMessage(testName, "Invalid input 'OPTIONS': expected <EOF> (line 1, column 42 (offset: 41))")
+  }
+
+  // ALTER OR REPLACE
+  test("ALTER OR REPLACE DATABASE foo SET ACCESS READ WRITE") {
+    assertFailsWithMessage(testName, "Invalid input 'OR': expected \"ALIAS\", \"CURRENT\", \"DATABASE\" or \"USER\" (line 1, column 7 (offset: 6))")
   }
 
   // START DATABASE
@@ -430,7 +581,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("START DATABASE") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 15 (offset: 14))")
   }
 
   // STOP DATABASE
@@ -476,6 +627,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationCommand
   }
 
   test("STOP DATABASE") {
-    failsToParse
+    assertFailsWithMessage(testName, "Invalid input '': expected a parameter or an identifier (line 1, column 14 (offset: 13))")
   }
 }
