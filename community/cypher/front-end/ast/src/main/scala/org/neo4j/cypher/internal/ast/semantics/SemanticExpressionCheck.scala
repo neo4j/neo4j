@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.CoerceTo
@@ -296,6 +297,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           }
 
       case x:CachedProperty =>
+        specifyType(CTAny.covariant, x)
+
+      case x:CachedHasProperty =>
         specifyType(CTAny.covariant, x)
 
       // Check the variable is defined and, if not, define it so that later errors are suppressed

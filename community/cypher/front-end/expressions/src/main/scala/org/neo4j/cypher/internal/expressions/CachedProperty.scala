@@ -50,7 +50,7 @@ trait ASTCachedProperty extends LogicalProperty {
    */
   def propertyKey: PropertyKeyName
 
-  override val map: Expression = Variable(entityName)(this.position)
+  override def map: Expression = Variable(entityName)(this.position)
 
   /**
    * @return a textual representation of the entity and the property in the form `n.prop`
@@ -99,6 +99,25 @@ case class CachedProperty(override val originalEntityName: String,
                           override val propertyKey: PropertyKeyName,
                           override val entityType: EntityType,
                           knownToAccessStore: Boolean = false)(val position: InputPosition) extends ASTCachedProperty {
+
+  override val entityName: String = entityVariable.name
+
+  override def asCanonicalStringVal: String = s"cache[$propertyAccessString]"
+}
+
+/**
+ * A specialized version of `CachedProperty` that doesn't read the actual value but only produces
+ * `TRUE` if the property is there or `NULL` otherwise.
+ *
+ * @param originalEntityName the name of the variable how it appeared in the first Property access.
+ * @param entityVariable     the variable how it appeared in this particular Property. It can have a different name than `originalEntityName`,
+ *                           if the variable name was changed in between.
+ */
+case class CachedHasProperty(override val originalEntityName: String,
+                             entityVariable: LogicalVariable,
+                             override val propertyKey: PropertyKeyName,
+                             override val entityType: EntityType,
+                             knownToAccessStore: Boolean = false)(val position: InputPosition) extends ASTCachedProperty {
 
   override val entityName: String = entityVariable.name
 

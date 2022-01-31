@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.StringSearchMode
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.planLimitOnTopOf
 import org.neo4j.cypher.internal.expressions.Add
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -1821,6 +1822,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case ordering.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
           case CachedProperty(`varName`, _, PropertyKeyName(`propName`), _, _) => true
+          case CachedHasProperty(`varName`, _, PropertyKeyName(`propName`), _, _) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }

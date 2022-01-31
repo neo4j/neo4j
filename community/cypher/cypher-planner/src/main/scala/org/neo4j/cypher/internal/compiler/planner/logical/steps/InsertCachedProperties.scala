@@ -29,9 +29,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.AndedPr
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanUsesEffectiveOutputCardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -102,31 +104,33 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
     case class PropertyUsages(canGetFromIndex: Boolean,
                               usages: Int,
                               entityType: EntityType,
-                              firstWritingAccesses: Option[(LogicalPlan, Seq[Property])]) {
+                              firstWritingAccesses: Option[(LogicalPlan, Seq[Property])],
+                              needsValue: Boolean) {
       //always prefer reading from index
       def registerIndexUsage: PropertyUsages =
-        copy(canGetFromIndex = true, firstWritingAccesses = None)
+        copy(canGetFromIndex = true, firstWritingAccesses = None, needsValue = true)
 
-      def addUsage(prop: Property, accessingPlan: LogicalPlan): PropertyUsages = {
+      def addUsage(prop: Property, accessingPlan: LogicalPlan, newNeedsValue: Boolean): PropertyUsages = {
         val fWA = if (canGetFromIndex) None else firstWritingAccesses match {
           case None => Some((accessingPlan, Seq(prop)))
           case Some((`accessingPlan`, otherUsages)) => Some((accessingPlan, otherUsages :+ prop))
           case x => x
         }
 
-        copy(usages = usages + 1, firstWritingAccesses = fWA)
+        copy(usages = usages + 1, firstWritingAccesses = fWA, needsValue = needsValue || newNeedsValue)
       }
 
       def ++(other: PropertyUsages): PropertyUsages = PropertyUsages(
         this.canGetFromIndex || other.canGetFromIndex,
         this.usages + other.usages,
         this.entityType,
-        this.firstWritingAccesses.orElse(other.firstWritingAccesses)
+        this.firstWritingAccesses.orElse(other.firstWritingAccesses),
+        this.needsValue || other.needsValue
       )
     }
 
-    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, NODE_TYPE, None)
-    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, RELATIONSHIP_TYPE, None)
+    val NODE_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, NODE_TYPE, None, needsValue = false)
+    val REL_NO_PROP_USAGE = PropertyUsages(canGetFromIndex = false, 0, RELATIONSHIP_TYPE, None, needsValue = false)
 
     case class Acc(properties: Map[Property, PropertyUsages] = Map.empty,
                    previousNames: Map[String, String] = Map.empty) {
@@ -148,17 +152,17 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         copy(properties = newProperties)
       }
 
-      def addNodeProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
+      def addNodeProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): Acc = {
         val originalProp = originalProperty(prop)
-        val previousUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
+        val previousUsages: PropertyUsages = properties.getOrElse(originalProp, NODE_NO_PROP_USAGE)
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
         copy(properties = newProperties)
       }
 
-      def addRelProperty(prop: Property, accessingPlan: LogicalPlan): Acc = {
+      def addRelProperty(prop: Property, accessingPlan: LogicalPlan, needsValue: Boolean): Acc = {
         val originalProp = originalProperty(prop)
         val previousUsages = properties.getOrElse(originalProp, REL_NO_PROP_USAGE)
-        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan))
+        val newProperties = properties.updated(originalProp, previousUsages.addUsage(prop, accessingPlan, needsValue))
         copy(properties = newProperties)
       }
 
@@ -205,10 +209,14 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
 
     def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.treeFold(acc) {
       // Find properties
+      case IsNotNull(prop@Property(v: Variable, _)) if isNode(v) => acc =>
+        SkipChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = false))
+      case IsNotNull(prop@Property(v: Variable, _)) if isRel(v) => acc =>
+        SkipChildren(acc.addRelProperty(prop, logicalPlan, needsValue = false))
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
-        TraverseChildren(acc.addNodeProperty(prop, logicalPlan))
+        TraverseChildren(acc.addNodeProperty(prop, logicalPlan, needsValue = true))
       case prop@Property(v: Variable, _) if isRel(v) => acc =>
-        TraverseChildren(acc.addRelProperty(prop, logicalPlan))
+        TraverseChildren(acc.addRelProperty(prop, logicalPlan, needsValue = true))
 
       // New fold for nested plan expression
       case nested:NestedPlanExpression => acc =>
@@ -283,13 +291,18 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         val originalVar = acc.variableWithOriginalName(v)
         val originalProp = acc.originalProperty(prop)
         acc.properties.get(originalProp) match {
-          case Some(PropertyUsages(canGetFromIndex, usages, entityType, firstWritingAccesses)) if usages > 1 || canGetFromIndex =>
+          case Some(PropertyUsages(canGetFromIndex, usages, entityType, firstWritingAccesses, needsValue)) if usages > 1 || canGetFromIndex =>
             // Use the original variable name for the cached property
             val knownToAccessStore = firstWritingAccesses.exists {
               case (_, properties) => properties.exists(_ eq prop)
             }
-
-            val newProperty = CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+            val newProperty = {
+              if (needsValue) {
+                CachedProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+              } else {
+                CachedHasProperty(originalVar.name, v, propertyKeyName, entityType, knownToAccessStore)(prop.position)
+              }
+            }
             // Register the new variables in the semantic table
             currentTypes.get(prop) match {
               case None => // I don't like this. We have to make sure we retain the type from semantic analysis
@@ -307,7 +320,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _)) if usages >= 1 =>
+            case Some(PropertyUsages(true, usages, _, _, _)) if usages >= 1 =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>
@@ -318,7 +331,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         indexPlan.withMappedProperties { indexedProp =>
           acc.properties.get(property(indexPlan.idName, indexedProp.propertyKeyToken.name)) match {
             // Get the value since we use it later
-            case Some(PropertyUsages(true, usages, _, _)) if usages >= 1 =>
+            case Some(PropertyUsages(true, usages, _, _, _)) if usages >= 1 =>
               indexedProp.copy(getValueFromIndex = GetValue)
             // We could get the value but we don't need it later
             case _ =>

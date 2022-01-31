@@ -189,4 +189,54 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeByLabelScan("n", "N") // 500 rows, effective 5
       .build()
   }
+
+  test("should not get value for multiple IS NOT NULL checks on same node property") {
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 IS NOT NULL RETURN n.prop1 IS NOT NULL AS foo").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("nodeCachedHasProperty[n.prop1] IS NOT NULL AS foo")
+      .filter("nodeCachedHasPropertyFromStore[n.prop1] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should get value when having one IS NOT NULL check and one access on same node property") {
+    val cfg = plannerBuilder().setAllNodesCardinality(100).build()
+    val plan = cfg.plan("MATCH (n) WHERE n.prop1 IS NOT NULL RETURN n.prop1 AS foo").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheN[n.prop1] AS foo")
+      .filter("cacheNFromStore[n.prop1] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should not get value for multiple IS NOT NULL checks on same relationship property") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
+
+    val plan = cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 IS NOT NULL RETURN r.prop1 IS NOT NULL AS foo").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("relCachedHasProperty[r.prop1] IS NOT NULL AS foo")
+      .filter("relCachedHasPropertyFromStore[r.prop1] IS NOT NULL")
+      .expandAll("(a)-[r]-(b)")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("should get value when having one IS NOT NULL check and one access on same relationship property") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[]-()", 50)
+      .build()
+
+    val plan = cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 IS NOT NULL RETURN r.prop1 AS foo").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop1] AS foo")
+      .filter("cacheRFromStore[r.prop1] IS NOT NULL")
+      .expandAll("(a)-[r]-(b)")
+      .allNodeScan("a")
+      .build()
+  }
 }

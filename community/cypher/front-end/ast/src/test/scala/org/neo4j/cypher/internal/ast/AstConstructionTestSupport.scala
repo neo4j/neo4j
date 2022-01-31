@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -164,6 +165,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def cachedNodeProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedProperty =
     CachedProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
+
+  def cachedNodeHasProp(variable: String, propKey: String): CachedHasProperty =
+    cachedNodeHasProp(variable, propKey, variable)
+
+  def cachedNodeHasProp(variable: String, propKey: String, currentVarName: String, knownToAccessStore: Boolean = false): CachedHasProperty =
+    CachedHasProperty(variable, varFor(currentVarName), propName(propKey), NODE_TYPE, knownToAccessStore)(pos)
 
   def cachedRelProp(variable: String, propKey: String): CachedProperty =
     cachedRelProp(variable, propKey, variable)

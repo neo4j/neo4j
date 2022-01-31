@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
+import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -86,11 +88,15 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   // Same property in different positions
   private val nFoo1 = Property(n, foo)(InputPosition.NONE)
   private val cachedNProp1 = CachedProperty("n", n, prop, NODE_TYPE)(nProp1.position)
+  private val cachedNHasProp1 = CachedHasProperty("n", n, prop, NODE_TYPE)(nProp1.position)
   private val cachedNFoo1 = CachedProperty("n", n, foo, NODE_TYPE)(nFoo1.position)
   private val cachedNProp2 = CachedProperty("n", n, prop, NODE_TYPE)(nProp2.position)
+  private val cachedNHasProp2 = CachedHasProperty("n", n, prop, NODE_TYPE)(nProp2.position)
   private val cachedNProp3 = CachedProperty("n", n, prop, NODE_TYPE)(nProp3.position)
   private val cachedRRelProp1 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp1.position)
+  private val cachedRRelHasProp1 = CachedHasProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp1.position)
   private val cachedRRelProp2 = CachedProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp2.position)
+  private val cachedRRelHasProp2 = CachedHasProperty("r", r, prop, RELATIONSHIP_TYPE)(rProp2.position)
 
   private val xProp = Property(x, prop)(InputPosition.NONE)
 
@@ -371,6 +377,52 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     newTable.types(cachedNProp2) should be(initialType)
   }
 
+  test("should cache node has property on multiple usages") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)
+    val cp1 = cachedNHasProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
+
+    val plan = Projection(
+      Selection(Seq(isNotNull(nProp1)),
+        AllNodesScan("n", Set.empty)),
+      Map("x" -> isNotNull(nProp2))
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(
+      Projection(
+        Selection(Seq(isNotNull(cp1)),
+          AllNodesScan("n", Set.empty)),
+        Map("x" -> isNotNull(cachedNHasProp2))
+      )
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cp1) should be(initialType)
+    newTable.types(cachedNHasProp2) should be(initialType)
+  }
+
+  test("should cache node property on multiple usages, one IS NOT NULL and one access") {
+    val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTNode)
+    val cp1 = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
+
+    val plan = Projection(
+      Selection(Seq(isNotNull(nProp1)),
+        AllNodesScan("n", Set.empty)),
+      Map("x" -> nProp2)
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(
+      Projection(
+        Selection(Seq(isNotNull(cp1)),
+          AllNodesScan("n", Set.empty)),
+        Map("x" -> cachedNProp2)
+      )
+    )
+    val initialType = initialTable.types(nProp1)
+    newTable.types(cp1) should be(initialType)
+    newTable.types(cachedNProp2) should be(initialType)
+  }
+
   test("multiple accesses to the same property in the same plan should all be knownToAccessStore") {
     // If there are multiple accesses to the same property in the same plan, we cannot know which one will read first.
     // This is especially important for Selections, if two predicates use the same property.
@@ -536,6 +588,31 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(plan)
     newTable should be(initialTable)
+  }
+
+  test("should cache relationship has property on multiple usages") {
+    val initialTable = semanticTable(rProp1 -> CTInteger, rProp2 -> CTInteger, r -> CTRelationship)
+    val cp1 = cachedRRelHasProp1.copy(knownToAccessStore = true)(cachedRRelProp1.position)
+
+    val plan = Projection(
+      Selection(Seq(isNotNull(rProp1)),
+        DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+      ),
+      Map("x" -> isNotNull(rProp2))
+    )
+
+    val (newPlan, newTable) = replace(plan, initialTable)
+    newPlan should be(
+      Projection(
+        Selection(Seq(isNotNull(cp1)),
+          DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+        ),
+        Map("x" -> isNotNull(cachedRRelHasProp2))
+      )
+    )
+    val initialType = initialTable.types(rProp1)
+    newTable.types(cp1) should be(initialType)
+    newTable.types(cachedRRelHasProp2) should be(initialType)
   }
 
   test("should not do anything with map properties") {

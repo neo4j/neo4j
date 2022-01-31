@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -83,6 +84,8 @@ object LogicalPlanToPlanBuilderString {
 
   def expressionStringifierExtension(expression: Expression): String = {
     expression match {
+      case p@CachedHasProperty(_, _, _, NODE_TYPE, _) => s"cachedNodeHasProperty[${p.propertyAccessString}]"
+      case p@CachedHasProperty(_, _, _, RELATIONSHIP_TYPE, _) => s"cachedNodeHasProperty[${p.propertyAccessString}]"
       case p@CachedProperty(_, _, _, NODE_TYPE, false) => s"cacheN[${p.propertyAccessString}]"
       case p@CachedProperty(_, _, _, RELATIONSHIP_TYPE, false) => s"cacheR[${p.propertyAccessString}]"
       case p@CachedProperty(_, _, _, NODE_TYPE, true) => s"cacheNFromStore[${p.propertyAccessString}]"

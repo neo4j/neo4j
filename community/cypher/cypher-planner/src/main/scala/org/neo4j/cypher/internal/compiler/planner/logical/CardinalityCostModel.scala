@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.e
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.getEffectiveBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -220,6 +221,7 @@ object CardinalityCostModel {
     val noOfStoreAccesses = expression.treeFold(0) {
       case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
+      case cp: CachedHasProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case _: HasLabels |
            _: HasTypes |
            _: HasLabelsOrTypes => count => TraverseChildren(count + LABEL_CHECK_DB_HITS)

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
@@ -49,6 +50,15 @@ object Parser {
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
     case ContainerIndex(Variable("cacheRFromStore"), Property(v@Variable(relationship), pkn:PropertyKeyName)) =>
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "nodeCachedHasProperty" =>
+      CachedHasProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "relCachedHasProperty" =>
+      CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "nodeCachedHasPropertyFromStore" =>
+      CachedHasProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "relCachedHasPropertyFromStore" =>
+      CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
+
   })
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
     case a:ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
