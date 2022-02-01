@@ -66,6 +66,21 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     private static final String TOKEN = "Node";
     private static final String PROPERTY_KEY = "prop";
     private static final String INDEX_NAME = "propIndex";
+    private static final ValueType[] ALL_ORDERABLE = RandomValues.excluding(
+            ValueType.STRING,
+            ValueType.STRING_ARRAY,
+            ValueType.GEOGRAPHIC_POINT,
+            ValueType.GEOGRAPHIC_POINT_ARRAY,
+            ValueType.GEOGRAPHIC_POINT_3D,
+            ValueType.GEOGRAPHIC_POINT_3D_ARRAY,
+            ValueType.CARTESIAN_POINT,
+            ValueType.CARTESIAN_POINT_ARRAY,
+            ValueType.CARTESIAN_POINT_3D,
+            ValueType.CARTESIAN_POINT_3D_ARRAY,
+            ValueType.DURATION,
+            ValueType.DURATION_ARRAY,
+            ValueType.PERIOD,
+            ValueType.PERIOD_ARRAY );
 
     @Inject
     RandomSupport randomRule;
@@ -103,23 +118,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
 
         RandomValues randomValues = randomRule.randomValues();
 
-        ValueType[] allExceptNonOrderable = RandomValues.excluding(
-                ValueType.STRING,
-                ValueType.STRING_ARRAY,
-                ValueType.GEOGRAPHIC_POINT,
-                ValueType.GEOGRAPHIC_POINT_ARRAY,
-                ValueType.GEOGRAPHIC_POINT_3D,
-                ValueType.GEOGRAPHIC_POINT_3D_ARRAY,
-                ValueType.CARTESIAN_POINT,
-                ValueType.CARTESIAN_POINT_ARRAY,
-                ValueType.CARTESIAN_POINT_3D,
-                ValueType.CARTESIAN_POINT_3D_ARRAY,
-                ValueType.DURATION,
-                ValueType.DURATION_ARRAY,
-                ValueType.PERIOD,
-                ValueType.PERIOD_ARRAY
-        );
-        targetedTypes = randomValues.selection( allExceptNonOrderable, 1, allExceptNonOrderable.length, false );
+        targetedTypes = randomValues.selection( ALL_ORDERABLE, 1, ALL_ORDERABLE.length, false );
         targetedTypes = ensureHighEnoughCardinality( targetedTypes );
         try ( Transaction tx = graphDb.beginTx() )
         {
@@ -217,7 +216,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
             }
         }
         List<ValueType> result = new ArrayList<>( Arrays.asList( targetedTypes ) );
-        ValueType highCardinalityType = randomRule.randomValues().among( RandomValues.excluding( lowCardinalityArray ) );
+        ValueType highCardinalityType = randomRule.randomValues().among( RandomValues.excluding( ALL_ORDERABLE, lowCardinalityArray ) );
         result.add( highCardinalityType );
         return result.toArray( new ValueType[0] );
     }
