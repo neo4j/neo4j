@@ -323,9 +323,8 @@ public class RandomSchema implements Supplier<SchemaRule>
         {
             return false;
         }
-        if ( a instanceof IndexDescriptor indexA )
+        if ( a instanceof IndexDescriptor indexA && b instanceof IndexDescriptor indexB )
         {
-            IndexDescriptor indexB = (IndexDescriptor) b;
             return indexA.getCapability().equals( indexB.getCapability() ) &&
                     indexA.isUnique() == indexB.isUnique() &&
                     indexA.getIndexProvider().equals( indexB.getIndexProvider() ) &&
@@ -333,10 +332,8 @@ public class RandomSchema implements Supplier<SchemaRule>
                     indexA.getOwningConstraintId().equals( indexB.getOwningConstraintId() ) &&
                     schemaDeepEquals( indexA.schema(), indexB.schema() );
         }
-        else
+        else if ( a instanceof ConstraintDescriptor constraintA && b instanceof ConstraintDescriptor constraintB )
         {
-            ConstraintDescriptor constraintA = (ConstraintDescriptor) a;
-            ConstraintDescriptor constraintB = (ConstraintDescriptor) b;
             if ( constraintA.isIndexBackedConstraint() && constraintB.isIndexBackedConstraint() )
             {
                 IndexBackedConstraintDescriptor ibcA = constraintA.asIndexBackedConstraint();
@@ -352,6 +349,10 @@ public class RandomSchema implements Supplier<SchemaRule>
                         constraintA.equals( constraintB ) &&
                         schemaDeepEquals( constraintA.schema(), constraintB.schema() );
             }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unsupported type of a:" + a + " and b:" + b );
         }
     }
 
