@@ -30,6 +30,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
+import static java.lang.Integer.max;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -46,16 +47,16 @@ class ConsistentPropertyReadsIT
     void shouldReadConsistentPropertyValues() throws Throwable
     {
         // GIVEN
-        final Node[] nodes = new Node[10];
-        final String[] keys = new String[] {"1", "2", "3"};
-        final String[] values = new String[] {
+        var nodes = new Node[10];
+        var keys = new String[] {"1", "2", "3"};
+        var values = new String[] {
                 longString( 'a' ),
                 longString( 'b' ),
                 longString( 'c' ),
         };
-        try ( Transaction tx = db.beginTx() )
+        try ( var tx = db.beginTx() )
         {
-            for ( int i = 0; i < nodes.length; i++ )
+            for ( var i = 0; i < nodes.length; i++ )
             {
                 nodes[i] = tx.createNode();
                 for ( String key : keys )
@@ -66,57 +67,41 @@ class ConsistentPropertyReadsIT
             tx.commit();
         }
 
-        int updaters = 10;
-        final AtomicLong updatersDone = new AtomicLong( updaters );
-        Race race = new Race();
-        for ( int i = 0; i < updaters; i++ )
+        var numUpdaters = 2;
+        var updatesDone = new AtomicLong();
+        var readsDone = new AtomicLong();
+        var race = new Race().withEndCondition( () -> updatesDone.get() > 1_000 && readsDone.get() > 100_000 );
+        race.addContestants( numUpdaters, () ->
         {
-            // Changers
-            race.addContestant( () ->
+            var random = ThreadLocalRandom.current();
+            var node = nodes[random.nextInt( nodes.length )];
+            var key = keys[random.nextInt( keys.length )];
+            try ( var tx = db.beginTx() )
             {
-                try
-                {
-                    ThreadLocalRandom random = ThreadLocalRandom.current();
-                    for ( int j = 0; j < 100; j++ )
-                    {
-                        Node node = nodes[random.nextInt( nodes.length )];
-                        String key = keys[random.nextInt( keys.length )];
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            tx.getNodeById( node.getId() ).removeProperty( key );
-                            tx.commit();
-                        }
-                        try ( Transaction tx = db.beginTx() )
-                        {
-                            tx.getNodeById( node.getId() ).setProperty( key, values[random.nextInt( values.length )] );
-                            tx.commit();
-                        }
-                    }
-                }
-                finally
-                {
-                    updatersDone.decrementAndGet();
-                }
-            } );
-        }
-        for ( int i = 0; i < 100; i++ )
+                tx.getNodeById( node.getId() ).removeProperty( key );
+                tx.commit();
+            }
+            try ( var tx = db.beginTx() )
+            {
+                tx.getNodeById( node.getId() ).setProperty( key, values[random.nextInt( values.length )] );
+                tx.commit();
+            }
+            updatesDone.incrementAndGet();
+        } );
+
+        var numReaders = max( 2, Runtime.getRuntime().availableProcessors() - numUpdaters );
+        race.addContestants( numReaders, () ->
         {
-            // Readers
-            race.addContestant( () ->
+            var random = ThreadLocalRandom.current();
+            try ( var tx = db.beginTx() )
             {
-                ThreadLocalRandom random = ThreadLocalRandom.current();
-                while ( updatersDone.get() > 0 )
-                {
-                    try ( Transaction tx = db.beginTx() )
-                    {
-                        String value = (String) tx.getNodeById( nodes[random.nextInt( nodes.length )].getId() )
-                                .getProperty( keys[random.nextInt( keys.length )], null );
-                        assertTrue( value == null || ArrayUtil.contains( values, value ), value );
-                        tx.commit();
-                    }
-                }
-            } );
-        }
+                var value = (String) tx.getNodeById( nodes[random.nextInt( nodes.length )].getId() )
+                        .getProperty( keys[random.nextInt( keys.length )], null );
+                assertTrue( value == null || ArrayUtil.contains( values, value ), value );
+                tx.commit();
+            }
+            readsDone.incrementAndGet();
+        } );
 
         // WHEN
         race.go();
