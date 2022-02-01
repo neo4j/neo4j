@@ -21,10 +21,12 @@ package org.neo4j.server.web;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.bolt.runtime.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 
@@ -34,6 +36,7 @@ public class HttpHeaderUtils
 {
 
     public static final String MAX_EXECUTION_TIME_HEADER = "max-execution-time";
+    public static final String ACCESS_MODE_HEADER = "access-mode";
 
     public static final Map<String,String> CHARSET = Map.of( "charset", UTF_8.name() );
 
@@ -83,6 +86,29 @@ public class HttpHeaderUtils
     {
         String headerValue = headers.getHeaderString( MAX_EXECUTION_TIME_HEADER );
         return getTransactionTimeout( headerValue, errorLog );
+    }
+
+    public static Optional<Boolean> getAccessMode( HttpHeaders headers )
+    {
+        String headerValue = headers.getHeaderString( ACCESS_MODE_HEADER );
+
+        if ( headerValue == null )
+        {
+            return Optional.empty();
+        }
+        else
+        {
+            try
+            {
+                return Optional.of( AccessMode.valueOf( headerValue.toUpperCase() ).equals( AccessMode.READ ) );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                throw new IllegalArgumentException( String.format( "The header '%s' should be either 'WRITE' or 'READ' but found '%s'.",
+                                                                   ACCESS_MODE_HEADER, headerValue ), ex );
+            }
+
+        }
     }
 
     private static long getTransactionTimeout( String headerValue, Log errorLog )

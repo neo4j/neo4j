@@ -48,6 +48,7 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNullElse;
+import static org.neo4j.server.web.HttpHeaderUtils.getAccessMode;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
 public abstract class AbstractCypherResource
@@ -106,6 +107,10 @@ public abstract class AbstractCypherResource
                                     new OutputEventStreamImpl( inputStream.getParameters(), uriScheme, invocation::execute );
                             return Response.created( transactionHandle.uri() ).entity( outputStream ).build();
                         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                return createInvalidAccessModeHeaderResponse( ex );
             }
             catch ( RuntimeException ex )
             {
@@ -169,6 +174,10 @@ public abstract class AbstractCypherResource
                                     new OutputEventStreamImpl( inputStream.getParameters(), uriScheme, invocation::execute );
                             return Response.ok( outputStream ).build();
                         } ).orElse( createNonExistentDatabaseResponse( inputStream.getParameters() ) );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                return createInvalidAccessModeHeaderResponse( ex );
             }
             catch ( RuntimeException ex )
             {
@@ -243,9 +252,20 @@ public abstract class AbstractCypherResource
     {
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = getTransactionTimeout( headers, log );
-        return transactionFacade
-                .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout,
-                                       clock );
+        var isReadOnlyTransaction = getAccessMode( headers );
+
+        if ( isReadOnlyTransaction.isPresent() )
+        {
+            return transactionFacade
+                    .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout,
+                                           clock, isReadOnlyTransaction.get() );
+        }
+        else
+        {
+            return transactionFacade
+                    .newTransactionHandle( uriScheme, implicitTransaction, loginContext, loginContext.connectionInfo(), memoryTracker, customTransactionTimeout,
+                                           clock );
+        }
     }
 
     private Response executeInExistingTransaction( long transactionId, InputEventStream inputEventStream, MemoryTracker memoryTracker,
@@ -336,6 +356,13 @@ public abstract class AbstractCypherResource
                                                                                        databaseName ) ) );
         return Response.status( Response.Status.NOT_FOUND ).entity(
                 new OutputEventStreamImpl( parameters, uriScheme, errorInvocation::execute ) ).build();
+    }
+
+    private Response createInvalidAccessModeHeaderResponse( IllegalArgumentException ex )
+    {
+        var errorInvocation = new ErrorInvocation( new Neo4jError( Status.Request.InvalidFormat, ex.getMessage() ) );
+        return Response.status( Response.Status.OK ).entity(
+                new OutputEventStreamImpl( emptyMap(), uriScheme, errorInvocation::execute ) ).build();
     }
 
     private static class TransactionUriBuilder implements TransactionUriScheme
