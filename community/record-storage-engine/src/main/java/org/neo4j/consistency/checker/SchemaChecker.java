@@ -25,6 +25,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.HashMap;
@@ -60,8 +61,10 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.storable.Value;
 
-import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
+import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
+import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -120,7 +123,7 @@ class SchemaChecker
 
             // Verify all things, now that we have the complete map of obligations back and forth
             performSchemaCheck( highId, schemaReader, indexObligations, constraintObligations, schemaStorage,
-                    mandatoryNodeProperties, mandatoryRelationshipProperties, storeCursors );
+                                mandatoryNodeProperties, mandatoryRelationshipProperties, storeCursors, cursorContext );
         }
     }
 
@@ -177,88 +180,101 @@ class SchemaChecker
     }
 
     private void performSchemaCheck( long highId, RecordReader<SchemaRecord> reader, MutableLongObjectMap<SchemaRecord> indexObligations,
-            MutableLongObjectMap<ConstraintObligation> constraintObligations, SchemaStorage schemaStorage,
-            MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
-            MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, StoreCursors storeCursors )
+                                     MutableLongObjectMap<ConstraintObligation> constraintObligations, SchemaStorage schemaStorage,
+                                     MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
+                                     MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties, StoreCursors storeCursors,
+                                     CursorContext cursorContext )
     {
         SchemaRecord record = reader.record();
         SchemaProcessor basicSchemaCheck = new BasicSchemaCheck( record, storeCursors );
         SchemaProcessor mandatoryPropertiesBuilder = new MandatoryPropertiesBuilder( mandatoryNodeProperties, mandatoryRelationshipProperties );
-        for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
+        var propertyValues = new IntObjectHashMap<Value>();
+        try ( var propertyReader = new SafePropertyChainReader( context, cursorContext, true ) )
         {
-            try
+            for ( long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++ )
             {
-                reader.read( id );
-                if ( record.inUse() )
+                try
                 {
-                    SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
-                    schemaRule.schema().processWith( basicSchemaCheck );
-                    if ( schemaRule instanceof IndexDescriptor rule )
+                    reader.read( id );
+                    if ( record.inUse() )
                     {
-                        if ( rule.isUnique() )
-                        {
-                            SchemaRecord obligation = indexObligations.get( rule.getId() );
-                            if ( obligation == null ) // no pointer to here
-                            {
-                                if ( rule.getOwningConstraintId().isPresent() ) // we only expect a pointer if we have an owner
-                                {
-                                    reporter.forSchema( record ).missingObligation( UNIQUENESS_CONSTRAINT );
-                                }
-                            }
-                            else
-                            {
-                                // if someone points to here, it must be our owner
-                                OptionalLong owningConstraintId = rule.getOwningConstraintId();
-                                if ( owningConstraintId.isEmpty() || obligation.getId() != owningConstraintId.getAsLong() )
-                                {
-                                    reporter.forSchema( record ).constraintIndexRuleNotReferencingBack( obligation );
-                                }
-                            }
-                        }
-                        if ( indexAccessors.notOnlineRules().contains( rule ) )
-                        {
-                            reporter.forSchema( record ).schemaRuleNotOnline( rule );
-                        }
-                        if ( indexAccessors.inconsistentRules().contains( rule ) )
+                        lightClear( propertyValues );
+                        boolean propertyChainIsOk = propertyReader.read( propertyValues, record, reporter::forSchema, storeCursors );
+                        if ( !propertyChainIsOk )
                         {
                             reporter.forSchema( record ).malformedSchemaRule();
+                            continue;
                         }
-                    }
-                    else if ( schemaRule instanceof ConstraintDescriptor rule )
-                    {
-                        if ( rule.enforcesUniqueness() )
+
+                        SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule( id, storeCursors );
+                        schemaRule.schema().processWith( basicSchemaCheck );
+                        if ( schemaRule instanceof IndexDescriptor rule )
                         {
-                            ConstraintObligation obligation = constraintObligations.get( rule.getId() );
-                            if ( obligation == null )
+                            if ( rule.isUnique() )
                             {
-                                reporter.forSchema( record ).missingObligation( CONSTRAINT_INDEX_RULE );
+                                SchemaRecord obligation = indexObligations.get( rule.getId() );
+                                if ( obligation == null ) // no pointer to here
+                                {
+                                    if ( rule.getOwningConstraintId().isPresent() ) // we only expect a pointer if we have an owner
+                                    {
+                                        reporter.forSchema( record ).missingObligation( UNIQUENESS_CONSTRAINT );
+                                    }
+                                }
+                                else
+                                {
+                                    // if someone points to here, it must be our owner
+                                    OptionalLong owningConstraintId = rule.getOwningConstraintId();
+                                    if ( owningConstraintId.isEmpty() || obligation.getId() != owningConstraintId.getAsLong() )
+                                    {
+                                        reporter.forSchema( record ).constraintIndexRuleNotReferencingBack( obligation );
+                                    }
+                                }
                             }
-                            else
+                            if ( indexAccessors.notOnlineRules().contains( rule ) )
                             {
-                                if ( obligation.schemaRecord().getId() != rule.asIndexBackedConstraint().ownedIndexId() )
-                                {
-                                    reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation.schemaRecord() );
-                                }
-                                else if ( obligation.indexType() != rule.asIndexBackedConstraint().indexType() )
-                                {
-                                    reporter.forSchema( record ).uniquenessConstraintReferencingIndexOfWrongType( obligation.schemaRecord() );
-                                }
+                                reporter.forSchema( record ).schemaRuleNotOnline( rule );
+                            }
+                            if ( indexAccessors.inconsistentRules().contains( rule ) )
+                            {
+                                reporter.forSchema( record ).malformedSchemaRule();
                             }
                         }
-                        if ( rule.enforcesPropertyExistence() )
+                        else if ( schemaRule instanceof ConstraintDescriptor rule )
                         {
-                            rule.schema().processWith( mandatoryPropertiesBuilder );
+                            if ( rule.enforcesUniqueness() )
+                            {
+                                ConstraintObligation obligation = constraintObligations.get( rule.getId() );
+                                if ( obligation == null )
+                                {
+                                    reporter.forSchema( record ).missingObligation( CONSTRAINT_INDEX_RULE );
+                                }
+                                else
+                                {
+                                    if ( obligation.schemaRecord().getId() != rule.asIndexBackedConstraint().ownedIndexId() )
+                                    {
+                                        reporter.forSchema( record ).uniquenessConstraintNotReferencingBack( obligation.schemaRecord() );
+                                    }
+                                    else if ( obligation.indexType() != rule.asIndexBackedConstraint().indexType() )
+                                    {
+                                        reporter.forSchema( record ).uniquenessConstraintReferencingIndexOfWrongType( obligation.schemaRecord() );
+                                    }
+                                }
+                            }
+                            if ( rule.enforcesPropertyExistence() )
+                            {
+                                rule.schema().processWith( mandatoryPropertiesBuilder );
+                            }
                         }
-                    }
-                    else
-                    {
-                        reporter.forSchema( record ).unsupportedSchemaRuleType( null );
+                        else
+                        {
+                            reporter.forSchema( record ).unsupportedSchemaRuleType( null );
+                        }
                     }
                 }
-            }
-            catch ( MalformedSchemaRuleException e )
-            {
-                reporter.forSchema( record ).malformedSchemaRule();
+                catch ( MalformedSchemaRuleException e )
+                {
+                    reporter.forSchema( record ).malformedSchemaRule();
+                }
             }
         }
     }
@@ -339,7 +355,7 @@ class SchemaChecker
         @Override
         public void processSpecific( LabelSchemaDescriptor schema )
         {
-            checkValidInternalToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
+            checkValidToken( null, schema.getLabelId(), tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
                     ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), storeCursors );
             checkValidPropertyKeyIds( schema );
         }
@@ -347,7 +363,7 @@ class SchemaChecker
         @Override
         public void processSpecific( RelationTypeSchemaDescriptor schema )
         {
-            checkValidInternalToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
+            checkValidToken( null, schema.getRelTypeId(), tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                     ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), storeCursors );
             checkValidPropertyKeyIds( schema );
         }
@@ -360,14 +376,14 @@ class SchemaChecker
             case NODE:
                 for ( int labelTokenId : schema.getEntityTokenIds() )
                 {
-                    checkValidInternalToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
+                    checkValidToken( null, labelTokenId, tokenHolders.labelTokens(), neoStores.getLabelTokenStore(), ( record, id ) -> {},
                             ( ignore, token ) -> reporter.forSchema( record ).labelNotInUse( token ), storeCursors );
                 }
                 break;
             case RELATIONSHIP:
                 for ( int relationshipTypeTokenId : schema.getEntityTokenIds() )
                 {
-                    checkValidInternalToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
+                    checkValidToken( null, relationshipTypeTokenId, tokenHolders.relationshipTypeTokens(), neoStores.getRelationshipTypeTokenStore(),
                             ( record, id ) -> {}, ( ignore, token ) -> reporter.forSchema( record ).relationshipTypeNotInUse( token ), storeCursors );
                 }
                 break;
@@ -381,7 +397,7 @@ class SchemaChecker
         {
             for ( int propertyKeyId : schema.getPropertyIds() )
             {
-                checkValidInternalToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
+                checkValidToken( null, propertyKeyId, tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(), ( record, id ) -> {},
                         ( ignore, token ) -> reporter.forSchema( record ).propertyKeyNotInUse( token ), storeCursors );
             }
         }

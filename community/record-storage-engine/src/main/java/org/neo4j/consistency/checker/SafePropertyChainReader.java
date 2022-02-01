@@ -42,6 +42,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.NO_DYNAMIC_HANDLER;
+import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.checker.RecordLoading.lightClear;
 import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
@@ -66,8 +67,14 @@ class SafePropertyChainReader implements AutoCloseable
     private final ConsistencyReport.Reporter reporter;
     private final CheckerContext context;
     private final NeoStores neoStores;
+    private final boolean internalTokens;
 
     SafePropertyChainReader( CheckerContext context, CursorContext cursorContext )
+    {
+        this( context, cursorContext, false );
+    }
+
+    SafePropertyChainReader( CheckerContext context, CursorContext cursorContext, boolean checkInternalTokens )
     {
         this.context = context;
         this.neoStores = context.neoStores;
@@ -81,6 +88,7 @@ class SafePropertyChainReader implements AutoCloseable
         this.seenRecords = new LongHashSet();
         this.seenDynamicRecordIds = new LongHashSet();
         this.dynamicRecords = new ArrayList<>();
+        this.internalTokens = checkInternalTokens;
     }
 
     /**
@@ -135,11 +143,26 @@ class SafePropertyChainReader implements AutoCloseable
                 for ( PropertyBlock block : propertyRecord )
                 {
                     int propertyKeyId = block.getKeyIndexId();
-                    if ( !checkValidToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(), neoStores.getPropertyKeyTokenStore(),
-                            ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
-                            ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ), storeCursors ) )
+                    if ( internalTokens )
                     {
-                        chainIsOk = false;
+                        if ( !checkValidInternalToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(),
+                                                       neoStores.getPropertyKeyTokenStore(),
+                                                       ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
+                                                       // apparently counts for internal tokens are not collected
+                                                       ( property, token ) -> {}, storeCursors ) )
+                        {
+                            chainIsOk = false;
+                        }
+                    }
+                    else
+                    {
+                        if ( !checkValidToken( propertyRecord, propertyKeyId, context.tokenHolders.propertyKeyTokens(),
+                                               neoStores.getPropertyKeyTokenStore(),
+                                               ( property, token ) -> reporter.forProperty( property ).invalidPropertyKey( block ),
+                                               ( property, token ) -> reporter.forProperty( property ).keyNotInUse( block, token ), storeCursors ) )
+                        {
+                            chainIsOk = false;
+                        }
                     }
                     PropertyType type = block.forceGetType();
                     Value value = Values.NO_VALUE;

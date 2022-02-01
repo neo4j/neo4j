@@ -114,7 +114,7 @@ public interface ConsistencyReport
     {
     }
 
-    interface SchemaConsistencyReport extends ConsistencyReport
+    interface SchemaConsistencyReport extends PrimitiveConsistencyReport
     {
         @Documented( "The label token record referenced from the schema is not in use." )
         void labelNotInUse( LabelTokenRecord label );

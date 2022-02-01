@@ -306,18 +306,18 @@ class RecordLoading
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
             BiConsumer<RECORD,TOKEN> unusedReporter, StoreCursors storeCursors )
     {
-        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getInternalTokenById, storeCursors );
+        return checkValidToken( entity, token, tokenStore, illegalTokenReport, unusedReporter, tokens::getInternalTokenById, storeCursors );
     }
 
     static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
             RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
             BiConsumer<RECORD,TOKEN> unusedReporter, StoreCursors storeCursors )
     {
-        return checkValidToken( entity, token, tokens, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, storeCursors );
+        return checkValidToken( entity, token, tokenStore, illegalTokenReport, unusedReporter, tokens::getTokenById, storeCursors );
     }
 
     private static <RECORD extends AbstractBaseRecord,TOKEN extends TokenRecord> boolean checkValidToken(
-            RECORD entity, int token, TokenHolder tokens, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
+            RECORD entity, int token, TokenStore<TOKEN> tokenStore, BiConsumer<RECORD,Integer> illegalTokenReport,
             BiConsumer<RECORD,TOKEN> unusedReporter, ThrowingIntFunction<NamedToken,TokenNotFoundException> tokenGetter, StoreCursors storeCursors )
     {
         if ( token < 0 )
@@ -329,7 +329,7 @@ class RecordLoading
         {
             try
             {
-                tokens.getTokenById( token );
+                tokenGetter.apply( token );
                 // It's in use, good
             }
             catch ( TokenNotFoundException tnfe )
