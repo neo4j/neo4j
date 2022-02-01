@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Connector;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.Historian;
@@ -36,9 +35,10 @@ import org.neo4j.shell.UserMessagesHandler;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
-import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.shell.terminal.CypherShellTerminal.UserInterruptHandler;
 import org.neo4j.util.VisibleForTesting;
@@ -52,6 +52,7 @@ import static org.neo4j.shell.terminal.CypherShellTerminal.PROMPT_MAX_LENGTH;
  */
 public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 {
+    private static final Logger log = Logger.create();
     static final String INTERRUPT_SIGNAL = "INT";
     static final String UNRESOLVED_DEFAULT_DB_PROPMPT_TEXT = "<default_database>";
     static final String DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT = "[UNAVAILABLE]";
@@ -62,7 +63,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
     // being called from different thread
     private final AtomicBoolean currentlyExecuting;
 
-    private final Logger logger;
+    private final Printer printer;
     private final CypherShellTerminal terminal;
     private final TransactionHandler txHandler;
     private final DatabaseManager databaseManager;
@@ -74,7 +75,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
                                    TransactionHandler txHandler,
                                    DatabaseManager databaseManager,
                                    Connector connector,
-                                   Logger logger,
+                                   Printer printer,
                                    CypherShellTerminal terminal,
                                    UserMessagesHandler userMessagesHandler,
                                    File historyFile )
@@ -85,7 +86,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         this.txHandler = txHandler;
         this.databaseManager = databaseManager;
         this.connector = connector;
-        this.logger = logger;
+        this.printer = printer;
         this.terminal = terminal;
         setupHistory( historyFile );
 
@@ -99,7 +100,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         int exitCode = Main.EXIT_SUCCESS;
         boolean running = true;
 
-        logger.printIfVerbose( userMessagesHandler.getWelcomeMessage() );
+        printer.printIfVerbose( userMessagesHandler.getWelcomeMessage() );
 
         while ( running )
         {
@@ -114,24 +115,27 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             }
             catch ( ExitException e )
             {
+                log.info( "ExitException code=" + e.getCode() + ", message=" + e.getMessage() );
                 exitCode = e.getCode();
                 running = false;
             }
             catch ( NoMoreInputException e )
             {
+                log.info( "No more user input." );
                 // User pressed Ctrl-D and wants to exit
                 running = false;
             }
             catch ( Throwable e )
             {
-                logger.printError( e );
+                log.error( e );
+                printer.printError( e );
             }
             finally
             {
                 currentlyExecuting.set( false );
             }
         }
-        logger.printIfVerbose( UserMessagesHandler.getExitMessage() );
+        printer.printIfVerbose( UserMessagesHandler.getExitMessage() );
         flushHistory();
         return exitCode;
     }
@@ -159,6 +163,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             }
             catch ( UserInterruptException e )
             {
+                log.info( "User interrupt." );
                 handleUserInterrupt();
             }
         }
@@ -246,7 +251,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
         if ( !dir.isDirectory() && !dir.mkdir() )
         {
-            logger.printError( "Could not load history file. Falling back to session-based history.\n" );
+            printer.printError( "Could not load history file. Falling back to session-based history.\n" );
         }
         else
         {
@@ -262,7 +267,8 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         }
         catch ( IOException e )
         {
-            logger.printError( "Failed to save history: " + e.getMessage() );
+            log.error( e );
+            printer.printError( "Failed to save history: " + e.getMessage() );
         }
     }
 
@@ -272,12 +278,12 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         // Stop any running cypher statements
         if ( currentlyExecuting.get() )
         {
-            logger.printError( "Stopping query..." ); // Stopping execution can take some time
+            printer.printError( "Stopping query..." ); // Stopping execution can take some time
             executer.reset();
         }
         else
         {
-            logger.printError(
+            printer.printError(
                 AnsiFormattedText.s().colorRed()
                     .append( "Interrupted (Note that Cypher queries must end with a " ).bold( "semicolon" )
                     .append( ". Type " ).bold( ":exit" ).append( " to exit the shell.)" )

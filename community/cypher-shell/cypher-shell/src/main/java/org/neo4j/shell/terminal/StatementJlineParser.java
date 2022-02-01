@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatements;
@@ -41,6 +42,7 @@ import static org.jline.reader.Parser.ParseContext.COMPLETE;
  */
 public class StatementJlineParser implements Parser
 {
+    private static final Logger log = Logger.create();
     private final StatementParser parser;
     private boolean enableStatementParsing;
 
@@ -97,6 +99,7 @@ public class StatementJlineParser implements Parser
         }
         catch ( IOException e )
         {
+            log.error( "Failed to parse " + line, e );
             throw new RuntimeException( "Failed to parse `" + line + "`: " + e.getMessage(), e );
         }
     }

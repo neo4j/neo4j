@@ -25,7 +25,7 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.parameter.ParameterService;
 
-import static org.neo4j.shell.log.AnsiFormattedText.from;
+import static org.neo4j.shell.printer.AnsiFormattedText.from;
 
 /**
  * This command sets a variable to a name, for use as query parameter.

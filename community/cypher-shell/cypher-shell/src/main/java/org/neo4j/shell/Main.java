@@ -31,29 +31,32 @@ import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
-import org.neo4j.shell.log.AnsiFormattedText;
-import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.AnsiPrinter;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.shell.ShellRunner.shouldBeInteractive;
+import static org.neo4j.shell.log.Logger.setupLogging;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
 public class Main
 {
+    private static final Logger log = Logger.create();
     public static final int EXIT_FAILURE = 1;
     public static final int EXIT_SUCCESS = 0;
     static final String NEO_CLIENT_ERROR_SECURITY_UNAUTHORIZED = "Neo.ClientError.Security.Unauthorized";
     private final CliArgs args;
-    private final Logger logger;
+    private final Printer printer;
     private final CypherShell shell;
     private final boolean isOutputInteractive;
     private final ShellRunner.Factory runnerFactory;
@@ -64,12 +67,12 @@ public class Main
     public Main( CliArgs args )
     {
         boolean isInteractive = !args.getNonInteractive() && ShellRunner.isInputInteractive();
-        this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, System.out, System.err );
-        this.terminal = terminalBuilder().interactive( isInteractive ).logger( logger ).build();
+        this.printer = new AnsiPrinter( Format.VERBOSE, System.out, System.err );
+        this.terminal = terminalBuilder().interactive( isInteractive ).logger( printer ).build();
         this.args = args;
         var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
         this.parameters = ParameterService.create( boltStateHandler );
-        this.shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
+        this.shell = new CypherShell( printer, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();
     }
@@ -79,21 +82,21 @@ public class Main
     {
         this.terminal = terminal;
         this.args = args;
-        this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, out, err );
+        this.printer = new AnsiPrinter( Format.VERBOSE, out, err );
         var boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
         this.parameters = ParameterService.create( boltStateHandler );
-        this.shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
+        this.shell = new CypherShell( printer, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, AnsiLogger logger, CypherShell shell, ParameterService parameters,
+    public Main( CliArgs args, AnsiPrinter logger, CypherShell shell, ParameterService parameters,
                  boolean outputInteractive, ShellRunner.Factory runnerFactory, CypherShellTerminal terminal )
     {
         this.terminal = terminal;
         this.args = args;
-        this.logger = logger;
+        this.printer = logger;
         this.shell = shell;
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = runnerFactory;
@@ -110,6 +113,8 @@ public class Main
         {
             System.exit( 1 );
         }
+
+        setupLogging( cliArgs.logLevel().javaLevel() );
 
         System.exit( new Main( cliArgs ).startShell() );
     }
@@ -142,7 +147,8 @@ public class Main
         }
         catch ( Exception e )
         {
-            logger.printError( "Failed to change password: " + e.getMessage() );
+            log.error( e );
+            printer.printError( "Failed to change password: " + e.getMessage() );
             return EXIT_FAILURE;
         }
         return EXIT_SUCCESS;
@@ -169,12 +175,12 @@ public class Main
                 if ( !shell.driverUrl().equals( connectionConfig.driverUrl() ) )
                 {
                     var fallbackWarning = "Failed to connect to " + connectionConfig.driverUrl() + ", fallback to " + shell.driverUrl();
-                    logger.printIfVerbose( AnsiFormattedText.s().colorOrange().append( fallbackWarning ).formattedString() );
+                    printer.printIfVerbose( AnsiFormattedText.s().colorOrange().append( fallbackWarning ).formattedString() );
                 }
 
                 // Construct shellrunner after connecting, due to interrupt handling
-                ShellRunner shellRunner = runnerFactory.create( args, shell, logger, terminal );
-                CommandHelper commandHelper = new CommandHelper( logger, shellRunner.getHistorian(), shell, terminal, parameters );
+                ShellRunner shellRunner = runnerFactory.create( args, shell, printer, terminal );
+                CommandHelper commandHelper = new CommandHelper( printer, shellRunner.getHistorian(), shell, terminal, parameters );
 
                 shell.setCommandHelper( commandHelper );
 
@@ -183,15 +189,14 @@ public class Main
         }
         catch ( Throwable e )
         {
-            logger.printError( e );
+            log.error( e );
+            printer.printError( e );
             return EXIT_FAILURE;
         }
     }
 
     /**
      * Connect the shell to the server, and try to handle missing passwords and such.
-     *
-     * @return connection configuration used to connect (can be different from the supplied)
      */
     private void connectMaybeInteractively( ConnectionConfig connectionConfig ) throws Exception
     {
@@ -220,10 +225,12 @@ public class Main
                 // or already tried with both username and password
                 if ( didPrompt || !terminal.isInteractive() || !connectionConfig.username().isEmpty() && !connectionConfig.password().isEmpty() )
                 {
+                    log.error( "Failed to connect", e );
                     throw e;
                 }
 
                 // Otherwise we prompt for username and password, and try to connect again
+                log.info( "Failed to connect, prompting for user name and password..." );
                 connectionConfig = promptForUsernameAndPassword( connectionConfig );
                 didPrompt = true;
             }
@@ -236,6 +243,7 @@ public class Main
                 }
                 else
                 {
+                    log.error( "Failed to connect", e );
                     throw e;
                 }
             }
@@ -269,6 +277,7 @@ public class Main
 
     private ConnectionConfig promptAndChangePassword( ConnectionConfig connectionConfig, String message ) throws Exception
     {
+        log.info( "Password change triggered." );
         if ( message != null )
         {
             terminal.write().println( message );
@@ -326,6 +335,7 @@ public class Main
         }
         catch ( NoMoreInputException | UserInterruptException e )
         {
+            log.error( e );
             throw new CommandException( "No text could be read, exiting..." );
         }
     }

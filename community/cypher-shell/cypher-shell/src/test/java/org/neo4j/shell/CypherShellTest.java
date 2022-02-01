@@ -30,12 +30,12 @@ import org.neo4j.driver.Session;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.state.ListBoltResult;
@@ -49,7 +49,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,7 +60,7 @@ class CypherShellTest
     private final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
     private final BoltStateHandler mockedBoltStateHandler = mock( BoltStateHandler.class );
     private final ParameterService mockedParameterService = mock( ParameterService.class );
-    private final Logger logger = mock( Logger.class );
+    private final Printer printer = mock( Printer.class );
     private OfflineTestShell offlineTestShell;
 
     @BeforeEach
@@ -69,11 +68,10 @@ class CypherShellTest
     {
         when( mockedBoltStateHandler.getProtocolVersion() ).thenReturn( "" );
 
-        doReturn( System.out ).when( logger ).getOutputStream();
-        offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
+        offlineTestShell = new OfflineTestShell( printer, mockedBoltStateHandler, mockedPrettyPrinter );
 
         CommandHelper commandHelper = new CommandHelper(
-                logger,
+                printer,
                 Historian.empty,
                 offlineTestShell,
                 mock( CypherShellTerminal.class ),
@@ -87,7 +85,7 @@ class CypherShellTest
     void verifyDelegationOfConnectionMethods() throws CommandException
     {
         ConnectionConfig cc = connectionConfig( "bolt", "", 1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
-        CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
+        CypherShell shell = new CypherShell( printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.connect( cc );
         verify( mockedBoltStateHandler ).connect( cc );
@@ -99,7 +97,7 @@ class CypherShellTest
     @Test
     void verifyDelegationOfResetMethod()
     {
-        CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
+        CypherShell shell = new CypherShell( printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.reset();
         verify( mockedBoltStateHandler ).reset();
@@ -108,7 +106,7 @@ class CypherShellTest
     @Test
     void verifyDelegationOfGetProtocolVersionMethod()
     {
-        CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
+        CypherShell shell = new CypherShell( printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.getProtocolVersion();
         verify( mockedBoltStateHandler ).getProtocolVersion();
@@ -117,7 +115,7 @@ class CypherShellTest
     @Test
     void verifyDelegationOfIsTransactionOpenMethod()
     {
-        CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
+        CypherShell shell = new CypherShell( printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.isTransactionOpen();
         verify( mockedBoltStateHandler ).isTransactionOpen();
@@ -126,7 +124,7 @@ class CypherShellTest
     @Test
     void verifyDelegationOfTransactionMethods() throws CommandException
     {
-        CypherShell shell = new CypherShell( logger, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
+        CypherShell shell = new CypherShell( printer, mockedBoltStateHandler, mockedPrettyPrinter, mockedParameterService );
 
         shell.beginTransaction();
         verify( mockedBoltStateHandler ).beginTransaction();
@@ -141,7 +139,7 @@ class CypherShellTest
     @Test
     void executeOfflineThrows()
     {
-        OfflineTestShell shell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
+        OfflineTestShell shell = new OfflineTestShell( printer, mockedBoltStateHandler, mockedPrettyPrinter );
         when( mockedBoltStateHandler.isConnected() ).thenReturn( false );
 
         CommandException exception = assertThrows( CommandException.class, () -> shell.execute( new CypherStatement( "RETURN 999" ) ) );
@@ -166,9 +164,9 @@ class CypherShellTest
                   } ).when( mockedPrettyPrinter ).format( any( BoltResult.class ), any() );
         when( mockedDriver.session() ).thenReturn( session );
 
-        OfflineTestShell shell = new OfflineTestShell( logger, boltStateHandler, mockedPrettyPrinter );
+        OfflineTestShell shell = new OfflineTestShell( printer, boltStateHandler, mockedPrettyPrinter );
         shell.execute( new CypherStatement( "RETURN 999" ) );
-        verify( logger ).printOut( contains( "999" ) );
+        verify( printer ).printOut( contains( "999" ) );
     }
 
     @Test

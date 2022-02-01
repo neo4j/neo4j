@@ -19,7 +19,7 @@
  */
 package org.neo4j.shell;
 
-import org.neo4j.shell.log.AnsiFormattedText;
+import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
 

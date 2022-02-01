@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.Printer;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 
 class HelpTest
 {
-    private final Logger logger = mock( Logger.class );
+    private final Printer printer = mock( Printer.class );
     private CommandFactoryHelper cmdHelper;
     private Command cmd;
 
@@ -46,7 +46,7 @@ class HelpTest
     public void setup()
     {
         cmdHelper = mock( CommandFactoryHelper.class );
-        cmd = new Help( logger, cmdHelper );
+        cmd = new Help( printer, cmdHelper );
     }
 
     @Test
@@ -73,13 +73,13 @@ class HelpTest
         cmd.execute( List.of() );
 
         // then
-        verify( logger ).printOut( "\nAvailable commands:" );
-        verify( logger ).printOut( "  @|BOLD bob  |@ description for bob" );
-        verify( logger ).printOut( "  @|BOLD bobby|@ description for bobby" );
-        verify( logger ).printOut( "\nFor help on a specific command type:" );
-        verify( logger ).printOut( "    :help@|BOLD  command|@\n" );
-        verify( logger ).printOut( "\nFor help on cypher please visit:" );
-        verify( logger ).printOut( "    " + Help.CYPHER_MANUAL_LINK + "\n" );
+        verify( printer ).printOut( "\nAvailable commands:" );
+        verify( printer ).printOut( "  @|BOLD bob  |@ description for bob" );
+        verify( printer ).printOut( "  @|BOLD bobby|@ description for bobby" );
+        verify( printer ).printOut( "\nFor help on a specific command type:" );
+        verify( printer ).printOut( "    :help@|BOLD  command|@\n" );
+        verify( printer ).printOut( "\nFor help on cypher please visit:" );
+        verify( printer ).printOut( "    " + Help.CYPHER_MANUAL_LINK + "\n" );
     }
 
     @Test
@@ -93,8 +93,8 @@ class HelpTest
         cmd.execute( List.of( "bob" ) );
 
         // then
-        verify( logger ).printOut( "\nusage: @|BOLD bob|@ usage for bob\n"
-                                   + "\nhelp for bob\n" );
+        verify( printer ).printOut( "\nusage: @|BOLD bob|@ usage for bob\n"
+                                    + "\nhelp for bob\n" );
     }
 
     @Test
@@ -115,8 +115,8 @@ class HelpTest
         cmd.execute( List.of( "bob" ) );
 
         // then
-        verify( logger ).printOut( "\nusage: @|BOLD :bob|@ usage for :bob\n"
-                                   + "\nhelp for :bob\n" );
+        verify( printer ).printOut( "\nusage: @|BOLD :bob|@ usage for :bob\n"
+                                    + "\nhelp for :bob\n" );
     }
 
     private static Command.Factory mockFactory( String name )

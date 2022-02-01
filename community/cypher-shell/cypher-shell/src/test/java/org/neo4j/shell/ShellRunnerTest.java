@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.NonInteractiveShellRunner;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,7 +39,7 @@ class ShellRunnerTest
         args.setNonInteractive( true );
         var terminal = mock( CypherShellTerminal.class );
         when( terminal.isInteractive() ).thenReturn( true );
-        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Logger.class ), terminal );
+        ShellRunner runner = new ShellRunner.Factory().create( args, mock( CypherShell.class ), mock( Printer.class ), terminal );
         assertTrue( runner instanceof NonInteractiveShellRunner, "Should be non-interactive shell runner when forced" );
     }
 }

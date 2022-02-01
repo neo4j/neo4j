@@ -38,12 +38,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.neo4j.shell.ConnectionConfig;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_AT_END;
 import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
@@ -53,6 +57,7 @@ import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
  */
 public class CliArgHelper
 {
+    private static final Logger log = Logger.create();
 
     /**
      * @param args to parse
@@ -140,8 +145,6 @@ public class CliArgHelper
 
         cliArgs.setParameters( ns.getList( "param" ) );
 
-        cliArgs.setDebugMode( ns.getBoolean( "debug" ) );
-
         cliArgs.setNonInteractive( ns.getBoolean( "force-non-interactive" ) );
 
         cliArgs.setWrap( ns.getBoolean( "wrap" ) );
@@ -153,6 +156,8 @@ public class CliArgHelper
         cliArgs.setDriverVersion( ns.getBoolean( "driver-version" ) );
 
         cliArgs.setChangePassword( ns.getBoolean( "change-password" ) );
+
+        cliArgs.setLogLevel( ns.get( "log-level" ) );
 
         return cliArgs;
     }
@@ -197,6 +202,7 @@ public class CliArgHelper
         }
         catch ( URISyntaxException e )
         {
+            log.error( e );
             PrintWriter printWriter = new PrintWriter( System.err );
             parser.printUsage( printWriter );
             printWriter.println( "cypher-shell: error: Failed to parse address: '" + address + "'" );
@@ -270,10 +276,6 @@ public class CliArgHelper
               .action( new AddParamArgumentAction( ParameterService.createParser() ) )
               .setDefault( new ArrayList<RawParameter>() );
 
-        parser.addArgument( "--debug" )
-              .help( "print additional debug information" )
-              .action( new StoreTrueArgumentAction() );
-
         parser.addArgument( "--non-interactive" )
               .help( "force non-interactive mode, only useful if auto-detection fails (like on Windows)" )
               .dest( "force-non-interactive" )
@@ -310,7 +312,22 @@ public class CliArgHelper
               .dest( "change-password" )
               .help( "change neo4j user password and exit" );
 
+        parser.addArgument( "--log" )
+              .choices( new CollectionArgumentChoice<>( logChoices() ) )
+              .nargs( "?" )
+              .action( new LogLevelArgumentAction() )
+              .dest( "log-level" )
+              .help( "Enable logging to standard error output stream.\n" + LogLevelArgumentAction.usage() )
+              .setDefault( Logger.Level.OFF )
+              .setConst( Logger.Level.defaultActiveLevel() );
+
         return parser;
+    }
+
+    private static Collection<String> logChoices()
+    {
+        final var levels = stream( Logger.Level.values() ).map( l -> l.name().toLowerCase() );
+        return Stream.concat( Stream.of( "" ), levels ).toList();
     }
 
     private static class PositiveIntegerType implements ArgumentType<Integer>
@@ -329,6 +346,7 @@ public class CliArgHelper
             }
             catch ( NumberFormatException nfe )
             {
+                log.error( nfe );
                 throw new ArgumentParserException( "Invalid value: " + value, parser );
             }
         }

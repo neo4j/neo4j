@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.log;
+package org.neo4j.shell.printer;
 
 import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 
-import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.AnsiFormattedException;
+import org.neo4j.shell.log.Logger;
 
 import static org.fusesource.jansi.internal.CLibrary.STDERR_FILENO;
 import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
@@ -39,22 +38,20 @@ import static org.fusesource.jansi.internal.CLibrary.isatty;
 /**
  * A basic logger which prints Ansi formatted text to STDOUT and STDERR
  */
-public class AnsiLogger implements Logger
+public class AnsiPrinter implements Printer
 {
+    private static final Logger log = Logger.create();
     private final PrintStream out;
     private final PrintStream err;
-    private final boolean debug;
     private Format format;
 
-    public AnsiLogger( final boolean debug )
+    public AnsiPrinter()
     {
-        this( debug, Format.VERBOSE, System.out, System.err );
+        this( Format.VERBOSE, System.out, System.err );
     }
 
-    public AnsiLogger( final boolean debug, Format format,
-                       PrintStream out, PrintStream err )
+    public AnsiPrinter( Format format, PrintStream out, PrintStream err )
     {
-        this.debug = debug;
         this.format = format;
         this.out = out;
         this.err = err;
@@ -73,7 +70,7 @@ public class AnsiLogger implements Logger
         }
         catch ( Throwable t )
         {
-            // Not running on a distro with standard c library, disable Ansi.
+            log.warn( "Not running on a distro with standard c library, disabling Ansi", t );
             Ansi.setEnabled( false );
         }
     }
@@ -99,18 +96,6 @@ public class AnsiLogger implements Logger
     }
 
     @Override
-    public PrintStream getOutputStream()
-    {
-        return out;
-    }
-
-    @Override
-    public PrintStream getErrorStream()
-    {
-        return err;
-    }
-
-    @Override
     public Format getFormat()
     {
         return format;
@@ -120,12 +105,6 @@ public class AnsiLogger implements Logger
     public void setFormat( Format format )
     {
         this.format = format;
-    }
-
-    @Override
-    public boolean isDebugEnabled()
-    {
-        return debug;
     }
 
     @Override
@@ -153,54 +132,44 @@ public class AnsiLogger implements Logger
     {
         AnsiFormattedText msg = AnsiFormattedText.s().colorRed();
 
-        if ( isDebugEnabled() )
+        if ( e instanceof AnsiFormattedException )
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PrintStream ps = new PrintStream( baos );
-            e.printStackTrace( ps );
-            msg.append( baos.toString( StandardCharsets.UTF_8 ) );
+            msg = msg.append( ((AnsiFormattedException) e).getFormattedMessage() );
+        }
+        else if ( e instanceof ClientException &&
+                  e.getMessage() != null && e.getMessage().contains( "Missing username" ) )
+        {
+            // Username and password was not specified
+            msg = msg.append( e.getMessage() )
+                     .append( "\nPlease specify --username, and optionally --password, as argument(s)" )
+                     .append( "\nor as environment variable(s), NEO4J_USERNAME, and NEO4J_PASSWORD respectively." )
+                     .append( "\nSee --help for more info." );
         }
         else
         {
-            if ( e instanceof AnsiFormattedException )
+            Throwable cause = e;
+
+            // Get the suppressed root cause of ServiceUnavailableExceptions
+            if ( e instanceof ServiceUnavailableException )
             {
-                msg = msg.append( ((AnsiFormattedException) e).getFormattedMessage() );
+                Throwable[] suppressed = e.getSuppressed();
+                for ( Throwable s : suppressed )
+                {
+                    if ( s instanceof DiscoveryException )
+                    {
+                        cause = getRootCause( s );
+                        break;
+                    }
+                }
             }
-            else if ( e instanceof ClientException &&
-                      e.getMessage() != null && e.getMessage().contains( "Missing username" ) )
+
+            if ( cause.getMessage() != null )
             {
-                // Username and password was not specified
-                msg = msg.append( e.getMessage() )
-                         .append( "\nPlease specify --username, and optionally --password, as argument(s)" )
-                         .append( "\nor as environment variable(s), NEO4J_USERNAME, and NEO4J_PASSWORD respectively." )
-                         .append( "\nSee --help for more info." );
+                msg = msg.append( cause.getMessage() );
             }
             else
             {
-                Throwable cause = e;
-
-                // Get the suppressed root cause of ServiceUnavailableExceptions
-                if ( e instanceof ServiceUnavailableException )
-                {
-                    Throwable[] suppressed = e.getSuppressed();
-                    for ( Throwable s : suppressed )
-                    {
-                        if ( s instanceof DiscoveryException )
-                        {
-                            cause = getRootCause( s );
-                            break;
-                        }
-                    }
-                }
-
-                if ( cause.getMessage() != null )
-                {
-                    msg = msg.append( cause.getMessage() );
-                }
-                else
-                {
-                    msg = msg.append( cause.getClass().getSimpleName() );
-                }
+                msg = msg.append( cause.getClass().getSimpleName() );
             }
         }
 

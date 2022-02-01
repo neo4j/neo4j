@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.terminal;
 
-import org.fusesource.jansi.Ansi;
 import org.jline.reader.Expander;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
@@ -33,9 +32,10 @@ import java.util.List;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
-import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser.ParsedStatements;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.Printer;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
@@ -45,19 +45,20 @@ import static java.util.stream.StreamSupport.stream;
  */
 public class JlineTerminal implements CypherShellTerminal
 {
+    private static final Logger log = Logger.create();
     static final String NO_CONTINUATION_PROMPT_PATTERN = "  ";
 
     private final LineReader jLineReader;
-    private final Logger logger;
+    private final Printer printer;
     private final Reader reader;
     private final Writer writer;
     private final boolean isInteractive;
 
-    public JlineTerminal( LineReader jLineReader, boolean isInteractive, Logger logger )
+    public JlineTerminal( LineReader jLineReader, boolean isInteractive, Printer printer )
     {
         assert jLineReader.getParser() instanceof StatementJlineParser;
         this.jLineReader = jLineReader;
-        this.logger = logger;
+        this.printer = printer;
         this.isInteractive = isInteractive;
         this.reader = new JLineReader();
         this.writer = new JLineWriter();
@@ -118,7 +119,8 @@ public class JlineTerminal implements CypherShellTerminal
         }
         catch ( IOException e )
         {
-            logger.printError( "Failed to save history: " + e.getMessage() );
+            log.error( "Failed to save history", e );
+            printer.printError( "Failed to save history: " + e.getMessage() );
         }
     }
 
@@ -130,7 +132,8 @@ public class JlineTerminal implements CypherShellTerminal
         }
         catch ( IOException e )
         {
-            logger.printError( "Failed to load history: " + e.getMessage() );
+            log.error( "Failed to load history", e );
+            printer.printError( "Failed to load history: " + e.getMessage() );
         }
     }
 

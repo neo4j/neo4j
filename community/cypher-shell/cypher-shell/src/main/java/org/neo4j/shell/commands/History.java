@@ -25,7 +25,7 @@ import java.util.List;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.Printer;
 
 import static java.lang.String.format;
 
@@ -34,12 +34,12 @@ import static java.lang.String.format;
  */
 public class History implements Command
 {
-    private final Logger logger;
+    private final Printer printer;
     private final Historian historian;
 
-    public History( final Logger logger, final Historian historian )
+    public History( final Printer printer, final Historian historian )
     {
-        this.logger = logger;
+        this.printer = printer;
         this.historian = historian;
     }
 
@@ -64,7 +64,7 @@ public class History implements Command
             // Calculate starting position
             int lineCount = 16;
 
-            logger.printOut( printHistory( historian.getHistory(), lineCount ) );
+            printer.printOut( printHistory( historian.getHistory(), lineCount ) );
         }
     }
 
@@ -101,7 +101,7 @@ public class History implements Command
     {
         try
         {
-            logger.printIfVerbose( "Removing history..." );
+            printer.printIfVerbose( "Removing history..." );
             historian.clear();
         }
         catch ( IOException e )
@@ -122,7 +122,7 @@ public class History implements Command
         @Override
         public Command executor( Arguments args )
         {
-            return new History( args.logger(), args.historian() );
+            return new History( args.printer(), args.historian() );
         }
     }
 }

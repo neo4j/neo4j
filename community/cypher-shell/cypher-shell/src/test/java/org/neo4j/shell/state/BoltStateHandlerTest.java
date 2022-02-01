@@ -51,7 +51,7 @@ import org.neo4j.shell.Environment;
 import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.test.bolt.FakeDriver;
 import org.neo4j.shell.test.bolt.FakeSession;
 
@@ -69,7 +69,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -85,7 +84,7 @@ import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 
 class BoltStateHandlerTest
 {
-    private final Logger logger = mock( Logger.class );
+    private final Printer printer = mock( Printer.class );
     private final Driver mockDriver = mock( Driver.class );
     private final OfflineBoltStateHandler boltStateHandler = new OfflineBoltStateHandler( mockDriver );
     private final ConnectionConfig config = connectionConfig( "bolt", "", -1, "", "", Encryption.DEFAULT, ABSENT_DB_NAME, new Environment() );
@@ -94,7 +93,6 @@ class BoltStateHandlerTest
     void setup()
     {
         when( mockDriver.session( any() ) ).thenReturn( new FakeSession() );
-        doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test

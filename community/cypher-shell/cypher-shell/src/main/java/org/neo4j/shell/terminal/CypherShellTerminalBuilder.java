@@ -34,6 +34,7 @@ import java.io.PrintStream;
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -41,7 +42,8 @@ import org.neo4j.util.VisibleForTesting;
  */
 public class CypherShellTerminalBuilder
 {
-    private Logger logger;
+    private static final Logger log = Logger.create();
+    private Printer printer;
     private OutputStream out;
     private InputStream in;
     private boolean isInteractive = true;
@@ -54,9 +56,9 @@ public class CypherShellTerminalBuilder
         return this;
     }
 
-    public CypherShellTerminalBuilder logger( Logger logger )
+    public CypherShellTerminalBuilder logger( Printer printer )
     {
-        this.logger = logger;
+        this.printer = printer;
         return this;
     }
 
@@ -79,7 +81,7 @@ public class CypherShellTerminalBuilder
 
     public CypherShellTerminal build()
     {
-        assert logger != null;
+        assert printer != null;
 
         try
         {
@@ -87,9 +89,10 @@ public class CypherShellTerminalBuilder
         }
         catch ( IOException e )
         {
+            log.warn( "Fallback to non-interactive mode", e );
             if ( isInteractive )
             {
-                logger.printError( "Failed to create interactive terminal, fallback to non-interactive mode" );
+                printer.printError( "Failed to create interactive terminal, fallback to non-interactive mode" );
             }
             return nonInteractiveTerminal();
         }
@@ -129,7 +132,7 @@ public class CypherShellTerminalBuilder
             .option( LineReader.Option.DISABLE_HIGHLIGHTER, true )
             .build();
 
-        return new JlineTerminal( reader, isInteractive, logger );
+        return new JlineTerminal( reader, isInteractive, printer );
     }
 
     public static CypherShellTerminalBuilder terminalBuilder()

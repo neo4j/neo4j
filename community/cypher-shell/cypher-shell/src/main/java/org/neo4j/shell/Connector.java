@@ -20,7 +20,6 @@
 package org.neo4j.shell;
 
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.AnsiFormattedText;
 
 /**
  * An object with the ability to connect and disconnect.
@@ -41,6 +40,11 @@ public interface Connector
     void connect( ConnectionConfig connectionConfig ) throws CommandException;
 
     void connect( String user, String password, String database ) throws CommandException;
+
+    /**
+     * Reconnect to the database, requires an open connection that does not have an open transaction.
+     */
+    void reconnect() throws CommandException;
 
     void disconnect();
 

@@ -35,11 +35,9 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.TransientException;
-import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Connector;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.DatabaseManager;
-import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.OfflineTestShell;
 import org.neo4j.shell.StatementExecuter;
@@ -50,14 +48,14 @@ import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
-import org.neo4j.shell.log.AnsiLogger;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.AnsiPrinter;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
@@ -75,7 +73,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -83,7 +80,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.cli.InteractiveShellRunner.DATABASE_UNAVAILABLE_ERROR_PROMPT_TEXT;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
@@ -93,7 +89,7 @@ class InteractiveShellRunnerTest
     @TempDir
     File temp;
 
-    private Logger logger;
+    private Printer printer;
     private StatementExecuter cmdExecuter;
     private File historyFile;
     private TransactionHandler txHandler;
@@ -107,7 +103,7 @@ class InteractiveShellRunnerTest
     @BeforeEach
     void setup() throws Exception
     {
-        logger = mock( Logger.class );
+        printer = mock( Printer.class );
         cmdExecuter = mock( StatementExecuter.class );
         txHandler = mock( TransactionHandler.class );
         databaseManager = mock( DatabaseManager.class );
@@ -124,7 +120,6 @@ class InteractiveShellRunnerTest
         parameters = mock( ParameterService.class );
 
         doThrow( badLineError ).when( cmdExecuter ).execute( statementContains( "bad" ) );
-        doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test
@@ -157,7 +152,7 @@ class InteractiveShellRunnerTest
         verify( cmdExecuter, times( 6 ) ).lastNeo4jErrorCode();
         verifyNoMoreInteractions( cmdExecuter );
 
-        verify( logger, times( 2 ) ).printError( badLineError );
+        verify( printer, times( 2 ) ).printError( badLineError );
     }
 
     @Test
@@ -178,7 +173,7 @@ class InteractiveShellRunnerTest
         verify( cmdExecuter, times( 4 ) ).lastNeo4jErrorCode();
         verifyNoMoreInteractions( cmdExecuter );
 
-        verify( logger ).printError( badLineError );
+        verify( printer ).printError( badLineError );
     }
 
     @Test
@@ -214,7 +209,6 @@ class InteractiveShellRunnerTest
     {
         // given
         PrintStream mockedErr = mock( PrintStream.class );
-        when( logger.getErrorStream() ).thenReturn( mockedErr );
 
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
         var runner = runner( ":set var \"String with !bang\"\n" );
@@ -230,7 +224,6 @@ class InteractiveShellRunnerTest
     {
         // given
         PrintStream mockedErr = mock( PrintStream.class );
-        when( logger.getErrorStream() ).thenReturn( mockedErr );
 
         // Bangs need escaping in JLine by default, just like in bash, but we have disabled that
         var runner = runner( ":set var \"String with \\!bang\"\n" );
@@ -437,11 +430,11 @@ class InteractiveShellRunnerTest
         runner.runUntilEnd();
 
         // then
-        verify( logger ).printIfVerbose( """
+        verify( printer ).printIfVerbose( """
                                                  Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
                                                  Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
                                                  Note that Cypher queries must end with a @|BOLD semicolon.|@""" );
-        verify( logger ).printIfVerbose( "\nBye!" );
+        verify( printer ).printIfVerbose( "\nBye!" );
     }
 
     @Test
@@ -495,7 +488,7 @@ class InteractiveShellRunnerTest
         verifyNoMoreInteractions( cmdExecuter );
         var expectedError = "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . " +
                             "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
-        verify( logger ).printError( expectedError );
+        verify( printer ).printError( expectedError );
     }
 
     @Test
@@ -503,7 +496,7 @@ class InteractiveShellRunnerTest
     {
         // given
         BoltStateHandler boltStateHandler = mock( BoltStateHandler.class );
-        var fakeShell = spy( new FakeInterruptableShell( logger, boltStateHandler ) );
+        var fakeShell = spy( new FakeInterruptableShell( printer, boltStateHandler ) );
         cmdExecuter = fakeShell;
         databaseManager = fakeShell;
         txHandler = fakeShell;
@@ -544,14 +537,14 @@ class InteractiveShellRunnerTest
 
         final PrettyPrinter mockedPrettyPrinter = mock( PrettyPrinter.class );
 
-        Logger logger = new AnsiLogger( false, Format.VERBOSE, new PrintStream( output ), new PrintStream( error ) );
+        Printer printer = new AnsiPrinter( Format.VERBOSE, new PrintStream( output ), new PrintStream( error ) );
 
         var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
-        var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( logger ).build();
-        OfflineTestShell offlineTestShell = new OfflineTestShell( logger, mockedBoltStateHandler, mockedPrettyPrinter );
-        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, offlineTestShell, terminal, parameters );
+        var terminal = terminalBuilder().dumb().streams( in, output ).interactive( true ).logger( printer ).build();
+        OfflineTestShell offlineTestShell = new OfflineTestShell( printer, mockedBoltStateHandler, mockedPrettyPrinter );
+        CommandHelper commandHelper = new CommandHelper( printer, Historian.empty, offlineTestShell, terminal, parameters );
         offlineTestShell.setCommandHelper( commandHelper );
-        var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, logger,
+        var runner = new InteractiveShellRunner( offlineTestShell, offlineTestShell, offlineTestShell, offlineTestShell, printer,
                                                  terminal, userMessagesHandler, historyFile );
 
         return new TestInteractiveShellRunner( runner, output, error, mockedBoltStateHandler );
@@ -632,13 +625,13 @@ class InteractiveShellRunnerTest
 
     private InteractiveShellRunner runner( String input )
     {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
+        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, printer,
                                            testTerminal( input ), userMessagesHandler, historyFile );
     }
 
     private InteractiveShellRunner runner( CypherShellTerminal terminal )
     {
-        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, logger,
+        return new InteractiveShellRunner( cmdExecuter, txHandler, databaseManager, connector, printer,
                                            terminal, userMessagesHandler, historyFile );
     }
 
@@ -650,7 +643,7 @@ class InteractiveShellRunnerTest
     private CypherShellTerminal testTerminal( String input )
     {
         var in = new ByteArrayInputStream( input.getBytes( UTF_8 ) );
-        return terminalBuilder().dumb().streams( in, out ).interactive( true ).logger( logger ).build();
+        return terminalBuilder().dumb().streams( in, out ).interactive( true ).logger( printer ).build();
 
     }
 
@@ -658,10 +651,10 @@ class InteractiveShellRunnerTest
     {
         protected final AtomicReference<Thread> executionThread = new AtomicReference<>();
 
-        FakeInterruptableShell( Logger logger,
+        FakeInterruptableShell( Printer printer,
                                 BoltStateHandler boltStateHandler )
         {
-            super( logger, boltStateHandler, mock( PrettyPrinter.class ), null );
+            super( printer, boltStateHandler, mock( PrettyPrinter.class ), null );
         }
 
         @Override

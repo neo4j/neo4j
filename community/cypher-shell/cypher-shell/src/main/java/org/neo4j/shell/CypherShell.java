@@ -29,6 +29,7 @@ import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
@@ -42,6 +43,7 @@ import org.neo4j.shell.state.BoltStateHandler;
  */
 public class CypherShell implements StatementExecuter, Connector, TransactionHandler, DatabaseManager
 {
+    private static final Logger log = Logger.create();
     private final ParameterService parameters;
     private final LinePrinter linePrinter;
     private final BoltStateHandler boltStateHandler;
@@ -113,6 +115,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         }
         catch ( Neo4jException e )
         {
+            log.error( e );
             lastNeo4jErrorCode = getErrorCode( e );
             throw boltStateHandler.handleException( e );
         }
@@ -147,6 +150,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     public void connect( String user, String password, String database ) throws CommandException
     {
         boltStateHandler.connect( user, password, database );
+    }
+
+    @Override
+    public void reconnect() throws CommandException
+    {
+        boltStateHandler.reconnect();
     }
 
     @Override
@@ -189,6 +198,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         }
         catch ( Neo4jException e )
         {
+            log.error( e );
             lastNeo4jErrorCode = getErrorCode( e );
             throw e;
         }
@@ -238,6 +248,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         }
         catch ( Neo4jException e )
         {
+            log.error( e );
             lastNeo4jErrorCode = getErrorCode( e );
             throw e;
         }

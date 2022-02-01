@@ -32,18 +32,17 @@ import org.neo4j.shell.Historian;
 import org.neo4j.shell.StatementExecuter;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
 import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.parser.StatementParser.IncompleteStatement;
 import org.neo4j.shell.parser.StatementParser.ParsedStatement;
+import org.neo4j.shell.printer.Printer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -52,7 +51,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class NonInteractiveShellRunnerTest
 {
-    private final Logger logger = mock( Logger.class );
+    private final Printer printer = mock( Printer.class );
     private final StatementExecuter cmdExecuter = mock( StatementExecuter.class );
     private StatementParser statementParser;
     private ClientException badLineError;
@@ -64,7 +63,6 @@ class NonInteractiveShellRunnerTest
         badLineError = new ClientException( "Found a bad line" );
         doThrow( badLineError ).when( cmdExecuter )
                 .execute( argThat( (ArgumentMatcher<ParsedStatement>) statement -> statement.statement().contains( "bad" ) ) );
-        doReturn( System.out ).when( logger ).getOutputStream();
     }
 
     @Test
@@ -77,12 +75,12 @@ class NonInteractiveShellRunnerTest
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST,
                 cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
         int code = runner.runUntilEnd();
 
         assertEquals( 0, code, "Exit code incorrect" );
-        verify( logger, times( 0 ) ).printError( anyString() );
+        verify( printer, times( 0 ) ).printError( anyString() );
     }
 
     @Test
@@ -96,13 +94,13 @@ class NonInteractiveShellRunnerTest
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST, cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
 
         int code = runner.runUntilEnd();
 
         assertEquals( 1, code, "Exit code incorrect" );
-        verify( logger ).printError( badLineError );
+        verify( printer ).printError( badLineError );
     }
 
     @Test
@@ -116,13 +114,13 @@ class NonInteractiveShellRunnerTest
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
 
         int code = runner.runUntilEnd();
 
         assertEquals( 1, code, "Exit code incorrect" );
-        verify( logger, times( 2 ) ).printError( badLineError );
+        verify( printer, times( 2 ) ).printError( badLineError );
     }
 
     @Test
@@ -141,7 +139,7 @@ class NonInteractiveShellRunnerTest
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
 
         // when
@@ -149,7 +147,7 @@ class NonInteractiveShellRunnerTest
 
         // then
         assertEquals( 1, code );
-        verify( logger ).printError( boom );
+        verify( printer ).printError( boom );
     }
 
     @Test
@@ -164,7 +162,7 @@ class NonInteractiveShellRunnerTest
                 """;
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
 
         // when
@@ -184,7 +182,7 @@ class NonInteractiveShellRunnerTest
         // given
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_AT_END, cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( "".getBytes() ) );
 
         // when then
@@ -198,12 +196,12 @@ class NonInteractiveShellRunnerTest
         NonInteractiveShellRunner runner = new NonInteractiveShellRunner(
                 FailBehavior.FAIL_FAST,
                 cmdExecuter,
-                logger, statementParser,
+                printer, statementParser,
                 new ByteArrayInputStream( input.getBytes() ) );
         int code = runner.runUntilEnd();
 
         assertEquals( 0, code, "Exit code incorrect" );
-        verify( logger, times( 0 ) ).printError( anyString() );
+        verify( printer, times( 0 ) ).printError( anyString() );
         verify( cmdExecuter ).execute( new CypherStatement( "good1;" ) );
         verify( cmdExecuter ).execute( new IncompleteStatement( "no semicolon here\n// A comment at end" ) );
         verifyNoMoreInteractions( cmdExecuter );

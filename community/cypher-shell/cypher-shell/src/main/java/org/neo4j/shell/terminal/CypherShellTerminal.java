@@ -24,8 +24,8 @@ import java.io.File;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
-import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.parser.StatementParser.ParsedStatements;
+import org.neo4j.shell.printer.AnsiFormattedText;
 
 /**
  * Handles user input and output.

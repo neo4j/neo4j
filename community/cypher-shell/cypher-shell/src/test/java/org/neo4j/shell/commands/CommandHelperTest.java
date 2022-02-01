@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 
 class CommandHelperTest
 {
-    private final AnsiLogger logger = new AnsiLogger( false );
+    private final AnsiPrinter logger = new AnsiPrinter();
     private final ParameterService parameters = mock( ParameterService.class );
     private final BoltStateHandler boltStateHandler = mock( BoltStateHandler.class );
     private final CypherShell shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( PrettyConfig.DEFAULT ), parameters );

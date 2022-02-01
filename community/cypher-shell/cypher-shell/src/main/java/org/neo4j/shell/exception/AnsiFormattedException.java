@@ -20,7 +20,7 @@
 package org.neo4j.shell.exception;
 
 
-import org.neo4j.shell.log.AnsiFormattedText;
+import org.neo4j.shell.printer.AnsiFormattedText;
 
 /**
  * A type of exception where the message can formatted with Ansi codes.

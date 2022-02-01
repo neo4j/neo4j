@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ParameterException;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.unescapedCypherVariable;
@@ -95,6 +96,7 @@ public interface ParameterService
 
 class ShellParameterService implements ParameterService
 {
+    private static final Logger log = Logger.create();
     private final Map<String, Parameter> parameters = new HashMap<>( 0 );
     private final Map<String, Object> parameterValues = new HashMap<>( 0 );
     private final ParameterParser parser = new ShellParameterParser();
@@ -198,6 +200,7 @@ class ShellParameterService implements ParameterService
             }
             catch ( Exception e )
             {
+                log.warn( "Failed to evaluate expression " + parameter.expression() + " locally", e );
                 return Optional.empty();
             }
 
@@ -220,6 +223,7 @@ class ShellParameterService implements ParameterService
             }
             catch ( Exception e )
             {
+                log.error( "Failed to evaluate expression " + parameter.expression() + " online", e );
                 return Optional.empty();
             }
         }

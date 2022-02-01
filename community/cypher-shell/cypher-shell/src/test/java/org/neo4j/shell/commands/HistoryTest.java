@@ -29,7 +29,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.Printer;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
@@ -44,16 +44,16 @@ import static org.mockito.Mockito.when;
 
 class HistoryTest
 {
-    private Logger logger = mock( Logger.class );
+    private Printer printer = mock( Printer.class );
     private Historian historian = mock( Historian.class );
-    private Command cmd = new History( logger, historian );
+    private Command cmd = new History( printer, historian );
 
     @BeforeEach
     void setup()
     {
-        logger = mock( Logger.class );
+        printer = mock( Printer.class );
         historian = mock( Historian.class );
-        cmd = new History( logger, historian );
+        cmd = new History( printer, historian );
     }
 
     @Test
@@ -70,7 +70,7 @@ class HistoryTest
 
         cmd.execute( List.of() );
 
-        verify( logger ).printOut( eq( format( " 1  :help%n 2  :exit%n" ) ) );
+        verify( printer ).printOut( eq( format( " 1  :help%n 2  :exit%n" ) ) );
         verify( historian, times( 0 ) ).clear();
     }
 
@@ -89,7 +89,7 @@ class HistoryTest
             "    ;%n" +
             " 2  :exit%n");
 
-        verify( logger ).printOut( eq( expected ) );
+        verify( printer ).printOut( eq( expected ) );
     }
 
     @Test
@@ -108,7 +108,7 @@ class HistoryTest
                 " 2  :exit%n"
         );
 
-        verify( logger ).printOut( eq( expected ) );
+        verify( printer ).printOut( eq( expected ) );
     }
 
     @Test
@@ -117,7 +117,7 @@ class HistoryTest
         cmd.execute( List.of( "clear" ) );
 
         verify( historian, times( 1 ) ).clear();
-        verify( logger ).printIfVerbose( eq( "Removing history..." ) );
+        verify( printer ).printIfVerbose( eq( "Removing history..." ) );
     }
 
     @Test
@@ -145,6 +145,6 @@ class HistoryTest
             " 19  19%n" +
             " 20  20%n"
         );
-        verify( logger ).printOut( eq( expected ) );
+        verify( printer ).printOut( eq( expected ) );
     }
 }

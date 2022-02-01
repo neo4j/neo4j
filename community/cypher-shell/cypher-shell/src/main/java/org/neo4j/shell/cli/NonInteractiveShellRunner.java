@@ -30,6 +30,7 @@ import org.neo4j.shell.StatementExecuter;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.StatementParser;
+import org.neo4j.shell.printer.Printer;
 
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
@@ -40,22 +41,22 @@ import static org.neo4j.shell.Main.EXIT_SUCCESS;
  */
 public class NonInteractiveShellRunner implements ShellRunner
 {
-
+    private static final Logger log = Logger.create();
     private final FailBehavior failBehavior;
     private final StatementExecuter executer;
-    private final Logger logger;
+    private final Printer printer;
     private final StatementParser statementParser;
     private final InputStream inputStream;
 
     public NonInteractiveShellRunner( FailBehavior failBehavior,
                                       StatementExecuter executer,
-                                      Logger logger,
+                                      Printer printer,
                                       StatementParser statementParser,
                                       InputStream inputStream )
     {
         this.failBehavior = failBehavior;
         this.executer = executer;
-        this.logger = logger;
+        this.printer = printer;
         this.statementParser = statementParser;
         this.inputStream = inputStream;
     }
@@ -70,7 +71,8 @@ public class NonInteractiveShellRunner implements ShellRunner
         }
         catch ( Throwable e )
         {
-            logger.printError( e );
+            log.error( e );
+            printer.printError( e );
             return EXIT_FAILURE;
         }
 
@@ -84,13 +86,15 @@ public class NonInteractiveShellRunner implements ShellRunner
             }
             catch ( ExitException e )
             {
+                log.info( "ExitException code=" + e.getCode() + ": " + e.getMessage() );
                 // These exceptions are always fatal
                 return e.getCode();
             }
             catch ( Throwable e )
             {
                 exitCode = EXIT_FAILURE;
-                logger.printError( e );
+                log.error( e );
+                printer.printError( e );
                 if ( FailBehavior.FAIL_AT_END != failBehavior )
                 {
                     return exitCode;

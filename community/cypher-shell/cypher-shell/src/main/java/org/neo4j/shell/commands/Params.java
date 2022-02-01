@@ -26,9 +26,9 @@ import java.util.stream.Collectors;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.CypherVariablesFormatter;
+import org.neo4j.shell.printer.Printer;
 
 import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
 
@@ -38,12 +38,12 @@ import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
 public class Params implements Command
 {
     private static final Pattern backtickPattern = Pattern.compile( "^\\s*(?<key>(`([^`])*`)+?)\\s*" );
-    private final Logger logger;
+    private final Printer printer;
     private final ParameterService parameters;
 
-    public Params( Logger logger, ParameterService parameters )
+    public Params( Printer printer, ParameterService parameters )
     {
-        this.logger = logger;
+        this.printer = printer;
         this.parameters = parameters;
     }
 
@@ -91,7 +91,7 @@ public class Params implements Command
 
     private void listParam( int leftColWidth, String key, Object value )
     {
-        logger.printOut( String.format( ":param %-" + leftColWidth + "s => %s", key, value ) );
+        printer.printOut( String.format( ":param %-" + leftColWidth + "s => %s", key, value ) );
     }
 
     private void listAllParams()
@@ -116,7 +116,7 @@ public class Params implements Command
         @Override
         public Command executor( Arguments args )
         {
-            return new Params( args.logger(), args.parameters() );
+            return new Params( args.printer(), args.parameters() );
         }
     }
 }

@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.Historian;
+import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
@@ -48,7 +49,6 @@ public class CliArgs
     @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
     private Optional<String> cypher = Optional.empty();
     private Encryption encryption = Encryption.DEFAULT;
-    private boolean debugMode;
     private boolean nonInteractive;
     private boolean version;
     private boolean driverVersion;
@@ -58,6 +58,7 @@ public class CliArgs
     private List<RawParameter> parameters;
     private boolean changePassword;
     private File historyFile = Historian.defaultHistoryFile();
+    private Logger.Level logLevel = Logger.Level.OFF;
 
     /**
      * Set the scheme to the primary value, or if null, the fallback value.
@@ -194,19 +195,6 @@ public class CliArgs
         this.encryption = encryption;
     }
 
-    public boolean getDebugMode()
-    {
-        return debugMode;
-    }
-
-    /**
-     * Enable/disable debug mode
-     */
-    void setDebugMode( boolean enabled )
-    {
-        this.debugMode = enabled;
-    }
-
     public boolean getNonInteractive()
     {
         return nonInteractive;
@@ -316,5 +304,15 @@ public class CliArgs
     public void setHistoryFile( File historyFile )
     {
         this.historyFile = historyFile;
+    }
+
+    public void setLogLevel( Logger.Level logLevel )
+    {
+        this.logLevel = logLevel;
+    }
+
+    public Logger.Level logLevel()
+    {
+        return logLevel;
     }
 }

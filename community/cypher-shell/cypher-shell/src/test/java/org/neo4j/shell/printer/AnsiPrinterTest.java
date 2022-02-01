@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.log;
+package org.neo4j.shell.printer;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
@@ -29,33 +28,16 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-class AnsiLoggerTest
+class AnsiPrinterTest
 {
     private final PrintStream out = mock( PrintStream.class );
     private final PrintStream err = mock( PrintStream.class );
-    private AnsiLogger logger = new AnsiLogger( false, Format.VERBOSE, out, err );
-
-    @Test
-    void defaultStreams()
-    {
-        Logger logger = new AnsiLogger( false );
-
-        assertEquals( System.out, logger.getOutputStream() );
-        assertEquals( System.err, logger.getErrorStream() );
-    }
-
-    @Test
-    void customStreams()
-    {
-        assertEquals( out, logger.getOutputStream() );
-        assertEquals( err, logger.getErrorStream() );
-    }
+    private AnsiPrinter logger = new AnsiPrinter( Format.VERBOSE, out, err );
 
     @Test
     void printError()
@@ -69,15 +51,6 @@ class AnsiLoggerTest
     {
         logger.printError( new Throwable( "bam" ) );
         verify( err ).println( "bam" );
-    }
-
-    @Test
-    void printExceptionWithDebug()
-    {
-        Logger logger = new AnsiLogger( true, Format.VERBOSE, out, err );
-        logger.printError( new Throwable( "bam" ) );
-        verify( err ).println( contains( "java.lang.Throwable: bam" ) );
-        verify( err ).println( contains( "at org.neo4j.shell.log.AnsiLoggerTest.printExceptionWithDebug" ) );
     }
 
     @Test
@@ -114,9 +87,8 @@ class AnsiLoggerTest
     @Test
     void printIfVerbose()
     {
-        logger = new AnsiLogger( false, Format.VERBOSE, out, err );
+        logger = new AnsiPrinter( Format.VERBOSE, out, err );
 
-        logger.printIfDebug( "deb" );
         logger.printIfVerbose( "foo" );
         logger.printIfPlain( "bar" );
 
@@ -127,26 +99,11 @@ class AnsiLoggerTest
     @Test
     void printIfPlain()
     {
-        logger = new AnsiLogger( false, Format.PLAIN, out, err );
+        logger = new AnsiPrinter( Format.PLAIN, out, err );
 
-        logger.printIfDebug( "deb" );
         logger.printIfVerbose( "foo" );
         logger.printIfPlain( "bar" );
 
-        verify( out ).println( "bar" );
-        verifyNoMoreInteractions( out );
-    }
-
-    @Test
-    void printIfDebug()
-    {
-        logger = new AnsiLogger( true, Format.PLAIN, out, err );
-
-        logger.printIfDebug( "deb" );
-        logger.printIfVerbose( "foo" );
-        logger.printIfPlain( "bar" );
-
-        verify( out ).println( "deb" );
         verify( out ).println( "bar" );
         verifyNoMoreInteractions( out );
     }
@@ -184,7 +141,7 @@ class AnsiLoggerTest
     @Test
     void testExceptionGetsFormattedMessage()
     {
-        AnsiLogger logger = spy( this.logger );
+        AnsiPrinter logger = spy( this.logger );
         logger.printError( new NullPointerException( "yahoo" ) );
         verify( logger ).printError( "@|RED yahoo|@" );
     }

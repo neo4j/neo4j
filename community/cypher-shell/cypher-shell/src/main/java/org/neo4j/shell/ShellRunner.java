@@ -29,8 +29,8 @@ import java.io.InputStream;
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.InteractiveShellRunner;
 import org.neo4j.shell.cli.NonInteractiveShellRunner;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parser.ShellStatementParser;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 import static org.fusesource.jansi.internal.CLibrary.isatty;
@@ -133,7 +133,7 @@ public interface ShellRunner
 
     class Factory
     {
-        public ShellRunner create( CliArgs cliArgs, CypherShell shell, Logger logger,
+        public ShellRunner create( CliArgs cliArgs, CypherShell shell, Printer printer,
                                    CypherShellTerminal terminal ) throws IOException
         {
             if ( shouldBeInteractive( cliArgs, terminal.isInteractive() ) )
@@ -142,14 +142,14 @@ public interface ShellRunner
                                                    shell,
                                                    shell,
                                                    shell,
-                                                   logger,
+                                                   printer,
                                                    terminal,
                                                    new UserMessagesHandler( shell ),
                                                    cliArgs.getHistoryFile() );
             }
             else
             {
-                return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), shell, logger, new ShellStatementParser(), getInputStream( cliArgs ) );
+                return new NonInteractiveShellRunner( cliArgs.getFailBehavior(), shell, printer, new ShellStatementParser(), getInputStream( cliArgs ) );
             }
         }
     }

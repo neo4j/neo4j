@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.neo4j.shell.log.Logger;
+
 /**
  * This class provides access to build time variables
  */
 public class Build
 {
-
+    private static final Logger log = Logger.create();
     private static Properties props;
 
     /**
@@ -54,6 +56,7 @@ public class Build
             }
             catch ( IOException e )
             {
+                log.error( e );
                 System.err.println( "Could not read build properties: " + e.getMessage() );
             }
         }

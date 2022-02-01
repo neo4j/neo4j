@@ -21,17 +21,16 @@ package org.neo4j.shell.commands;
 
 import java.util.List;
 
-import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.AnsiFormattedText;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
-import static org.neo4j.shell.log.AnsiFormattedText.from;
+import static org.neo4j.shell.printer.AnsiFormattedText.from;
 
 /**
  * A shell command
@@ -74,7 +73,7 @@ public interface Command
     interface Factory
     {
         record Arguments(
-                Logger logger,
+                Printer printer,
                 Historian historian,
                 CypherShell cypherShell,
                 CypherShellTerminal terminal,

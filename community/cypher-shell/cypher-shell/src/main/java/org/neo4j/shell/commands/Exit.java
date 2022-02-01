@@ -23,7 +23,7 @@ import java.util.List;
 
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
-import org.neo4j.shell.log.AnsiFormattedText;
+import org.neo4j.shell.printer.AnsiFormattedText;
 
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 

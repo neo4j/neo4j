@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -31,6 +33,7 @@ import org.neo4j.driver.Bookmark;
 import org.neo4j.driver.Config;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
+import org.neo4j.driver.Logging;
 import org.neo4j.driver.Query;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
@@ -43,6 +46,7 @@ import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.Scheme;
+import org.neo4j.driver.internal.logging.DevNullLogging;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.ConnectionConfig;
@@ -53,7 +57,7 @@ import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.build.Build;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ThrowingAction;
-import org.neo4j.shell.log.NullLogging;
+import org.neo4j.shell.log.Logger;
 
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
@@ -62,6 +66,7 @@ import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
  */
 public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager
 {
+    private static final Logger log = Logger.create();
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
     private final TriFunction<String, AuthToken, Config, Driver> driverProvider;
     private final boolean isInteractive;
@@ -235,6 +240,23 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
+    public void reconnect() throws CommandException
+    {
+        if ( !isConnected() )
+        {
+            throw new CommandException( "Can't reconnect when unconnected." );
+        }
+        if ( isTransactionOpen() )
+        {
+            throw new CommandException( "There is an open transaction. You need to close it before you can reconnect." );
+        }
+
+        var config = this.connectionConfig;
+        disconnect();
+        connect( config );
+    }
+
+    @Override
     public void connect( ConnectionConfig incomingConfig ) throws CommandException
     {
         if ( isConnected() )
@@ -267,10 +289,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 try
                 {
                     driver = getDriver( connectionConfig, authToken );
+                    log.info( "Connecting with fallback scheme: " + fallbackScheme );
                     reconnectAndPing( activeDatabaseNameAsSetByUser, previousDatabaseName );
                 }
                 catch ( Throwable fallbackThrowable )
                 {
+                    log.warn( "Fallback scheme failed", fallbackThrowable );
                     // Throw the original exception to not cause confusion.
                     throw e;
                 }
@@ -298,6 +322,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     private void reconnect( String databaseToConnectTo, String previousDatabase )
     {
+        log.info( "Connecting to database " + databaseToConnectTo + "..." );
         SessionConfig.Builder builder = SessionConfig.builder();
         builder.withDefaultAccessMode( AccessMode.WRITE );
         if ( !ABSENT_DB_NAME.equals( databaseToConnectTo ) )
@@ -345,6 +370,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             }
             catch ( ClientException e )
             {
+                log.warn( "Ping failed", e );
                 //In older versions there is no db.ping procedure, use legacy method.
                 if ( procedureNotFound( e ) )
                 {
@@ -375,6 +401,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         }
         catch ( CommandException e )
         {
+            log.warn( "Failed to get server version", e );
             // On versions before 3.1.0-M09
             return "";
         }
@@ -430,6 +457,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             }
             catch ( SessionExpiredException e )
             {
+                log.warn( "Failed to execute query, re-trying", e );
                 // Server is no longer accepting writes, reconnect and try again.
                 // If it still fails, leave it up to the user
                 reconnectAndPing( activeDatabaseNameAsSetByUser, activeDatabaseNameAsSetByUser );
@@ -470,6 +498,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
             {
                 if ( isPasswordChangeRequiredException( e ) )
                 {
+                    log.info( "Password change failed, fallback to legacy method", e );
                     // In < 4.0 versions use legacy method.
                     String oldCommand = "CALL dbms.security.changePassword($n)";
                     Value oldParameters = Values.parameters("n", newPassword);
@@ -588,7 +617,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private Driver getDriver( ConnectionConfig connectionConfig, AuthToken authToken )
     {
         Config.ConfigBuilder configBuilder = Config.builder()
-                                                   .withLogging( NullLogging.NULL_LOGGING )
+                                                   .withLogging( driverLogger() )
                                                    .withUserAgent( USER_AGENT );
         switch ( connectionConfig.encryption() )
         {
@@ -609,5 +638,16 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private static boolean procedureNotFound( ClientException e )
     {
         return "Neo.ClientError.Procedure.ProcedureNotFound".compareToIgnoreCase( e.code() ) == 0;
+    }
+
+    private static Logging driverLogger()
+    {
+        var level = LogManager.getLogManager().getLogger( "" ).getLevel();
+        if ( level == Level.OFF )
+        {
+            return DevNullLogging.DEV_NULL_LOGGING;
+        }
+
+        return Logging.javaUtilLogging( level );
     }
 }

@@ -54,6 +54,7 @@ class JlineCompleterTest
                 ":exit",
                 ":help",
                 ":history",
+                ":log",
                 ":param",
                 ":params",
                 ":rollback",

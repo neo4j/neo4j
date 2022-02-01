@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.AnsiFormattedText;
-import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.printer.AnsiFormattedText;
+import org.neo4j.shell.printer.Printer;
 
 import static java.util.Comparator.comparing;
 
@@ -34,12 +34,12 @@ import static java.util.Comparator.comparing;
 public class Help implements Command
 {
     public static final String CYPHER_MANUAL_LINK = "https://neo4j.com/docs/cypher-manual/current/";
-    private final Logger logger;
+    private final Printer printer;
     private final CommandFactoryHelper commandHelper;
 
-    public Help( final Logger shell, final CommandFactoryHelper commandHelper )
+    public Help( final Printer shell, final CommandFactoryHelper commandHelper )
     {
-        this.logger = shell;
+        this.printer = shell;
         this.commandHelper = commandHelper;
     }
 
@@ -71,19 +71,19 @@ public class Help implements Command
             throw new CommandException( AnsiFormattedText.from( "No such command: " ).bold( name ) );
         }
 
-        logger.printOut( AnsiFormattedText.from( "\nusage: " )
-                                          .bold( cmd.metadata().name() )
-                                          .append( " " )
-                                          .append( cmd.metadata().usage() )
-                                          .append( "\n\n" )
-                                          .append( cmd.metadata().help() )
-                                          .append( "\n" )
-                                          .formattedString() );
+        printer.printOut( AnsiFormattedText.from( "\nusage: " )
+                                           .bold( cmd.metadata().name() )
+                                           .append( " " )
+                                           .append( cmd.metadata().usage() )
+                                           .append( "\n\n" )
+                                           .append( cmd.metadata().help() )
+                                           .append( "\n" )
+                                           .formattedString() );
     }
 
     private void printGeneralHelp()
     {
-        logger.printOut( "\nAvailable commands:" );
+        printer.printOut( "\nAvailable commands:" );
 
         var allCommands = commandHelper.factories().stream()
                 .map( Command.Factory::metadata )
@@ -92,26 +92,26 @@ public class Help implements Command
 
         int leftColWidth = longestCmdLength( allCommands );
 
-        allCommands.forEach( cmd -> logger.printOut(
+        allCommands.forEach( cmd -> printer.printOut(
                 AnsiFormattedText.from( "  " )
                                  .bold( String.format( "%-" + leftColWidth + "s", cmd.name() ) )
                                  .append( " " + cmd.description() )
                                  .formattedString() ) );
 
-        logger.printOut( "\nFor help on a specific command type:" );
-        logger.printOut( AnsiFormattedText.from( "    " )
-                                          .append( metadata().name() )
-                                          .bold( " command" )
-                                          .append( "\n" ).formattedString() );
+        printer.printOut( "\nFor help on a specific command type:" );
+        printer.printOut( AnsiFormattedText.from( "    " )
+                                           .append( metadata().name() )
+                                           .bold( " command" )
+                                           .append( "\n" ).formattedString() );
 
-        logger.printOut( "Keyboard shortcuts:" );
-        logger.printOut( "    Up and down arrows to access statement history." );
-        logger.printOut( "    Tab for autocompletion of commands." );
+        printer.printOut( "Keyboard shortcuts:" );
+        printer.printOut( "    Up and down arrows to access statement history." );
+        printer.printOut( "    Tab for autocompletion of commands." );
 
-        logger.printOut( "\nFor help on cypher please visit:" );
-        logger.printOut( AnsiFormattedText.from( "    " )
-                                          .append( CYPHER_MANUAL_LINK )
-                                          .append( "\n" ).formattedString() );
+        printer.printOut( "\nFor help on cypher please visit:" );
+        printer.printOut( AnsiFormattedText.from( "    " )
+                                           .append( CYPHER_MANUAL_LINK )
+                                           .append( "\n" ).formattedString() );
     }
 
     private static int longestCmdLength( List<Command.Metadata> allCommands )
@@ -131,7 +131,7 @@ public class Help implements Command
         @Override
         public Command executor( Arguments args )
         {
-            return new Help( args.logger(), new CommandFactoryHelper() );
+            return new Help( args.printer(), new CommandFactoryHelper() );
         }
     }
 }

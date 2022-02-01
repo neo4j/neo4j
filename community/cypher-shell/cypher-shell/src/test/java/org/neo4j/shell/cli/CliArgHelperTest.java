@@ -96,18 +96,6 @@ class CliArgHelperTest extends LocaleDependentTestBase
     }
 
     @Test
-    void testDebugIsNotDefault()
-    {
-        assertFalse( parse( asArray() ).getDebugMode(), "Debug should not be the default mode" );
-    }
-
-    @Test
-    void testDebugIsParsed()
-    {
-        assertTrue( parse( asArray( "--debug" ) ).getDebugMode(), "Debug should have been parsed to true" );
-    }
-
-    @Test
     void testVersionIsParsed()
     {
         assertTrue( parse( asArray( "--version" ) ).getVersion(), "Version should have been parsed to true" );

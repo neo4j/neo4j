@@ -26,9 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.Parameter;
+import org.neo4j.shell.printer.Printer;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,17 +42,17 @@ import static org.mockito.Mockito.when;
 class ParamsTest
 {
     private HashMap<String, Parameter> vars;
-    private Logger logger;
+    private Printer printer;
     private Params cmd;
 
     @BeforeEach
     void setup()
     {
         vars = new HashMap<>();
-        logger = mock( Logger.class );
+        printer = mock( Printer.class );
         ParameterService parameters = mock( ParameterService.class );
         when( parameters.parameters() ).thenReturn( vars );
-        cmd = new Params( logger, parameters );
+        cmd = new Params( printer, parameters );
     }
 
     @Test
@@ -83,8 +83,8 @@ class ParamsTest
         // when
         cmd.execute( List.of() );
         // then
-        verify( logger ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param var => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
@@ -96,9 +96,9 @@ class ParamsTest
         // when
         cmd.execute( List.of() );
         // then
-        verify( logger ).printOut( ":param param => 99999" );
-        verify( logger ).printOut( ":param var   => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param param => 99999" );
+        verify( printer ).printOut( ":param var   => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
@@ -110,8 +110,8 @@ class ParamsTest
         // when
         cmd.execute( List.of( "var" ) );
         // then
-        verify( logger ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param var => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
@@ -123,8 +123,8 @@ class ParamsTest
         // when
         cmd.execute( List.of( " var" ) );
         // then
-        verify( logger ).printOut( ":param var => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param var => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
@@ -136,8 +136,8 @@ class ParamsTest
         // when
         cmd.execute( List.of( "`var`" ) );
         // then
-        verify( logger ).printOut( ":param `var` => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param `var` => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
@@ -149,8 +149,8 @@ class ParamsTest
         // when
         cmd.execute( List.of( "`var ```" ) );
         // then
-        verify( logger ).printOut( ":param `var ``` => 9" );
-        verifyNoMoreInteractions( logger );
+        verify( printer ).printOut( ":param `var ``` => 9" );
+        verifyNoMoreInteractions( printer );
     }
 
     @Test
