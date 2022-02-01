@@ -177,7 +177,7 @@ public abstract class Value extends AnyValue
         {
             return Equality.FALSE;
         }
-        if ( other instanceof Value otherValue && ((Value) other).valueGroup() == valueGroup() )
+        if ( other instanceof Value otherValue && otherValue.valueGroup() == valueGroup() )
         {
             if ( this.ternaryUndefined() || otherValue.ternaryUndefined() )
             {
