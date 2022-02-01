@@ -17,20 +17,19 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.parser.ParserFixture
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
 
-class ParboiledPrettifierIT extends CypherFunSuite {
+class PrettifierIT extends CypherFunSuite {
   private implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
   val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
-  val parser: CypherParser = ParserFixture.parser
   val tests: Seq[(String, String)] = queryTests() ++ indexCommandTests() ++ constraintCommandTests() ++ showCommandTests() ++ administrationTests()
 
   def queryTests(): Seq[(String, String)] = Seq[(String, String)](
@@ -61,6 +60,12 @@ class ParboiledPrettifierIT extends CypherFunSuite {
         |  SKIP 1
         |  LIMIT 2
         |  WHERE true""".stripMargin,
+
+    "MATCH (n WHERE n:N)" -> "MATCH (n WHERE n:N)",
+
+    "MATCH (n:N WHERE n.prop > 0)" -> "MATCH (n:N WHERE n.prop > 0)",
+
+    "MATCH (n:N {foo: 5} WHERE n.prop > 0)" -> "MATCH (n:N {foo: 5} WHERE n.prop > 0)",
 
     "create (a)--(b) RETURN a" ->
       """CREATE (a)--(b)
@@ -101,6 +106,30 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """CALL nsp.proc()
         |  YIELD x
         |    WHERE x > 2""".stripMargin,
+
+    "CALL nsp.proc() yield *" ->
+      """CALL nsp.proc()
+        |  YIELD *""".stripMargin,
+
+    "call { create ( n ) } in transactions" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS""".stripMargin,
+
+    "call { create ( n ) } in transactions of 1 row" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 1 ROWS""".stripMargin,
+
+    "call { create ( n ) } in transactions of 10 rows" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF 10 ROWS""".stripMargin,
+
+    "call { create ( n ) } in transactions of $p rows" ->
+      """CALL {
+        |  CREATE (n)
+        |} IN TRANSACTIONS OF $p ROWS""".stripMargin,
 
     "match (n) SET n.prop = 1" ->
       """MATCH (n)
@@ -1811,6 +1840,12 @@ class ParboiledPrettifierIT extends CypherFunSuite {
     "DROP database foO_Bar_42 Destroy DATA" ->
       "DROP DATABASE foO_Bar_42 DESTROY DATA",
 
+    "alter database foo set ACCESS read only" ->
+      "ALTER DATABASE foo SET ACCESS READ ONLY".stripMargin,
+
+    "alteR databaSe foo if EXISTS SEt access read WRITE" ->
+      "ALTER DATABASE foo IF EXISTS SET ACCESS READ WRITE".stripMargin,
+
     "start database $foo" ->
       "START DATABASE $foo",
 
@@ -1825,6 +1860,24 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     "stop database foO_Bar_42" ->
       "STOP DATABASE foO_Bar_42",
+
+    "create alias alias FOR database database" ->
+      "CREATE ALIAS alias FOR DATABASE database",
+
+    "create alias alias if not exists for database database" ->
+      "CREATE ALIAS alias IF NOT EXISTS FOR DATABASE database",
+
+    "alter alias alias if exists set database target database" ->
+      "ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database",
+
+    "alter alias alias set database target database" ->
+      "ALTER ALIAS alias SET DATABASE TARGET database",
+
+    "drop alias alias for database" ->
+      "DROP ALIAS alias FOR DATABASE",
+
+    "drop alias alias if exists for database" ->
+      "DROP ALIAS alias IF EXISTS FOR DATABASE"
   ) ++ privilegeTests()
 
   def privilegeTests(): Seq[(String, String)] = {
@@ -2320,6 +2373,12 @@ class ParboiledPrettifierIT extends CypherFunSuite {
           s"$action drop database on dbms $preposition $$role" ->
             s"$action DROP DATABASE ON DBMS $preposition $$role",
 
+          s"$action alter database on dbms $preposition role" ->
+          s"$action ALTER DATABASE ON DBMS $preposition role",
+
+          s"$action set database access on dbms $preposition role" ->
+            s"$action SET DATABASE ACCESS ON DBMS $preposition role",
+
           s"$action privilege management on dbms $preposition role" ->
             s"$action PRIVILEGE MANAGEMENT ON DBMS $preposition role",
 
@@ -2392,7 +2451,7 @@ class ParboiledPrettifierIT extends CypherFunSuite {
   tests foreach {
     case (inputString, expected) =>
       test(inputString) {
-        val parsingResults: Statement = parser.parse(inputString, OpenCypherExceptionFactory(None))
+        val parsingResults: Statement = JavaCCParser.parse(inputString, OpenCypherExceptionFactory(None), new AnonymousVariableNameGenerator())
         val str = prettifier.asString(parsingResults)
         str should equal(expected)
       }
