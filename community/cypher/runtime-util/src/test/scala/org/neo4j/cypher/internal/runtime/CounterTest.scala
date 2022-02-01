@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class CounterTest extends CypherFunSuite {
 
   test("counts up") {
-    (Counter(0) += 1) should equal(1l)
-    (Counter(0) += 3) should equal(3l)
-    (Counter(7) += 1) should equal(8l)
+    (Counter(0) += 1) should equal(1L)
+    (Counter(0) += 3) should equal(3L)
+    (Counter(7) += 1) should equal(8L)
   }
 
   test("counts down") {
-    (Counter(7) -= 1) should equal(6l)
+    (Counter(7) -= 1) should equal(6L)
   }
 
   test("resets counter") {
@@ -38,11 +38,11 @@ class CounterTest extends CypherFunSuite {
   }
 
   test("streams all values") {
-    Counter().values.take(5).toList should equal(List(1l, 2l, 3l, 4l, 5l))
+    Counter().values.take(5).toList should equal(List(1L, 2L, 3L, 4L, 5L))
   }
 
   test("maps all values") {
-    Counter().map(_ * 2).take(3).toList should equal(List(2l, 4l, 6l))
+    Counter().map(_ * 2).take(3).toList should equal(List(2L, 4L, 6L))
   }
 
   test("tracks iterators") {
@@ -53,7 +53,7 @@ class CounterTest extends CypherFunSuite {
     iterator.toList
 
     // then
-    iterator.counted should equal(15l)
+    iterator.counted should equal(15L)
   }
 
   test("limits tracked iterators") {

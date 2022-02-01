@@ -59,6 +59,7 @@ import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 /**
@@ -76,6 +77,7 @@ trait EntityIndexSeeker {
   def propertyIds: Array[Int]
 
   // index seek
+  @nowarn("msg=fruitless type test")  // FIXME? indexMode cannot be SeekByRange but sometimes it is.
   protected def indexSeek[RESULT <: AnyRef](state: QueryState,
                                             index: IndexReadSession,
                                             needsValues: Boolean,

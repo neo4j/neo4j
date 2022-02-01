@@ -188,6 +188,7 @@
                         <configuration>
                             <args combine.children="append">
                                 <arg>-Xfatal-warnings</arg>
+                                <arg>-Wconf:msg=match may not be exhaustive:i</arg>
                             </args>
                         </configuration>
                     </plugin>

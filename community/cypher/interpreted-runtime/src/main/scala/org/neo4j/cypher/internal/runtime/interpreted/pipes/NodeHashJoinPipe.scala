@@ -30,6 +30,8 @@ import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
+import scala.annotation.nowarn
+
 case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                            (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(left) {
@@ -78,6 +80,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
   private val cachedVariables = nodeVariables.toIndexedSeq
 
+  @nowarn("msg=return statement")
   private def computeKey(context: CypherRow): ClosingIterator[LongArray] = {
     val key = new Array[Long](cachedVariables.length)
 

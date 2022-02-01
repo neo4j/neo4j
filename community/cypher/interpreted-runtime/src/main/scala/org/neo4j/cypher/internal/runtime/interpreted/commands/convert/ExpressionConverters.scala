@@ -55,6 +55,8 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Direction
 
+import scala.annotation.nowarn
+
 trait ExpressionConverter {
   def toCommandExpression(id: Id, expression: Expression, self: ExpressionConverters): Option[commands.expressions.Expression]
   def toCommandProjection(id: Id, projections: Map[String, Expression], self: ExpressionConverters): Option[CommandProjection]
@@ -78,6 +80,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   self =>
 
+  @nowarn("msg=return statement")
   def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
     converters foreach { c: ExpressionConverter =>
       c.toCommandExpression(id, expression, this) match {
@@ -89,6 +92,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
   }
 
+  @nowarn("msg=return statement")
   def toCommandProjection(id: Id, projections: Map[String, internal.expressions.Expression]): CommandProjection = {
     converters foreach { c: ExpressionConverter =>
       c.toCommandProjection(id, projections, this) match {
@@ -100,6 +104,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     throw new InternalException(s"Unknown projection type during transformation ($projections)")
   }
 
+  @nowarn("msg=return statement")
   def toGroupingExpression(id: Id, groupings: Map[String, internal.expressions.Expression], orderToLeverage: Seq[internal.expressions.Expression]): GroupingExpression = {
     converters foreach { c: ExpressionConverter =>
       c.toGroupingExpression(id, groupings, orderToLeverage, this) match {

@@ -44,7 +44,7 @@ object Arguments {
     EstimatedRows(effectiveCardinality, None)
   }
 
-  case class Details(info: Seq[PrettyString]) extends Argument
+  case class Details(info: collection.Seq[PrettyString]) extends Argument
 
   case class Time(value: Long) extends Argument
 

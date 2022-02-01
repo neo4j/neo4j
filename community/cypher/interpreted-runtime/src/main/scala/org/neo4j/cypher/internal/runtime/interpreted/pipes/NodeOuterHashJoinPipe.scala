@@ -31,6 +31,7 @@ import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
@@ -40,6 +41,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
   private val myVariables = nodeVariables.toIndexedSeq
   private val nullVariables: Array[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toArray
 
+  @nowarn("msg=return statement")
   protected def computeKey(context: CypherRow): Option[LongArray] = {
     val key = new Array[Long](myVariables.length)
 

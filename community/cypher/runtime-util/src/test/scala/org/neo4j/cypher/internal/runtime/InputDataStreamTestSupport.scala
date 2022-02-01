@@ -71,10 +71,6 @@ trait InputDataStreamTestSupport {
     input
   }
 
-  trait IteratorProgress {
-    def nextCalls: Long
-  }
-
   def iteratorInput(batches: Iterator[Array[Any]]*): InputDataStream with IteratorProgress = {
     new IteratorInputStream(batches.map(_.map(_.map(ValueUtils.of))): _*) with IteratorProgress {
       override def nextCalls: Long = batches.head match {
@@ -90,6 +86,10 @@ trait InputDataStreamTestSupport {
     new IteratorInputStream(batches: _*)
   }
 
+}
+
+trait IteratorProgress {
+  def nextCalls: Long
 }
 
 class InputValues() {

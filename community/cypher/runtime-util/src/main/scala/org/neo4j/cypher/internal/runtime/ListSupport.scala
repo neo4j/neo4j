@@ -26,6 +26,7 @@ import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
+import scala.annotation.nowarn
 import scala.collection.Seq
 
 object IsList extends ListSupport {
@@ -46,6 +47,7 @@ trait ListSupport {
 
   def isList(x: AnyValue): Boolean = castToList.isDefinedAt(x)
 
+  @nowarn("msg=return statement")
   def asListOf[T](test: PartialFunction[AnyValue, T])(input: Iterable[AnyValue]): Option[Iterable[T]] =
     Some(input map { elem: AnyValue => if (test.isDefinedAt(elem)) test(elem) else return None })
 

@@ -99,7 +99,7 @@ class SimpleCaseTest extends CypherFunSuite {
 
   test("arguments should contain all children") {
     val caseExpr = SimpleCase(literal(1), Seq((literal(2), literal(3))), Some(literal(4)))
-    caseExpr.arguments should contain allOf(literal(1), literal(2), literal(3), literal(4))
+    caseExpr.arguments should contain.allOf(literal(1), literal(2), literal(3), literal(4))
   }
 
   private def case_(in: Any, alternatives: (Any, Any)*): SimpleCase = {

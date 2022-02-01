@@ -42,7 +42,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     case map: Map[_, _] => immutableMapValues(map, asDeepJavaValue).asJava: util.Map[_, _]
     case JavaListWrapper(inner, _) => inner
     case iterable: Iterable[_] => iterable.map(asDeepJavaValue).toIndexedSeq.asJava: util.List[_]
-    case traversable: IterableOnce[_] => traversable.map(asDeepJavaValue).toVector.asJava: util.List[_]
+    case iterableOnce: IterableOnce[_] => iterableOnce.iterator.map(asDeepJavaValue).toVector.asJava: util.List[_]
     case anything => anything
   }
 }

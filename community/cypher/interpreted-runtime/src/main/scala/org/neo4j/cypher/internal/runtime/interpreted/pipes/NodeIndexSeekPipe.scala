@@ -65,7 +65,7 @@ case class NodeIndexSeekPipe(ident: String,
   }
 
   override def hashCode(): Int = {
-    val state = Seq(ident, label, properties.toSeq, valueExpr, indexMode)
+    val state: Seq[Object] = Seq(ident, label, properties.toSeq, valueExpr, indexMode)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }

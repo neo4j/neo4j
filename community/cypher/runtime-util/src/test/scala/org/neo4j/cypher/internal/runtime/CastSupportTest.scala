@@ -25,12 +25,12 @@ import org.neo4j.exceptions.CypherTypeException
 class CastSupportTest extends CypherFunSuite {
 
   test("downcastAppMatchTest") {
-    val given: Any = 1
-    CastSupport.castOrFail[java.lang.Integer](given) should equal(1)
+    val one: Any = 1
+    CastSupport.castOrFail[java.lang.Integer](one) should equal(1)
   }
 
   test("downcastAppMismatchTest") {
-    val given: Any = Seq(1)
-    intercept[CypherTypeException](CastSupport.castOrFail[Int](given))
+    val seqOne: Any = Seq(1)
+    intercept[CypherTypeException](CastSupport.castOrFail[Int](seqOne))
   }
 }
