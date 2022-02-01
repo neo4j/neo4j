@@ -477,6 +477,103 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       result2DbHitsOp2 should be >= dbHitsOp2
     }
   }
+
+  test("should cached node property existence") {
+    // given
+    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i)}) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("exists")
+      .projection("nodeCachedHasProperty[n.p] IS NOT NULL AS exists")
+      .filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter(p => p.hasProperty("p")).map(_ => Array(true))
+    result should beColumns("exists").withRows(expected)
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0
+  }
+
+  test("should cache node property existence on rhs of an apply") {
+    // given
+    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i)}) }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .|.argument("n")
+      .filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .allNodeScan("n")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.filter(p => p.hasProperty("p")).map(n => Array(n))
+    result should beColumns("n").withRows(expected)
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe 0
+  }
+
+  test("should cache relationship property existence") {
+    // given
+    val rels = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach{
+        case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
+        case _ => //do nothing
+      }
+      rels
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("exists")
+      .projection("relCachedHasProperty[r.p] IS NOT NULL AS exists")
+      .filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    // then
+    val expected = rels.filter(p => p.hasProperty("p")).map(_ => Array(true))
+    result should beColumns("exists").withRows(expected)
+    result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0
+  }
+
+  test("should cache relationship property existence on rhs of an apply") {
+    // given
+    val rels = given {
+      val (_, rels) = circleGraph(sizeHint)
+      rels.zipWithIndex.foreach{
+        case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
+        case _ => //do nothing
+      }
+      rels
+    }
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .apply()
+      .|.filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .|.argument("n")
+      .filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    // then
+    val expected = rels.filter(p => p.hasProperty("p")).map(r => Array(r))
+    result should beColumns("r").withRows(expected)
+    result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe 0
+  }
 }
 
 trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
