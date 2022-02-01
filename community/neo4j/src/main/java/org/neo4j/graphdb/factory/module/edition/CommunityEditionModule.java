@@ -88,6 +88,7 @@ import org.neo4j.logging.log4j.LogExtended;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
 import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
+import org.neo4j.procedure.builtin.routing.DefaultDatabaseAvailabilityChecker;
 import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
@@ -274,16 +275,23 @@ public class CommunityEditionModule extends StandaloneEditionModule
     {
         globalProcedures.register( new StandaloneDatabaseStateProcedure( databaseStateService,
                 databaseManager.databaseIdRepository(), globalModule.getGlobalConfig().get( BoltConnector.advertised_address ).toString() ) );
+
+        var routingProcedureInstaller =
+                createRoutingProcedureInstaller( globalModule, databaseManager,
+                                                 globalModule.getGlobalDependencies().resolveDependency( ClientRoutingDomainChecker.class ) );
+        routingProcedureInstaller.install( globalProcedures );
     }
 
     @Override
     protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
                                                                                  ClientRoutingDomainChecker clientRoutingDomainChecker )
     {
-        ConnectorPortRegister portRegister = globalModule.getConnectorPortRegister();
-        Config config = globalModule.getGlobalConfig();
-        LogProvider logProvider = globalModule.getLogService().getInternalLogProvider();
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider );
+        var portRegister = globalModule.getConnectorPortRegister();
+        var config = globalModule.getGlobalConfig();
+        var logProvider = globalModule.getLogService().getInternalLogProvider();
+        var databaseAvailabilityChecker = new DefaultDatabaseAvailabilityChecker( databaseManager );
+        return new SingleInstanceRoutingProcedureInstaller( databaseAvailabilityChecker, clientRoutingDomainChecker,
+                                                            portRegister, config, logProvider, databaseReferenceRepo );
     }
 
     @Override

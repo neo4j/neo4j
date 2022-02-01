@@ -29,6 +29,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
@@ -37,6 +38,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -47,26 +49,26 @@ class SingleInstanceRoutingProcedureInstallerTest
     @Test
     void shouldRegisterRoutingProcedures() throws Exception
     {
-        DatabaseManager<?> databaseManager = mock( DatabaseManager.class );
-        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
-        ClientRoutingDomainChecker clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
-        Config config = Config.defaults();
-        LogProvider logProvider = NullLogProvider.getInstance();
+        var databaseReferenceRepo = mock( DatabaseReferenceRepository.class );
+        var databaseAvailabilityChecker = mock( DatabaseAvailabilityChecker.class );
+        var portRegister = mock( ConnectorPortRegister.class );
+        var clientRoutingDomainChecker = mock( ClientRoutingDomainChecker.class );
+        var config = Config.defaults();
+        var logProvider = NullLogProvider.getInstance();
 
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker,
-                                                                                                         portRegister, config, logProvider );
-        GlobalProcedures procedures = spy( new GlobalProceduresRegistry() );
+        var installer = new SingleInstanceRoutingProcedureInstaller( databaseAvailabilityChecker, clientRoutingDomainChecker,
+                                                                     portRegister, config, logProvider, databaseReferenceRepo );
+        var procedures = spy( new GlobalProceduresRegistry() );
 
         installer.install( procedures );
 
         verify( procedures, times( 2 ) ).register( any( GetRoutingTableProcedure.class ) );
 
-        Set<QualifiedName> expectedNames = newSetWith(
+        var expectedNames = newSetWith(
                 new QualifiedName( new String[]{"dbms", "routing"}, "getRoutingTable" ),
                 new QualifiedName( new String[]{"dbms", "cluster", "routing"}, "getRoutingTable" ) );
 
-        Set<QualifiedName> actualNames = procedures.getAllProcedures()
-                .stream()
+        var actualNames = procedures.getAllProcedures().stream()
                 .map( ProcedureSignature::name )
                 .collect( toSet() );
 

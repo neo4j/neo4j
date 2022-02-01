@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DatabaseStartupController;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -95,6 +96,7 @@ public abstract class AbstractEditionModule
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
     protected DefaultDatabaseResolver defaultDatabaseResolver;
+    protected DatabaseReferenceRepository databaseReferenceRepo;
 
     public abstract EditionDatabaseComponents createDatabaseComponents( NamedDatabaseId namedDatabaseId );
 
@@ -134,8 +136,8 @@ public abstract class AbstractEditionModule
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures, DatabaseManager<?> databaseManager )
             throws KernelException;
 
-    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule, DatabaseManager<?> databaseManager,
-                                                                                          ClientRoutingDomainChecker clientRoutingDomainChecker );
+    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller( GlobalModule globalModule,
+            DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker );
 
     protected abstract AuthConfigProvider createAuthConfigProvider( GlobalModule globalModule );
 

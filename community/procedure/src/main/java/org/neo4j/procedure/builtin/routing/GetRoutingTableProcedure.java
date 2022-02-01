@@ -36,7 +36,8 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.procedure.Mode;
@@ -61,9 +62,9 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     public static final String ADDRESS_CONTEXT_KEY = "address";
 
     private final ProcedureSignature signature;
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseReferenceRepository databaseReferenceRepo;
 
-    protected final Log log;
+    private final Log log;
     private final RoutingTableProcedureValidator validator;
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
     private final ServerSideRoutingTableProvider serverSideRoutingTableProvider;
@@ -72,20 +73,21 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     private final Supplier<GraphDatabaseSettings.RoutingMode> defaultRouterSupplier;
     private final Supplier<Boolean> boltEnabled;
 
-    public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
-                                     RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
-                                     ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
+    public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseReferenceRepository databaseReferenceRepo,
+            RoutingTableProcedureValidator validator, SingleAddressRoutingTableProvider routingTableProvider,
+            ClientRoutingDomainChecker clientRoutingDomainChecker, Config config, LogProvider logProvider )
     {
-        this( namespace, description, databaseManager, validator, routingTableProvider, routingTableProvider, clientRoutingDomainChecker, config, logProvider );
+        this( namespace, description, databaseReferenceRepo, validator, routingTableProvider,
+              routingTableProvider, clientRoutingDomainChecker, config, logProvider );
     }
 
-    public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseManager<?> databaseManager,
-                                     RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
-                                     ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                     Config config, LogProvider logProvider )
+    public GetRoutingTableProcedure( List<String> namespace, String description, DatabaseReferenceRepository databaseReferenceRepo,
+            RoutingTableProcedureValidator validator, ClientSideRoutingTableProvider clientSideRoutingTableProvider,
+            ServerSideRoutingTableProvider serverSideRoutingTableProvider, ClientRoutingDomainChecker clientRoutingDomainChecker,
+            Config config, LogProvider logProvider )
     {
         this.signature = buildSignature( namespace, description );
-        this.databaseManager = databaseManager;
+        this.databaseReferenceRepo = databaseReferenceRepo;
         this.log = logProvider.getLog( getClass() );
         this.validator = validator;
         this.clientSideRoutingTableProvider = clientSideRoutingTableProvider;
@@ -105,43 +107,49 @@ public final class GetRoutingTableProcedure implements CallableProcedure
     @Override
     public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        var databaseId = extractDatabaseId( input );
+        var databaseReference = extractDatabaseReference( input );
         var routingContext = extractRoutingContext( input );
 
-        assertBoltConnectorEnabled( databaseId );
+        assertBoltConnectorEnabled( databaseReference );
         try
         {
-            var result = invoke( databaseId, routingContext );
-            log.debug( "Routing result for database %s and routing context %s is %s", databaseId, routingContext, result );
-            assertRoutingResultNotEmpty( result, databaseId );
+            var result = invoke( databaseReference, routingContext );
+            log.debug( "Routing result for database %s and routing context %s is %s", databaseReference, routingContext, result );
+            assertRoutingResultNotEmpty( result, databaseReference );
             return RawIterator.<AnyValue[],ProcedureException>of( RoutingResultFormat.build( result ) );
         }
         catch ( ProcedureException ex )
         {
             // Check that the cause of the exception wasn't the database being removed while this procedure was running.
-            validator.assertDatabaseExists( databaseId );
+            validator.assertDatabaseExists( databaseReference );
             // otherwise re-throw
             throw ex;
         }
     }
 
-    private RoutingResult invoke( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException
+    private RoutingResult invoke( DatabaseReference databaseReference, MapValue routingContext ) throws ProcedureException
     {
         var clientProvidedAddress = RoutingTableProcedureHelpers.findClientProvidedAddress( routingContext, BoltConnector.DEFAULT_PORT, log );
-        var defaultRouter = defaultRouterSupplier.get();
-        if ( shouldGetClientSideRouting( defaultRouter, clientProvidedAddress ) )
+        var isInternalRef = databaseReference instanceof DatabaseReference.Internal;
+        if ( !isInternalRef )
         {
-            validator.isValidForClientSideRouting( databaseId );
-            return clientSideRoutingTableProvider.getRoutingResultForClientSideRouting( databaseId, routingContext );
+            return serverSideRoutingTableProvider.getServerSideRoutingTable( clientProvidedAddress );
+        }
+
+        var defaultRouter = defaultRouterSupplier.get();
+        if ( configAllowsForClientSideRouting( defaultRouter, clientProvidedAddress ) )
+        {
+            validator.isValidForClientSideRouting( (DatabaseReference.Internal) databaseReference );
+            return clientSideRoutingTableProvider.getRoutingResultForClientSideRouting( (DatabaseReference.Internal) databaseReference, routingContext );
         }
         else
         {
-            validator.isValidForServerSideRouting( databaseId );
+            validator.isValidForServerSideRouting( (DatabaseReference.Internal) databaseReference );
             return serverSideRoutingTableProvider.getServerSideRoutingTable( clientProvidedAddress );
         }
     }
 
-    private NamedDatabaseId extractDatabaseId( AnyValue[] input ) throws ProcedureException
+    private DatabaseReference extractDatabaseReference( AnyValue[] input ) throws ProcedureException
     {
         var arg = input[1];
         final String databaseName;
@@ -157,17 +165,16 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         {
             throw new IllegalArgumentException( "Illegal database name argument " + arg );
         }
-        var databaseId = databaseManager.databaseIdRepository()
-                                        .getByName( databaseName )
-                                        .orElseThrow( () -> RoutingTableProcedureHelpers.databaseNotFoundException( databaseName ) );
-        return databaseId;
+
+        return databaseReferenceRepo.getByName( databaseName )
+                                    .orElseThrow( () -> RoutingTableProcedureHelpers.databaseNotFoundException( databaseName ) );
     }
 
-    private static void assertRoutingResultNotEmpty( RoutingResult result, NamedDatabaseId namedDatabaseId ) throws ProcedureException
+    private static void assertRoutingResultNotEmpty( RoutingResult result, DatabaseReference databaseReference ) throws ProcedureException
     {
         if ( result.containsNoEndpoints() )
         {
-            throw new ProcedureException( DatabaseUnavailable, "Routing table for database " + namedDatabaseId.name() + " is empty" );
+            throw new ProcedureException( DatabaseUnavailable, "Routing table for database " + databaseReference.alias() + " is empty" );
         }
     }
 
@@ -202,7 +209,8 @@ public final class GetRoutingTableProcedure implements CallableProcedure
                 .build();
     }
 
-    private boolean shouldGetClientSideRouting( GraphDatabaseSettings.RoutingMode defaultRouter, Optional<SocketAddress> clientProvidedAddress )
+    private boolean configAllowsForClientSideRouting( GraphDatabaseSettings.RoutingMode defaultRouter,
+            Optional<SocketAddress> clientProvidedAddress )
     {
         switch ( defaultRouter )
         {
@@ -217,11 +225,11 @@ public final class GetRoutingTableProcedure implements CallableProcedure
         }
     }
 
-    private void assertBoltConnectorEnabled( NamedDatabaseId namedDatabaseId ) throws ProcedureException
+    private void assertBoltConnectorEnabled( DatabaseReference databaseReference ) throws ProcedureException
     {
         if ( !boltEnabled.get() )
         {
-            throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + namedDatabaseId.name() +
+            throw new ProcedureException( ProcedureCallFailed, "Cannot get routing table for " + databaseReference.alias() +
                                                                " because Bolt is not enabled. Please update your configuration for '" +
                                                                BoltConnector.enabled.name() + "'" );
         }

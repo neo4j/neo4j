@@ -19,23 +19,29 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.DatabaseReferenceRepository;
 
-public abstract class BaseRoutingTableProcedureValidator implements RoutingTableProcedureValidator
+public final class DefaultDatabaseAvailabilityChecker implements DatabaseAvailabilityChecker
 {
-    protected final DatabaseReferenceRepository databaseReferenceRepo;
+    private final DatabaseManager<?> databaseManager;
 
-    protected BaseRoutingTableProcedureValidator( DatabaseReferenceRepository databaseReferenceRepo )
+    public DefaultDatabaseAvailabilityChecker( DatabaseManager<?> databaseManager )
     {
-        this.databaseReferenceRepo = databaseReferenceRepo;
+        this.databaseManager = databaseManager;
     }
 
     @Override
-    public void assertDatabaseExists( DatabaseReference databaseReference ) throws ProcedureException
+    public boolean isAvailable( DatabaseReference.Internal databaseReference )
     {
-        databaseReferenceRepo.getByName( databaseReference.alias() )
-                             .orElseThrow( () -> RoutingTableProcedureHelpers.databaseNotFoundException( databaseReference.alias().name() ) );
+        var databaseCtx = databaseManager.getDatabaseContext( databaseReference.databaseId() );
+        return databaseCtx.map( ctx -> ctx.database().getDatabaseAvailabilityGuard().isAvailable() )
+                          .orElse( false );
+    }
+
+    @Override
+    public boolean isPresent( DatabaseReference.Internal databaseReference )
+    {
+        return databaseManager.getDatabaseContext( databaseReference.databaseId() ).isPresent();
     }
 }

@@ -24,7 +24,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Answers;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -44,16 +43,17 @@ import org.neo4j.configuration.GraphDatabaseSettings.RoutingMode;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.database.TestDatabaseReferenceRepository;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -93,6 +93,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public class SingleInstanceGetRoutingTableProcedureTest
 {
     protected static final NamedDatabaseId ID = from( DEFAULT_DATABASE_NAME, UUID.randomUUID() );
+    protected static final DatabaseReference.Internal REF = new DatabaseReference.Internal( new NormalizedDatabaseName( ID.name() ), ID );
     private static final String UNKNOWN_DATABASE_NAME = "unknownDatabaseName";
 
     @Target( ElementType.METHOD )
@@ -216,7 +217,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var databaseManager = mock( DatabaseManager.class );
         when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
 
-        var procedure = newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
+        var databasebAvailabilityChecker = new TestDatabaseAvailabilityChecker();
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed();
+
+        var procedure = newProcedure( databasebAvailabilityChecker, databaseReferenceRepo,
+                                      portRegister, config, NullLogProvider.getInstance() );
 
         var error = assertThrows( ProcedureException.class, () -> invoke( Map.of(), procedure, clientAddress, UNKNOWN_DATABASE_NAME ) );
         assertEquals( DatabaseNotFound, error.status() );
@@ -226,9 +231,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
     void shouldThrowWhenDatabaseIsStopped( Config config, String clientAddress )
     {
         var portRegister = mock( ConnectorPortRegister.class );
-        var databaseManager = databaseManagerMock( config, false );
-        var procedure = newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
-        var input = new AnyValue[]{MapValue.EMPTY, stringValue( DEFAULT_DATABASE_NAME )};
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, false );
+
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister,
+                                      config, NullLogProvider.getInstance() );
 
         var error = assertThrows( ProcedureException.class, () -> invoke( procedure, clientAddress ) );
         assertEquals( DatabaseUnavailable, error.status() );
@@ -247,10 +254,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var config = newConfig( Config.defaults( SERVER_DEFAULTS ), Duration.ofSeconds( 100 ), new SocketAddress( "neo4j.com", 7687 ) );
         config.set( routing_default_router, routingMode );
 
-        var databaseManager = databaseManagerMock( config, true );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when/then
@@ -270,10 +278,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         config.set( routing_default_router, routingMode );
 
         var portRegister = mock( ConnectorPortRegister.class );
-        var databaseManager = databaseManagerMock( config, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when/then
@@ -295,10 +304,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
         var portRegister = mock( ConnectorPortRegister.class );
         when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
-        var databaseManager = databaseManagerMock( config, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedAddress = new SocketAddress( clientProvidedHost, defaultBoltPort );
 
         // when
@@ -329,10 +339,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var portRegister = mock( ConnectorPortRegister.class );
         when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
 
-        var databaseManager = databaseManagerMock( config, true );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedAddress = advertisedBoltAddress;
 
         // when
@@ -362,10 +373,12 @@ public class SingleInstanceGetRoutingTableProcedureTest
         when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
         var config = newConfig( Config.defaults( SERVER_DEFAULTS ), Duration.ofSeconds( 100 ), advertisedBoltAddress );
         config.set( routing_default_router, routingMode );
-        var databaseManager = databaseManagerMock( config, true );
+
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when
@@ -390,10 +403,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
         var config = newConfig( Config.defaults( SERVER_DEFAULTS ), Duration.ofSeconds( 100 ), advertisedBoltAddress );
         config.set( routing_default_router, routingMode );
-        var databaseManager = databaseManagerMock( config, true );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedMessage = "An address key is included in the query string provided to the GetRoutingTableProcedure, but its value could not be parsed.";
 
         // when
@@ -414,10 +428,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         var portRegister = mock( ConnectorPortRegister.class );
         when( portRegister.getLocalAddress( BoltConnector.NAME ) ).thenReturn( new HostnamePort( "neo4j.com", advertisedBoldPort ) );
 
-        var databaseManager = databaseManagerMock( config, true );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedAddress = new SocketAddress( clientProvidedHost, 7687 );
 
         // when
@@ -467,10 +482,11 @@ public class SingleInstanceGetRoutingTableProcedureTest
         config.set( routing_default_router, routingMode );
 
         var portRegister = mock( ConnectorPortRegister.class );
-        var databaseManager = databaseManagerMock( config, true );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
         var logProvider = new AssertableLogProvider();
 
-        var procedure = newProcedure( databaseManager, portRegister, config, logProvider );
+        var procedure = newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, logProvider );
         var expectedAddress = new SocketAddress( clientProvidedHost, clientProvidedPort );
 
         // when
@@ -482,11 +498,12 @@ public class SingleInstanceGetRoutingTableProcedureTest
         assertEquals( singletonList( expectedAddress ), result.routeEndpoints() );
     }
 
-    protected GetRoutingTableProcedure newProcedure( DatabaseManager<?> databaseManager, ConnectorPortRegister portRegister, Config config,
-                                                     LogProvider logProvider )
+    protected GetRoutingTableProcedure newProcedure( DatabaseAvailabilityChecker databaseAvailabilityChecker, DatabaseReferenceRepository databaseReferenceRepo,
+            ConnectorPortRegister portRegister, Config config, LogProvider logProvider )
     {
         var clientRoutingDomainChecker = SimpleClientRoutingDomainChecker.fromConfig( config, logProvider );
-        return new SingleInstanceRoutingProcedureInstaller( databaseManager, clientRoutingDomainChecker, portRegister, config, logProvider )
+        return new SingleInstanceRoutingProcedureInstaller( databaseAvailabilityChecker, clientRoutingDomainChecker,
+                                                            portRegister, config, logProvider, databaseReferenceRepo )
                 .createProcedure( DEFAULT_NAMESPACE );
     }
 
@@ -497,8 +514,9 @@ public class SingleInstanceGetRoutingTableProcedureTest
 
     private GetRoutingTableProcedure newProcedure( ConnectorPortRegister portRegister, Config config )
     {
-        var databaseManager = databaseManagerMock( config, true );
-        return newProcedure( databaseManager, portRegister, config, NullLogProvider.getInstance() );
+        var databaseReferenceRepo = new TestDatabaseReferenceRepository.Fixed( REF );
+        var databaseAvailabilityChecker = new TestDatabaseAvailabilityChecker().withDatabase( REF, true );
+        return newProcedure( databaseAvailabilityChecker, databaseReferenceRepo, portRegister, config, NullLogProvider.getInstance() );
     }
 
     private static Config newConfig( Config config, Duration routingTtl, SocketAddress boltAddress )
@@ -515,27 +533,6 @@ public class SingleInstanceGetRoutingTableProcedureTest
             builder.set( BoltConnector.advertised_address, boltAddress );
         }
         return builder.build();
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static DatabaseManager<DatabaseContext> databaseManagerMock( Config config, boolean databaseAvailable )
-    {
-        var databaseManager = mock( DatabaseManager.class );
-        var databaseContext = mock( DatabaseContext.class );
-        var database = mock( Database.class );
-        var availabilityGuard = mock( DatabaseAvailabilityGuard.class );
-        var databaseIdRepository = mock( DatabaseIdRepository.Caching.class, Answers.RETURNS_DEEP_STUBS );
-
-        when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( ID ) );
-        when( databaseIdRepository.getById( ID.databaseId() ) ).thenReturn( Optional.of( ID ) );
-        when( databaseContext.database() ).thenReturn( database );
-        when( database.getConfig() ).thenReturn( config );
-        when( database.getDatabaseAvailabilityGuard() ).thenReturn( availabilityGuard );
-        when( availabilityGuard.isAvailable() ).thenReturn( databaseAvailable );
-        when( databaseManager.getDatabaseContext( ID ) ).thenReturn( Optional.of( databaseContext ) );
-        when( databaseManager.databaseIdRepository() ).thenReturn( databaseIdRepository );
-
-        return databaseManager;
     }
 
     private static RoutingResult invoke( GetRoutingTableProcedure proc, NamedDatabaseId databaseName, MapValue context ) throws ProcedureException

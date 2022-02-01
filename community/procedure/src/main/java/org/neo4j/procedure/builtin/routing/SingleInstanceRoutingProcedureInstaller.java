@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider.ttlFromConfig;
@@ -32,30 +33,33 @@ public final class SingleInstanceRoutingProcedureInstaller extends AbstractRouti
 {
     private static final String DESCRIPTION = "Returns endpoints of this instance.";
 
-    private final DatabaseManager<?> databaseManager;
+    private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
+    private final DatabaseReferenceRepository databaseReferenceRepo;
     private final ClientRoutingDomainChecker clientRoutingDomainChecker;
     private final ConnectorPortRegister portRegister;
     private final Config config;
     private final LogProvider logProvider;
 
-    public SingleInstanceRoutingProcedureInstaller( DatabaseManager<?> databaseManager, ClientRoutingDomainChecker clientRoutingDomainChecker,
-                                                    ConnectorPortRegister portRegister, Config config, LogProvider logProvider )
+    public SingleInstanceRoutingProcedureInstaller( DatabaseAvailabilityChecker databaseAvailabilityChecker,
+            ClientRoutingDomainChecker clientRoutingDomainChecker, ConnectorPortRegister portRegister, Config config, LogProvider logProvider,
+            DatabaseReferenceRepository databaseReferenceRepo )
     {
-        this.databaseManager = databaseManager;
+        this.databaseAvailabilityChecker = databaseAvailabilityChecker;
         this.clientRoutingDomainChecker = clientRoutingDomainChecker;
         this.portRegister = portRegister;
         this.config = config;
         this.logProvider = logProvider;
+        this.databaseReferenceRepo = databaseReferenceRepo;
     }
 
     @Override
     public GetRoutingTableProcedure createProcedure( List<String> namespace )
     {
-        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseManager );
+        LocalRoutingTableProcedureValidator validator = new LocalRoutingTableProcedureValidator( databaseAvailabilityChecker, databaseReferenceRepo );
         SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
                 portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig( config ) );
 
-        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseManager, validator, routingTableProvider, clientRoutingDomainChecker,
+        return new GetRoutingTableProcedure( namespace, DESCRIPTION, databaseReferenceRepo, validator, routingTableProvider, clientRoutingDomainChecker,
                                              config, logProvider );
     }
 }

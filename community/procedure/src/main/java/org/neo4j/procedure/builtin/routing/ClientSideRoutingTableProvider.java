@@ -20,10 +20,10 @@
 package org.neo4j.procedure.builtin.routing;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.values.virtual.MapValue;
 
 public interface ClientSideRoutingTableProvider
 {
-    RoutingResult getRoutingResultForClientSideRouting( NamedDatabaseId databaseId, MapValue routingContext ) throws ProcedureException;
+    RoutingResult getRoutingResultForClientSideRouting( DatabaseReference.Internal databaseReference, MapValue routingContext ) throws ProcedureException;
 }

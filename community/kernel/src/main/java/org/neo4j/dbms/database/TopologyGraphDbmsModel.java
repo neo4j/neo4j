@@ -199,8 +199,8 @@ public interface TopologyGraphDbmsModel
     /**
      * Fetches the {@link DatabaseReference} corresponding to the provided name.
      *
-     * @param databaseName the database name to resolve a reference for
+     * @param databaseName the database alias to resolve a {@link DatabaseReference} for.
      * @return the corresponding {@link DatabaseReference}
      */
-    Optional<DatabaseReference> getDatabaseRefByName( String databaseName );
+    Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName );
 }

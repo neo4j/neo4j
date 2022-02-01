@@ -154,7 +154,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     }
 
     @Override
-    public Optional<DatabaseReference> getDatabaseRefByName( String databaseName )
+    public Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName )
     {
         return Optional.empty();
     }
