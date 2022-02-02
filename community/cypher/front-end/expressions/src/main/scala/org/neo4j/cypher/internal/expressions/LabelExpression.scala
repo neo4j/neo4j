@@ -48,7 +48,7 @@ object LabelExpression {
   }
 
   private def stringify1(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Label    => s"${le.label.name}"
+    case le: Label    => le.label.name
     case _: Wildcard  => s"%"
     case le           => s"(${stringify4(le)})"
   }
