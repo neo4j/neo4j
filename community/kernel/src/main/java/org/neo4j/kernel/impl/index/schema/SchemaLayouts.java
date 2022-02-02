@@ -41,12 +41,13 @@ public class SchemaLayouts implements LayoutBootstrapper
 
     public SchemaLayouts()
     {
-        allSchemaLayout = new ArrayList<>();
-        allSchemaLayout.addAll( Arrays.asList(
+        allSchemaLayout = Arrays.asList(
                 genericLayout(),
                 idRangeLayout(),
                 ( indexFile, pageCache, meta ) -> new TokenScanLayout(),
-                ( indexFile, pageCache, meta ) -> new IndexStatisticsLayout() ) );
+                ( indexFile, pageCache, meta ) -> new IndexStatisticsLayout(),
+                rangeLayout(),
+                ( indexFile, pageCache, meta ) -> new PointLayout( IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) ) );
     }
 
     public static String[] layoutDescriptions()
@@ -55,7 +56,9 @@ public class SchemaLayouts implements LayoutBootstrapper
                 "Generic layout",
                 "Id range layout",
                 "Token scan layout",
-                "Index statistics layout"
+                "Index statistics layout",
+                "Range index layout",
+                "Point index layout"
         };
     }
 
@@ -98,6 +101,23 @@ public class SchemaLayouts implements LayoutBootstrapper
                 if ( matchingLayout( meta, genericLayout ) )
                 {
                     return genericLayout;
+                }
+            }
+            return null;
+        };
+    }
+
+    private static LayoutBootstrapper rangeLayout()
+    {
+        return ( indexFile, pageCache, meta ) ->
+        {
+            int maxNumberOfSlots = 10;
+            for ( int numberOfSlots = 1; numberOfSlots < maxNumberOfSlots; numberOfSlots++ )
+            {
+                final RangeLayout rangeLayout = new RangeLayout( numberOfSlots );
+                if ( matchingLayout( meta, rangeLayout ) )
+                {
+                    return rangeLayout;
                 }
             }
             return null;
