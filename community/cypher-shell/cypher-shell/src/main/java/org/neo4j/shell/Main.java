@@ -20,6 +20,8 @@
 package org.neo4j.shell;
 
 import java.io.PrintStream;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
@@ -99,6 +101,8 @@ public class Main
         {
             System.exit( 1 );
         }
+
+        setupLogging();
 
         System.exit( new Main( cliArgs ).startShell() );
     }
@@ -302,6 +306,19 @@ public class Main
         catch ( NoMoreInputException | UserInterruptException e )
         {
             throw new CommandException( "No text could be read, exiting..." );
+        }
+    }
+
+    private static void setupLogging()
+    {
+        try
+        {
+            // Avoid jline spilling unwanted log statements into system err.
+            LogManager.getLogManager().getLogger( "" ).setLevel( Level.OFF );
+        }
+        catch ( Exception e )
+        {
+            // Not much to do
         }
     }
 }
