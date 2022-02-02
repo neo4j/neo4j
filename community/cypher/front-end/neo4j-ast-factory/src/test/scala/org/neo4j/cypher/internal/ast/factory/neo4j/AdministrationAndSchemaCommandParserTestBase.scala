@@ -265,7 +265,7 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
 
 trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
-  def verifyPositions(javaCCAstNode: ASTNode, parboiledASTNode: ASTNode): Unit = {
+  def verifyPositions(javaCCAstNode: ASTNode, expectedAstNode: ASTNode): Unit = {
 
     def astWithPosition(astNode: ASTNode) = {
       {
@@ -298,7 +298,7 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
       }
     }
 
-    astWithPosition(javaCCAstNode).zip(astWithPosition(parboiledASTNode))
+    astWithPosition(javaCCAstNode).zip(astWithPosition(expectedAstNode))
       .foreach {
         case ((astChildNode1, pos1), (_, pos2)) => withClue(
           s"AST node $astChildNode1 was parsed with different positions (javaCC: $pos1, expected: $pos2):")(pos1 shouldBe pos2)
