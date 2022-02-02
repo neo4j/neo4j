@@ -122,7 +122,7 @@ class SafePropertyChainReader implements AutoCloseable
             {
                 primitiveReporter.apply( entity ).propertyNotInUse( propertyRecord );
                 reporter.forProperty( context.recordLoader.property( previousRecordId, storeCursors ) ).nextNotInUse( propertyRecord );
-                chainIsOk = false;
+                return false;
             }
             else
             {

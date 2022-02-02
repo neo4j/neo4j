@@ -1256,7 +1256,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 2 ).verify( RecordType.PROPERTY, 1 ).andThatsAllFolks();
     }
 
     @Test
