@@ -19,28 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.WildcardQuery;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongPredicate;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -54,7 +45,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
-import org.neo4j.kernel.api.impl.schema.reader.CypherStringQueryFactory;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -63,9 +53,7 @@ import org.neo4j.kernel.impl.index.schema.PartitionedValueSeek;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
 
@@ -117,49 +105,8 @@ public class FulltextIndexReader implements ValueIndexReader
             }
             else
             {
-                // Not fulltext query
-                assertNotComposite( queries );
-                assertCypherCompatible();
-                Query query;
-                if ( indexQuery.type() == IndexQueryType.STRING_CONTAINS )
-                {
-                    PropertyIndexQuery.StringContainsPredicate scp = (PropertyIndexQuery.StringContainsPredicate) indexQuery;
-                    String searchTerm = QueryParser.escape( scp.contains().stringValue() );
-                    Term term = new Term( propertyNames[0], "*" + searchTerm + "*" );
-                    query = new WildcardQuery( term );
-                }
-                else if ( indexQuery.type() == IndexQueryType.STRING_SUFFIX )
-                {
-                    PropertyIndexQuery.StringSuffixPredicate ssp = (PropertyIndexQuery.StringSuffixPredicate) indexQuery;
-                    String searchTerm = QueryParser.escape( ssp.suffix().stringValue() );
-                    Term term = new Term( propertyNames[0], "*" + searchTerm );
-                    query = new WildcardQuery( term );
-                }
-                else if ( indexQuery.type() == IndexQueryType.STRING_PREFIX )
-                {
-                    PropertyIndexQuery.StringPrefixPredicate spp = (PropertyIndexQuery.StringPrefixPredicate) indexQuery;
-                    String searchTerm = spp.prefix().stringValue();
-                    Term term = new Term( propertyNames[0], searchTerm );
-                    query = CypherStringQueryFactory.stringPrefix( term );
-                }
-                else if ( indexQuery.getClass() == PropertyIndexQuery.ExactPredicate.class && indexQuery.valueGroup() == ValueGroup.TEXT )
-                {
-                    PropertyIndexQuery.ExactPredicate exact = (PropertyIndexQuery.ExactPredicate) indexQuery;
-                    String searchTerm = ((TextValue) exact.value()).stringValue();
-                    Term term = new Term( propertyNames[0], searchTerm );
-                    query = new ConstantScoreQuery( new TermQuery( term ) );
-                }
-                else if ( indexQuery.getClass() == PropertyIndexQuery.TextRangePredicate.class )
-                {
-                    PropertyIndexQuery.TextRangePredicate sp = (PropertyIndexQuery.TextRangePredicate) indexQuery;
-                    query = newRangeSeekByStringQuery( propertyNames[0], sp.from(), sp.fromInclusive(), sp.to(), sp.toInclusive() );
-                }
-                else
-                {
-                    throw new IndexNotApplicableKernelException(
-                            "A fulltext schema index cannot answer " + indexQuery.type() + " queries on " + indexQuery.valueCategory() + " values." );
-                }
-                queryBuilder.add( query, BooleanClause.Occur.MUST );
+                throw new IndexNotApplicableKernelException(
+                        "A fulltext schema index cannot answer " + indexQuery.type() + " queries on " + indexQuery.valueCategory() + " values." );
             }
         }
         Query query = queryBuilder.build();
@@ -270,68 +217,5 @@ public class FulltextIndexReader implements ValueIndexReader
     private String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException
     {
         return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
-    }
-
-    private static void assertNotComposite( PropertyIndexQuery[] predicates )
-    {
-        if ( predicates.length != 1 )
-        {
-            throw new IllegalStateException( "composite indexes not yet supported for this operation" );
-        }
-    }
-
-    private static Query newRangeSeekByStringQuery( String propertyName, String lower, boolean includeLower, String upper, boolean includeUpper )
-    {
-        boolean includeLowerBoundary = StringUtils.EMPTY.equals( lower ) || includeLower;
-        boolean includeUpperBoundary = StringUtils.EMPTY.equals( upper ) || includeUpper;
-        TermRangeQuery termRangeQuery =
-                TermRangeQuery.newStringRange( propertyName, lower, upper, includeLowerBoundary, includeUpperBoundary );
-
-        if ( (includeLowerBoundary != includeLower) || (includeUpperBoundary != includeUpper) )
-        {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            if ( includeLowerBoundary != includeLower )
-            {
-                builder.add( new TermQuery( new Term( propertyName, lower ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            if ( includeUpperBoundary != includeUpper )
-            {
-                builder.add( new TermQuery( new Term( propertyName, upper ) ), BooleanClause.Occur.MUST_NOT );
-            }
-            builder.add( termRangeQuery, BooleanClause.Occur.FILTER );
-            return new ConstantScoreQuery( builder.build() );
-        }
-        return termRangeQuery;
-    }
-
-    private void assertCypherCompatible()
-    {
-        String reason = "";
-        Object configuredAnalyzer = index.getIndexConfig().get( FulltextIndexSettingsKeys.ANALYZER ).asObject();
-        if ( !"cypher".equals( configuredAnalyzer ) || !(analyzer.getClass() == KeywordAnalyzer.class) )
-        {
-            reason = "configured analyzer '" + configuredAnalyzer + "' is not Cypher compatible";
-        }
-        else if ( !(propertyNames.length == 1) )
-        {
-            reason = "index is composite";
-        }
-        else if ( !(index.schema().entityType() == EntityType.NODE) )
-        {
-            reason = "index does not target nodes";
-        }
-        else if ( !(index.schema().getEntityTokenIds().length == 1) )
-        {
-            reason = "index target more than one label";
-        }
-        else if ( isEventuallyConsistent( index ) )
-        {
-            reason = "index is eventually consistent";
-        }
-
-        if ( !reason.equals( "" ) )
-        {
-            throw new IllegalStateException( "This fulltext index does not have support for Cypher semantics because " + reason + "." );
-        }
     }
 }
