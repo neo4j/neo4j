@@ -53,7 +53,7 @@ case class SetOwnPasswordExecutionPlanner(normalExecutionEngine: ExecutionEngine
 
   def planSetOwnPassword(newPassword: Expression, currentPassword: Expression): ExecutionPlan  = {
     val usernameKey = internalKey("username")
-    val newPw = getPasswordExpression(None, newPassword, isEncryptedPassword = false)
+    val newPw = getPasswordExpression(None, newPassword, isEncryptedPassword = false, Array(usernameKey))
     val (currentKeyBytes, currentValueBytes, currentConverterBytes) = getPasswordFieldsCurrent(currentPassword)
     def currentUser(p: MapValue): String = p.get(usernameKey).asInstanceOf[TextValue].stringValue()
     val query =
