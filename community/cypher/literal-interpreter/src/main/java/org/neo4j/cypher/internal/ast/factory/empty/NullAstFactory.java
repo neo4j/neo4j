@@ -216,6 +216,12 @@ public class NullAstFactory implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL labelWildcard( NULL p )
+    {
+        return null;
+    }
+
+    @Override
     public NULL labelAtom( NULL p, String e )
     {
         return null;
