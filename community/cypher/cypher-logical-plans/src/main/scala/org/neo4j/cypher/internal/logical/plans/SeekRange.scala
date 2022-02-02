@@ -93,10 +93,10 @@ final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: Ra
       case Left(bound) => f(bound)
       case Right(bound) => f(bound)
     }
-    groupedBounds.mapValues[InequalitySeekRange[V]] { bounds =>
+    groupedBounds.view.mapValues[InequalitySeekRange[V]] { bounds =>
       InequalitySeekRange.fromPartitionedBounds(bounds.partition(identity))
     }
-  }
+  }.toMap
 }
 
 final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[V] {
@@ -105,7 +105,7 @@ final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRan
     copy(bounds = bounds.map(_.map(f)))
 
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeGreaterThan[V]] =
-    bounds.groupBy(f).mapValues(bounds => RangeGreaterThan(bounds))
+    bounds.groupBy(f).view.mapValues(bounds => RangeGreaterThan(bounds)).toMap
 
   protected def boundLimit[X >: V](implicit ordering: Ordering[Bound[X]]): Option[Bound[X]] = {
     val limit = bounds.max[Bound[X]](ordering)
@@ -122,7 +122,7 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
     copy(bounds = bounds.map(_.map(f)))
 
   override def groupBy[K](f: Bound[V] => K): Map[K, RangeLessThan[V]] =
-    bounds.groupBy(f).mapValues(bounds => RangeLessThan(bounds))
+    bounds.groupBy(f).view.mapValues(bounds => RangeLessThan(bounds)).toMap
 
   protected def boundLimit[X >: V](implicit ordering: Ordering[Bound[X]]): Option[Bound[X]] = {
     val limit = bounds.min[Bound[X]](ordering)

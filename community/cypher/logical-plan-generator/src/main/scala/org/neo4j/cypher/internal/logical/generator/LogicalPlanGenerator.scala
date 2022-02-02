@@ -360,7 +360,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     state <- state.newNode(right)
     relIds <- Gen.someOf(relIds ++ Seq.fill(relIds.size)(StatementConstants.NO_SUCH_RELATIONSHIP))
   } yield {
-    val seekableArgs = ManySeekableArgs(listOfInt(relIds:_*))
+    val seekableArgs = ManySeekableArgs(listOfInt(relIds.toSeq:_*))
     val plan = if(directed) {
       val p = DirectedRelationshipByIdSeek(idName, seekableArgs, left, right, Set.empty)(state.idGen)
       annotate(p, state)
@@ -457,7 +457,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     orderings <- Gen.listOfN(columns.size, Gen.oneOf(Ascending, Descending))
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
-    val plan = Sort(source, orderedColumns)(state.idGen)
+    val plan = Sort(source, orderedColumns.toSeq)(state.idGen)
     annotate(plan, state)
   }
 
@@ -468,7 +468,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
   } yield {
     val orderedColumns = columns.zip(orderings).map { case (column, order) => order(column) }
-    val plan = Top(source, orderedColumns, literalInt(count))(state.idGen)
+    val plan = Top(source, orderedColumns.toSeq, literalInt(count))(state.idGen)
     annotate(plan, state)
   }
 

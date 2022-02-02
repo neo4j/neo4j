@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 case class Foreach(source: LogicalPlan,
                    variable: String,
                    expression: Expression,
-                   mutations: Seq[SimpleMutatingPattern]
+                   mutations: collection.Seq[SimpleMutatingPattern]
                   )(implicit idGen: IdGen)
   extends LogicalUnaryPlan(idGen) with UpdatingPlan {
   override def withLhs(newLHS: LogicalPlan)

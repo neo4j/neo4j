@@ -746,13 +746,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nodeIndexOperator(indexSeekString: String,
                         getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
                         indexOrder: IndexOrder = IndexOrderNone,
-                        paramExpr: GenTraversableOnce[Expression] = None,
+                        paramExpr: IterableOnce[Expression] = None,
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None,
                         indexType: IndexType = IndexType.BTREE): IMPL = {
     val planBuilder = (idGen: IdGen) => {
-      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.seq.toSeq, argumentIds, unique, customQueryExpression, indexType)(idGen)
+      val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.iterator.toSeq, argumentIds, unique, customQueryExpression, indexType)(idGen)
       plan
     }
     appendAtCurrentIndent(LeafOperator(planBuilder))
@@ -1014,11 +1014,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def aggregation(groupingExpressions: Seq[String],
                   aggregationExpression: Seq[String]): IMPL = {
-    val expressions = Parser.parseProjections(aggregationExpression: _*).mapValues {
+    val expressions = Parser.parseProjections(aggregationExpression: _*).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e
-    }
+    }.toMap
 
     appendAtCurrentIndent(UnaryOperator(lp => {
       Aggregation(lp,

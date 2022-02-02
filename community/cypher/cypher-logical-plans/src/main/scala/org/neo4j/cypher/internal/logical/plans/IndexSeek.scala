@@ -483,9 +483,9 @@ object IndexSeek {
         case CONTAINS(_, _) => true
         case _ => false
       }))
-        createScan(properties)
+        createScan(properties.toSeq)
       else
-        createSeek(properties, CompositeQueryExpression(valueExprs))
+        createSeek(properties.toSeq, CompositeQueryExpression(valueExprs.toSeq))
     } else if (predicates.length > 1 && customQueryExpression.isDefined) {
       createSeek(predicates.map(prop), customQueryExpression.get)
     } else
