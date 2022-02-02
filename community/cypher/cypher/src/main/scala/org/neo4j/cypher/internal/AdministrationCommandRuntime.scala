@@ -95,26 +95,24 @@ object AdministrationCommandRuntime {
                                           bytesValue: Value,
                                           mapValueConverter: (Transaction, MapValue) => MapValue)
 
-  private[internal] def getPasswordExpression(userNameParameter: Option[expressions.Expression], password: expressions.Expression, isEncryptedPassword: Boolean): PasswordExpression =
+  private[internal] def getPasswordExpression(userNameParameter: Option[expressions.Expression],
+                                              password: expressions.Expression,
+                                              isEncryptedPassword: Boolean,
+                                              otherParams:Array[String]): PasswordExpression =
     password match {
       case parameterPassword: Parameter =>
         validateStringParameterType(parameterPassword)
 
-        // Normally we overwrite the password parameter with the hashed version so we don't keep the
-        // raw version around. If the username and password happen to be the same parameter, though
-        // this doesn't work
-        val hashedPwParameterName = userNameParameter match {
-          case Some(param) if param == password => internalKey(parameterPassword.name) + "_hashed"
-          case _ => parameterPassword.name
-        }
+        //make sure we get a unique parameter name so we don't overwrite other parameters
+        val hashedPwKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_hashed", otherParams)
+        val passwordByteKey = ensureUniqueParamName(internalKey(parameterPassword.name) + "_bytes", otherParams)
 
         def convertPasswordParameters(transaction: Transaction, params: MapValue): MapValue = {
-          val passwordParameter = parameterPassword.name
-          val encodedPassword = getValidPasswordParameter(params, passwordParameter)
+          val encodedPassword = getValidPasswordParameter(params, parameterPassword.name)
           val hashedPassword = if (isEncryptedPassword) validateAndFormatEncryptedPassword(encodedPassword) else hashPassword(validatePassword(encodedPassword))
-          params.updatedWith(hashedPwParameterName, hashedPassword).updatedWith(passwordParameter + "_bytes", Values.byteArray(encodedPassword))
+          params.updatedWith(hashedPwKey, hashedPassword).updatedWith(passwordByteKey, Values.byteArray(encodedPassword))
         }
-        PasswordExpression(hashedPwParameterName, Values.NO_VALUE, s"${parameterPassword.name}_bytes", Values.NO_VALUE, convertPasswordParameters)
+        PasswordExpression(hashedPwKey, Values.NO_VALUE, passwordByteKey, Values.NO_VALUE, convertPasswordParameters)
     }
 
   private[internal] def getValidPasswordParameter(params: MapValue, passwordParameter: String): Array[Byte] = {
@@ -128,6 +126,16 @@ object AdministrationCommandRuntime {
       case other =>
         throw new ParameterWrongTypeException(s"Expected password parameter $$$passwordParameter to have type String but was ${other.getTypeName}")
     }
+  }
+
+  private[internal] def ensureUniqueParamName(originalName: String, otherParams: Array[String]): String = {
+    var uniqueName = originalName
+    val params:Seq[String] = otherParams.sorted
+    for (otherParamName <- params) {
+      if (otherParamName.equals(uniqueName))
+        uniqueName = uniqueName + "_"
+    }
+    uniqueName
   }
 
   private[internal] def validateStringParameterType(param: Parameter): Unit = {
@@ -154,11 +162,12 @@ object AdministrationCommandRuntime {
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
     val userNameFields = getNameFields("username", userName)
-    val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword)
+    val nonPasswordParameterNames = Array(userNameFields.nameKey, uuidKey, passwordChangeRequiredKey, suspendedKey) ++ homeDatabaseFields.map(_.nameKey)
+    val credentials = getPasswordExpression(userName.toOption, password, isEncryptedPassword, nonPasswordParameterNames)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
     val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
-      val newParams = credentials.mapValueConverter(tx, userNameFields.nameConverter(tx, p))
-      homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+      val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
+      credentials.mapValueConverter(tx, newHomeDatabaseFields.getOrElse(userNameFields.nameConverter(tx, p)))
     }
     UpdatingSystemCommandExecutionPlan("CreateUser",
       normalExecutionEngine,
@@ -169,12 +178,12 @@ object AdministrationCommandRuntime {
          |$homeDatabaseCypher })
          |RETURN u.name""".stripMargin,
       VirtualValues.map(
-        Array(userNameFields.nameKey, uuidKey, credentials.key, credentials.bytesKey, passwordChangeRequiredKey, suspendedKey) ++ homeDatabaseFields.map(_.nameKey),
+        Array(credentials.key, credentials.bytesKey) ++ nonPasswordParameterNames,
         Array[AnyValue](
-          userNameFields.nameValue,
-          Values.utf8Value(UUID.randomUUID().toString),
           credentials.value,
           credentials.bytesValue,
+          userNameFields.nameValue,
+          Values.utf8Value(UUID.randomUUID().toString),
           Values.booleanValue(requirePasswordChange),
           Values.booleanValue(suspended)
           ) ++ homeDatabaseFields.map(_.nameValue)
@@ -209,7 +218,8 @@ object AdministrationCommandRuntime {
       case RemoveHomeDatabaseAction    => NameFields(s"${internalPrefix}homeDatabase", Values.NO_VALUE, IdentityConverter)
       case SetHomeDatabaseAction(name) => getNameFields("homeDatabase", name, s => new NormalizedDatabaseName(s).name())
     }
-    val maybePw = password.map(p => getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false)))
+    val nonPasswordParameterNames = Array(userNameFields.nameKey) ++ homeDatabaseFields.map(_.nameKey)
+    val maybePw = password.map(p => getPasswordExpression(userName.toOption, p, isEncryptedPassword.getOrElse(false), nonPasswordParameterNames))
     val params = Seq(
       maybePw -> "credentials",
       requirePasswordChange -> "passwordChangeRequired",
@@ -234,8 +244,8 @@ object AdministrationCommandRuntime {
     val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
     val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
     val mapper: (Transaction, MapValue) => MapValue = (tx, p) => {
-      val newParams = maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, userNameFields.nameConverter(tx, p))
-      homeDatabaseFields.map(ddf => ddf.nameConverter(tx, newParams)).getOrElse(newParams)
+      val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
+      maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(tx, newHomeDatabaseFields.getOrElse(userNameFields.nameConverter(tx, p)))
     }
     UpdatingSystemCommandExecutionPlan("AlterUser",
       normalExecutionEngine,
