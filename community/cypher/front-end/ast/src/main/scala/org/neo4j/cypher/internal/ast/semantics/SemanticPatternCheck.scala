@@ -66,7 +66,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
-      // TODO is this the right place and the difference between the check methods?
       ensureNoSelfReferenceToVariableInPattern(ctx, pattern) chain
       ensureNoDuplicateRelationships(pattern, error = true)
 
@@ -129,13 +128,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     def findAllVariables(e: Any): Set[LogicalVariable] = e.findAllByClass[LogicalVariable].toSet
     def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
-    val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-      case NodePattern(maybeVariable, _, _, maybeProperties, _)                  => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-      case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-      case NamedPatternPart(variable, _)                                      => acc => TraverseChildren((acc._1 + variable, acc._2))
-    }
-
-    referencedVariables.filter(declaredVariables)
+    pattern.patternParts.flatMap {patternParts =>
+      val (declaredVariables, referencedVariables) = patternParts.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+        case NodePattern(maybeVariable, _, _, maybeProperties, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
+      }
+      referencedVariables.filter(declaredVariables)
+    }.toSet
   }
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
