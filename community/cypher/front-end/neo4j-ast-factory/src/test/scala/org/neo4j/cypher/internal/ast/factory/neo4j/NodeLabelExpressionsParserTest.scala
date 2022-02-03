@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class NodeLabelExpressionsJavaCcParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
+class NodeLabelExpressionsParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
 
   test("MATCH (n)") {
     parseNodePatterns(testName) shouldBe Seq(

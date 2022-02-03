@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class ListComprehensionJavaccParserTest extends JavaccParserTestBase[Expression, Any] {
+class ListComprehensionParserTest extends JavaccParserTestBase[Expression, Any] {
   private val t = DummyPosition(0)
 
   implicit private val parser: JavaccRule[Expression] = JavaccRule.ListComprehension

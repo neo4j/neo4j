@@ -19,32 +19,25 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Variable
 
-class SubqueryCallJavaccParserTest extends JavaccParserAstTestBase[Clause] {
+class EscapedSymbolicNameParserTest extends JavaccParserAstTestBase[Any] {
 
-  implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
+  test("escaped variable name") {
+    implicit val parser: JavaccRule[Variable] = JavaccRule.Variable
 
-  test("CALL { RETURN 1 }") {
-    gives(subqueryCall(return_(literalInt(1).unaliased)))
+    parsing("`This isn\\'t a common variable`") shouldGive varFor("This isn\\'t a common variable")
+    parsing("`a``b`") shouldGive varFor("a`b")
   }
 
-  test("CALL { CALL { RETURN 1 as a } }") {
-    gives(subqueryCall(subqueryCall(return_(literalInt(1).as("a")))))
-  }
+  test("escaped label name") {
+    implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
-  test("CALL { RETURN 1 AS a UNION RETURN 2 AS a }") {
-    gives(subqueryCall(unionDistinct(
-      singleQuery(return_(literalInt(1).as("a"))),
-      singleQuery(return_(literalInt(2).as("a")))
-    )))
-  }
+    parsing("(n:`Label`)") shouldGive nodePat("n", "Label")
+    parsing("(n:`Label``123`)") shouldGive nodePat("n", "Label`123")
+    parsing("(n:`````Label```)") shouldGive nodePat("n", "``Label`")
 
-  test("CALL { }") {
-    failsToParse
-  }
-
-  test("CALL { CREATE (n:N) }") {
-    gives(subqueryCall(create(nodePat("n", "N"))))
+    assertFails("(n:`L`abel`)")
   }
 }

@@ -19,25 +19,31 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.CaseExpression
+import org.neo4j.cypher.internal.expressions.Expression
 
-class EscapedSymbolicNameJavaccParserTest extends JavaccParserAstTestBase[Any] {
+class CaseExpressionParserTest extends JavaccParserAstTestBase[Expression] {
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.CaseExpression
 
-  test("escaped variable name") {
-    implicit val parser: JavaccRule[Variable] = JavaccRule.Variable
-
-    parsing("`This isn\\'t a common variable`") shouldGive varFor("This isn\\'t a common variable")
-    parsing("`a``b`") shouldGive varFor("a`b")
+  test("CASE WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        None,
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
+    }
   }
 
-  test("escaped label name") {
-    implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
+  test("CASE when(e) WHEN (e) THEN e ELSE null END") {
+    yields {
+      CaseExpression(
+        Some(function("when", varFor("e"))),
+        List(varFor("e") -> varFor("e")),
+        Some(nullLiteral))
+    }
+  }
 
-    parsing("(n:`Label`)") shouldGive nodePat("n", "Label")
-    parsing("(n:`Label``123`)") shouldGive nodePat("n", "Label`123")
-    parsing("(n:`````Label```)") shouldGive nodePat("n", "``Label`")
-
-    assertFails("(n:`L`abel`)")
+  test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
+    failsToParse
   }
 }

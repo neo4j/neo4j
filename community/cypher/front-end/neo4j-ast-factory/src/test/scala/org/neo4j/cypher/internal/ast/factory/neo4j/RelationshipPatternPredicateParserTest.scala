@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class RelationshipPatternPredicateJavaCcParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
+class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestName with AstConstructionTestSupport {
 
   test("MATCH (n)-[r WHERE r.prop > 123]->()") {
     parseRelationshipPatterns(testName) shouldBe Seq(

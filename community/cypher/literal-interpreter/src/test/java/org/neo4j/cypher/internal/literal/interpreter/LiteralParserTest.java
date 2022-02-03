@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter.DEFAULT_ZONE_ID;
 
 @SuppressWarnings( "ConstantConditions" )
-public class LiteralJavaccParserTest
+public class LiteralParserTest
 {
     private final LiteralInterpreter interpreter = new LiteralInterpreter();
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 
-class ProjectionClauseJavaccParserTest extends JavaccParserAstTestBase[ast.Clause] {
+class ProjectionClauseParserTest extends JavaccParserAstTestBase[ast.Clause] {
 
   implicit val parser: JavaccRule[ast.Clause] = JavaccRule.Clause
 

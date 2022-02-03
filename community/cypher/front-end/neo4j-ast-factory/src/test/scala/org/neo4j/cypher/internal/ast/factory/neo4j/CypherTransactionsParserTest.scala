@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class CypherTransactionsJavaCcParserTest extends JavaccParserAstTestBase[Clause] with VerifyAstPositionTestSupport {
+class CypherTransactionsParserTest extends JavaccParserAstTestBase[Clause] with VerifyAstPositionTestSupport {
 
   implicit private val parser: JavaccRule[Clause] = JavaccRule.SubqueryClause
 

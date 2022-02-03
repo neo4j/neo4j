@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.expressions.Expression
 
-class ExpressionJavaccParserTest extends JavaccParserAstTestBase[Expression] {
+class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
 
   implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
 
