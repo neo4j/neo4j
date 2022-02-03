@@ -58,6 +58,35 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  test("should handle RHS with R/W dependencies - with aggregation on top of apply") {
+    // given
+    val sizeHint = 16
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(expected)
+  }
+
   test("should handle RHS with R/W dependencies on top of join") {
     // given
     val sizeHint = 16
@@ -86,6 +115,37 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should handle RHS with R/W dependencies on top of join - with aggregation on top of apply") {
+    // given
+    val sizeHint = 16
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(1).head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.nodeHashJoin("y")
+      .|.|.allNodeScan("y", "x")
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(expected)
   }
 
   test("should handle RHS with R/W dependencies on top of union") {
@@ -129,6 +189,48 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  test("should handle RHS with R/W dependencies on top of union - with aggregation on top of apply") {
+    // given
+    val sizeHint = 4
+    val initialNodeCount = 1
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(initialNodeCount).head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.union()
+      .|.|.allNodeScan("y", "x")
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = {
+      var nodeCount = initialNodeCount
+      for {
+        inputVal <- inputVals
+      } yield {
+        val unionOutputRows = nodeCount * 2
+        val inputValRepetitions = (0 until unionOutputRows).map(_ => inputVal)
+        nodeCount += inputValRepetitions.size
+        inputValRepetitions
+      }
+    }.flatten.length
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(expected)
+  }
+
   test("should handle RHS with R/W dependencies on top of cartesian product") {
     // given
     val sizeHint = 4
@@ -168,6 +270,48 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of apply") {
+    // given
+    val sizeHint = 4
+    val initialNodeCount = 1
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(initialNodeCount).head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.cartesianProduct()
+      .|.|.allNodeScan("z", "x")
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = {
+      var nodeCount = initialNodeCount
+      for {
+        inputVal <- inputVals
+      } yield {
+        val cartesianProductOutputRows = nodeCount * nodeCount
+        val inputValRepetitions = (0 until cartesianProductOutputRows).map(_ => inputVal)
+        nodeCount += inputValRepetitions.size
+        inputValRepetitions
+      }
+    }.flatten.length
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(expected)
   }
 
   test("should handle RHS with R/W dependencies on top of nested unions") {
@@ -212,5 +356,50 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
+  }
+
+  test("should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of apply") {
+    // given
+    val sizeHint = 4
+    val initialNodeCount = 1
+    val inputVals = (0 until sizeHint).toArray
+    val input = inputValues(inputVals.map(Array[Any](_)): _*)
+
+    given {
+      nodeGraph(initialNodeCount).head
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .apply(fromSubquery = true)
+      .|.create(createNode("n"))
+      .|.eager()
+      .|.union()
+      .|.|.union()
+      .|.|.|.limit(1)
+      .|.|.|.allNodeScan("y", "x")
+      .|.|.allNodeScan("y", "x")
+      .|.allNodeScan("y", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    val expected = {
+      var nodeCount = initialNodeCount
+      for {
+        inputVal <- inputVals
+      } yield {
+        val unionOutputRows = nodeCount * 2 + 1
+        val inputValRepetitions = (0 until unionOutputRows).map(_ => inputVal)
+        nodeCount += inputValRepetitions.size
+        inputValRepetitions
+      }
+    }.flatten.length
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(expected)
   }
 }
