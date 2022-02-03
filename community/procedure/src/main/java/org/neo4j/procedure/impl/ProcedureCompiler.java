@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -111,8 +110,7 @@ class ProcedureCompiler
         try
         {
             List<Method> functionMethods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
-                    .filter( m -> m.isAnnotationPresent( UserFunction.class ) )
-                    .collect( Collectors.toList() );
+                    .filter( m -> m.isAnnotationPresent( UserFunction.class ) ).toList();
 
             if ( functionMethods.isEmpty() )
             {
@@ -134,8 +132,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.",
-                            funcName.toString() ) );
+                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.", funcName ) );
                 }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
@@ -157,8 +154,7 @@ class ProcedureCompiler
         try
         {
             List<Method> methods = Arrays.stream( fcnDefinition.getDeclaredMethods() )
-                    .filter( m -> m.isAnnotationPresent( UserAggregationFunction.class ) )
-                    .collect( Collectors.toList() );
+                    .filter( m -> m.isAnnotationPresent( UserAggregationFunction.class ) ).toList();
 
             if ( methods.isEmpty() )
             {
@@ -180,8 +176,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.",
-                            funcName.toString() ) );
+                    log.warn( String.format( "The function '%s' is not on the allowlist and won't be loaded.", funcName ) );
                 }
 
             }
@@ -205,8 +200,7 @@ class ProcedureCompiler
         try
         {
             List<Method> procedureMethods = Arrays.stream( procDefinition.getDeclaredMethods() )
-                    .filter( m -> m.isAnnotationPresent( Procedure.class ) )
-                    .collect( Collectors.toList() );
+                    .filter( m -> m.isAnnotationPresent( Procedure.class ) ).toList();
 
             if ( procedureMethods.isEmpty() )
             {
@@ -227,8 +221,7 @@ class ProcedureCompiler
                 }
                 else
                 {
-                    log.warn( String.format( "The procedure '%s' is not on the allowlist and won't be loaded.",
-                            procName.toString() ) );
+                    log.warn( String.format( "The procedure '%s' is not on the allowlist and won't be loaded.", procName ) );
                 }
             }
             out.sort( Comparator.comparing( a -> a.signature().name().toString() ) );
@@ -257,7 +250,7 @@ class ProcedureCompiler
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
         boolean systemProcedure = method.isAnnotationPresent( SystemProcedure.class );
-        boolean allowExpiredCredentials = systemProcedure ? method.getAnnotation( SystemProcedure.class ).allowExpiredCredentials() : false;
+        boolean allowExpiredCredentials = systemProcedure && method.getAnnotation( SystemProcedure.class ).allowExpiredCredentials();
         boolean internal = method.isAnnotationPresent( Internal.class );
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
