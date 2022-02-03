@@ -277,15 +277,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     public static final Setting<Integer> cypher_pipelined_operator_fusion_over_pipeline_limit =
             newBuilder( "unsupported.cypher.pipelined.operator_fusion_over_pipeline_limit", INT, 8 ).build();
 
-    public enum CypherParser
-    {
-        DEFAULT, PARBOILED, JAVACC
-    }
-    @Internal
-    @Description( "The parser implementation to use for parsing cypher queries." )
-    public static final Setting<CypherParser> cypher_parser =
-            newBuilder( "unsupported.cypher.parser", ofEnum( CypherParser.class ), CypherParser.DEFAULT ).build();
-
     public enum SplittingTopBehavior
     {
         DEFAULT, DISALLOW

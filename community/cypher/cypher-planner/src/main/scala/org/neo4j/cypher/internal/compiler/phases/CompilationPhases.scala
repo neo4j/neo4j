@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
-import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -103,12 +102,10 @@ object CompilationPhases {
                            literalExtractionStrategy: LiteralExtractionStrategy = IfNoParameter,
                            parameterTypeMapping: Map[String, CypherType] = Map.empty,
                            semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-                           useJavaCCParser: Boolean = false,
                            obfuscateLiterals: Boolean = false
   )
 
   private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    val parse = (if (config.useJavaCCParser) JavaccParsing else Parsing)
     val compatibilityCheck: Transformer[BaseContext, BaseState, BaseState] =
       config.compatibilityMode match {
         case Compatibility3_5 =>
@@ -120,7 +117,7 @@ object CompilationPhases {
           Transformer.identity
       }
 
-    parse andThen
+    JavaccParsing andThen
       compatibilityCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeaturesIn4_X) andThen
       PreparatoryRewriting andThen

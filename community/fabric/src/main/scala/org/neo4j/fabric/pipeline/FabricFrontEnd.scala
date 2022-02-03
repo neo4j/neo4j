@@ -127,7 +127,6 @@ case class FabricFrontEnd(
       compatibilityMode = compatibilityMode,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
       semanticFeatures = CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
-      useJavaCCParser = cypherConfig.useJavaCCParser,
       obfuscateLiterals = cypherConfig.obfuscateLiterals
     )
 

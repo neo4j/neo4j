@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.builder
 
 import org.neo4j.cypher.internal.ast.UnresolvedCall
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -30,15 +31,10 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
-import org.neo4j.cypher.internal.parser.Expressions
-import org.neo4j.cypher.internal.parser.ProcedureCalls
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
-import org.parboiled.scala.ParsingResult
-import org.parboiled.scala.ReportingParseRunner
-import org.parboiled.scala.Rule1
 
 object Parser {
   val injectCachedProperties: Rewriter = topDown(Rewriter.lift {
@@ -88,23 +84,18 @@ object Parser {
   def unapply(arg: String): Option[Expression] = Some(parser.parseExpression(arg))
 }
 
-private class Parser extends Expressions with ProcedureCalls {
-  private val expressionParser: Rule1[Expression] = Expression
-  private val procedureCallParser: Rule1[UnresolvedCall] = Call
+private class Parser {
 
   def parseExpression(text: String): Expression = {
-    val res: ParsingResult[Expression] = ReportingParseRunner(expressionParser).run(text)
-    res.result match {
-      case Some(e) => Parser.cleanup(e)
-      case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors.map(e => e.getErrorMessage + "@" + e.getStartIndex)}")
-    }
+    val expression = JavaccRule.fromParser(_.Expression).apply(text)
+    Parser.cleanup(expression)
   }
 
   def parseProcedureCall(text: String): UnresolvedCall = {
-    val res = ReportingParseRunner(procedureCallParser).run(s"CALL $text")
-    res.result match {
-      case Some(e) => Parser.cleanup(e)
-      case None => throw new IllegalArgumentException(s"Could not parse procedure call: ${res.parseErrors}")
+    val clause = JavaccRule.fromParser(_.CallClause()).apply(s"CALL $text")
+    clause match {
+      case u:UnresolvedCall => Parser.cleanup(u)
+      case c => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")
     }
   }
 }

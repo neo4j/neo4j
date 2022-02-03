@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CONVERTERS
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ParameterMapping
@@ -41,9 +41,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.parboiled.scala.EOI
-import org.parboiled.scala.ReportingParseRunner
-import org.parboiled.scala.Rule1
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
@@ -107,16 +104,9 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 object SimpleInternalExpressionEvaluator {
   private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(ReadTokenContext.EMPTY, new AnonymousVariableNameGenerator()))
 
-  object ExpressionParser extends Expressions {
-    private val parser: Rule1[Expression] = WS ~ Expression ~~ EOI
+  object ExpressionParser {
 
-    def parse(text: String): Expression = {
-      val res = ReportingParseRunner(parser).run(text)
-      res.result match {
-        case Some(e) => e
-        case None    => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
-      }
-    }
+    def parse(text: String): Expression = JavaccRule.fromParser(_.Expression).apply(text)
   }
 
 }

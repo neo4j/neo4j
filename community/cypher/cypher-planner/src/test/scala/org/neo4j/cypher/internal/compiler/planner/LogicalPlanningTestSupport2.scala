@@ -161,8 +161,7 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
     ParsingConfig(
       literalExtractionStrategy = Never,
       parameterTypeMapping = Map.empty,
-      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures,
-      useJavaCCParser = cypherCompilerConfig.useJavaCCParser)
+      semanticFeatures = cypherCompilerConfig.enabledSemanticFeatures)
 
   def pipeLine(parsingConfig: ParsingConfig,
                pushdownPropertyReads: Boolean = pushdownPropertyReads,

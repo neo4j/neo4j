@@ -48,7 +48,6 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.values.virtual.MapValue
 
 import java.time.Clock
-
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
@@ -90,7 +89,6 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
       compatibilityMode,
       semanticFeatures = config.enabledSemanticFeatures,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params),
-      useJavaCCParser = config.useJavaCCParser,
       obfuscateLiterals = config.obfuscateLiterals
     )).transform(startState, context)
   }
@@ -126,7 +124,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   def legacyCsvQuoteEscaping: Boolean = config.legacyCsvQuoteEscaping
   def csvBufferSize: Int = config.csvBufferSize
   def nonIndexedLabelWarningThreshold: Long = cfg.get(GraphDatabaseInternalSettings.query_non_indexed_label_warning_threshold).longValue()
-  def useJavaCCParser: Boolean = config.useJavaCCParser
   def obfuscateLiterals: Boolean = config.obfuscateLiterals
   def pipelinedBatchSizeSmall: Int = config.pipelinedBatchSizeSmall
   def pipelinedBatchSizeBig: Int = config.pipelinedBatchSizeBig
