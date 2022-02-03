@@ -175,7 +175,7 @@ class CypherPlannerTest extends CypherFunSuite {
     val statement = planner
       .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime)
       .logicalPlanState
-      .statement()
+      .statement
 
     val withAnons = statement
       .findByClass[With]

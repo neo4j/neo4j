@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.PreParserCache
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.QueryCacheStaleLogger
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.config.StatsDivergenceCalculatorConfig
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -197,7 +197,7 @@ object CypherQueryCaches {
     type Value = CacheableLogicalPlan
 
     case class CacheableLogicalPlan(
-      logicalPlanState: LogicalPlanState,
+      logicalPlanState: CachableLogicalPlanState,
       reusability: ReusabilityState,
       notifications: IndexedSeq[InternalNotification],
       override val shouldBeCached: Boolean

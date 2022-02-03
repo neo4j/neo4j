@@ -20,12 +20,28 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.makeRenameExecutionPlan
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.runtimeStringValue
+import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
+import org.neo4j.cypher.internal.administration.CommunityExtendedDatabaseInfoMapper
+import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
+import org.neo4j.cypher.internal.administration.DoNothingExecutionPlanner
+import org.neo4j.cypher.internal.administration.DropUserExecutionPlanner
+import org.neo4j.cypher.internal.administration.EnsureNodeExistsExecutionPlanner
+import org.neo4j.cypher.internal.administration.SetOwnPasswordExecutionPlanner
 import org.neo4j.cypher.internal.administration.ShowDatabasesExecutionPlanner
+import org.neo4j.cypher.internal.administration.ShowUsersExecutionPlanner
+import org.neo4j.cypher.internal.administration.SystemProcedureCallPlanner
 import org.neo4j.cypher.internal.ast.AdministrationAction
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
+import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterUser
@@ -34,6 +50,8 @@ import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
+import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseNotExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropUser
@@ -51,10 +69,13 @@ import org.neo4j.cypher.internal.procs.ActionMapper
 import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScope
 import org.neo4j.internal.kernel.api.security.PermissionState
@@ -65,28 +86,6 @@ import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
-import AdministrationCommandRuntime.makeRenameExecutionPlan
-import AdministrationCommandRuntime.runtimeStringValue
-import org.neo4j.cypher.internal.administration.AlterUserExecutionPlanner
-import org.neo4j.cypher.internal.administration.CommunityExtendedDatabaseInfoMapper
-import org.neo4j.cypher.internal.administration.CreateUserExecutionPlanner
-import org.neo4j.cypher.internal.administration.DoNothingExecutionPlanner
-import org.neo4j.cypher.internal.administration.DropUserExecutionPlanner
-import org.neo4j.cypher.internal.administration.EnsureNodeExistsExecutionPlanner
-import org.neo4j.cypher.internal.administration.SetOwnPasswordExecutionPlanner
-import org.neo4j.cypher.internal.administration.ShowUsersExecutionPlanner
-import org.neo4j.cypher.internal.administration.SystemProcedureCallPlanner
-import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
-import org.neo4j.cypher.internal.ast.Yield
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
-import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseNotExists
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.internal.kernel.api.security.AccessMode
 
 import scala.annotation.tailrec
 
@@ -294,8 +293,8 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
       fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context)
   }
 
-  override def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean = {
-    val logicalPlan = logicalPlanState.maybeLogicalPlan.get match {
+  override def isApplicableAdministrationCommand(logicalPlanArg: LogicalPlan): Boolean = {
+    val logicalPlan = logicalPlanArg match {
       // Ignore the log command in community
       case LogSystemCommand(source, _) => source
       case plan => plan

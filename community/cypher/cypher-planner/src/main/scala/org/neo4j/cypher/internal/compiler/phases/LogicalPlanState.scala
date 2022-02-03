@@ -63,6 +63,20 @@ case class LogicalPlanState(queryText: String,
   def periodicCommit: Option[PeriodicCommit] = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery: Query = statement().asInstanceOf[Query]
 
+  def asCachableLogicalPlanState(): CachableLogicalPlanState = {
+    CachableLogicalPlanState(
+      queryText,
+      plannerName,
+      planningAttributes,
+      anonymousVariableNameGenerator,
+      statement(),
+      semanticTable(),
+      logicalPlan,
+      maybePeriodicCommit,
+      hasLoadCSV,
+      returnColumns())
+  }
+
   override def withStatement(s: Statement): LogicalPlanState = copy(maybeStatement = Some(s))
   override def withReturnColumns(cols: Seq[String]): LogicalPlanState = copy(maybeReturnColumns = Some(cols))
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
@@ -91,4 +105,17 @@ object LogicalPlanState {
                      anonymousVariableNameGenerator = state.anonymousVariableNameGenerator)
 }
 
+/**
+ * A subset of the data stored in LogicalPlanState.
+ */
+case class CachableLogicalPlanState(queryText: String,
+                                    plannerName: PlannerName,
+                                    planningAttributes: PlanningAttributes,
+                                    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+                                    statement: Statement,
+                                    semanticTable: SemanticTable,
+                                    logicalPlan: LogicalPlan,
+                                    maybePeriodicCommit: Option[Option[PeriodicCommit]],
+                                    hasLoadCSV: Boolean = false,
+                                    returnColumns: Seq[String])
 
