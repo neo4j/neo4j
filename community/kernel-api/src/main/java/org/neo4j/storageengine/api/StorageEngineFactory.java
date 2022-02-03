@@ -49,6 +49,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
@@ -180,6 +181,12 @@ public interface StorageEngineFactory
 
     SchemaRuleMigrationAccess schemaRuleMigrationAccess( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
             LogService logService, String recordFormats, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
+
+    /**
+     * Reads schema rules from 4.4 schema store and ignores malformed rules while doing so.
+     */
+    List<SchemaRule44> load44SchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
 
     List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
             Function<SchemaRule,SchemaRule> schemaRuleMigration, CursorContextFactory contextFactory );

@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.format.Index44Compatibility;
 
 import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V4_3;
 
@@ -63,7 +64,7 @@ public class PageAlignedV4_3 extends BaseRecordFormats
     private PageAlignedV4_3()
     {
         super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 2,
-                FormatFamily.aligned.formatCapability() );
+                FormatFamily.aligned.formatCapability(), Index44Compatibility.INSTANCE );
     }
 
     @Override

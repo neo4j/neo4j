@@ -63,6 +63,7 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaState;
@@ -96,6 +97,7 @@ import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreRollingUpgradeCompatibility;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -111,6 +113,7 @@ import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
@@ -119,6 +122,7 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.RollingUpgradeCompatibility;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -308,6 +312,59 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public List<SchemaRule44> load44SchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout,
+            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory )
+    {
+        RecordDatabaseLayout recordDatabaseLayout = RecordDatabaseLayout.convert( layout );
+        RecordFormats recordFormats = RecordFormatSelector.selectForStore( recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
+        if ( recordFormats == null )
+        {
+            throw new IllegalStateException( "Attempting to load 4.4 Schema rules from an empty store" );
+        }
+
+        if ( !recordFormats.hasCapability( Index44Compatibility.INSTANCE ) )
+        {
+            throw new IllegalStateException( "'" + recordFormats + "' is not a 4.4 store format" );
+        }
+
+        IdGeneratorFactory idGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
+        StoreFactory factory = new StoreFactory( recordDatabaseLayout, config, idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
+                contextFactory, readOnly() );
+        try ( var cursorContext = contextFactory.create( "loadSchemaRules" );
+                var stores = factory.openAllNeoStores();
+                var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
+        {
+            stores.start( cursorContext );
+            TokenHolders tokenHolders = loadReadOnlyTokens( stores, true, contextFactory );
+
+            try ( SchemaStore44Reader schemaStoreReader = new SchemaStore44Reader(
+                    stores.getPropertyStore(),
+                    tokenHolders,
+                    stores.getMetaDataStore(),
+                    recordDatabaseLayout.schemaStore(),
+                    recordDatabaseLayout.idSchemaStore(),
+                    config,
+                    SchemaIdType.SCHEMA,
+                    idGeneratorFactory,
+                    pageCache,
+                    contextFactory,
+                    NullLogProvider.getInstance(),
+                    recordFormats,
+                    recordDatabaseLayout.getDatabaseName(),
+                    immutable.empty()
+            ) )
+            {
+
+                return schemaStoreReader.loadAllSchemaRules( storeCursors );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout, boolean lenient,
             Function<SchemaRule,SchemaRule> schemaRuleMigration, CursorContextFactory contextFactory )
     {
@@ -452,7 +509,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
               NullLogProvider.getInstance(), contextFactory, DatabaseReadOnlyChecker.readOnly() ).openAllNeoStores();
               CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, context ) )
         {
-            // Injected NLI will be included if the store we're copying from is older than when token indexes were introduced.
             IndexConfig config = IndexConfig.create();
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
                     loadReadOnlyTokens( neoStores, true, contextFactory ), neoStores.getMetaDataStore() );

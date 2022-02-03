@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.format.Index44Compatibility;
 
 public class StandardV4_3 extends BaseRecordFormats
 {
@@ -43,7 +44,7 @@ public class StandardV4_3 extends BaseRecordFormats
     public StandardV4_3()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 10,
-                FormatFamily.standard.formatCapability() );
+                FormatFamily.standard.formatCapability(), Index44Compatibility.INSTANCE );
     }
 
     @Override
