@@ -102,7 +102,7 @@ public class CountsComputer implements CountsBuilder
     {
         try ( NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, nodes.getHighId(), highLabelId, memoryTracker ) )
         {
-            Configuration configuration = Configuration.defaultConfiguration( databaseLayout.databaseDirectory() );
+            Configuration configuration = Configuration.defaultConfiguration();
 
             // Count nodes
             Function<CursorContext,StoreCursors> storeCursorsFunction = cursorContext -> new CachedStoreCursors( neoStores, cursorContext );

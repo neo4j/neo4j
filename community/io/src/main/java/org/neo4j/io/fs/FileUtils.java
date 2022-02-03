@@ -23,7 +23,6 @@ import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -35,14 +34,12 @@ import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
@@ -355,87 +352,6 @@ public final class FileUtils
             root = root.resolve( part );
         }
         return root;
-    }
-
-    /**
-     * Attempts to discern if the given path is mounted on a device that can likely sustain a very high IO throughput.
-     * <p>
-     * A high IO device is expected to have negligible seek time, if any, and be able to service multiple IO requests
-     * in parallel.
-     *
-     * @param pathOnDevice Any path, hypothetical or real, that once fully resolved, would exist on a storage device
-     * that either supports high IO, or not.
-     * @return Our best-effort estimate for whether or not this device supports a high IO workload.
-     */
-    public static boolean highIODevice( Path pathOnDevice )
-    {
-       if ( SystemUtils.IS_OS_LINUX )
-        {
-            try
-            {
-                FileStore fileStore = Files.getFileStore( pathOnDevice );
-                String name = fileStore.name();
-                if ( name.equals( "tmpfs" ) || name.equals( "hugetlbfs" ) )
-                {
-                    // This is a purely in-memory device. It doesn't get faster than this.
-                    return true;
-                }
-
-                if ( name.startsWith( "/dev/nvme" ) )
-                {
-                    // This is probably an NVMe device. Anything on that protocol is most likely very fast.
-                    return true;
-                }
-
-                Path device = Paths.get( name ).toRealPath(); // Use toRealPath to resolve any symlinks.
-                Path deviceName = device.getName( device.getNameCount() - 1 );
-
-                Path rotational = rotationalPathFor( deviceName );
-                if ( exists( rotational ) )
-                {
-                    return readFirstCharacter( rotational ) == '0';
-                }
-                else
-                {
-                    String namePart = deviceName.toString();
-                    int len = namePart.length();
-                    while ( Character.isDigit( namePart.charAt( len - 1 ) ) )
-                    {
-                        len--;
-                    }
-                    deviceName = Paths.get( namePart.substring( 0, len ) );
-                    rotational = rotationalPathFor( deviceName );
-                    if ( exists( rotational ) )
-                    {
-                        return readFirstCharacter( rotational ) == '0';
-                    }
-                }
-            }
-            catch ( Exception ignored )
-            {
-                // This Linux system apparently has an unfamiliar storage configuration.
-                // Let's just assume that whatever is going on here, it's probably fast.
-                return true;
-            }
-        }
-
-        // Most systems that are not running Linux, will be either MacOS or Windows, and those are likely to be laptops.
-        // Nearly all modern laptops have SSDs as their primary storage, and in any case won't be doing performance critical work.
-        // So we just assume that all non-Linux systems have high IO.
-        return true;
-    }
-
-    private static Path rotationalPathFor( Path deviceName )
-    {
-        return Paths.get( "/sys/block" ).resolve( deviceName ).resolve( "queue" ).resolve( "rotational" );
-    }
-
-    private static int readFirstCharacter( Path file ) throws IOException
-    {
-        try ( InputStream in = Files.newInputStream( file, StandardOpenOption.READ ) )
-        {
-            return in.read();
-        }
     }
 
     /**

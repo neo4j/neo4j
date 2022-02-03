@@ -170,7 +170,7 @@ public class QuickImport implements Callable<Void>
         Config dbConfig = dbConfigPath != null ? Config.newBuilder().fromFile( dbConfigPath ).build() : Config.defaults();
         LogProvider logging = NullLogProvider.getInstance();
         long pageCacheMemory = this.pageCacheMemory != null ? this.pageCacheMemory : org.neo4j.internal.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
-        org.neo4j.internal.batchimport.Configuration importConfig = new org.neo4j.internal.batchimport.Configuration.Overridden( defaultConfiguration( dir ) )
+        org.neo4j.internal.batchimport.Configuration importConfig = new org.neo4j.internal.batchimport.Configuration.Overridden( defaultConfiguration() )
         {
             @Override
             public int maxNumberOfProcessors()

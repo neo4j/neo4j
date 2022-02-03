@@ -19,10 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
-import java.nio.file.Path;
-
 import org.neo4j.configuration.Config;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 
 import static java.lang.Math.min;
@@ -167,8 +164,7 @@ public interface Configuration
      */
     default boolean highIO()
     {
-        // Defaults to false since some environments sees less performance with this enabled
-        return false;
+        return true;
     }
 
     /**
@@ -196,18 +192,16 @@ public interface Configuration
 
     /**
      * {@link #DEFAULT} configuration additionally specialized for the given {@code pathOnDevice}.
-     * @param pathOnDevice {@link Path} to look for clues how to fine tune the configuration even more.
      * @return a {@link Configuration} instance with {@link #DEFAULT defaults} and additionally further specialized for the given device.
      */
-    static Configuration defaultConfiguration( Path pathOnDevice )
+    static Configuration defaultConfiguration()
     {
-        boolean highIoForDevice = FileUtils.highIODevice( pathOnDevice );
         return new Overridden( Configuration.DEFAULT )
         {
             @Override
             public boolean highIO()
             {
-                return highIoForDevice;
+                return true;
             }
         };
     }

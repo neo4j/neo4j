@@ -44,7 +44,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -232,7 +231,7 @@ public class ImportCommand extends AbstractCommand
             Neo4jLayout neo4jLayout = Neo4jLayout.of( databaseConfig );
             final var databaseLayout = RecordDatabaseLayout.of( neo4jLayout, database.name() ); //Right now we only support Record storage for import command
             final var csvConfig = csvConfiguration();
-            final var importConfig = importConfiguration( databaseLayout );
+            final var importConfig = importConfiguration();
 
             final var importerBuilder = CsvImporter.builder()
                     .withDatabaseLayout( databaseLayout )
@@ -256,13 +255,9 @@ public class ImportCommand extends AbstractCommand
                     .withAutoSkipHeaders( autoSkipHeaders )
                     .withForce( force );
 
-            nodes.forEach( n -> {
-                importerBuilder.addNodeFiles( n.key, n.files );
-            } );
+            nodes.forEach( n -> importerBuilder.addNodeFiles( n.key, n.files ) );
 
-            relationships.forEach( n -> {
-                importerBuilder.addRelationshipFiles( n.key, n.files );
-            } );
+            relationships.forEach( n -> importerBuilder.addRelationshipFiles( n.key, n.files ) );
 
             final var importer = importerBuilder.build();
             importer.doImport();
@@ -300,9 +295,9 @@ public class ImportCommand extends AbstractCommand
                 .build();
     }
 
-    private org.neo4j.internal.batchimport.Configuration importConfiguration( DatabaseLayout databaseLayout )
+    private org.neo4j.internal.batchimport.Configuration importConfiguration()
     {
-        return new Configuration.Overridden( Configuration.defaultConfiguration( databaseLayout.databaseDirectory() ) )
+        return new Configuration.Overridden( Configuration.defaultConfiguration() )
         {
             @Override
             public int maxNumberOfProcessors()
