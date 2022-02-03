@@ -138,7 +138,8 @@ object IndexCompatiblePredicatesProvider {
       // n.prop < |<=| >| >= value
       case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        val compatibleIndexTypes = findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)) - IndexType.Point
+        val rangeCapableIndexTypes = Set[IndexType](IndexType.Text, IndexType.Btree, IndexType.Range)
+        val compatibleIndexTypes = findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)) intersect rangeCapableIndexTypes
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
           compatibleIndexTypes = compatibleIndexTypes)

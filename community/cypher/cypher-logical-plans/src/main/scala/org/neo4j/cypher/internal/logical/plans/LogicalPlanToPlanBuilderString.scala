@@ -419,6 +419,9 @@ object LogicalPlanToPlanBuilderString {
       case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
       PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
         pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = true)
+      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
+      PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
+        pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = false)
       case DirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointDistanceSeekRangeWrapper(
       PointDistanceRange(PointFunction(point), distance, inclusive))), argumentIds, indexOrder, indexType) =>
         pointDistanceRelationshipIndexSeek(idName, start, end, typeToken, properties, point, distance, argumentIds, indexOrder, indexType, directed = true, inclusive)
@@ -429,9 +432,6 @@ object LogicalPlanToPlanBuilderString {
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         relationshipIndexOperator(idName, start, end, typeToken, properties, argumentIds, indexOrder, directed = true, queryStr, indexType)
-      case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(
-      PointBoundingBoxRange(PointFunction(lowerLeft), PointFunction(upperRight)))), argumentIds, indexOrder, indexType) =>
-        pointBoundingBoxRelationshipIndexSeek(idName, start, end, typeToken, properties, lowerLeft, upperRight, argumentIds, indexOrder, indexType, directed = false)
       case UndirectedRelationshipIndexSeek(idName, start, end, typeToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
