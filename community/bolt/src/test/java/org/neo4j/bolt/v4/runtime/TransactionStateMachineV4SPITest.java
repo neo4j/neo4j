@@ -31,6 +31,8 @@ import org.neo4j.bolt.dbapi.BookmarkMetadata;
 import org.neo4j.bolt.runtime.Bookmark;
 import org.neo4j.bolt.runtime.statemachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.bookmarking.BookmarkWithDatabaseId;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,8 +50,10 @@ class TransactionStateMachineV4SPITest
     {
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
-        var databaseId = from( "morty", UUID.randomUUID() );
-        when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
+        var databaseName = new NormalizedDatabaseName( "morty" );
+        var databaseId = from( databaseName.name(), UUID.randomUUID() );
+        var databaseRef = new DatabaseReference.Internal( databaseName, databaseId );
+        when( dbSpi.getDatabaseReference() ).thenReturn( databaseRef );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                                                     mock( StatementProcessorReleaseManager.class ), "123" );
@@ -69,10 +73,12 @@ class TransactionStateMachineV4SPITest
         // Given
         var dbSpi = mock( BoltGraphDatabaseServiceSPI.class );
         var tx = mock( BoltTransaction.class );
+        var databaseName = new NormalizedDatabaseName( "morty" );
+        var databaseId = from( databaseName.name(), UUID.randomUUID() );
+        var databaseRef = new DatabaseReference.Internal( databaseName, databaseId );
 
-        var databaseId = from( "morty", UUID.randomUUID() );
         when( tx.getBookmarkMetadata() ).thenReturn( new BookmarkMetadata( 42L, databaseId ));
-        when( dbSpi.getNamedDatabaseId() ).thenReturn( databaseId );
+        when( dbSpi.getDatabaseReference() ).thenReturn( databaseRef );
 
         var spi = new TransactionStateMachineV4SPI( dbSpi, mock( BoltChannel.class ), mock( SystemNanoClock.class ),
                                                     mock( StatementProcessorReleaseManager.class ), "123" );

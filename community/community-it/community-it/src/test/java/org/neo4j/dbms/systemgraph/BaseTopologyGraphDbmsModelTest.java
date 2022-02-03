@@ -77,7 +77,6 @@ import static org.neo4j.dbms.database.TopologyGraphDbmsModel.INSTANCE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.INSTANCE_MODE_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.INSTANCE_STATUS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.INSTANCE_UUID_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.LOCAL_DATABASE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.REMOVED_INSTANCE_LABEL;
@@ -386,7 +385,7 @@ public abstract class BaseTopologyGraphDbmsModelTest
     protected Node createLocalAliasForDatabase( Transaction tx, String name, boolean primary, NamedDatabaseId databaseId )
     {
         var databaseNode = findDatabase( databaseId, tx );
-        var aliasNode = tx.createNode( LOCAL_DATABASE_LABEL, DATABASE_NAME_LABEL );
+        var aliasNode = tx.createNode( DATABASE_NAME_LABEL );
         aliasNode.setProperty( PRIMARY_PROPERTY, primary );
         aliasNode.setProperty( DATABASE_NAME_PROPERTY, name );
         aliasNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );

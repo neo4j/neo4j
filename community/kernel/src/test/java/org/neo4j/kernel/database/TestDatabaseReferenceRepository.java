@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -39,52 +40,68 @@ import org.neo4j.configuration.helpers.SocketAddressParser;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Function.identity;
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
 public final class TestDatabaseReferenceRepository
 {
 
-    public static DatabaseReference randomDatabaseReference()
+    public static DatabaseReference randomAnyDatabaseReference()
     {
         var databaseName = RandomStringUtils.randomAlphabetic( 10 );
-        return randomDatabaseReference( databaseName );
+        return anyDatabaseReference( databaseName );
     }
 
-    public static DatabaseReference randomDatabaseReference( String databaseName )
+    public static DatabaseReference anyDatabaseReference( String databaseName )
     {
         var internal = ThreadLocalRandom.current().nextBoolean();
-        return internal ? randomInternalDatabaseReference( databaseName ) :
-               randomExternalDatabaseReference( databaseName );
+        return internal ? internalDatabaseReference( databaseName ) :
+               externalDatabaseReference( databaseName );
     }
 
     public static DatabaseReference.Internal randomInternalDatabaseReference()
     {
         var databaseName = RandomStringUtils.randomAlphabetic( 10 );
-        return randomInternalDatabaseReference( databaseName );
+        return internalDatabaseReference( databaseName );
     }
 
     public static DatabaseReference.External randomExternalDatabaseReference()
     {
         var databaseName = RandomStringUtils.randomAlphabetic( 10 );
-        return randomExternalDatabaseReference( databaseName );
+        return externalDatabaseReference( databaseName );
     }
 
-    public static DatabaseReference.Internal randomInternalDatabaseReference( String databaseName )
+    public static DatabaseReference.Internal internalDatabaseReference( String databaseName )
     {
-        var normalizedName = new NormalizedDatabaseName( databaseName );
+        return internalDatabaseReference( databaseName, databaseName );
+    }
+
+    public static DatabaseReference.Internal internalDatabaseReference( String databaseName, String aliasName )
+    {
+        var normalizedAlias = new NormalizedDatabaseName( aliasName );
         var dbId = DatabaseIdFactory.from( databaseName, UUID.nameUUIDFromBytes( databaseName.getBytes( UTF_8 ) ) );
-        return new DatabaseReference.Internal( normalizedName, dbId );
+        return new DatabaseReference.Internal( normalizedAlias, dbId );
     }
 
-    public static DatabaseReference.External randomExternalDatabaseReference( String databaseName )
+    public static DatabaseReference.External externalDatabaseReference( String databaseName )
     {
-        var normalizedName = new NormalizedDatabaseName( databaseName );
+        return externalDatabaseReference( databaseName, databaseName );
+    }
+
+    public static DatabaseReference.External externalDatabaseReference( String localAliasName, String targetDatabaseName )
+    {
+        var normalizedAlias = new NormalizedDatabaseName( localAliasName );
+        var normalizedTarget = new NormalizedDatabaseName( targetDatabaseName );
         var addr = SocketAddressParser.socketAddress( URI.create( "my.neo4j.com" ), BoltConnector.DEFAULT_PORT, SocketAddress::new );
         var uri = new RemoteUri( "neo4j", List.of( addr ), null );
-        return new DatabaseReference.External( normalizedName, normalizedName, uri );
+        return new DatabaseReference.External( normalizedTarget, normalizedAlias, uri );
     }
 
     public static class Fixed implements DatabaseReferenceRepository
     {
+        private final static DatabaseReference SYSTEM_DATABASE_REFERENCE =
+                new DatabaseReference.Internal( new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), NAMED_SYSTEM_DATABASE_ID );
+
         private final Map<NormalizedDatabaseName,DatabaseReference> databaseReferences;
 
         public Fixed( Collection<DatabaseReference> databaseReferences )
@@ -102,6 +119,10 @@ public final class TestDatabaseReferenceRepository
         @Override
         public Optional<DatabaseReference> getByName( NormalizedDatabaseName databaseName )
         {
+            if ( Objects.equals( SYSTEM_DATABASE_NAME, databaseName.name() ) )
+            {
+                return Optional.of( SYSTEM_DATABASE_REFERENCE );
+            }
             return Optional.ofNullable( databaseReferences.get( databaseName ) );
         }
 
@@ -129,6 +150,16 @@ public final class TestDatabaseReferenceRepository
                                      .filter( type::isInstance )
                                      .map( type::cast )
                                      .collect( Collectors.toSet() );
+        }
+
+        public void setDatabaseReference( NormalizedDatabaseName databaseName, DatabaseReference databaseRef )
+        {
+            databaseReferences.put( databaseName, databaseRef );
+        }
+
+        public void removeDatabaseReference( NormalizedDatabaseName databaseName )
+        {
+            databaseReferences.remove( databaseName );
         }
     }
 }

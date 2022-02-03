@@ -174,7 +174,7 @@ public class FabricLocalExecutor
         {
             try
             {
-                return dbms.getDatabase( location.getDatabaseName() );
+                return dbms.getDatabaseFacade( location.getDatabaseName() );
             }
             catch ( UnavailableException e )
             {

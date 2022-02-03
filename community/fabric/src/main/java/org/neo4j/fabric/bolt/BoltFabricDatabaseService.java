@@ -44,6 +44,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.memory.HeapEstimator;
@@ -58,14 +59,14 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     private static final long BOLT_TRANSACTION_SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( BoltTransactionImpl.class );
 
     private final FabricExecutor fabricExecutor;
-    private final NamedDatabaseId namedDatabaseId;
+    private final DatabaseReference databaseReference;
     private final FabricConfig config;
     private final TransactionManager transactionManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
     private final MemoryTracker memoryTracker;
 
-    public BoltFabricDatabaseService( NamedDatabaseId namedDatabaseId,
+    public BoltFabricDatabaseService( DatabaseReference databaseReference,
                                       FabricExecutor fabricExecutor,
                                       FabricConfig config,
                                       TransactionManager transactionManager,
@@ -73,7 +74,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                                       TransactionBookmarkManagerFactory transactionBookmarkManagerFactory,
                                       MemoryTracker memoryTracker )
     {
-        this.namedDatabaseId = namedDatabaseId;
+        this.databaseReference = databaseReference;
         this.config = config;
         this.transactionManager = transactionManager;
         this.fabricExecutor = fabricExecutor;
@@ -97,7 +98,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
                 accessMode,
                 loginContext,
                 clientInfo,
-                namedDatabaseId,
+                databaseReference,
                 KernelTransaction.Type.IMPLICIT == type,
                 txTimeout,
                 txMetadata,
@@ -118,9 +119,9 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     }
 
     @Override
-    public NamedDatabaseId getNamedDatabaseId()
+    public DatabaseReference getDatabaseReference()
     {
-        return namedDatabaseId;
+        return databaseReference;
     }
 
     @Override

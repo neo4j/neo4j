@@ -63,20 +63,6 @@ public class MapCachingDatabaseIdRepository implements DatabaseIdRepository.Cach
         return dbId;
     }
 
-    @Override
-    public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
-    {
-        // Can't cache getAll call
-        return delegate.getAllDatabaseAliases();
-    }
-
-    @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds()
-    {
-        // Can't cache getAll call
-        return delegate.getAllDatabaseIds();
-    }
-
     /**
      * We recreate the maps rather than .clear() because .clear() is not atomic
      *  and a concurrent .computeIfAbsent() could preserve a stale value.

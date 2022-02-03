@@ -30,6 +30,7 @@ import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface FabricTransaction
@@ -65,6 +66,6 @@ public interface FabricTransaction
 
         void validateStatementType( StatementType type );
 
-        NamedDatabaseId getSessionDatabaseId();
+        DatabaseReference getSessionDatabaseReference();
     }
 }

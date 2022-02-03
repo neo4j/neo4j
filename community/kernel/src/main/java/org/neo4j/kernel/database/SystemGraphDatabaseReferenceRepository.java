@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -31,8 +32,14 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
+
 public class SystemGraphDatabaseReferenceRepository implements DatabaseReferenceRepository
 {
+    private final static DatabaseReference SYSTEM_DATABASE_REFERENCE =
+            new DatabaseReference.Internal( new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), NAMED_SYSTEM_DATABASE_ID );
+
     private final Supplier<DatabaseContext> systemDatabaseSupplier;
 
     public SystemGraphDatabaseReferenceRepository( Supplier<DatabaseContext> systemDatabaseSupplier )
@@ -43,6 +50,10 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
     @Override
     public Optional<DatabaseReference> getByName( NormalizedDatabaseName databaseName )
     {
+        if ( Objects.equals( SYSTEM_DATABASE_NAME, databaseName.name() ) )
+        {
+            return Optional.of( SYSTEM_DATABASE_REFERENCE );
+        }
         return execute( model -> model.getDatabaseRefByAlias( databaseName.name() ) );
     }
 
@@ -62,15 +73,6 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
     public Set<DatabaseReference.External> getExternalDatabaseReferences()
     {
         return execute( TopologyGraphDbmsModel::getAllExternalDatabaseReferences );
-    }
-
-    private <T extends DatabaseReference> Set<T> getDatabaseAliasesOfType( Class<T> clazz )
-    {
-        var references = getAllDatabaseReferences();
-        return references.stream()
-                         .filter( clazz::isInstance )
-                         .map( clazz::cast )
-                         .collect( Collectors.toSet() );
     }
 
     private <T> T execute( Function<TopologyGraphDbmsModel,T> operation )

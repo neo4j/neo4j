@@ -20,15 +20,20 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
-import org.neo4j.fabric.eval.Catalog.GraphAlias
+import org.neo4j.fabric.eval.Catalog.Alias
+import org.neo4j.fabric.eval.Catalog.ExternalAlias
+import org.neo4j.fabric.eval.Catalog.InternalAlias
 import org.neo4j.fabric.eval.Catalog.InternalGraph
 import org.neo4j.fabric.executor.Location
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.event.TransactionData
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners
+
+import java.util.UUID
 
 class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: GlobalTransactionEventListeners) extends CatalogManager {
 
@@ -91,18 +96,28 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
     databaseName = new NormalizedDatabaseName(databaseId.name)
   } yield InternalGraph(idx, databaseId.databaseId.uuid, graphName, databaseName)
 
-  protected def getAliases(firstId: Long) = for {
-    ((databaseName, databaseId), idx) <- databaseLookup.databaseReferences zip indicesFrom(firstId)
-    if databaseName.name != databaseId.name // Filter out true names/primary aliases
-    graphName = new NormalizedGraphName(databaseName.name)
-  } yield GraphAlias(idx, databaseId.databaseId.uuid, graphName, databaseName)
+  protected def getAliases(firstId: Long) = {
+    val nonPrimaryRefs = databaseLookup.databaseReferences.toStream.filter(!_.isPrimary)
+    val aliases = for {
+      (ref, idx) <- nonPrimaryRefs zip indicesFrom(firstId)
+      alias <- aliasFactory(ref, idx)
+    } yield alias
+    aliases.toSet
+  }
+
+  protected def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
+    case i: DatabaseReference.Internal if i.isPrimary => None //ignore primary aliases
+    case i: DatabaseReference.Internal => Some(InternalAlias(idx, i.databaseId.databaseId.uuid, new NormalizedGraphName(i.alias.name), i.alias))
+    case e: DatabaseReference.External => Some(ExternalAlias(idx, new UUID(idx,0), new NormalizedGraphName(e.alias.name), e.alias, e.remoteName, e.remoteUri))
+    case other => None //ignore unexpected reference types
+  }
 
   private def indicesFrom(firstId: Long) = Stream.iterate(firstId)(_ + 1)
 
-  override def locationOf(sessionDatabase: NamedDatabaseId, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
+  override def locationOf(sessionDatabase: DatabaseReference, graph: Catalog.Graph, requireWritable: Boolean, canRoute: Boolean): Location = graph match {
     case Catalog.InternalGraph(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
-    case Catalog.GraphAlias(id, uuid, _, databaseName) =>
+    case Catalog.InternalAlias(id, uuid, _, databaseName) =>
       new Location.Local(id, uuid, databaseName.name())
     case _ => throw new IllegalArgumentException( s"Unexpected graph type $graph" )
   }

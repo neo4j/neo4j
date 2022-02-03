@@ -36,7 +36,9 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -122,9 +124,11 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public NamedDatabaseId getNamedDatabaseId()
+    public DatabaseReference getDatabaseReference()
     {
-        return namedDatabaseId;
+        //BoltKernelDatabaseServiceProviders are only created in community edition, or when "fabric.enabled_by_default" is set to false.
+        // Under both circumstances, external references are not supported, therefore it is safe to produce an internal reference for the target db here.
+        return new DatabaseReference.Internal( new NormalizedDatabaseName( namedDatabaseId.name() ), namedDatabaseId );
     }
 
     private InternalTransaction beginInternalTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo,

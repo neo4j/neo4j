@@ -37,6 +37,8 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.emptyMap;
@@ -94,8 +96,11 @@ class TransactionManagerTest
 
     private static FabricTransactionInfo createTransactionInfo()
     {
+        var databaseName = new NormalizedDatabaseName( "a" );
+        var databaseId = DatabaseIdFactory.from( databaseName.name(), UUID.randomUUID() );
+        var databaseRef = new DatabaseReference.Internal( databaseName, databaseId );
         return new FabricTransactionInfo( AccessMode.READ, LoginContext.AUTH_DISABLED, ClientConnectionInfo.EMBEDDED_CONNECTION,
-                DatabaseIdFactory.from( "a", UUID.randomUUID() ), false, Duration.ZERO,
+                databaseRef, false, Duration.ZERO,
                 emptyMap(), new RoutingContext( true, emptyMap() ) );
     }
 }

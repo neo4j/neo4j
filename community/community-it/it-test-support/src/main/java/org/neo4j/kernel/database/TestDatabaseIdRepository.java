@@ -125,17 +125,5 @@ public final class TestDatabaseIdRepository
         {
             return Optional.of( new NamedDatabaseId( "db" + databaseId.hashCode(), databaseId.uuid() ) );
         }
-
-        @Override
-        public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
-        {
-            return Map.of();
-        }
-
-        @Override
-        public Set<NamedDatabaseId> getAllDatabaseIds()
-        {
-            return Set.of();
-        }
     }
 }

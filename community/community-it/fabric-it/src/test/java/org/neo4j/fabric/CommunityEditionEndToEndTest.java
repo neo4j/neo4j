@@ -45,6 +45,8 @@ import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -152,8 +154,11 @@ class CommunityEditionEndToEndTest
         var dependencyResolver = graphDatabase.getDependencyResolver();
         var transactionManager = dependencyResolver.resolveDependency( TransactionManager.class );
         var fabricExecutor = dependencyResolver.resolveDependency( FabricExecutor.class );
+        var databaseName = new NormalizedDatabaseName( "mega" );
+        var databaseId = DatabaseIdFactory.from( databaseName.name(), UUID.randomUUID() );
+        var databaseRef = new DatabaseReference.Internal( databaseName, databaseId );
         var transactionInfo = new FabricTransactionInfo( org.neo4j.bolt.runtime.AccessMode.READ, AUTH_DISABLED,
-                EMBEDDED_CONNECTION, DatabaseIdFactory.from("mega", UUID.randomUUID()), false, Duration.ZERO, Map.of(), new RoutingContext( false, Map.of() ) );
+                EMBEDDED_CONNECTION, databaseRef, false, Duration.ZERO, Map.of(), new RoutingContext( false, Map.of() ) );
         var bookmarkManager = mock( TransactionBookmarkManager.class );
 
         var tx1 = transactionManager.begin( transactionInfo, bookmarkManager );

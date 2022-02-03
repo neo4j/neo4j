@@ -25,9 +25,6 @@ import org.mockito.Mockito;
 
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.atMostOnce;
@@ -142,25 +139,5 @@ class MapCachingDatabaseIdRepositoryTest
 
         verify( delegate, times( 2 ) ).getByName( otherNamedDbId.name() );
         verify( delegate, times( 2 ) ).getById( randomDbId );
-    }
-
-    @Test
-    void shouldAlwaysDelegateGetAllAliases()
-    {
-        var aliasSnapshots = Stream.generate( databaseIdRepository::getAllDatabaseAliases );
-        var n = 10;
-        aliasSnapshots.limit( n ).forEach( ignored -> {} );
-
-        verify( delegate, times( n ) ).getAllDatabaseAliases();
-    }
-
-    @Test
-    void shouldAlwaysDelegateGetAllIds()
-    {
-        var idSnapshots = Stream.generate( databaseIdRepository::getAllDatabaseIds );
-        var n = 10;
-        idSnapshots.limit( n ).forEach( ignored -> {} );
-
-        verify( delegate, times( n ) ).getAllDatabaseIds();
     }
 }

@@ -60,7 +60,7 @@ public class TransactionStateMachineV44SPI extends TransactionStateMachineV4SPI
         @Override
         protected BoltResult newBoltResult( QueryExecution result, BoltAdapterSubscriber subscriber, Clock clock )
         {
-            return new CypherAdapterStreamV44( result, subscriber, clock, namedDatabaseId.name() );
+            return new CypherAdapterStreamV44( result, subscriber, clock, databaseReference.alias().name() );
         }
     }
 }

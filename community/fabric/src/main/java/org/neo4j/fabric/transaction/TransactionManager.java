@@ -83,7 +83,7 @@ public class TransactionManager extends LifecycleAdapter
         {
             throw new DatabaseShutdownException();
         }
-        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getSessionDatabaseId().name(), securityLog );
+        transactionInfo.getLoginContext().authorize( LoginContext.IdLookup.EMPTY, transactionInfo.getSessionDatabaseReference().alias().name(), securityLog );
 
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl( transactionInfo,
                 transactionBookmarkManager,

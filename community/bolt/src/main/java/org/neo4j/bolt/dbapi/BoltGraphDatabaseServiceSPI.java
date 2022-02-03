@@ -29,6 +29,7 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 /**
@@ -41,7 +42,7 @@ public interface BoltGraphDatabaseServiceSPI
 
     boolean isPeriodicCommit( String query );
 
-    NamedDatabaseId getNamedDatabaseId();
+    DatabaseReference getDatabaseReference();
 
     void freeTransaction();
 }

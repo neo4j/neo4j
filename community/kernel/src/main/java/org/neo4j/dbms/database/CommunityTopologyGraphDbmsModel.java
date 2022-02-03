@@ -115,7 +115,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferences0()
     {
-        return tx.findNodes( LOCAL_DATABASE_LABEL ).stream()
+        return tx.findNodes( DATABASE_NAME_LABEL ).stream()
                  .flatMap( alias -> getTargetedDatabase( alias )
                          .flatMap( db -> createInternalReference( alias, db ) ).stream() );
     }
@@ -123,10 +123,10 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     private Optional<DatabaseReference.Internal> createInternalReference( Node alias, NamedDatabaseId targetedDatabase )
     {
         return ignoreConcurrentDeletes( () ->
-                                        {
-                                            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY ) );
-                                            return Optional.of( new DatabaseReference.Internal( aliasName, targetedDatabase ) );
-                                        } );
+        {
+            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY ) );
+            return Optional.of( new DatabaseReference.Internal( aliasName, targetedDatabase ) );
+        } );
     }
 
     @Override
@@ -137,26 +137,42 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private Stream<DatabaseReference.External> getAllExternalDatabaseReferences0()
     {
-        return tx.findNodes( REMOTE_DATABASE_LABEL ).stream().map( this::createExternalReference );
+        return tx.findNodes( REMOTE_DATABASE_LABEL ).stream().flatMap( alias -> createExternalReference( alias ).stream() );
     }
 
-    private DatabaseReference.External createExternalReference( Node alias )
+    private Optional<DatabaseReference.External> createExternalReference( Node alias )
     {
-        var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY );
-        var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY ) );
-        var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY ) );
+        return ignoreConcurrentDeletes( () ->
+        {
+            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY );
+            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY ) );
+            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY ) );
 
-        var uri = URI.create( uriString );
-        var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
-        //TODO: Ask Cypher Ops to update RemoteDb data model to provide a scheme and a query as well as a hostname
-        var remoteUri = new RemoteUri( uri.getScheme(), List.of( host ), uri.getQuery() );
-        return new DatabaseReference.External( targetName, aliasName, remoteUri );
+            var uri = URI.create( uriString );
+            var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
+            var remoteUri = new RemoteUri( uri.getScheme(), List.of( host ), uri.getQuery() );
+            return Optional.of( new DatabaseReference.External( targetName, aliasName, remoteUri ) );
+        } );
     }
 
     @Override
     public Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName )
     {
-        return Optional.empty();
+        return getInternalDatabaseReference( databaseName )
+                .or( () -> getExternalDatabaseReference( databaseName ) );
+    }
+
+    private Optional<DatabaseReference> getInternalDatabaseReference( String databaseName )
+    {
+        var aliasNode = Optional.ofNullable( tx.findNode( DATABASE_NAME_LABEL, NAME_PROPERTY, databaseName ) );
+        return aliasNode.flatMap( alias -> getTargetedDatabase( alias )
+                .flatMap( db -> createInternalReference( alias, db ) ) );
+    }
+
+    private Optional<DatabaseReference> getExternalDatabaseReference( String databaseName )
+    {
+        return Optional.ofNullable( tx.findNode( REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName ) )
+                       .flatMap( this::createExternalReference );
     }
 
     private Optional<NamedDatabaseId> getDatabaseIdByAlias0( String databaseName )

@@ -21,6 +21,7 @@ package org.neo4j.fabric.eval
 
 import java.util.UUID
 import org.neo4j.configuration.helpers.NormalizedGraphName
+import org.neo4j.configuration.helpers.RemoteUri
 import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.util.Errors
@@ -40,6 +41,7 @@ object Catalog {
   }
 
   sealed trait ConcreteGraph extends Graph
+  sealed trait Alias extends Graph
 
   case class InternalGraph(
     id: Long,
@@ -59,17 +61,27 @@ object Catalog {
     override def toString: String = s"external graph $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
-  case class GraphAlias(
+  case class InternalAlias(
     id: Long,
     uuid: UUID,
     graphName: NormalizedGraphName,
     databaseName: NormalizedDatabaseName
-  ) extends Graph {
+  ) extends Alias {
     def name: Option[String] = Some(graphName.name())
     override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
   }
 
-
+  case class ExternalAlias(
+    id: Long,
+    uuid: UUID,
+    graphName: NormalizedGraphName,
+    localDatabaseName: NormalizedDatabaseName,
+    remoteDatabaseName: NormalizedDatabaseName,
+    uri: RemoteUri
+  ) extends Alias {
+    def name: Option[String] = Some(graphName.name())
+    override def toString: String = s"graph alias $id" + name.map(n => s" ($n)").getOrElse("")
+  }
 
   trait View extends Entry {
     val arity: Int

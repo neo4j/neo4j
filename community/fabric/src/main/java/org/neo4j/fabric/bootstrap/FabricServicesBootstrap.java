@@ -88,7 +88,7 @@ public abstract class FabricServicesBootstrap
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
     protected final DatabaseManager<? extends DatabaseContext> databaseManager;
-    private final DatabaseReferenceRepository databaseReferenceRepo;
+    protected final DatabaseReferenceRepository databaseReferenceRepo;
 
     public FabricServicesBootstrap( LifeSupport lifeSupport, Dependencies dependencies, LogService logService, AbstractSecurityLog securityLog,
             DatabaseManager<? extends DatabaseContext> databaseManager, DatabaseReferenceRepository databaseReferenceRepo )
@@ -230,7 +230,7 @@ public abstract class FabricServicesBootstrap
         @Override
         protected FabricDatabaseManager createFabricDatabaseManager( FabricConfig fabricConfig )
         {
-            return new FabricDatabaseManager.Community( fabricConfig, databaseManager );
+            return new FabricDatabaseManager.Community( fabricConfig, databaseManager, databaseReferenceRepo );
         }
 
         @Override

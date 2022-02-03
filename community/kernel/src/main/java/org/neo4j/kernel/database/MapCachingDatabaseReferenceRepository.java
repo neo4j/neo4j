@@ -38,7 +38,8 @@ public class MapCachingDatabaseReferenceRepository implements DatabaseReferenceR
     @Override
     public Optional<DatabaseReference> getByName( NormalizedDatabaseName databaseName )
     {
-        return Optional.ofNullable( databaseRefsByName.computeIfAbsent( databaseName, this::lookupReferenceOnDelegate ) );
+         var result = Optional.ofNullable( databaseRefsByName.computeIfAbsent( databaseName, this::lookupReferenceOnDelegate ) );
+         return result;
     }
 
     /**

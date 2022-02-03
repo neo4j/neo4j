@@ -53,21 +53,6 @@ public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository
         return execute( model -> model.getDatabaseIdByUUID( databaseId.uuid() ) );
     }
 
-    @Override
-    public Map<NormalizedDatabaseName,NamedDatabaseId> getAllDatabaseAliases()
-    {
-        var databaseReferences = execute( TopologyGraphDbmsModel::getAllInternalDatabaseReferences );
-        return databaseReferences.stream()
-                      .map( ref -> Map.entry( ref.alias(), ref.databaseId() ) )
-                      .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-    }
-
-    @Override
-    public Set<NamedDatabaseId> getAllDatabaseIds()
-    {
-        return execute( TopologyGraphDbmsModel::getAllDatabaseIds );
-    }
-
     private <T> T execute( Function<TopologyGraphDbmsModel,T> operation )
     {
         var databaseContext = systemDatabaseSupplier.get();

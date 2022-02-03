@@ -33,6 +33,8 @@ import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
@@ -77,8 +79,8 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     {
         memoryTracker.allocateHeap( BoltFabricDatabaseService.SHALLOW_SIZE );
 
-        var database = fabricDatabaseManager.getDatabase( databaseName );
-        return new BoltFabricDatabaseService( database.databaseId(), fabricExecutor, config, transactionManager, transactionIdTracker,
+        var database = fabricDatabaseManager.getDatabaseReference( databaseName );
+        return new BoltFabricDatabaseService( database, fabricExecutor, config, transactionManager, transactionIdTracker,
                                               transactionBookmarkManagerFactory, memoryTracker );
     }
 
