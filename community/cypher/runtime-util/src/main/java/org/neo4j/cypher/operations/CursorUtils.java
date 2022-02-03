@@ -45,9 +45,11 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -146,6 +148,10 @@ public final class CursorUtils
             PropertyCursor propertyCursor,
             int prop )
     {
+        if ( prop == NO_SUCH_PROPERTY_KEY )
+        {
+            return NO_VALUE;
+        }
         nodeCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
@@ -194,6 +200,10 @@ public final class CursorUtils
             int prop
     )
     {
+        if ( prop == NO_SUCH_PROPERTY_KEY )
+        {
+            return false;
+        }
         nodeCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
         return propertyCursor.next();
     }
@@ -209,6 +219,10 @@ public final class CursorUtils
      */
     public static boolean nodeHasLabel( Read read, NodeCursor nodeCursor, long node, int label )
     {
+        if ( label == NO_SUCH_LABEL )
+        {
+            return false;
+        }
         read.singleNode( node, nodeCursor );
         if ( !nodeCursor.next() )
         {
@@ -260,6 +274,10 @@ public final class CursorUtils
      */
     public static boolean relationshipHasType( Read read, RelationshipScanCursor relationshipCursor, long relationship, int type )
     {
+        if ( type == NO_SUCH_RELATIONSHIP_TYPE )
+        {
+            return false;
+        }
         read.singleRelationship( relationship, relationshipCursor );
         if ( !relationshipCursor.next() )
         {
@@ -277,17 +295,12 @@ public final class CursorUtils
         {
             return Cursors.emptyTraversalCursor( read );
         }
-        switch ( direction )
-        {
-        case OUTGOING:
-            return RelationshipSelections.outgoingCursor( cursors, node, types, cursorContext );
-        case INCOMING:
-            return RelationshipSelections.incomingCursor( cursors, node, types, cursorContext );
-        case BOTH:
-            return RelationshipSelections.allCursor( cursors, node, types, cursorContext );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> RelationshipSelections.outgoingCursor( cursors, node, types, cursorContext );
+                    case INCOMING -> RelationshipSelections.incomingCursor( cursors, node, types, cursorContext );
+                    case BOTH -> RelationshipSelections.allCursor( cursors, node, types, cursorContext );
+                };
     }
 
     /**
@@ -356,7 +369,8 @@ public final class CursorUtils
                 return NO_VALUE;
             }
         }
-        return relationshipGetProperty( relationshipCursor, propertyCursor, prop );
+        relationshipCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
+        return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
 
     /**
@@ -369,6 +383,10 @@ public final class CursorUtils
      */
     public static Value relationshipGetProperty( RelationshipDataAccessor relationshipCursor, PropertyCursor propertyCursor, int prop )
     {
+        if ( prop == NO_SUCH_PROPERTY_KEY )
+        {
+            return NO_VALUE;
+        }
         relationshipCursor.properties( propertyCursor, PropertySelection.selection( prop ) );
         return propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
     }
@@ -400,7 +418,8 @@ public final class CursorUtils
         {
             return false;
         }
-        return relationshipHasProperty( relationshipCursor, propertyCursor, prop );
+        relationshipCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
+        return propertyCursor.next();
     }
 
     /**
@@ -417,6 +436,10 @@ public final class CursorUtils
             int prop
     )
     {
+        if ( prop == NO_SUCH_PROPERTY_KEY )
+        {
+            return false;
+        }
         relationshipCursor.properties( propertyCursor, PropertySelection.onlyKeysSelection( prop ) );
         return propertyCursor.next();
     }
