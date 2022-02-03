@@ -43,7 +43,6 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
-import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
 
 public class LogsUpgrader
 {
@@ -52,7 +51,6 @@ public class LogsUpgrader
     private final StorageEngineFactory storageEngineFactory;
     private final DatabaseLayout databaseLayout;
     private final PageCache pageCache;
-    private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final Config config;
     private final DependencyResolver dependencyResolver;
     private final MemoryTracker memoryTracker;
@@ -64,7 +62,6 @@ public class LogsUpgrader
             StorageEngineFactory storageEngineFactory,
             DatabaseLayout databaseLayout,
             PageCache pageCache,
-            LegacyTransactionLogsLocator legacyLogsLocator,
             Config config,
             DependencyResolver dependencyResolver,
             MemoryTracker memoryTracker,
@@ -75,7 +72,6 @@ public class LogsUpgrader
         this.storageEngineFactory = storageEngineFactory;
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
-        this.legacyLogsLocator = legacyLogsLocator;
         this.config = config;
         this.dependencyResolver = dependencyResolver;
         this.memoryTracker = memoryTracker;
@@ -157,59 +153,28 @@ public class LogsUpgrader
                     fs, store, storageEngineFactory, contextFactory );
 
             Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
-            Path legacyLogsDirectory = legacyLogsLocator.getTransactionLogsDirectory();
-            boolean filesNeedsToMove = !transactionLogsDirectory.equals( legacyLogsDirectory );
 
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fs )
-                    .withStorageEngineFactory( storageEngineFactory )
-                    .build();
-            // Move log files to their intended directory, if they are not there already.
-            Path[] legacyFiles = logFiles.logFiles();
-            if ( legacyFiles != null && legacyFiles.length > 0 )
+            // we have to check if the log files are already present in the intended location and try to initialize them there.
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
+            var files = logFiles.logFiles();
+            if ( files != null && files.length > 0 )
             {
-                if ( filesNeedsToMove )
-                {
-                    for ( Path legacyFile : legacyFiles )
-                    {
-                        fs.copyFile( legacyFile, transactionLogsDirectory.resolve( legacyFile.getFileName() ),
-                                EMPTY_COPY_OPTIONS );
-                    }
-                }
+                // The log files are already at their intended location, so initialize them there.
                 logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
-                if ( filesNeedsToMove )
-                {
-                    for ( Path legacyFile : legacyFiles )
-                    {
-                        fs.deleteFile( legacyFile );
-                    }
-                }
+            }
+            else if ( config.get( fail_on_missing_files ) )
+            {
+                // The log files are missing entirely.
+                // By default, we should avoid modifying stores that have no log files,
+                // since we log files are the only thing that can tell us if the store is in a
+                // recovered state or not.
+                throw new UpgradeNotAllowedException();
             }
             else
             {
-                // We didn't find any files in the legacy location.
-                // If the legacy location is the same as the intended location, then the log files are missing entirely.
-                // Otherwise, we will have to check if the log files are already present in the intended location and try to initialize them there.
-                logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
-                legacyFiles = logFiles.logFiles();
-                if ( legacyFiles != null && legacyFiles.length > 0 )
-                {
-                    // The log files are already at their intended location, so initialize them there.
-                    logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
-                }
-                else if ( config.get( fail_on_missing_files ) )
-                {
-                    // The log files are missing entirely.
-                    // By default, we should avoid modifying stores that have no log files,
-                    // since we log files are the only thing that can tell us if the store is in a
-                    // recovered state or not.
-                    throw new UpgradeNotAllowedException();
-                }
-                else
-                {
-                    // The log files are missing entirely, but we were told to not think of this as an error condition,
-                    // so we instead initialize an empty log file.
-                    logInitializer.initializeEmptyLogFile( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
-                }
+                // The log files are missing entirely, but we were told to not think of this as an error condition,
+                // so we instead initialize an empty log file.
+                logInitializer.initializeEmptyLogFile( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
             }
         }
         catch ( Exception exception )

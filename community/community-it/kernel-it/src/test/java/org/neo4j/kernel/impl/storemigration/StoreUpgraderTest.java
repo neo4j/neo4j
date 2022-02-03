@@ -562,12 +562,11 @@ public class StoreUpgraderTest
                 new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true,
                         contextFactory );
 
-        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
         var logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
-                                             logsLocator, config, dependencies, INSTANCE, databaseHealth, contextFactory );
+                                             config, dependencies, INSTANCE, databaseHealth, contextFactory );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,
                         contextFactory );

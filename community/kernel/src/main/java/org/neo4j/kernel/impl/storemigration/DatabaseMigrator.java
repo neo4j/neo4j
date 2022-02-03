@@ -56,7 +56,6 @@ public class DatabaseMigrator
     private final PageCacheTracer pageCacheTracer;
     private final JobScheduler jobScheduler;
     private final DatabaseLayout databaseLayout;
-    private final LegacyTransactionLogsLocator legacyLogsLocator;
     private final StorageEngineFactory storageEngineFactory;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
@@ -76,7 +75,6 @@ public class DatabaseMigrator
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
         this.contextFactory = contextFactory;
-        this.legacyLogsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         this.storageEngineFactory = storageEngineFactory;
         this.memoryTracker = memoryTracker;
         this.databaseHealth = databaseHealth;
@@ -91,7 +89,7 @@ public class DatabaseMigrator
     public void migrate( boolean forceUpgrade ) throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
-        var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, legacyLogsLocator, config, dependencyResolver,
+        var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, config, dependencyResolver,
                                                       memoryTracker, databaseHealth, contextFactory );
         Log userLog = logService.getUserLog( DatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );

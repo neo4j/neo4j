@@ -54,7 +54,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
@@ -85,7 +84,6 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
@@ -125,7 +123,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
@@ -148,7 +145,6 @@ import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
-import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
@@ -696,45 +692,6 @@ class RecoveryIT
             var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
             assertTrue( failure.isPresent() );
             assertThat( getRootCause( failure.get() ).getMessage() ).contains( "Transaction logs are missing and recovery is not possible." );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
-    void failToStartDatabaseWithTransactionLogsInLegacyLocation() throws Exception
-    {
-        GraphDatabaseAPI database = createDatabase();
-        generateSomeData( database );
-        managementService.shutdown();
-
-        LogFiles logFiles = buildLogFiles();
-        Path[] txLogFiles = fileSystem.listFiles( logFiles.logFilesDirectory(), path -> path.getFileName().toString().startsWith( DEFAULT_NAME ) );
-        txLogFiles = ArrayUtil.concat( txLogFiles, logFiles.getCheckpointFile().getDetachedCheckpointFiles() );
-        Path databasesDirectory = databaseLayout.getNeo4jLayout().databasesDirectory();
-        DatabaseLayout legacyLayout = Neo4jLayout.ofFlat( databasesDirectory ).databaseLayout( databaseLayout.getDatabaseName() );
-        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), legacyLayout );
-        Path transactionLogsDirectory = logsLocator.getTransactionLogsDirectory();
-        assertNotNull( txLogFiles );
-        assertTrue( txLogFiles.length > 0 );
-        for ( Path logFile : txLogFiles )
-        {
-            fileSystem.moveToDirectory( logFile, transactionLogsDirectory );
-        }
-
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        builder.setInternalLogProvider( logProvider );
-        GraphDatabaseAPI restartedDb = createDatabase();
-        try
-        {
-            DatabaseStateService dbStateService = restartedDb.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-
-            var failure = dbStateService.causeOfFailure( restartedDb.databaseId() );
-            assertTrue( failure.isPresent() );
-            assertThat( failure.get() ).hasRootCauseMessage( "Transaction logs are missing and recovery is not possible." );
-            assertThat( logProvider.serialize() ).contains( txLogFiles[0].getFileName().toString() );
         }
         finally
         {

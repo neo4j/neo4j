@@ -20,7 +20,6 @@
 package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
@@ -69,7 +68,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.FileStoreProviderRegistry;
-import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
@@ -81,7 +79,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
@@ -457,7 +454,7 @@ public final class Recovery
                         logProvider, tracers, new StoreCopyCheckPointMutex(), cursorContextFactory, clock );
         recoveryLife.add( indexStatisticsStore );
         recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( databaseLayout, config, fs, logTailInfo, recoveryLog ) );
+        recoveryLife.add( new MissingTransactionLogsCheck( config, fs, logTailInfo, recoveryLog ) );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
@@ -602,18 +599,14 @@ public final class Recovery
 
     private static class MissingTransactionLogsCheck extends LifecycleAdapter
     {
-        private final DatabaseLayout databaseLayout;
         private final Config config;
-        private final FileSystemAbstraction fs;
         private final LogTailInformation logTailInformation;
         private final Log log;
 
-        MissingTransactionLogsCheck( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fs,
+        MissingTransactionLogsCheck( Config config, FileSystemAbstraction fs,
                                      LogTailInformation logTailInformation, Log log )
         {
-            this.databaseLayout = databaseLayout;
             this.config = config;
-            this.fs = fs;
             this.logTailInformation = logTailInformation;
             this.log = log;
         }
@@ -624,7 +617,7 @@ public final class Recovery
             checkForMissingLogFiles();
         }
 
-        private void checkForMissingLogFiles() throws IOException
+        private void checkForMissingLogFiles()
         {
             if ( logTailInformation.logsMissing() )
             {
@@ -637,29 +630,10 @@ public final class Recovery
                             "please consider restoring from a consistent backup instead.",
                             GraphDatabaseSettings.fail_on_missing_files.name() );
 
-                    Path[] logFiles = findLegacyLogFiles();
-                    if ( logFiles.length > 0 )
-                    {
-                        log.warn( "Transaction log files were found in database directory, rather than the transaction log directory." );
-                        log.warn( "Please move or remove the following %s misplaced transaction log file or files:", logFiles.length );
-                        for ( Path logFile : logFiles )
-                        {
-                            log.warn( logFile.toAbsolutePath().toString() );
-                        }
-                    }
-
                     throw new RuntimeException( "Transaction logs are missing and recovery is not possible." );
                 }
                 log.warn( "No transaction logs were detected, but recovery was forced by user." );
             }
-        }
-
-        private Path[] findLegacyLogFiles() throws IOException
-        {
-            LegacyTransactionLogsLocator locator = new LegacyTransactionLogsLocator( Config.defaults(), databaseLayout );
-            Path logsDirectory = locator.getTransactionLogsDirectory();
-            TransactionLogFilesHelper logFilesHelper = new TransactionLogFilesHelper( fs, logsDirectory );
-            return logFilesHelper.getMatchedFiles();
         }
     }
 }
