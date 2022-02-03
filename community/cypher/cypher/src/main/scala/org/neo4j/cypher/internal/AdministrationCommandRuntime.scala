@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.HomeDatabaseAction
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.QueryHandler
@@ -57,7 +57,7 @@ import java.util.UUID
 trait AdministrationCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def correspondingRuntimeOption: Option[CypherRuntimeOption] = None
 
-  def isApplicableAdministrationCommand(logicalPlanState: LogicalPlanState): Boolean
+  def isApplicableAdministrationCommand(logicalPlan: LogicalPlan): Boolean
 }
 
 object AdministrationCommandRuntime {

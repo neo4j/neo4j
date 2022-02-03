@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ExecutionPlanCacheTracer.NO_TRACING
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.LFUCache
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -196,7 +196,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   private def computeExecutionPlan(query: InputQuery,
                                    transactionalContext: TransactionalContext,
                                    logicalPlanResult: LogicalPlanResult,
-                                   planState: LogicalPlanState,
+                                   planState: CachableLogicalPlanState,
                                    logicalPlan: LogicalPlan,
                                    queryType: InternalQueryType): (ExecutionPlan, PlanningAttributes) = {
     val runtimeContext = contextManager.create(logicalPlanResult.plannerContext.planContext,
@@ -216,8 +216,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlan,
       planState.queryText,
       queryType == READ_ONLY || queryType == DBMS_READ,
-      planState.returnColumns().toArray,
-      planState.semanticTable(),
+      planState.returnColumns.toArray,
+      planState.semanticTable,
       planningAttributesCopy.effectiveCardinalities,
       planningAttributesCopy.providedOrders,
       planningAttributesCopy.leveragedOrders,
@@ -257,10 +257,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     new CompilerInfo(plannerName.name, runtimeName.name, schemaIndexUsage, relationshipTypeIndexUsage, lookupIndexUsage)
   }
 
-  private def getQueryType(planState: LogicalPlanState): InternalQueryType = {
+  private def getQueryType(planState: CachableLogicalPlanState): InternalQueryType = {
     // check system and procedure runtimes first, because if this is true solveds will be empty
     runtime match {
-      case m:AdministrationCommandRuntime if m.isApplicableAdministrationCommand(planState) =>
+      case m:AdministrationCommandRuntime if m.isApplicableAdministrationCommand(planState.logicalPlan) =>
         DBMS
       case _ =>
         val procedureOrSchema = SchemaCommandRuntime.queryType(planState.logicalPlan)

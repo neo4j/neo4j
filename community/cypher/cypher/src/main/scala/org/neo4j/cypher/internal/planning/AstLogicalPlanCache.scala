@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.ReusabilityState
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.logging.Log
@@ -95,6 +96,6 @@ object AstLogicalPlanCache {
   }
 }
 
-case class CacheableLogicalPlan(logicalPlanState: LogicalPlanState,
+case class CacheableLogicalPlan(logicalPlanState: CachableLogicalPlanState,
                                 reusability: ReusabilityState, notifications: IndexedSeq[InternalNotification],
                                 override val shouldBeCached: Boolean) extends CacheabilityInfo

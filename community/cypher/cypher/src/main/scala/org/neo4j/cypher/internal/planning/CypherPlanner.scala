@@ -49,8 +49,8 @@ import org.neo4j.cypher.internal.compiler.MissingParametersNotification
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
+import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.CypherCompatibilityVersion
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
@@ -409,7 +409,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     }
     val (reusabilityState, shouldCache) = runtime match {
       case m: AdministrationCommandRuntime =>
-        if (m.isApplicableAdministrationCommand(logicalPlanState)) {
+        if (m.isApplicableAdministrationCommand(logicalPlanState.logicalPlan)) {
           val allowQueryCaching = logicalPlanState.maybeLogicalPlan match {
             case Some(_: SystemProcedureCall) => false
             case Some(ContainsSensitiveFields()) => false
@@ -430,7 +430,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }
-    CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications.toIndexedSeq, shouldCache)
+    CacheableLogicalPlan(logicalPlanState.asCachableLogicalPlanState(), reusabilityState, notificationLogger.notifications.toIndexedSeq, shouldCache)
   }
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
@@ -461,7 +461,7 @@ object ContainsSensitiveFields {
   }
 }
 
-case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
+case class LogicalPlanResult(logicalPlanState: CachableLogicalPlanState,
                              paramNames: Seq[String],
                              extractedParams: MapValue,
                              reusability: ReusabilityState,
