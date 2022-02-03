@@ -216,32 +216,6 @@ class SettingMigratorsTest
     }
 
     @Test
-    void testDefaultSchemaProvider() throws IOException
-    {
-        Map<String,String> migrationMap = Map.of(
-                "lucene-1.0", "lucene+native-3.0",
-                "lucene+native-1.0", "lucene+native-3.0",
-                "lucene+native-2.0", "native-btree-1.0",
-                "native-btree-1.0", "native-btree-1.0" );
-        for ( String oldSchemaProvider : migrationMap.keySet() )
-        {
-            Path confFile = testDirectory.createFile( "test.conf" );
-            Files.write( confFile, List.of( "dbms.index.default_schema_provider=" + oldSchemaProvider ) );
-
-            Config config = Config.newBuilder().fromFile( confFile ).build();
-            var logProvider = new AssertableLogProvider();
-            config.setLogger( logProvider.getLog( Config.class ) );
-
-            String expectedWarning = "Use of deprecated setting dbms.index.default_schema_provider.";
-            if ( !"native-btree-1.0".equals( oldSchemaProvider ) )
-            {
-                expectedWarning += " Value migrated from " + oldSchemaProvider + " to " + migrationMap.get( oldSchemaProvider ) + ".";
-            }
-            assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages( expectedWarning );
-        }
-    }
-
-    @Test
     void testMemorySettingsRename() throws IOException
     {
         Path confFile = testDirectory.createFile( "test.conf" );

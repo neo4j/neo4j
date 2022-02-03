@@ -60,10 +60,10 @@ class IndexDirectoryStructureTest
     @Test
     void shouldHandleWeirdCharactersInProviderKey()
     {
-        IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor( "native+lucene", "1.0" );
+        IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor( "some+thing", "1.0" );
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),
-                baseIndexDirectory.resolve( "native_lucene-1.0" ),
-                baseIndexDirectory.resolve( "native_lucene-1.0" ).resolve( String.valueOf( indexId ) ) );
+                baseIndexDirectory.resolve( "some_thing-1.0" ),
+                baseIndexDirectory.resolve( "some_thing-1.0" ).resolve( String.valueOf( indexId ) ) );
     }
 
     private void assertCorrectDirectories( IndexDirectoryStructure directoryStructure,

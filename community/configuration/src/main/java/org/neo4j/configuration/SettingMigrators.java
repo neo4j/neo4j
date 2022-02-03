@@ -43,7 +43,6 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
@@ -73,45 +72,6 @@ public final class SettingMigrators
         public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
         {
             migrateSettingNameChange( values, log, "dbms.active_database", default_database );
-        }
-    }
-
-    @ServiceProvider
-    public static class DefaultSchemaProviderMigrator implements SettingMigrator
-    {
-        private static final String INDEX_PROVIDER_SETTING = "dbms.index.default_schema_provider";
-
-        @Override
-        public void migrate( Map<String,String> values, Map<String,String> defaultValues, InternalLog log )
-        {
-            String oldSchemaProvider = values.remove( INDEX_PROVIDER_SETTING );
-            if ( isBlank( oldSchemaProvider ) )
-            {
-                return;
-            }
-            String newSchemaProvider = oldSchemaProvider;
-            boolean migratedValue = false;
-            switch ( oldSchemaProvider )
-            {
-            case "lucene-1.0":
-            case "lucene+native-1.0":
-                newSchemaProvider = "lucene+native-3.0";
-                migratedValue = true;
-                break;
-            case "lucene+native-2.0":
-                newSchemaProvider = "native-btree-1.0";
-                migratedValue = true;
-                break;
-            default:
-            }
-
-            String warning = "Use of deprecated setting " + INDEX_PROVIDER_SETTING + ".";
-            if ( migratedValue )
-            {
-                warning += " Value migrated from " + oldSchemaProvider + " to " + newSchemaProvider + ".";
-            }
-            log.warn( warning );
-            values.put( INDEX_PROVIDER_SETTING, newSchemaProvider );
         }
     }
 
