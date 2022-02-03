@@ -63,34 +63,32 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
       if isAllowedByRestrictions(indexMatch.variableName, restrictions)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
-    val distinctSolutions = mergeSolutions(solutions)
+    def provideRelationshipLeafPlan(solution: Solution[RelationshipIndexScanParameters])
+                                   (patternForLeafPlan: PatternRelationship,
+                                    originalPattern: PatternRelationship,
+                                    hiddenSelections: Seq[Expression]): LogicalPlan =
+      context.logicalPlanProducer.planRelationshipIndexScan(
+        idName = solution.indexScanParameters.idName,
+        relationshipType = solution.indexScanParameters.token,
+        patternForLeafPlan = patternForLeafPlan,
+        originalPattern = originalPattern,
+        properties = solution.indexScanParameters.properties,
+        solvedPredicates = solution.solvedPredicates,
+        solvedHint = solution.solvedHint,
+        hiddenSelections = hiddenSelections,
+        argumentIds = argumentIds,
+        providedOrder = solution.providedOrder,
+        indexOrder = solution.indexScanParameters.indexOrder,
+        context = context,
+        indexType =  solution.indexType,
+      )
 
-    distinctSolutions map { solution =>
-
-      def provideRelationshipLeafPlan(patternForLeafPlan: PatternRelationship,
-                                      originalPattern: PatternRelationship,
-                                      hiddenSelections: Seq[Expression]): LogicalPlan =
-        context.logicalPlanProducer.planRelationshipIndexScan(
-          idName = solution.indexScanParameters.idName,
-          solution.indexScanParameters.token,
-          patternForLeafPlan,
-          originalPattern,
-          properties = solution.indexScanParameters.properties,
-          solvedPredicates = solution.solvedPredicates,
-          solvedHint = solution.solvedHint,
-          hiddenSelections = hiddenSelections,
-          argumentIds = argumentIds,
-          providedOrder = solution.providedOrder,
-          indexOrder = solution.indexScanParameters.indexOrder,
-          context = context,
-          indexType =  solution.indexType,
-        )
-
+    mergeSolutions(solutions) map { solution =>
       planHiddenSelectionAndRelationshipLeafPlan(
         argumentIds,
         solution.indexScanParameters.patternRelationship,
         context,
-        provideRelationshipLeafPlan
+        provideRelationshipLeafPlan(solution)_
       )
     }
   }

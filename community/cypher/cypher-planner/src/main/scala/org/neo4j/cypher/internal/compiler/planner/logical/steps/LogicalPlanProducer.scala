@@ -342,7 +342,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotateRelationshipLeafPlan(leafPlan, patternForLeafPlan, Seq.empty, solvedHint, argumentIds, providedOrder, context)
     }
 
-    planHiddenSelection(planLeaf, hiddenSelections, context, originalPattern)
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   def planRelationshipIndexScan(idName: String,
@@ -385,7 +385,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       annotateRelationshipLeafPlan(leafPlan, patternForLeafPlan, solvedPredicates, solvedHint, argumentIds, providedOrder, context)
     }
 
-    planHiddenSelection(planLeaf, hiddenSelections, context, originalPattern)
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   def planRelationshipIndexStringSearchScan(idName: String,
@@ -422,7 +422,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       }
     }
 
-    planHiddenSelection(planLeaf, hiddenSelections, context, originalPattern)
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   def planRelationshipIndexSeek(idName: String,
@@ -474,7 +474,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       }
     }
 
-    planHiddenSelection(planLeaf, hiddenSelections, context, originalPattern)
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   /**
@@ -509,7 +509,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       }
     }
 
-    planHiddenSelection(planLeaf, hiddenSelections, context, originalPattern)
+    planHiddenSelectionIfNeeded(planLeaf, hiddenSelections, context, originalPattern)
   }
 
   private def annotateRelationshipLeafPlan(leafPlan: RelationshipLogicalLeafPlan,
@@ -537,10 +537,10 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    * @param solvedPattern the pattern we will claim to have solved
    * @return hidden selection on top of source plan
    */
-  def planHiddenSelection(source: LogicalPlan,
-                          hiddenSelections: Seq[Expression],
-                          context: LogicalPlanningContext,
-                          solvedPattern: PatternRelationship): LogicalPlan = {
+  def planHiddenSelectionIfNeeded(source: LogicalPlan,
+                                  hiddenSelections: Seq[Expression],
+                                  context: LogicalPlanningContext,
+                                  solvedPattern: PatternRelationship): LogicalPlan = {
     if (hiddenSelections.isEmpty) {
       source
     } else {
