@@ -22,24 +22,84 @@
 
 Feature: LabelExpressionAcceptance
 
-  Scenario: Simple label conjunction
+  Scenario Outline: Semantics of label expression on node in MATCH
     Given an empty graph
     And having executed:
       """
-      CREATE (:A   {id: 'a' })
-      CREATE (:A:B {id: 'ab'})
-      CREATE (:A:C {id: 'ac'})
+      CREATE (),
+             (:A),
+             (:B),
+             (:C),
+             (:A:B),
+             (:A:C),
+             (:B:C),
+             (:A:B:C)
       """
 
     When executing query:
       """
-      MATCH (n:A&B)
-      RETURN n.id AS id
+      MATCH <labelExpressionNode>
+      WITH n ORDER BY size(labels(n)), labels(n)
+      RETURN collect(n) AS result
       """
     Then the result should be, in any order:
-      | id   |
-      | 'ab' |
+      | result   |
+      | <result> |
     And no side effects
+    Examples:
+      | labelExpressionNode | result                                                   |
+      | (n)                 | [(), (:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)] |
+      | (n:A)               | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | (n:A&B)             | [(:A:B), (:A:B:C)]                                       |
+      | (n:A\|B)            | [(:A), (:B), (:A:B), (:A:C), (:B:C), (:A:B:C)]           |
+      | (n:!A)              | [(), (:B), (:C), (:B:C)]                                 |
+      | (n:!!A)             | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | (n:A&!A)            | []                                                       |
+      | (n:A\|!A)           | [(), (:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)] |
+      | (n:%)               | [(:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)]     |
+      | (n:!%)              | [()]                                                     |
+      | (n:%\|!%)           | [(), (:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)] |
+      | (n:%&!%)            | []                                                       |
+      | (n:A&%)             | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | (n:A\|%)            | [(:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)]     |
+      | (n:(A&B)&!(B&C))    | [(:A:B)]                                                 |
+      | (n:!(A&%)&%)        | [(:B), (:C), (:B:C)]                                     |
+
+  Scenario Outline: Semantics of relationship type expression on relationship in MATCH
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A]->(),
+             ()-[:B]->(),
+             ()-[:C]->()
+      """
+
+    When executing query:
+      """
+      MATCH ()-<relationshipTypeExpressionRelationship>->()
+      WITH type(r) AS rType ORDER BY rType
+      RETURN collect(rType) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | relationshipTypeExpressionRelationship | result           |
+      | [r]                                     | ['A', 'B', 'C'] |
+      | [r:A]                                   | ['A']           |
+      | [r:A\|B]                                | ['A', 'B']      |
+      | [r:!A]                                  | ['B', 'C']      |
+      | [r:!!A]                                 | ['A']           |
+      | [r:A&!A]                                | []              |
+      | [r:A\|!A]                               | ['A', 'B', 'C'] |
+      | [r:%]                                   | ['A', 'B', 'C'] |
+      | [r:!%]                                  | []              |
+      | [r:%\|!%]                               | ['A', 'B', 'C'] |
+      | [r:%&!%]                                | []              |
+      | [r:A&%]                                 | ['A']           |
+      | [r:A\|%]                                | ['A', 'B', 'C'] |
+      | [r:!(A&%)&%)]                           | ['B', 'C']      |
 
   Scenario: Repeating label in conjunction
     Given an empty graph
@@ -62,26 +122,6 @@ Feature: LabelExpressionAcceptance
       | 'ab' |
     And no side effects
 
-  Scenario: Simple label disjunction
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (:A   {id: 'a' })
-      CREATE (:A:B {id: 'ab'})
-      CREATE (:C   {id: 'c'})
-      """
-
-    When executing query:
-      """
-      MATCH (n:B|C)
-      RETURN n.id AS id
-      """
-    Then the result should be, in any order:
-      | id   |
-      | 'ab' |
-      | 'c'  |
-    And no side effects
-
   Scenario: Repeating label in disjunction
     Given an empty graph
     And having executed:
@@ -100,81 +140,6 @@ Feature: LabelExpressionAcceptance
       | id   |
       | 'a'  |
       | 'ab' |
-    And no side effects
-
-  Scenario: Simple label negation
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (:A   {id: 'a' })
-      CREATE (:B   {id: 'b' })
-      CREATE (:A:B {id: 'ab'})
-      """
-
-    When executing query:
-      """
-      MATCH (n:!B)
-      RETURN n.id AS id
-      """
-    Then the result should be, in any order:
-      | id  |
-      | 'a' |
-    And no side effects
-
-  Scenario: Double negated expression
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (:A   {id: 'a' })
-      CREATE (:B   {id: 'b' })
-      CREATE (:A:B {id: 'ab'})
-      """
-
-    When executing query:
-      """
-      MATCH (n:!!B)
-      RETURN n.id AS id
-      """
-    Then the result should be, in any order:
-      | id   |
-      | 'b'  |
-      | 'ab' |
-    And no side effects
-
-  Scenario: Simple label wildcard
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (   {id:  ''})
-      CREATE (:A {id: 'a'})
-      """
-
-    When executing query:
-      """
-      MATCH (n:%)
-      RETURN n.id AS id
-      """
-    Then the result should be, in any order:
-      | id  |
-      | 'a' |
-    And no side effects
-
-  Scenario: Negated label wildcard
-    Given an empty graph
-    And having executed:
-      """
-      CREATE (   {id: '' })
-      CREATE (:A {id: 'a'})
-      """
-
-    When executing query:
-      """
-      MATCH (n:!%)
-      RETURN n.id AS id
-      """
-    Then the result should be, in any order:
-      | id  |
-      | ''  |
     And no side effects
 
   Scenario: Conjunction has precedence over disjunction
@@ -237,7 +202,7 @@ Feature: LabelExpressionAcceptance
       | 'c' |
     And no side effects
 
-  Scenario: Label expression on node with label predicate in WHERE clause
+  Scenario: Label expression on node and label predicate in WHERE clause
     Given an empty graph
     And having executed:
       """
@@ -295,4 +260,139 @@ Feature: LabelExpressionAcceptance
       | id   |
       | 'b'  |
       | 'c'  |
+    And no side effects
+
+  Scenario: Label expression in WHERE clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A   {id: 'a' })
+      CREATE (:C   {id: 'c' })
+      CREATE (:A:B {id: 'ab'})
+      """
+
+    When executing query:
+      """
+      MATCH (n) WHERE n:A&B
+      RETURN n.id AS id
+      """
+    Then the result should be, in any order:
+      | id   |
+      | 'ab' |
+    And no side effects
+
+  Scenario: Relationship type expression in WHERE clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A {id: 'a'}]->()
+      CREATE ()-[:B {id: 'b'}]->()
+      CREATE ()-[:C {id: 'c'}]->()
+      """
+
+    When executing query:
+      """
+      MATCH (r) WHERE r:A|B
+      RETURN r.id AS id
+      """
+    Then the result should be, in any order:
+      | id   |
+      | 'a'  |
+      | 'b'  |
+    And no side effects
+
+  Scenario: Label expression in CASE expression
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {id: 'a'})
+      CREATE (:B {id: 'b'})
+      CREATE (:C {id: 'c'})
+      """
+
+    When executing query:
+      """
+      MATCH (n)
+      RETURN CASE
+               WHEN n:A&B THEN 1
+               WHEN n:B&C THEN 2
+               ELSE 0
+             END AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | 0      |
+      | 0      |
+      | 0      |
+      | 1      |
+      | 2      |
+    And no side effects
+
+  Scenario: Relationship type expression in CASE expression
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A {id: 'a'}]->()
+      CREATE ()-[:B {id: 'b'}]->()
+      CREATE ()-[:C {id: 'c'}]->()
+      CREATE ()-[:D {id: 'd'}]->()
+      """
+
+    When executing query:
+      """
+      MATCH ()-[r]->()
+      RETURN CASE
+               WHEN r:A|B THEN 1
+               WHEN r:C   THEN 2
+               ELSE 0
+             END AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | 1      |
+      | 1      |
+      | 2      |
+      | 0      |
+    And no side effects
+
+  Scenario: Label expression in RETURN clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A   {id: 'a' })
+      CREATE (:B   {id: 'b' })
+      CREATE (:A:B {id: 'ab'})
+      """
+
+    When executing query:
+      """
+      MATCH (n)
+      RETURN n:A&B AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | false  |
+      | false  |
+      | true   |
+    And no side effects
+
+  Scenario: Relationship type expression in RETURN clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A {id: 'a'}]->()
+      CREATE ()-[:B {id: 'b'}]->()
+      CREATE ()-[:C {id: 'c'}]->()
+      """
+
+    When executing query:
+      """
+      MATCH ()-[r]->()
+      RETURN r:A|B AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | true   |
+      | true   |
+      | false  |
     And no side effects
