@@ -166,7 +166,7 @@ public class LogsUpgrader
             {
                 // The log files are missing entirely.
                 // By default, we should avoid modifying stores that have no log files,
-                // since we log files are the only thing that can tell us if the store is in a
+                // since the log files are the only thing that can tell us if the store is in a
                 // recovered state or not.
                 throw new UpgradeNotAllowedException();
             }
@@ -179,8 +179,7 @@ public class LogsUpgrader
         }
         catch ( Exception exception )
         {
-            throw new StoreUpgrader.TransactionLogsRelocationException(
-                    "Failure on attempt to move transaction logs into new location.", exception );
+            throw new StoreUpgrader.TransactionLogsUpgradeException( "Failure on attempt to upgrade transaction logs to new version.", exception );
         }
     }
 

@@ -454,7 +454,7 @@ public final class Recovery
                         logProvider, tracers, new StoreCopyCheckPointMutex(), cursorContextFactory, clock );
         recoveryLife.add( indexStatisticsStore );
         recoveryLife.add( storageEngine );
-        recoveryLife.add( new MissingTransactionLogsCheck( config, fs, logTailInfo, recoveryLog ) );
+        recoveryLife.add( new MissingTransactionLogsCheck( config, logTailInfo, recoveryLog ) );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
@@ -603,8 +603,7 @@ public final class Recovery
         private final LogTailInformation logTailInformation;
         private final Log log;
 
-        MissingTransactionLogsCheck( Config config, FileSystemAbstraction fs,
-                                     LogTailInformation logTailInformation, Log log )
+        MissingTransactionLogsCheck( Config config, LogTailInformation logTailInformation, Log log )
         {
             this.config = config;
             this.logTailInformation = logTailInformation;

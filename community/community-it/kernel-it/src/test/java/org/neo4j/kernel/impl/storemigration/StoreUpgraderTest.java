@@ -437,7 +437,7 @@ public class StoreUpgraderTest
         fileSystem.mkdir( databaseTransactionLogsHome );
         createDummyTxLogFiles( databaseTransactionLogsHome );
 
-        assertThrows( StoreUpgrader.TransactionLogsRelocationException.class, () ->
+        assertThrows( StoreUpgrader.TransactionLogsUpgradeException.class, () ->
                 newUpgrader( check, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
                 .migrateIfNeeded( migrationLayout, false ) );
     }

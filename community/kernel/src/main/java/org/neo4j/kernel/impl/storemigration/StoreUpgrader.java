@@ -338,9 +338,9 @@ public class StoreUpgrader
         }
     }
 
-    static class TransactionLogsRelocationException extends RuntimeException
+    static class TransactionLogsUpgradeException extends RuntimeException
     {
-        TransactionLogsRelocationException( String message, Throwable cause )
+        TransactionLogsUpgradeException( String message, Throwable cause )
         {
             super( message, cause );
         }
