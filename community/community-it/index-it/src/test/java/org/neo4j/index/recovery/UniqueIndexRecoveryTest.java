@@ -20,17 +20,13 @@
 package org.neo4j.index.recovery;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Random;
-import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -52,7 +48,6 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -69,14 +64,9 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseAPI db;
     private DatabaseManagementService managementService;
 
-    private static Stream<SchemaIndex> parameters()
+    private void setupDatabase()
     {
-        return Arrays.stream( SchemaIndex.values() );
-    }
-
-    private void setupDatabase( SchemaIndex schemaIndex )
-    {
-        db = (GraphDatabaseAPI) newDb( schemaIndex );
+        db = (GraphDatabaseAPI) newDb();
     }
 
     @AfterEach
@@ -85,18 +75,17 @@ public class UniqueIndexRecoveryTest
         managementService.shutdown();
     }
 
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint( SchemaIndex schemaIndex ) throws Exception
+    @Test
+    void shouldRecoverCreationOfUniquenessConstraintFollowedByDeletionOfThatSameConstraint() throws Exception
     {
-        setupDatabase( schemaIndex );
+        setupDatabase();
 
         // given
         createUniqueConstraint();
         dropConstraints();
 
         // when - perform recovery
-        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.absolutePath() ) );
 
         // then - just make sure the constraint is gone
         try ( Transaction tx = db.beginTx() )
@@ -106,11 +95,10 @@ public class UniqueIndexRecoveryTest
         }
     }
 
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldRecoverWhenCommandsTemporarilyViolateConstraints( SchemaIndex schemaIndex ) throws Exception
+    @Test
+    void shouldRecoverWhenCommandsTemporarilyViolateConstraints() throws Exception
     {
-        setupDatabase( schemaIndex );
+        setupDatabase();
 
         // GIVEN
         Node unLabeledNode = createUnLabeledNodeWithProperty();
@@ -123,7 +111,7 @@ public class UniqueIndexRecoveryTest
         flushAll(); // persist - recovery will do everything since last log rotate
 
         // WHEN recovery is triggered
-        restart( snapshot( storeDir.absolutePath() ), schemaIndex );
+        restart( snapshot( storeDir.absolutePath() ) );
 
         // THEN
         // it should just not blow up!
@@ -134,16 +122,17 @@ public class UniqueIndexRecoveryTest
         }
     }
 
-    private void restart( Path newStore, SchemaIndex schemaIndex )
+    private void restart( Path newStore )
     {
         managementService.shutdown();
-        db = (GraphDatabaseAPI) newDb( schemaIndex );
+        managementService = new TestDatabaseManagementServiceBuilder( newStore )
+                .build();
+        db = (GraphDatabaseAPI)managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private GraphDatabaseService newDb( SchemaIndex schemaIndex )
+    private GraphDatabaseService newDb()
     {
         managementService = new TestDatabaseManagementServiceBuilder( storeDir.absolutePath() )
-                .setConfig( default_schema_provider, schemaIndex.providerName() )
                 .build();
         return managementService.database( DEFAULT_DATABASE_NAME );
     }
