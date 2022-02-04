@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.LogsUpgrader;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -114,7 +113,6 @@ public class StoreUpgraderInterruptionTestIT
     private Neo4jLayout neo4jLayout;
     private RecordDatabaseLayout workingDatabaseLayout;
     private Path prepareDirectory;
-    private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
     private PageCache pageCache;
     private RecordFormats baselineFormat;
     private RecordFormats successorFormat;
@@ -125,7 +123,6 @@ public class StoreUpgraderInterruptionTestIT
         neo4jLayout = Neo4jLayout.of( directory.homePath() );
         workingDatabaseLayout = RecordDatabaseLayout.of( neo4jLayout, DEFAULT_DATABASE_NAME );
         prepareDirectory = directory.directory( "prepare" );
-        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
         pageCache = pageCacheExtension.getPageCache( fs );
         baselineFormat = RecordFormatSelector.selectForVersion( version );
         successorFormat = RecordFormatSelector.findLatestSupportedFormatInFamily( baselineFormat ).orElse( baselineFormat );
@@ -284,7 +281,7 @@ public class StoreUpgraderInterruptionTestIT
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         var databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache, legacyTransactionLogsLocator,
+        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache,
                 config, dependencies, INSTANCE, databaseHealth, contextFactory );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader,
