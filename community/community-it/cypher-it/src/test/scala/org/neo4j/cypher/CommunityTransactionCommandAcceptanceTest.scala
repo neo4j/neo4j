@@ -66,12 +66,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     waitForNoTransactions()
 
-    // WHEN
-    val result = execute("SHOW TRANSACTIONS").toList
+    eventually {
+      // WHEN
+      val result = execute("SHOW TRANSACTIONS").toList
 
-    // THEN
-    result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS")
+      // THEN
+      result should have size 1
+      assertCorrectDefaultMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS")
+    }
   }
 
   test("Should show all transactions") {
@@ -128,12 +130,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS 'neo4j-transaction-3'").toList
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val result = execute(s"SHOW TRANSACTIONS '$unwindId'").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-3", username, unwindQuery)
+    assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
   test("Should only show given transactions once") {
@@ -168,15 +171,17 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     waitForNoTransactions()
     selectDatabase(SYSTEM_DATABASE_NAME)
 
-    // WHEN
-    val result = execute("SHOW TRANSACTIONS").toList
+    eventually {
+      // WHEN
+      val result = execute("SHOW TRANSACTIONS").toList
 
-    // THEN
-    result should have size 1
-    assertCorrectDefaultMap(result.head, "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
+      // THEN
+      result should have size 1
+      assertCorrectDefaultMap(result.head, "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
+    }
   }
 
-  test("Should show all transactions on system database") {
+  test("Should show all transactions when executing on system database") {
     // GIVEN
     createUser()
     waitForNoTransactions()
@@ -199,7 +204,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     assertCorrectDefaultMap(sortedRes(1), "system-transaction-", "", "SHOW TRANSACTIONS", database = SYSTEM_DATABASE_NAME)
   }
 
-  test("Should only show given transactions on system database") {
+  test("Should only show given transactions when executing on system database") {
     // GIVEN
     val latch = new DoubleLatch(3)
     val (user1Query, user2Query) = setupTwoUsersAndOneTransactionEach(latch)
@@ -229,12 +234,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS $id", Map("id" -> "neo4j-transaction-3")).toList
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val result = execute("SHOW TRANSACTIONS $id", Map("id" -> unwindId)).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-3", username, unwindQuery)
+    assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
   test("Should show given transactions with list parameter") {
@@ -247,12 +253,13 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     latch.startAndWaitForAllToStart()
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS $id", Map("id" -> List("neo4j-transaction-3"))).toList
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val result = execute("SHOW TRANSACTIONS $id", Map("id" -> List(unwindId))).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    assertCorrectDefaultMap(result.head, "neo4j-transaction-3", username, unwindQuery)
+    assertCorrectDefaultMap(result.head, unwindId, username, unwindQuery)
   }
 
   test("Should always show all transactions in community") {
@@ -349,12 +356,14 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     waitForNoTransactions()
 
-    // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD *").toList
+    eventually {
+      // WHEN
+      val result = execute("SHOW TRANSACTIONS YIELD *").toList
 
-    // THEN
-    result should have size 1
-    assertCorrectFullMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
+      // THEN
+      result should have size 1
+      assertCorrectFullMap(result.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
+    }
   }
 
   test("Should show all transactions with YIELD *") {
@@ -415,7 +424,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // WHEN
     val showQuery = "SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime"
     val res = execute(showQuery).toList
-    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
+    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -461,7 +470,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId ASC").toList
-    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
+    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -486,7 +495,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // WHEN
     val res = execute("SHOW TRANSACTIONS YIELD transactionId, runtime ORDER BY transactionId DESC").toList
-    val result = res.filterNot(m => m("runtime").asInstanceOf[String].equals("system")) // remove random system transactions from parallel tests/set-up
+    val result = res.filterNot(m => m("transactionId").asInstanceOf[String].startsWith("system")) // remove random system transactions from parallel tests/set-up
     latch.finishAndWaitForAllToFinish()
 
     // THEN
@@ -557,22 +566,26 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should show transactions with full yield") {
     // GIVEN
+    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
+    val matchQuery = "MATCH (n) RETURN n"
     createUser()
     createUser(username2)
     val latch = new DoubleLatch(3)
     val tx1 = ThreadedTransaction(latch)
-    tx1.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
+    tx1.execute(username, password, threading, unwindQuery)
     val tx2 = ThreadedTransaction(latch)
-    tx2.execute(username2, password, threading, "MATCH (n) RETURN n")
+    tx2.execute(username2, password, threading, matchQuery)
     latch.startAndWaitForAllToStart()
 
     // WHEN
+    val unwindId = getTransactionIdExecutingQuery(unwindQuery)
+    val matchId = getTransactionIdExecutingQuery(matchQuery)
     val result = execute("SHOW TRANSACTIONS YIELD transactionId AS txId, runtime, username ORDER BY txId SKIP 1 LIMIT 5 WHERE runtime = 'interpreted' AND username <> '' RETURN txId").toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     result should have size 1
-    result.head("txId") should be("neo4j-transaction-4")
+    result.head("txId") should (be(unwindId) or be(matchId)) // we don't know which query will get skipped
   }
 
   test("Should show transactions with multiple ORDER BY") {
@@ -652,7 +665,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result.toList should be(List(Map("numTx" -> 2)))
   }
 
-  test("Should show transactions with double aggregation on system database") {
+  test("Should show transactions with double aggregation when executing on system database") {
     // GIVEN
     createUser()
     waitForNoTransactions()
@@ -696,14 +709,12 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should terminate system transaction") {
     def getTransactionId: String = {
-      // Returns first system transaction it finds
-
       val result = execute(
         s"""SHOW TRANSACTIONS
-           |WHERE database = '$SYSTEM_DATABASE_NAME'
+           |WHERE database = '$SYSTEM_DATABASE_NAME' AND username = '$username'
            |""".stripMargin)
 
-      if (result.isEmpty) throw new RuntimeException(s"No queries found for database: $SYSTEM_DATABASE_NAME")
+      if (result.isEmpty) throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
 
       result.columnAs[String]("transactionId").next
     }
@@ -812,7 +823,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     exception.getMessage should startWith("Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`")
   }
 
-  test("Should terminate transaction on system database") {
+  test("Should terminate transaction when executing on system database") {
     // GIVEN
     createUser()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
@@ -990,9 +1001,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   private def createUser(username: String = username, password: String = password): Unit = {
     selectDatabase(SYSTEM_DATABASE_NAME)
-    eventually(graph.txCounts.active should be(0))
     execute(s"CREATE USER $username SET PASSWORD '$password' CHANGE NOT REQUIRED")
-    eventually(graph.txCounts.active should be(0))
     selectDatabase(DEFAULT_DATABASE_NAME)
   }
 
