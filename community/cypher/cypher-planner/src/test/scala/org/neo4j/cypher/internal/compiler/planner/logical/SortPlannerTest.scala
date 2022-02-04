@@ -333,7 +333,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      sortedPlan should equal(Some(Sort(Projection(inputPlan, Map(sortOn.asCanonicalStringVal -> sortOn)), Seq(Ascending(sortOn.asCanonicalStringVal)))))
+      sortedPlan should equal(Some(Sort(Projection(inputPlan, Map("2 * (42 + x.foo)" -> sortOn)), Seq(Ascending("2 * (42 + x.foo)")))))
       context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(RegularSinglePlannerQuery(interestingOrder = io))
     }
   }

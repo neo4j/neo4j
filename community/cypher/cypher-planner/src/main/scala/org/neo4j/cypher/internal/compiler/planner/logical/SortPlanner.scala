@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
-import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
@@ -129,7 +130,9 @@ object SortPlanner {
                        updateSolved: Boolean): Option[LogicalPlan] = {
 
     def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
-      projection.find(_._2 == expression).map(_._1).getOrElse(expression.asCanonicalStringVal)
+      projection
+        .collectFirst { case (key, e) if e == expression => key }
+        .getOrElse(ExpressionStringifier.pretty(_ => context.anonymousVariableNameGenerator.nextName).apply(expression))
     }
 
     def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {

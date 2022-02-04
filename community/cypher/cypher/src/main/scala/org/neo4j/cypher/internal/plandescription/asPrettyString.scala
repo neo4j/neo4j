@@ -26,16 +26,14 @@ import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.util.helpers.LineBreakRemover.removeLineBreaks
-import org.neo4j.cypher.internal.util.helpers.LineBreakRemover.removeLineBreaksOnTree
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParams
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 
 /**
  * This should be the only place creating [[PrettyString]]s directly.
  * Given that they live in different modules, we cannot make this the companion object.
  */
 object asPrettyString {
-  private val stringifier: ExpressionStringifier = ExpressionStringifier(e => e.asCanonicalStringVal)
+  private val stringifier: ExpressionStringifier = ExpressionStringifier.pretty(e => e.asCanonicalStringVal)
 
   /**
    * This will create a PrettyString without any modifications to the given string.
@@ -50,7 +48,7 @@ object asPrettyString {
   def apply(s: SymbolicName): PrettyString = PrettyString(if (s == null) {
     "null"
   } else {
-    stringifier(makePrettyOnTree(s))
+    stringifier(s)
   })
 
   /**
@@ -59,7 +57,7 @@ object asPrettyString {
   def apply(n: Namespace): PrettyString = PrettyString(if (n == null) {
     "null"
   } else {
-    stringifier(makePrettyOnTree(n))
+    stringifier(n)
   })
 
   /**
@@ -68,7 +66,7 @@ object asPrettyString {
   def apply(expr: Expression): PrettyString = PrettyString(if (expr == null) {
     "null"
   } else {
-    stringifier(makePrettyOnTree(expr))
+    stringifier(expr)
   })
 
   /**
@@ -84,12 +82,9 @@ object asPrettyString {
   private def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {
     providedOrder.columns.map(col => {
       val direction = if (col.isAscending) "ASC" else "DESC"
-      s"${makePretty(col.expression.asCanonicalStringVal)} $direction"
+      s"${apply(col.expression)} $direction"
     }).mkString(", ")
   }
-
-  private def makePrettyOnTree[M <: AnyRef](a: M): M =
-    removeGeneratedNamesAndParamsOnTree(removeLineBreaksOnTree(a))
 
   private def makePretty(s: String): String =
     removeGeneratedNamesAndParams(removeLineBreaks(s))

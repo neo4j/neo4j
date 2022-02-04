@@ -34,8 +34,8 @@ object NameDeduplicator {
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)""".r
   private val DEDUP_PATTERN = """ {2}([^\s]+)@\d+(?:\(.*?\))?""".r
 
-  private val removeGeneratedNamesRewriter = topDown(Rewriter.lift {
-    case s: String => removeGeneratedNamesAndParams(s)
+  private def transformGeneratedNamesRewriter(transformation: String => String): Rewriter = topDown(Rewriter.lift {
+    case s: String => transformation(s)
   })
 
   private val deduplicateVariableNames: String => String = fixedPoint { DEDUP_PATTERN.replaceAllIn(_, "$1") }
@@ -53,10 +53,20 @@ object NameDeduplicator {
   }
 
   /**
+   * Replaces planner-generated uniquely identifying variable names with empty string.
+   *
+   * E.g. the String "  UNNAMED23" becomes "".
+   */
+  def eraseGeneratedNames(s: String): String = UNNAMED_PATTERN.replaceAllIn(s, "")
+
+  /**
    * Removes planner-generated uniquely identifying elements from any Strings found while traversing the tree of the given argument.
    */
   def removeGeneratedNamesAndParamsOnTree[M <: AnyRef](a: M): M = {
-    removeGeneratedNamesRewriter.apply(a).asInstanceOf[M]
+    transformGeneratedNamesRewriter(removeGeneratedNamesAndParams).apply(a).asInstanceOf[M]
   }
 
+  def eraseGeneratedNamesOnTree[M <: AnyRef](a: M): M = {
+    transformGeneratedNamesRewriter(eraseGeneratedNames).apply(a).asInstanceOf[M]
+  }
 }

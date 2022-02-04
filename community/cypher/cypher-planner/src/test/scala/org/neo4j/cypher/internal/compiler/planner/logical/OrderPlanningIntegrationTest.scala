@@ -1233,7 +1233,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new given().getLogicalPlanFor(query)._2
 
     plan should beLike {
-      case Sort(_,Seq(Ascending("u.name + b.title"))) => ()
+      case Sort(_,Seq(Ascending("u.name + `b.title`"))) => ()
     }
   }
 

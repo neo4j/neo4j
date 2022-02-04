@@ -47,22 +47,12 @@ object QueryRenderer {
   }
 
   private val renderStrict = Prettifier(
-    expr = ExpressionStringifier(
-      extension = exprExtension,
-      alwaysParens = true,
-      alwaysBacktick = true,
-      preferSingleQuotes = false,
-      sensitiveParamsAsParams = true
-    ),
+    expr = stringifier(pretty = false),
     extension = clauseExtension,
     useInCommands = false
   )
   private val renderPretty = renderStrict.copy(
-    expr = renderStrict.expr.copy(
-      alwaysParens = false,
-      alwaysBacktick = false,
-      sensitiveParamsAsParams = false
-    ),
+    expr = stringifier(pretty = true),
     useInCommands = true
   )
 
@@ -84,4 +74,14 @@ object QueryRenderer {
 
   def pretty(expression: Expression): String =
     renderPretty.expr.apply(expression)
+
+  private def stringifier(pretty: Boolean): ExpressionStringifier = {
+    ExpressionStringifier(
+      extension = exprExtension,
+      alwaysParens = !pretty,
+      alwaysBacktick = !pretty,
+      preferSingleQuotes = false,
+      sensitiveParamsAsParams = !pretty
+    )
+  }
 }

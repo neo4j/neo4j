@@ -24,7 +24,15 @@ import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 
-case class PathStepStringifier(expr: ExpressionStringifier) {
+trait PathStepStringifier {
+  def apply(pathStep: PathStep): String
+}
+
+object PathStepStringifier {
+  def apply(expr: ExpressionStringifier): PathStepStringifier = new DefaultPathStepStringifier(expr)
+}
+
+private class DefaultPathStepStringifier(expr: ExpressionStringifier) extends PathStepStringifier {
 
   def apply(pathStep: PathStep): String = pathStep match {
     case SingleRelationshipPathStep(rel, direction, toNode, next) => relationshipPathStep(rel, direction, toNode, next, isMultiRel = false)

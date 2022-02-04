@@ -29,23 +29,36 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 
-case class PatternStringifier(expr: ExpressionStringifier) {
+trait PatternStringifier {
+  def apply(p: Pattern): String
+  def apply(p: PatternPart): String
+  def apply(element: PatternElement): String
+  def apply(nodePattern: NodePattern): String
+  def apply(relationshipChain: RelationshipChain): String
+  def apply(relationship: RelationshipPattern): String
+}
 
-  def apply(p: Pattern): String =
+object PatternStringifier {
+  def apply(expr: ExpressionStringifier): PatternStringifier = new DefaultPatternStringifier(expr)
+}
+
+private class DefaultPatternStringifier(expr: ExpressionStringifier) extends PatternStringifier {
+
+  override def apply(p: Pattern): String =
     p.patternParts.map(apply).mkString(", ")
 
-  def apply(p: PatternPart): String = p match {
+  override def apply(p: PatternPart): String = p match {
     case e: EveryPath        => apply(e.element)
     case s: ShortestPaths    => s"${s.name}(${apply(s.element)})"
     case n: NamedPatternPart => s"${expr(n.variable)} = ${apply(n.patternPart)}"
   }
 
-  def apply(element: PatternElement): String = element match {
+  override def apply(element: PatternElement): String = element match {
     case r: RelationshipChain => apply(r)
     case n: NodePattern       => apply(n)
   }
 
-  def apply(nodePattern: NodePattern): String = {
+  override def apply(nodePattern: NodePattern): String = {
     val variable = nodePattern.variable.map(expr(_))
 
     val labels =
@@ -67,7 +80,7 @@ case class PatternStringifier(expr: ExpressionStringifier) {
     s"($body)"
   }
 
-  def apply(relationshipChain: RelationshipChain): String = {
+  override def apply(relationshipChain: RelationshipChain): String = {
     val r = apply(relationshipChain.rightNode)
     val middle = apply(relationshipChain.relationship)
     val l = apply(relationshipChain.element)
@@ -75,7 +88,7 @@ case class PatternStringifier(expr: ExpressionStringifier) {
     s"$l$middle$r"
   }
 
-  def apply(relationship: RelationshipPattern): String = {
+  override def apply(relationship: RelationshipPattern): String = {
     val variable = relationship.variable.map(expr(_))
 
     val types =
@@ -102,7 +115,7 @@ case class PatternStringifier(expr: ExpressionStringifier) {
     }
   }
 
-  def concatenate(separator: String, fragments: Seq[Option[String]]): Option[String] =
+  private def concatenate(separator: String, fragments: Seq[Option[String]]): Option[String] =
     Some(fragments.flatten)
       .filter(_.nonEmpty) // ensures that there is at least one fragment
       .map(_.mkString(separator))

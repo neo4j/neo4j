@@ -134,16 +134,14 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
     // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
 
-    val patternComprehensionExpressionKeyString = "size(PatternComprehension(None,RelationshipsPattern(RelationshipChain(NodePattern(Some(Variable(u)),List(),None,None,None),RelationshipPattern(Some(Variable(r)),List(RelTypeName(FOLLOWS)),None,None,None,OUTGOING,false),NodePattern(Some(Variable(u2)),List(LabelName(User)),None,None,None))),None,Property(Variable(u2),PropertyKeyName(id))))"
-
     val logicalPlan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false, stripProduceResults = false)._2
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("`u.id`")
         .projection("u.id AS `u.id`")
-        .sort(Seq(Ascending(s"$patternComprehensionExpressionKeyString")))
-        .projection(s"size(`  UNNAMED1`) AS `$patternComprehensionExpressionKeyString`")
+        .sort(Seq(Ascending("size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")))
+        .projection(s"size(`  UNNAMED1`) AS `size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])`")
         .rollUpApply("  UNNAMED1", "  UNNAMED0")
         .|.projection("u2.id AS `  UNNAMED0`")
         .|.filter("u2:User")
