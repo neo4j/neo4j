@@ -63,9 +63,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   // SHOW TRANSACTIONS (don't test exact id as it might change)
 
   test("Should show current transaction") {
-    // GIVEN
-    waitForNoTransactions()
-
     eventually {
       // WHEN
       val result = execute("SHOW TRANSACTIONS").toList
@@ -79,7 +76,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show all transactions") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -101,7 +97,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show system transactions") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
     tx.execute(username, password, threading, "SHOW DATABASES")
@@ -167,12 +162,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   }
 
   test("Should show current transaction on system database") {
-    // GIVEN
-    waitForNoTransactions()
-    selectDatabase(SYSTEM_DATABASE_NAME)
-
     eventually {
       // WHEN
+      selectDatabase(SYSTEM_DATABASE_NAME)
       val result = execute("SHOW TRANSACTIONS").toList
 
       // THEN
@@ -184,7 +176,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show all transactions when executing on system database") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -353,9 +344,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   }
 
   test("Should show current transaction with YIELD *") {
-    // GIVEN
-    waitForNoTransactions()
-
     eventually {
       // WHEN
       val result = execute("SHOW TRANSACTIONS YIELD *").toList
@@ -369,7 +357,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show all transactions with YIELD *") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val userQuery = "SHOW DATABASES"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
@@ -411,7 +398,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show all transactions with specific YIELD") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -458,7 +444,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with YIELD and ORDER BY ASC") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -483,7 +468,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with YIELD and ORDER BY DESC") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
@@ -597,7 +581,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // GIVEN
     createUser()
     createUser(username2)
-    waitForNoTransactions()
 
     val latch = new DoubleLatch(3)
     val tx1 = ThreadedTransaction(latch)
@@ -629,7 +612,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with aggregation") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
@@ -650,7 +632,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with double aggregation") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
@@ -668,7 +649,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   test("Should show transactions with double aggregation when executing on system database") {
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val latch = new DoubleLatch(2)
     val tx = ThreadedTransaction(latch)
     tx.execute(username, password, threading, "UNWIND [1,2,3] AS x RETURN x")
@@ -721,7 +701,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
     // GIVEN
     createUser()
-    waitForNoTransactions()
     val latch = new DoubleLatch(2, true)
     val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
     tx.execute(username, password, threading, s"CREATE USER $username2 SET PASSWORD '$password'")
@@ -970,7 +949,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
   private def setupTwoUsersAndOneTransactionEach(latch: DoubleLatch) = {
     createUser()
     createUser(username2)
-    waitForNoTransactions()
 
     val user1Query = "UNWIND [1,2,3] AS x RETURN x"
     val tx1 = ThreadedTransaction(latch)
@@ -1014,12 +992,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     } finally {
       tx.close()
     }
-  }
-
-  private def waitForNoTransactions(): Unit = eventually {
-    val res = execute("SHOW TRANSACTIONS")
-    res should have size 1
-    res.columnAs[String]("currentQuery").next should be("SHOW TRANSACTIONS")
   }
 
   case class ThreadedTransaction(latch: DoubleLatch, database: String = DEFAULT_DATABASE_NAME) {
