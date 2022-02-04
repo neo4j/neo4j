@@ -22,16 +22,19 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
-
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big
+import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.AggregationLargeMorselTestBase.withLargeMorsels
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntBoolean
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntByteArray
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntFloat
@@ -43,6 +46,7 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction.BasicUserAggregationFunction
 import org.neo4j.kernel.api.procedure.Context
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.DurationValue
@@ -51,8 +55,10 @@ import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
+import scala.collection.immutable
 import scala.util.Random
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
@@ -1477,5 +1483,70 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("p").withSingleRow("yes")
+  }
+}
+
+abstract class AggregationLargeMorselTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  val sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](withLargeMorsels(edition), runtime) {
+
+  test("collect in sub queries under limit and big morsels") {
+    val personSize = 60
+    val enemySize = 2
+    val enemyOfEnemySize = 2
+    val enemyType = RelationshipType.withName("HAS_ENEMY")
+    val potentialFriends = given {
+      for {
+        person <- nodeGraph(personSize, "Person")
+        enemy <- nodeGraph(enemySize, "Prick")
+        _ = person.createRelationshipTo(enemy, enemyType)
+        enemyOfEnemy <- nodeGraph(enemyOfEnemySize, "Prick")
+        _ = enemy.createRelationshipTo(enemyOfEnemy, enemyType)
+      } yield {
+        enemyOfEnemy.setProperty("name", enemyOfEnemy.getId)
+        enemyOfEnemy
+      }
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .limit(25)
+      .apply(fromSubquery = true)
+      .|.aggregation(Seq(), Seq("collect(potentialFriends) AS result"))
+      .|.apply(fromSubquery = true)
+      .|.|.aggregation(Seq(), Seq("collect(enemyOfEnemy.name) AS potentialFriends"))
+      .|.|.expandAll("(enemy)-[:HAS_ENEMY]->(enemyOfEnemy)")
+      .|.|.argument("enemy")
+      .|.expandAll("(this)-[:HAS_ENEMY]->(enemy)")
+      .|.argument("this")
+      .nodeByLabelScan("this", "Person", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expected = potentialFriends
+      .map(p => ValueUtils.asAnyValue(p.getId))
+      .grouped(enemySize * enemyOfEnemySize)
+      .take(25)
+      .map(_.grouped(enemyOfEnemySize).map(_.toSet).toSet)
+      .toIndexedSeq
+
+    val result = runtimeResult.awaitAll()
+      .map { case Array(singleColumn) => singleColumn }
+      .map(_.asInstanceOf[ListValue].asScala.toSet)
+      .map(_.map(_.asInstanceOf[ListValue].asScala.toSet))
+
+    result shouldBe expected
+  }
+}
+
+object AggregationLargeMorselTestBase {
+  def withLargeMorsels[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]): Edition[CONTEXT] = {
+    edition.copyWith(additionalConfigs =
+      cypher_pipelined_batch_size_big -> Integer.valueOf(1024),
+      cypher_pipelined_batch_size_small -> Integer.valueOf(128)
+    )
   }
 }
