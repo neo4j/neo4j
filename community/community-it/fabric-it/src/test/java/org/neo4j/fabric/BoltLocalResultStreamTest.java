@@ -23,6 +23,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.function.Function;
@@ -31,8 +33,6 @@ import java.util.stream.Collectors;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Transaction;
-import org.neo4j.driver.internal.shaded.reactor.core.publisher.Flux;
-import org.neo4j.driver.internal.shaded.reactor.core.publisher.Mono;
 import org.neo4j.driver.reactive.RxResult;
 import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.test.extension.BoltDbmsExtension;
@@ -81,12 +81,12 @@ class BoltLocalResultStreamTest
         {
             RxResult statementResult = tx.run( "UNWIND range(0, 4) AS i RETURN 'r' + i as A" );
             return Flux.from( statementResult.records() )
-                    .limitRate( 1 )
-                    .collectList()
-                    .block()
-                    .stream()
-                    .map( r -> r.get( "A" ).asString() )
-                    .collect( Collectors.toList() );
+                       .limitRate( 1 )
+                       .collectList()
+                       .block()
+                       .stream()
+                       .map( r -> r.get( "A" ).asString() )
+                       .collect( Collectors.toList() );
         } );
 
         assertThat( result ).isEqualTo( List.of( "r0", "r1", "r2", "r3", "r4" ) );

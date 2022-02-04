@@ -178,7 +178,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver</artifactId>
+            <artifactId>neo4j-java-driver-slim</artifactId>
             <!-- scope from public pom seems to overwrite the scope from cypher-shell -->
             <scope>compile</scope>
         </dependency>

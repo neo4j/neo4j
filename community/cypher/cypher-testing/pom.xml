@@ -54,7 +54,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j.driver</groupId>
-            <artifactId>neo4j-java-driver</artifactId>
+            <artifactId>neo4j-java-driver-slim</artifactId>
             <scope>compile</scope>
         </dependency>
         <dependency>

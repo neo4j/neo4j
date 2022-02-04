@@ -8,7 +8,14 @@ Apache Software License, Version 2.0
   Caffeine cache
   jansi
   Java Native Access
-  Neo4j Java Driver
+  Neo4j Java Driver (Slim package)
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Non-Blocking Reactive Foundation for the JVM
 ------------------------------------------------------------------------------
 
                                  Apache License
