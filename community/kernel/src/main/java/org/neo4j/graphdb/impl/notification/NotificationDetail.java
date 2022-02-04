@@ -115,7 +115,8 @@ public interface NotificationDetail
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
-        public static NotificationDetail relationshipRangeIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
+        public static NotificationDetail relationshipRangeIndex( final String variableName, final String relationshipTypeName,
+                                                                 final String... propertyKeyNames )
         {
             String indexFormatString = IndexHintException.indexFormatString( variableName,
                                                                              relationshipTypeName,
