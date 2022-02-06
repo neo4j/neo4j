@@ -55,6 +55,7 @@ class KernelAPIParallelTraversalStressIT
     private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private static final ElementIdMapper elementIdMapper = mock( ElementIdMapper.class );
 
     @Inject
     private GraphDatabaseAPI db;
@@ -85,7 +86,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
-                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null, elementIdMapper );
             }
         }
 
@@ -102,7 +103,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
-                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null, elementIdMapper );
             }
         }
 

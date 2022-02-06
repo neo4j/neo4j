@@ -52,6 +52,7 @@ org.neo4j.graphdb.Direction::values() org.neo4j.graphdb.Direction[] public stati
 org.neo4j.graphdb.Entity public abstract interface
 org.neo4j.graphdb.Entity::delete() void public abstract
 org.neo4j.graphdb.Entity::getAllProperties() java.util.Map<java.lang.String,java.lang.Object> public abstract
+org.neo4j.graphdb.Entity::getElementId() java.lang.String public abstract
 org.neo4j.graphdb.Entity::getId() long public abstract
 org.neo4j.graphdb.Entity::getProperties(java.lang.String...) java.util.Map<java.lang.String,java.lang.Object> public abstract
 org.neo4j.graphdb.Entity::getProperty(java.lang.String) java.lang.Object public abstract
@@ -280,7 +281,9 @@ org.neo4j.graphdb.Transaction::getAllPropertyKeys() java.lang.Iterable<java.lang
 org.neo4j.graphdb.Transaction::getAllRelationshipTypes() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
 org.neo4j.graphdb.Transaction::getAllRelationshipTypesInUse() java.lang.Iterable<org.neo4j.graphdb.RelationshipType> public abstract
 org.neo4j.graphdb.Transaction::getAllRelationships() org.neo4j.graphdb.ResourceIterable<org.neo4j.graphdb.Relationship> public abstract
+org.neo4j.graphdb.Transaction::getNodeByElementId(java.lang.String) org.neo4j.graphdb.Node public abstract
 org.neo4j.graphdb.Transaction::getNodeById(long) org.neo4j.graphdb.Node public abstract
+org.neo4j.graphdb.Transaction::getRelationshipByElementId(java.lang.String) org.neo4j.graphdb.Relationship public abstract
 org.neo4j.graphdb.Transaction::getRelationshipById(long) org.neo4j.graphdb.Relationship public abstract
 org.neo4j.graphdb.Transaction::rollback() void public abstract
 org.neo4j.graphdb.Transaction::schema() org.neo4j.graphdb.schema.Schema public abstract

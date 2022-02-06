@@ -181,7 +181,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction,
-                terminationCallback, transactionExceptionMapper );
+                terminationCallback, transactionExceptionMapper, database.getElementIdMapper() );
     }
 
     @Override

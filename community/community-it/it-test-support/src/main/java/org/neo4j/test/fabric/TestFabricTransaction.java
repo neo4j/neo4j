@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -213,9 +214,21 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
+    public Node getNodeByElementId( String elementId )
+    {
+        return kernelInternalTransaction.getNodeByElementId( elementId );
+    }
+
+    @Override
     public Relationship getRelationshipById( long id )
     {
         return kernelInternalTransaction.getRelationshipById( id );
+    }
+
+    @Override
+    public Relationship getRelationshipByElementId( String elementId )
+    {
+        return kernelInternalTransaction.getRelationshipByElementId( elementId );
     }
 
     @Override
@@ -463,5 +476,11 @@ public class TestFabricTransaction implements InternalTransaction
     public RelationshipType getRelationshipTypeById( int type )
     {
         return kernelInternalTransaction.getRelationshipTypeById( type );
+    }
+
+    @Override
+    public ElementIdMapper elementIdMapper()
+    {
+        return kernelInternalTransaction.elementIdMapper();
     }
 }

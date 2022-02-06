@@ -68,6 +68,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.api.DefaultElementIdMapperV1;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
@@ -259,6 +261,7 @@ public class Database extends LifecycleAdapter
     private DatabaseAvailability databaseAvailability;
     private DatabaseTransactionEventListeners databaseTransactionEventListeners;
     private IOController ioController;
+    private ElementIdMapper elementIdMapper;
 
     public Database( DatabaseCreationContext context )
     {
@@ -447,6 +450,7 @@ public class Database extends LifecycleAdapter
                     userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker,
                     cursorContextFactory );
 
+            elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency( metadataProvider );
 
@@ -502,6 +506,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( indexProviderMap );
             databaseDependencies.satisfyDependency( forceOperation );
             databaseDependencies.satisfyDependency( storageEngine.storeEntityCounters() );
+            databaseDependencies.satisfyDependency( elementIdMapper );
 
             var providerSpi = QueryEngineProvider.spi( internalLogProvider, databaseMonitors, scheduler, life, getKernel(), databaseConfig );
             this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, databaseFacade, engineProvider, isSystem(), providerSpi );
@@ -1044,6 +1049,11 @@ public class Database extends LifecycleAdapter
     public CursorContextFactory getCursorContextFactory()
     {
         return cursorContextFactory;
+    }
+
+    public ElementIdMapper getElementIdMapper()
+    {
+        return elementIdMapper;
     }
 
     private void prepareStop( Predicate<PagedFile> deleteFilePredicate )

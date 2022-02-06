@@ -102,6 +102,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     }
 
     @Override
+    public String getElementId()
+    {
+        return internalTransaction.elementIdMapper().nodeElementId( nodeId );
+    }
+
+    @Override
     public void delete()
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();

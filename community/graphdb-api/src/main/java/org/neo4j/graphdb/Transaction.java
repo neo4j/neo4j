@@ -103,8 +103,21 @@ public interface Transaction extends AutoCloseable
      * @param id the id of the node
      * @return the node with id <code>id</code> if found
      * @throws NotFoundException if not found
+     * @deprecated in favor of {@link #getNodeByElementId(String)}.
      */
+    @Deprecated( since = "5.0", forRemoval = true )
     Node getNodeById( long id );
+
+    /**
+     * Looks up a node by element id. Please note: Neo4j reuses its internal ids when
+     * nodes and relationships are deleted, which means it's bad practice to
+     * refer to them this way. Instead, use application generated ids.
+     *
+     * @param elementId the id of the node
+     * @return the node with id <code>id</code> if found
+     * @throws NotFoundException if not found
+     */
+    Node getNodeByElementId( String elementId );
 
     /**
      * Looks up a relationship by id. Please note: Neo4j reuses its internal ids
@@ -114,8 +127,21 @@ public interface Transaction extends AutoCloseable
      * @param id the id of the relationship
      * @return the relationship with id <code>id</code> if found
      * @throws NotFoundException if not found
+     * @deprecated in favor of {@link #getRelationshipByElementId(String)}.
      */
+    @Deprecated( since = "5.0", forRemoval = true )
     Relationship getRelationshipById( long id );
+
+    /**
+     * Looks up a relationship by element id. Please note: Neo4j reuses its internal ids
+     * when nodes and relationships are deleted, which means it's bad practice
+     * to refer to them this way. Instead, use application generated ids.
+     *
+     * @param elementId the id of the relationship
+     * @return the relationship with id <code>id</code> if found
+     * @throws NotFoundException if not found
+     */
+    Relationship getRelationshipByElementId( String elementId );
 
     /**
      * Factory method for bidirectional traversal descriptions.

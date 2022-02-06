@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory;
@@ -75,6 +76,8 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     {
         throw new UnsupportedOperationException( "This transaction implementation does not allow close callbacks" );
     }
+
+    ElementIdMapper elementIdMapper();
 
     @FunctionalInterface
     interface TransactionClosedCallback

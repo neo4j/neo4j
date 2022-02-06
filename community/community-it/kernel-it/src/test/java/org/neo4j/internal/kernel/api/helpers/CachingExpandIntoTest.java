@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -79,6 +80,7 @@ class CachingExpandIntoTest
     private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private static final ElementIdMapper elementIdMapper = mock( ElementIdMapper.class );
 
     @ExtensionCallback
     void config( TestDatabaseManagementServiceBuilder builder )
@@ -89,7 +91,7 @@ class CachingExpandIntoTest
     private KernelTransaction transaction() throws TransactionFailureException
     {
         KernelTransaction kernelTransaction = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
-        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, elementIdMapper );
         return kernelTransaction;
     }
 

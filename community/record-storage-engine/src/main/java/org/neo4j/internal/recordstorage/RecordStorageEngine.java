@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -693,5 +694,41 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreEntityCounters storeEntityCounters()
     {
         return storeEntityCounters;
+    }
+
+    @Override
+    public byte[] encodeNodeId( long nodeId )
+    {
+        return longAsByteArray( nodeId );
+    }
+
+    @Override
+    public byte[] encodeRelationshipId( long relationshipId )
+    {
+        return longAsByteArray( relationshipId );
+    }
+
+    @Override
+    public long decodeNodeId( byte[] from, int offset )
+    {
+        return decodeElementId( from, offset );
+    }
+
+    @Override
+    public long decodeRelationshipId( byte[] from, int offset )
+    {
+        return decodeElementId( from, offset );
+    }
+
+    private long decodeElementId( byte[] from, int offset )
+    {
+        return ByteBuffer.wrap( from, offset, Long.BYTES ).getLong();
+    }
+
+    private byte[] longAsByteArray( long nodeId )
+    {
+        ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
+        buffer.putLong( nodeId );
+        return buffer.array();
     }
 }

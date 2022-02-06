@@ -64,6 +64,7 @@ class KernelAPIParallelTypeScanStressIT
     private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private static final ElementIdMapper elementIdMapper = mock( ElementIdMapper.class );
 
     @Inject
     private GraphDatabaseAPI db;
@@ -100,7 +101,7 @@ class KernelAPIParallelTypeScanStressIT
 
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, tx, null, null );
+            new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, tx, null, null, elementIdMapper );
             types[0] = createRelationships( tx, N_RELS, "TYPE1" );
             types[1] = createRelationships( tx, N_RELS, "TYPE2" );
             types[2] = createRelationships( tx, N_RELS, "TYPE3" );

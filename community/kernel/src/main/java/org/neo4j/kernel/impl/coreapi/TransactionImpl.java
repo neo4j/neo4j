@@ -79,6 +79,7 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -133,6 +134,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     private final QueryExecutionEngine executionEngine;
     private final Consumer<Status> terminationCallback;
     private final TransactionExceptionMapper exceptionMapper;
+    private final ElementIdMapper elementIdMapper;
     /**
      * Tracker of resources in use by the Core API.
      * <p>
@@ -152,7 +154,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     public TransactionImpl( TokenHolders tokenHolders, TransactionalContextFactory contextFactory,
             DatabaseAvailabilityGuard availabilityGuard, QueryExecutionEngine executionEngine,
             KernelTransaction transaction, Consumer<Status> terminationCallback,
-            TransactionExceptionMapper exceptionMapper )
+            TransactionExceptionMapper exceptionMapper, ElementIdMapper elementIdMapper )
     {
         this.tokenHolders = tokenHolders;
         this.contextFactory = contextFactory;
@@ -160,6 +162,7 @@ public class TransactionImpl extends EntityValidationTransactionImpl
         this.executionEngine = executionEngine;
         this.terminationCallback = terminationCallback;
         this.exceptionMapper = exceptionMapper;
+        this.elementIdMapper = elementIdMapper;
         setTransaction( transaction );
     }
 
@@ -263,6 +266,19 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     }
 
     @Override
+    public Node getNodeByElementId( String elementId )
+    {
+        Read read = kernelTransaction().dataRead();
+        long nodeId = elementIdMapper.nodeId( elementId );
+        if ( !read.nodeExists( nodeId ) )
+        {
+            throw new NotFoundException( format( "Node %d not found", nodeId ),
+                    new EntityNotFoundException( EntityType.NODE, nodeId ) );
+        }
+        return newNodeEntity( nodeId );
+    }
+
+    @Override
     public Result execute( String query ) throws QueryExecutionException
     {
         return execute( query, emptyMap() );
@@ -311,6 +327,19 @@ public class TransactionImpl extends EntityValidationTransactionImpl
                     new EntityNotFoundException( EntityType.RELATIONSHIP, id ) );
         }
         return newRelationshipEntity( id );
+    }
+
+    @Override
+    public Relationship getRelationshipByElementId( String elementId )
+    {
+        Read read = kernelTransaction().dataRead();
+        long relationshipId = elementIdMapper.relationshipId( elementId );
+        if ( !read.relationshipExists( relationshipId ) )
+        {
+            throw new NotFoundException( format( "Relationship %d not found", relationshipId ),
+                    new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId ) );
+        }
+        return newRelationshipEntity( relationshipId );
     }
 
     @Override
@@ -889,6 +918,12 @@ public class TransactionImpl extends EntityValidationTransactionImpl
     public boolean isOpen()
     {
         return !closed;
+    }
+
+    @Override
+    public ElementIdMapper elementIdMapper()
+    {
+        return elementIdMapper;
     }
 
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex( KernelTransaction ktx, int labelId, PropertyIndexQuery... queries )

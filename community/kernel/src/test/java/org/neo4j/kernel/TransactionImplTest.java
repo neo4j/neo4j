@@ -34,6 +34,7 @@ import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -68,7 +69,7 @@ class TransactionImplTest
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
                 "Proving that transaction does the right thing" ) ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        TransactionImpl transaction = createTransaction( kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -81,7 +82,7 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        TransactionImpl transaction = createTransaction( kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -102,7 +103,7 @@ class TransactionImplTest
                      }
                  }
         ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        TransactionImpl transaction = createTransaction( kernelTransaction );
 
         // WHEN
         transaction.commit();
@@ -115,7 +116,7 @@ class TransactionImplTest
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        TransactionImpl transaction = createTransaction( kernelTransaction );
 
         transaction.commit();
     }
@@ -127,7 +128,7 @@ class TransactionImplTest
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Terminated ) );
 
-        TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        TransactionImpl tx = createTransaction( kernelTransaction );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();
@@ -144,21 +145,21 @@ class TransactionImplTest
         MutableLong calls = new MutableLong();
 
         // commit
-        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
         {
             tx.addCloseCallback( calls::increment );
             tx.commit();
         }
 
         // and rollback
-        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
         {
             tx.addCloseCallback( calls::increment );
             tx.rollback();
         }
 
         // and nothing
-        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
         {
             tx.addCloseCallback( calls::increment );
         }
@@ -233,9 +234,14 @@ class TransactionImplTest
         when( kernelTransaction.tokenRead() ).thenReturn( mock( TokenRead.class ) );
         when( kernelTransaction.schemaRead() ).thenReturn( mock );
 
-        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
+        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
         {
             assertThatThrownBy( () -> consumer.accept( tx ) ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( message );
         }
+    }
+
+    private TransactionImpl createTransaction( KernelTransaction kernelTransaction )
+    {
+        return new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, mock( ElementIdMapper.class ) );
     }
 }

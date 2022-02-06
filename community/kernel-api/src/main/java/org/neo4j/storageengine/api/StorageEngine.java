@@ -206,4 +206,34 @@ public interface StorageEngine extends Lifecycle
     {
         return TransactionStateBehaviour.DEFAULT_BEHAVIOUR;
     }
+
+    /**
+     * Encodes a node ID as part of an element ID.
+     * @param nodeId the node ID to encode.
+     * @return the encoded node ID.
+     */
+    byte[] encodeNodeId( long nodeId );
+
+    /**
+     * Encodes a relationship ID as part of an element ID.
+     * @param relationshipId the relationship ID to encode.
+     * @return the encoded relationship ID.
+     */
+    byte[] encodeRelationshipId( long relationshipId );
+
+    /**
+     * Decodes a node ID from an element ID.
+     * @param from the source holding the node ID to be decoded, and which was once encoded with {@link #encodeNodeId(long)}.
+     * @param offset offset into array to start to decode from.
+     * @return the node ID from the decoded element ID.
+     */
+    long decodeNodeId( byte[] from, int offset );
+
+    /**
+     * Decodes a relationship ID from an element ID.
+     * @param from the source holding the relationship ID to be decoded, and which was once encoded with {@link #encodeRelationshipId(long)}.
+     * @param offset offset into array to start to decode from.
+     * @return the relationship ID from the decoded element ID.
+     */
+    long decodeRelationshipId( byte[] from, int offset );
 }

@@ -24,11 +24,11 @@ import java.util.Map;
 import org.neo4j.annotations.api.PublicApi;
 
 /**
- * An Entity is a {@link Entity} that is persisted in the database, and identified by an {@link #getId() id}.
+ * An Entity is a {@link Entity} that is persisted in the database, and identified by an {@link #getElementId()} element id}.
  * <p>
  * {@link Node Nodes} and {@link Relationship Relationships} are Entities.
  *
- * Entities are attached to transaction in which they were accessed. Outside of transaction its possible only to access entity id.
+ * Entities are attached to transaction in which they were accessed. Outside of transaction it's possible only to access an entity's element id.
  * All other methods should be called only in the scope of the owning transaction.
  *
  * Defines a common API for handling properties on both {@link Node nodes} and
@@ -82,8 +82,19 @@ public interface Entity
      * likely that some new entity will reuse this id at some point.
      *
      * @return The id of this Entity.
+     * @deprecated in favor of {@link #getElementId()}.
      */
+    @Deprecated( since = "5.0", forRemoval = true )
     long getId();
+
+    /**
+     * Returns the unique element id of this entity. Id's are reused over time so they are only guaranteed to be unique
+     * during a specific transaction: if the entity is deleted, it is
+     * likely that some new entity will reuse this id at some point.
+     *
+     * @return The element id of this Entity.
+     */
+    String getElementId();
 
     /**
      * Returns <code>true</code> if this property container has a property

@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -77,6 +78,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     private static final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private static final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private static final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private static final ElementIdMapper elementIdMapper = mock( ElementIdMapper.class );
 
     @Inject
     private TestDirectory testDirectory;
@@ -125,7 +127,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     {
         Kernel kernel = testSupport.kernelToTest();
         KernelTransaction kernelTransaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
-        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, elementIdMapper );
         return kernelTransaction;
     }
 

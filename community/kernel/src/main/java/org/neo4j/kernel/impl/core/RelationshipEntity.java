@@ -62,21 +62,22 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipEntity.class );
 
     private final InternalTransaction internalTransaction;
-    private RelationshipDataAccessor cursor;
+    private final RelationshipDataAccessor cursor;
     private long id = NO_ID;
     private long startNode = NO_ID;
     private long endNode = NO_ID;
     private int type;
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode,
-            RelationshipDataAccessor cursor )
+    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type,
+            long endNode, RelationshipDataAccessor cursor )
     {
         this.internalTransaction = internalTransaction;
         this.cursor = cursor;
         visit( id, type, startNode, endNode );
     }
 
-    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type, long endNode )
+    public RelationshipEntity( InternalTransaction internalTransaction, long id, long startNode, int type,
+            long endNode )
     {
         this( internalTransaction, id, startNode, type, endNode, null );
     }
@@ -141,6 +142,12 @@ public class RelationshipEntity implements Relationship, RelationshipVisitor<Run
     public long getId()
     {
         return id;
+    }
+
+    @Override
+    public String getElementId()
+    {
+        return internalTransaction.elementIdMapper().relationshipElementId( id );
     }
 
     private int typeId()

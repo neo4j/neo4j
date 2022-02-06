@@ -36,6 +36,8 @@ trait FakeEntityTestSupport {
 
     def getId: Long = 0L
 
+    def getElementId: String = "0"
+
     def delete() {}
 
     def getStartNode: Node = start
@@ -74,6 +76,8 @@ trait FakeEntityTestSupport {
   class FakeNode extends Node {
 
     def getId: Long = 0L
+
+    override def getElementId: String = "0"
 
     def getRelationships(types: RelationshipType*): ResourceIterable[Relationship] = null
 

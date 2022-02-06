@@ -505,6 +505,62 @@ public class NodeEntityTest extends EntityTest
         assertThrows( ConstraintViolationException.class, () -> nodeEntity.setProperty( "key", "value" ) );
     }
 
+    @Test
+    void shouldWorkWithNodeElementIds()
+    {
+        // given
+        String nodeId1;
+        String nodeId2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            var node1 = tx.createNode();
+            node1.setProperty( "name", "Node 1" );
+            nodeId1 = node1.getElementId();
+            var node2 = tx.createNode();
+            node2.setProperty( "name", "Node 2" );
+            nodeId2 = node2.getElementId();
+            tx.commit();
+        }
+
+        // when/then
+        try ( Transaction tx = db.beginTx() )
+        {
+            var node1 = tx.getNodeByElementId( nodeId1 );
+            var node2 = tx.getNodeByElementId( nodeId2 );
+            assertThat( node1.getProperty( "name" ) ).isEqualTo( "Node 1" );
+            assertThat( node2.getProperty( "name" ) ).isEqualTo( "Node 2" );
+            tx.commit();
+        }
+    }
+
+    @Test
+    void shouldWorkWithRelationshipElementIds()
+    {
+        // given
+        String relationshipId1;
+        String relationshipId2;
+        try ( Transaction tx = db.beginTx() )
+        {
+            var relationship1 = tx.createNode().createRelationshipTo( tx.createNode(), RelationshipType.withName( "KNOWS" ) );
+            relationship1.setProperty( "name", "Relationship 1" );
+            relationshipId1 = relationship1.getElementId();
+            var relationship2 = tx.createNode().createRelationshipTo( tx.createNode(), RelationshipType.withName( "KNOWS" ) );
+            relationship2.setProperty( "name", "Relationship 2" );
+            relationshipId2 = relationship2.getElementId();
+            tx.commit();
+        }
+
+        // when/then
+        try ( Transaction tx = db.beginTx() )
+        {
+            var relationship1 = tx.getRelationshipByElementId( relationshipId1 );
+            var relationship2 = tx.getRelationshipByElementId( relationshipId2 );
+            assertThat( relationship1.getProperty( "name" ) ).isEqualTo( "Relationship 1" );
+            assertThat( relationship2.getProperty( "name" ) ).isEqualTo( "Relationship 2" );
+            tx.commit();
+        }
+    }
+
     private void createNodeWith( String key )
     {
         try ( Transaction tx = db.beginTx() )

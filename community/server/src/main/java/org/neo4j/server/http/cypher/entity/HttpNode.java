@@ -65,6 +65,12 @@ public class HttpNode implements Node
     }
 
     @Override
+    public String getElementId()
+    {
+        throw new UnsupportedOperationException( "Not implemented yet" );
+    }
+
+    @Override
     public boolean hasProperty( String key )
     {
         return false;

@@ -240,6 +240,12 @@ public class SchemaProcedure
         }
 
         @Override
+        public String getElementId()
+        {
+            return String.valueOf( id );
+        }
+
+        @Override
         public Node getStartNode()
         {
             return startNode;
@@ -357,6 +363,12 @@ public class SchemaProcedure
         public long getId()
         {
             return id;
+        }
+
+        @Override
+        public String getElementId()
+        {
+            return String.valueOf( id );
         }
 
         @Override

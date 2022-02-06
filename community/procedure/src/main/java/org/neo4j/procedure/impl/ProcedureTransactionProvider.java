@@ -43,6 +43,7 @@ import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.Context;
@@ -97,6 +98,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public Node getNodeByElementId( String elementId )
+        {
+            return transaction.getNodeByElementId( elementId );
+        }
+
+        @Override
         public Result execute( String query ) throws QueryExecutionException
         {
             return transaction.execute( query );
@@ -112,6 +119,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         public Relationship getRelationshipById( long id )
         {
             return transaction.getRelationshipById( id );
+        }
+
+        @Override
+        public Relationship getRelationshipByElementId( String elementId )
+        {
+            return transaction.getRelationshipByElementId( elementId );
         }
 
         @Override
@@ -401,6 +414,12 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         public void addCloseCallback( TransactionClosedCallback callback )
         {
             transaction.addCloseCallback( callback );
+        }
+
+        @Override
+        public ElementIdMapper elementIdMapper()
+        {
+            return transaction.elementIdMapper();
         }
     }
 }
