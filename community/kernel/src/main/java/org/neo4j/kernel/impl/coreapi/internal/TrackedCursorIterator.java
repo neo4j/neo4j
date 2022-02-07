@@ -24,34 +24,24 @@ import java.util.function.ToLongFunction;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.kernel.api.ResourceTracker;
 
-import static org.neo4j.io.IOUtils.closeAllSilently;
-
-public class CursorIterator<CURSOR extends Cursor, E extends Entity> extends PrefetchingEntityResourceIterator<CURSOR,E>
+public class TrackedCursorIterator<CURSOR extends Cursor, E extends Entity> extends CursorIterator<CURSOR,E>
 {
-    private final CURSOR cursor;
-    private final ToLongFunction<CURSOR> toReferenceFunction;
+    private final ResourceTracker resourceTracker;
 
-    public CursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory )
+    public TrackedCursorIterator( CURSOR cursor, ToLongFunction<CURSOR> toReferenceFunction, CursorEntityFactory<CURSOR,E> entityFactory,
+                                  ResourceTracker resourceTracker )
     {
-        super( cursor, entityFactory );
-        this.cursor = cursor;
-        this.toReferenceFunction = toReferenceFunction;
-    }
-
-    @Override
-    long fetchNext()
-    {
-        if ( cursor.next() )
-        {
-            return toReferenceFunction.applyAsLong( cursor );
-        }
-        return NO_ID;
+        super( cursor, toReferenceFunction, entityFactory );
+        this.resourceTracker = resourceTracker;
+        resourceTracker.registerCloseableResource( this );
     }
 
     @Override
     void closeResources()
     {
-        closeAllSilently( cursor );
+        resourceTracker.unregisterCloseableResource( this );
+        super.closeResources();
     }
 }

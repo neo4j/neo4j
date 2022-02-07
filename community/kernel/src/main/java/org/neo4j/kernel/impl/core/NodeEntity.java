@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -150,7 +151,22 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     private ResourceIterable<Relationship> innerGetRelationships(
             KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        return () -> getRelationshipSelectionIterator( transaction, direction, typeIds );
+        AbstractResourceIterable<Relationship> relationships = new AbstractResourceIterable<>()
+        {
+            @Override
+            protected ResourceIterator<Relationship> newIterator()
+            {
+                return getRelationshipSelectionIterator( transaction, direction, typeIds );
+            }
+
+            @Override
+            protected void onClosed()
+            {
+                internalTransaction.unregisterCloseableResource( this );
+            }
+        };
+        internalTransaction.registerCloseableResource( relationships );
+        return relationships;
     }
 
     @Override
@@ -669,17 +685,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        switch ( direction )
-        {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes );
-        case INCOMING:
-            return Nodes.countIncoming( nodes );
-        case BOTH:
-            return Nodes.countAll( nodes );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> Nodes.countOutgoing( nodes );
+                    case INCOMING -> Nodes.countIncoming( nodes );
+                    case BOTH -> Nodes.countAll( nodes );
+                };
     }
 
     @Override
@@ -694,17 +705,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        switch ( direction )
-        {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes, typeId );
-        case INCOMING:
-            return Nodes.countIncoming( nodes, typeId );
-        case BOTH:
-            return Nodes.countAll( nodes, typeId );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> Nodes.countOutgoing( nodes, typeId );
+                    case INCOMING -> Nodes.countIncoming( nodes, typeId );
+                    case BOTH -> Nodes.countAll( nodes, typeId );
+                };
     }
 
     @Override
@@ -747,17 +753,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         var cursorContext = transaction.cursorContext();
         var cursors = transaction.cursors();
-        switch ( direction )
-        {
-        case OUTGOING:
-            return outgoingIterator( cursors, node, typeIds, this, cursorContext );
-        case INCOMING:
-            return incomingIterator( cursors, node, typeIds, this, cursorContext );
-        case BOTH:
-            return allIterator( cursors, node, typeIds, this, cursorContext );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> outgoingIterator( cursors, node, typeIds, this, cursorContext );
+                    case INCOMING -> incomingIterator( cursors, node, typeIds, this, cursorContext );
+                    case BOTH -> allIterator( cursors, node, typeIds, this, cursorContext );
+                };
     }
 
     private static int[] relTypeIds( RelationshipType[] types, TokenRead token )

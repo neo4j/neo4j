@@ -196,7 +196,20 @@ class TestCommonIterators
         List<Object> list = asList( "a", "b", "c", "def" );
 
         Resource resource = mock( Resource.class );
-        ResourceIterable<Object> iterable = () -> Iterators.resourceIterator( list.iterator(), resource );
+        ResourceIterable<Object> iterable = new ResourceIterable<>()
+        {
+            @Override
+            public ResourceIterator<Object> iterator()
+            {
+                return Iterators.resourceIterator( list.iterator(), resource );
+            }
+
+            @Override
+            public void close()
+            {
+                // no-op
+            }
+        };
 
         try ( Stream<Object> stream = Iterables.stream( iterable ) )
         {

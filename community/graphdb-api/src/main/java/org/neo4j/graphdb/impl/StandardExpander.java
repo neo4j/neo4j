@@ -37,10 +37,10 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.internal.helpers.collection.ArrayIterator;
+import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.helpers.collection.FilteringIterator;
 import org.neo4j.internal.helpers.collection.MappingResourceIterator;
 import org.neo4j.internal.helpers.collection.NestingResourceIterator;
@@ -56,7 +56,7 @@ public abstract class StandardExpander implements PathExpander
     {
     }
 
-    abstract static class StandardExpansion<T> implements ResourceIterable<T>
+    abstract static class StandardExpansion<T> extends AbstractResourceIterable<T>
     {
         final StandardExpander expander;
         final Path path;
@@ -149,7 +149,7 @@ public abstract class StandardExpander implements PathExpander
         }
 
         @Override
-        public ResourceIterator<Relationship> iterator()
+        protected ResourceIterator<Relationship> newIterator()
         {
             return expander.doExpand( path, state );
         }
@@ -181,7 +181,7 @@ public abstract class StandardExpander implements PathExpander
         }
 
         @Override
-        public ResourceIterator<Node> iterator()
+        protected ResourceIterator<Node> newIterator()
         {
             final Node node = path.endNode();
 
@@ -364,7 +364,7 @@ public abstract class StandardExpander implements PathExpander
         ResourceIterator<Relationship> doExpand( Path path, BranchState state )
         {
             final Node node = path.endNode();
-            ResourceIterator<Relationship> resourceIterator = asResourceIterator( node.getRelationships().iterator() );
+            ResourceIterator<Relationship> resourceIterator = node.getRelationships().iterator();
             return newResourceIterator( new FilteringIterator<>( resourceIterator, rel ->
             {
                 Exclusion exclude = exclusion.get( rel.getType().name() );

@@ -17,35 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.internal.helpers.collection;
 
-public interface ResourceTracker extends ResourceMonitor
+import org.neo4j.graphdb.Resource;
+
+/**
+ * This exception is thrown when a checked exception occurs inside {@link Resource#close()}.
+ * It is a RuntimeException since {@link Resource#close()} is not allowed to throw checked exceptions.
+ */
+public class ResourceIteratorCloseFailedException extends RuntimeException
 {
-    ResourceTracker EMPTY_RESOURCE_TRACKER = new EmptyResourceTracker();
-
-    /**
-     * Closes and unregisters all the registered resources
-     */
-    void closeAllCloseableResources();
-
-    class EmptyResourceTracker implements ResourceTracker
+    public ResourceIteratorCloseFailedException( String message )
     {
-        @Override
-        public void closeAllCloseableResources()
-        {
-            // empty
-        }
+        super( message );
+    }
 
-        @Override
-        public void registerCloseableResource( AutoCloseable closeableResource )
-        {
-            // empty
-        }
-
-        @Override
-        public void unregisterCloseableResource( AutoCloseable closeableResource )
-        {
-            //empty
-        }
+    public ResourceIteratorCloseFailedException( String message, Throwable cause )
+    {
+        super( message, cause );
     }
 }

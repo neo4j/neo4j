@@ -19,33 +19,21 @@
  */
 package org.neo4j.kernel.api;
 
-public interface ResourceTracker extends ResourceMonitor
+public interface ResourceMonitor
 {
-    ResourceTracker EMPTY_RESOURCE_TRACKER = new EmptyResourceTracker();
+    /**
+     * Register a closeable resource that needs to be closed automatically
+     * at the end of the scope of the resource.
+     * The end of the scope can be closing of a statement or a transaction depending on
+     * if the resource tracker has a statement or transaction scope.
+     * <p>
+     * If the given resource can be closed elsewhere, e.g. by exhausting an iterator,
+     * the close() method of the resource should be idempotent.
+     */
+    void registerCloseableResource( AutoCloseable closeableResource );
 
     /**
-     * Closes and unregisters all the registered resources
+     * @see #registerCloseableResource
      */
-    void closeAllCloseableResources();
-
-    class EmptyResourceTracker implements ResourceTracker
-    {
-        @Override
-        public void closeAllCloseableResources()
-        {
-            // empty
-        }
-
-        @Override
-        public void registerCloseableResource( AutoCloseable closeableResource )
-        {
-            // empty
-        }
-
-        @Override
-        public void unregisterCloseableResource( AutoCloseable closeableResource )
-        {
-            //empty
-        }
-    }
+    void unregisterCloseableResource( AutoCloseable closeableResource );
 }

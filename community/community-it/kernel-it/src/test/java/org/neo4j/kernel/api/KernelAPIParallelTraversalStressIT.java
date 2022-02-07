@@ -85,7 +85,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
-                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup );
             }
         }
 
@@ -102,7 +102,7 @@ class KernelAPIParallelTraversalStressIT
             {
                 setup.commit();
                 setup = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED );
-                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup, null, null );
+                new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, setup );
             }
         }
 
