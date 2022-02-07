@@ -344,13 +344,44 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def getLogicalPlanFor(queryString: String,
-                          cypherConfig:CypherPlannerConfiguration = cypherCompilerConfig,
+                          cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
                           queryGraphSolver: QueryGraphSolver = queryGraphSolver,
                           stripProduceResults: Boolean = true,
                           deduplicateNames: Boolean = deduplicateNames,
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
                          ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
+      val context = getContext(queryString, cypherConfig, queryGraphSolver, debugOptions)
+      val state = createInitState(queryString)
+      val output = pipeLine(deduplicateNames).transform(state, context)
+      val logicalPlan = output.logicalPlan match {
+        case p: ProduceResult if stripProduceResults => p.source
+        case p => p
+      }
+      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
+    }
+
+    def getLogicalPlanForAst(initialState: BaseState): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
+      // As the test only checks ast -> planning, any valid query could be used.
+      val fakeQueryString = "RETURN 1"
+      val context = getContext(fakeQueryString)
+
+      val output = pipeLine(deduplicateNames).transform(initialState, context)
+      //val output = pipeLineAfterParsing(cypherCompilerConfig.enabledSemanticFeatures, deduplicateNames).transform(state, context)
+      val logicalPlan = output.logicalPlan match {
+        case p: ProduceResult => p.source
+        case p => p
+      }
+      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
+    }
+
+    private def getContext(
+                            queryString: String,
+                            cypherConfig: CypherPlannerConfiguration = cypherCompilerConfig,
+                            queryGraphSolver: QueryGraphSolver = queryGraphSolver,
+                            debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+                          ):PlannerContext = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
+
       val metrics = metricsFactory.newMetrics(planContext,
         mock[ExpressionEvaluator],
         config.executionModel,
@@ -358,7 +389,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         cypherConfig.planningRangeIndexesEnabled,
         cypherConfig.planningPointIndexesEnabled,
       )
-      def context = ContextHelper.create(planContext = planContext,
+
+      ContextHelper.create(planContext = planContext,
         cypherExceptionFactory = exceptionFactory,
         queryGraphSolver = queryGraphSolver,
         metrics = metrics,
@@ -367,14 +399,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         debugOptions = debugOptions,
         executionModel = config.executionModel
       )
-
-      val state = createInitState(queryString)
-      val output = pipeLine(deduplicateNames).transform(state, context)
-      val logicalPlan = output.logicalPlan match {
-        case p:ProduceResult if stripProduceResults => p.source
-        case p => p
-      }
-      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {

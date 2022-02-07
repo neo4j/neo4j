@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
-import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestInitialState
-import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestParsing
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -41,30 +39,40 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.util.Random
 
-class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
   test("INPUT DATA STREAM a, b, c RETURN *") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN *")._2 should equal(Input(Seq("a", "b", "c")))
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")), returnAll)
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(Input(Seq("a", "b", "c")))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN DISTINCT a") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN DISTINCT a")._2 should equal(Distinct(Input(Seq("a", "b", "c")), Map("a" -> varFor("a"))))
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")), returnDistinct(returnItem(varFor("a"), "a")))
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(Distinct(Input(Seq("a", "b", "c")), Map("a" -> varFor("a"))))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c RETURN sum(a)")._2 should equal(
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")), return_(returnItem(sum(varFor("a")), "sum(a)")))
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map("sum(a)" -> sum(varFor("a"))))
     )
   }
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a.pid = 99 RETURN *") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c WITH * WHERE a.pid = 99 RETURN *")._2 should equal(
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
+      withAll(Some(where(propEquality("a", "pid", 99)))), returnAll)
+
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Selection(ands(propEquality("a", "pid", 99)), Input(Seq("a", "b", "c")))
     )
   }
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a:Employee RETURN a.name AS name ORDER BY name") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c WITH * WHERE a:Employee RETURN a.name AS name ORDER BY name")._2 should equal(
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
+      withAll(Some(where(hasLabelsOrTypes("a","Employee")))),
+      return_(orderBy(sortItem(varFor("name"))), returnItem(prop("a", "name"), "name")))
+
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Sort(
         Projection(
           Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))), Map("name" -> prop("a", "name"))
@@ -75,7 +83,10 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("INPUT DATA STREAM a, b, c WITH * MATCH (x) RETURN *") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM a, b, c WITH * MATCH (x) RETURN *")._2 should equal(
+    val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
+      withAll(), match_(nodePat("x")), returnAll)
+
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Apply(
         Input(Seq("a", "b", "c")),
         AllNodesScan("x", Set("a", "b", "c")
@@ -85,22 +96,22 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
-    new given().getLogicalPlanFor("INPUT DATA STREAM g, uid, cids, cid, p RETURN *")._2 should equal(
+    val ast = query(input(varFor("g"), varFor("uid"), varFor("cids"), varFor("cid"), varFor("p")), returnAll)
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Input(Seq("g", "uid", "cids", "cid", "p")))
   }
 
   test("INPUT DATA STREAM with large number of columns") {
     val randomColumns = Random.shuffle(for (c <- 'a' to 'z'; n <- 1 to 10) yield s"$c$n")
-    new given().getLogicalPlanFor(s"INPUT DATA STREAM ${randomColumns.mkString(",")} RETURN *")._2 should equal(
+    val ast = query(input(randomColumns.map(col => varFor(col)):_*), returnAll)
+    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._2 should equal(
       Input(randomColumns))
   }
 
-  override def pipeLine(deduplicateNames: Boolean = deduplicateNames): Transformer[PlannerContext, BaseState, LogicalPlanState] = {
-    InputDataStreamTestParsing andThen super.pipeLine(deduplicateNames)
+  private def createInitStateFromAst(ast: Statement): BaseState = {
+    // As the test only checks ast -> planning, any valid query could be used.
+    val fakeQueryString = "RETURN 1"
+    InputDataStreamTestInitialState(fakeQueryString, None, IDPPlannerName, new AnonymousVariableNameGenerator(), maybeStatement = Some(ast))
   }
-
-  // Both the test parser that understands INPUT DATA STREAM and the standard parser are part of the pipeline,
-  // the standard parser will be fed with 'RETURN 1' just to make it happy
-  override def createInitState(queryString: String): BaseState = InputDataStreamTestInitialState(queryString, "RETURN 1", None, IDPPlannerName, new AnonymousVariableNameGenerator())
 
 }

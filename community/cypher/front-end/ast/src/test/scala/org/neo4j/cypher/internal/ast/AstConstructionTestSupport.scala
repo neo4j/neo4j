@@ -463,11 +463,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
 
+  def withAll(where: Option[Where] = None): With = With(distinct = false, returnAllItems, None, None, None, where = where)(pos)
+
   def return_(items: ReturnItem*): Return =
     Return(ReturnItems(includeExisting = false, items)(pos))(pos)
 
   def return_(ob: OrderBy, items: ReturnItem*): Return =
     Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), Some(ob), None, None)(pos)
+
+  def returnDistinct(items: ReturnItem*): Return =
+    Return(distinct = true, ReturnItems(includeExisting = false, items)(pos), None, None, None)(pos)
 
   def returnAll: Return = Return(returnAllItems)(pos)
 
