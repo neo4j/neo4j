@@ -40,12 +40,17 @@ trait PatternGen extends ScalaCheckPropertyChecks {
   protected def maxPatternLength = 8
   protected def numberOfTestRuns: PosInt = PosInt(100)
   protected def maxDiscardedInputs = 500
-  protected def maxSize: PosZInt = PosZInt(10)
+  protected def sizeRange: PosZInt = PosZInt(10)
 
   private def calculateMaxDiscardedFactor(): PosZDouble =
     PosZDouble.from(((maxDiscardedInputs + 1): Double) / (numberOfTestRuns: Double)).get
 
-  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = PropertyCheckConfiguration(numberOfTestRuns, calculateMaxDiscardedFactor(), maxSize)
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration =
+    PropertyCheckConfiguration(
+      minSuccessful = numberOfTestRuns,
+      maxDiscardedFactor = calculateMaxDiscardedFactor(),
+      sizeRange = sizeRange,
+    )
 
   val nameSeq = new AtomicInteger
 
