@@ -20,7 +20,6 @@
 package org.neo4j.codegen.api
 
 import java.nio.ByteBuffer
-
 import org.neo4j.codegen.ByteCodeVisitor
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.CodeGeneration.ByteCodeGeneration
@@ -69,6 +68,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.tryCatch
 import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
 import org.neo4j.codegen.api.IntermediateRepresentation.unbox
+import org.neo4j.codegen.api.SizeEstimationTest.arrayField
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.Measurable
 import org.neo4j.values.storable.LongValue
@@ -224,6 +224,16 @@ class SizeEstimationTest extends CypherFunSuite {
       block(
         declare[Object]("a"),
         assign("a", loadField(field[String]("field"))),
+      )
+
+    sizeOf(instructions) should equal(computeSize(instructions))
+  }
+
+  test("load instance field with initializer") {
+    val instructions =
+      block(
+        declare[Object]("a"),
+        assign("a", loadField(arrayField)),
       )
 
     sizeOf(instructions) should equal(computeSize(instructions))
@@ -1113,8 +1123,8 @@ class SizeEstimationTest extends CypherFunSuite {
       Seq.empty,
       Seq.empty,
       noop(),
-      () => Seq(field[String]("field", constant("hello field"))),
-      Seq(MethodDeclaration("test", TypeReference.VOID, Seq.empty//Seq(param[Int]("i1"), param[Int]("i2"), param[Int]("i3"))
+      () => Seq(field[String]("field", constant("hello field")), arrayField),
+      Seq(MethodDeclaration("test", TypeReference.VOID, Seq.empty
         , block(
         //NOTE: this is a little bit of a hack, here we insert `int tag=123` at the beginning of the method to
         //      make it easy to locate the method in the byte code later
@@ -1131,7 +1141,7 @@ class SizeEstimationTest extends CypherFunSuite {
     override def visitByteCode(name: String, bytes: ByteBuffer): Unit = {
       val byteCode = bytes.array().toIndexedSeq
       //Look for our magic marker `int tag = 123`
-      val index = byteCode.indexOfSlice(Seq(Opcodes.BIPUSH.toByte, 123.toByte))
+      val index = byteCode.lastIndexOfSlice(Seq(Opcodes.BIPUSH.toByte, 123.toByte))
       var i = index + 3//jump over BIPUSH 123 (2 bytes) + ISTORE (1 byte)
 
       //the size of the method is what is between our `int tag = 123` and `RETURN`
@@ -1148,4 +1158,6 @@ object SizeEstimationTest {
   def testMethod(s: AnyRef): AnyRef = s
 
   def testBoolean: Boolean = Random.nextBoolean()
+
+  val arrayField: InstanceField = field[Array[Int]]("arrayField", arrayOf[Int]((1 to 1023).map(i => constant(i)): _*))
 }
