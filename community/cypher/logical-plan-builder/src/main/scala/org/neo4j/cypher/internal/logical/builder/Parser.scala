@@ -50,13 +50,13 @@ object Parser {
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
     case ContainerIndex(Variable("cacheRFromStore"), Property(v@Variable(relationship), pkn:PropertyKeyName)) =>
       CachedProperty(relationship, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "nodeCachedHasProperty" =>
+    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cacheNHasProperty" =>
       CachedHasProperty(node, v, pkn, NODE_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "relCachedHasProperty" =>
+    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "cacheRHasProperty" =>
       CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "nodeCachedHasPropertyFromStore" =>
+    case ContainerIndex(Variable(name), Property(v@Variable(node), pkn:PropertyKeyName)) if name == "cacheNHasPropertyFromStore" =>
       CachedHasProperty(node, v, pkn, NODE_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
-    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "relCachedHasPropertyFromStore" =>
+    case ContainerIndex(Variable(name), Property(v@Variable(rel), pkn:PropertyKeyName)) if name == "cacheRHasPropertyFromStore" =>
       CachedHasProperty(rel, v, pkn, RELATIONSHIP_TYPE, knownToAccessStore = true)(AbstractLogicalPlanBuilder.pos)
 
   })

@@ -485,8 +485,8 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("exists")
-      .projection("nodeCachedHasProperty[n.p] IS NOT NULL AS exists")
-      .filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .projection("cacheNHasProperty[n.p] IS NOT NULL AS exists")
+      .filter("cacheNHasProperty[n.p] IS NOT NULL")
       .allNodeScan("n")
       .build()
 
@@ -506,9 +506,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .apply()
-      .|.filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .|.filter("cacheNHasProperty[n.p] IS NOT NULL")
       .|.argument("n")
-      .filter("nodeCachedHasProperty[n.p] IS NOT NULL")
+      .filter("cacheNHasProperty[n.p] IS NOT NULL")
       .allNodeScan("n")
       .build()
 
@@ -534,8 +534,8 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("exists")
-      .projection("relCachedHasProperty[r.p] IS NOT NULL AS exists")
-      .filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .projection("cacheRHasProperty[r.p] IS NOT NULL AS exists")
+      .filter("cacheRHasProperty[r.p] IS NOT NULL")
       .relationshipTypeScan("(n)-[r:R]->(m)")
       .build()
 
@@ -561,9 +561,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .apply()
-      .|.filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .|.filter("cacheRHasProperty[r.p] IS NOT NULL")
       .|.argument("n")
-      .filter("relCachedHasProperty[r.p] IS NOT NULL")
+      .filter("cacheRHasProperty[r.p] IS NOT NULL")
       .relationshipTypeScan("(n)-[r:R]->(m)")
       .build()
 

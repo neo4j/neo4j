@@ -194,8 +194,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) WHERE n.prop1 IS NOT NULL RETURN n.prop1 IS NOT NULL AS foo").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("nodeCachedHasProperty[n.prop1] IS NOT NULL AS foo")
-      .filter("nodeCachedHasPropertyFromStore[n.prop1] IS NOT NULL")
+      .projection("cacheNHasProperty[n.prop1] IS NOT NULL AS foo")
+      .filter("cacheNHasPropertyFromStore[n.prop1] IS NOT NULL")
       .allNodeScan("n")
       .build()
   }
@@ -218,8 +218,8 @@ class CachedPropertiesPlanningIntegrationTest extends CypherFunSuite with Logica
 
     val plan = cfg.plan("MATCH (a)-[r]-(b) WHERE r.prop1 IS NOT NULL RETURN r.prop1 IS NOT NULL AS foo").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection("relCachedHasProperty[r.prop1] IS NOT NULL AS foo")
-      .filter("relCachedHasPropertyFromStore[r.prop1] IS NOT NULL")
+      .projection("cacheRHasProperty[r.prop1] IS NOT NULL AS foo")
+      .filter("cacheRHasPropertyFromStore[r.prop1] IS NOT NULL")
       .expandAll("(a)-[r]-(b)")
       .allNodeScan("a")
       .build()
