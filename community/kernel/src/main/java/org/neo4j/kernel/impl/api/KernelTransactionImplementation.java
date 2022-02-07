@@ -960,9 +960,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        //TODO: Consider removing this since we re-check with fine graned a few lines below
-        securityAuthorizationHandler.assertAllowsSchemaWrites( securityContext() );
-
         upgradeToSchemaWrites();
         return new RestrictedSchemaWrite( operations, securityContext(), securityAuthorizationHandler );
     }

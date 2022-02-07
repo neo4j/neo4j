@@ -132,16 +132,6 @@ public class SecurityAuthorizationHandler
         }
     }
 
-    public void assertAllowsSchemaWrites( SecurityContext securityContext )
-    {
-        AccessMode accessMode = securityContext.mode();
-        if ( !accessMode.allowsSchemaWrites() )
-        {
-            throw logAndGetAuthorizationException( securityContext, format( "Schema operations on database '%s' are not allowed for %s.",
-                                                                            securityContext.database(), securityContext.description() ) );
-        }
-    }
-
     public void assertSchemaWrites( SecurityContext securityContext, PrivilegeAction action )
     {
         AccessMode accessMode = securityContext.mode();
