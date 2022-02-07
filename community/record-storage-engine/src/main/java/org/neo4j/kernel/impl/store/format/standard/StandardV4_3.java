@@ -43,7 +43,7 @@ public class StandardV4_3 extends BaseRecordFormats
 
     public StandardV4_3()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 10,
+        super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 0, 1,
                 FormatFamily.standard.formatCapability(), Index44Compatibility.INSTANCE );
     }
 

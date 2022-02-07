@@ -42,7 +42,7 @@ public class StandardV5_0 extends BaseRecordFormats
 
     public StandardV5_0()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V5_0.introductionVersion(), 11,
+        super( STORE_VERSION, StoreVersion.STANDARD_V5_0.introductionVersion(), 1, 1,
                 FormatFamily.standard.formatCapability() );
     }
 

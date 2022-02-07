@@ -63,7 +63,7 @@ public class PageAlignedV4_3 extends BaseRecordFormats
 
     private PageAlignedV4_3()
     {
-        super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 2,
+        super( ALIGNED_V4_3.versionString(), ALIGNED_V4_3.introductionVersion(), 0, 1,
                 FormatFamily.aligned.formatCapability(), Index44Compatibility.INSTANCE );
     }
 

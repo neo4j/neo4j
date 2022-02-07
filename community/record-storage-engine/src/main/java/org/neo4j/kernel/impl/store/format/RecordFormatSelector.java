@@ -255,9 +255,9 @@ public class RecordFormatSelector
         return formats;
     }
 
-    private static boolean formatSameFamilyAndGeneration( RecordFormats left, RecordFormats right )
+    private static boolean formatSameFamilyAndVersion( RecordFormats left, RecordFormats right )
     {
-        return left.getFormatFamily().equals( right.getFormatFamily() ) && left.generation() == right.generation();
+        return left.getFormatFamily().equals( right.getFormatFamily() ) && left.majorVersion() == right.majorVersion();
     }
 
     /**
@@ -269,21 +269,19 @@ public class RecordFormatSelector
      */
     public static boolean isStoreAndConfigFormatsCompatible( RecordFormats format, RecordFormats otherFormat )
     {
-        return (format == null) || (otherFormat == null) || formatSameFamilyAndGeneration( format, otherFormat );
+        return (format == null) || (otherFormat == null) || formatSameFamilyAndVersion( format, otherFormat );
     }
 
     /**
-     * Select explicitly configured record format (via given {@code config}) or format from the store. If store does
-     * not exist or has old format ({@link RecordFormats#generation()}) than this method returns
-     * {@link #DEFAULT_FORMAT}.
+     * Select explicitly configured record format (via given {@code config}) or the newest format compatible with the store. If store does
+     * not exist then this method returns {@link #DEFAULT_FORMAT}.
      *
      * @param config configuration parameters
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
      * @param pageCache page cache to read store files
      * @param contextFactory underlying page cache context factory.
-     * @return record format from the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
-     * @see RecordFormats#generation()
+     * @return newest record format compatible with the store (if it can be read) or configured record format or {@link #DEFAULT_FORMAT}
      */
     public static RecordFormats selectNewestFormat( Config config, RecordDatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             LogProvider logProvider, CursorContextFactory contextFactory )
@@ -328,7 +326,7 @@ public class RecordFormatSelector
     {
         return Iterables.stream( allFormats() )
                 .filter( format -> format.getFormatFamily() == result.getFormatFamily() && ( includeDevFormats || !format.formatUnderDevelopment() ) )
-                .max( comparingInt( RecordFormats::generation ) );
+                .max( comparingInt( RecordFormats::majorVersion ).thenComparingInt( RecordFormats::minorVersion ) );
     }
 
     /**
@@ -341,8 +339,9 @@ public class RecordFormatSelector
     {
         return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
                 .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily() && !candidate.formatUnderDevelopment() )
-                .filter( candidate -> candidate.generation() > format.generation() )
-                .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
+                .filter( candidate -> candidate.majorVersion() > format.majorVersion() ||
+                                      ( candidate.majorVersion() == format.majorVersion() && candidate.minorVersion() > format.minorVersion() ) )
+                .min( comparingInt( RecordFormats::majorVersion ).thenComparingInt( RecordFormats::minorVersion ) );
     }
 
     /**

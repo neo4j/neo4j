@@ -72,7 +72,13 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public int generation()
+    public int majorVersion()
+    {
+        return NO_GENERATION;
+    }
+
+    @Override
+    public int minorVersion()
     {
         return NO_GENERATION;
     }

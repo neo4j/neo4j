@@ -73,7 +73,9 @@ public interface RecordFormats
      * May return {@link #NO_GENERATION} meaning that it should not be considered for succession etc.
      * (useful for marking test-only formats with).
      */
-    int generation();
+    int majorVersion();
+
+    int minorVersion();
 
     RecordFormat<NodeRecord> node();
 

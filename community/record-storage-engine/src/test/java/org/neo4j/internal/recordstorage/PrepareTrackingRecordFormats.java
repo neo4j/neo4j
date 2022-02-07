@@ -143,9 +143,15 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public int generation()
+    public int majorVersion()
     {
-        return actual.generation();
+        return actual.majorVersion();
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return actual.minorVersion();
     }
 
     @Override

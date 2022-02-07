@@ -219,7 +219,8 @@ public class NeoStores implements AutoCloseable
     private boolean isCompatibleFormats( RecordFormats storeFormat )
     {
         return recordFormats.hasCompatibleCapabilities( storeFormat, CapabilityType.FORMAT ) &&
-               recordFormats.generation() >= storeFormat.generation();
+               recordFormats.majorVersion() == storeFormat.majorVersion() &&
+               recordFormats.minorVersion() >= storeFormat.minorVersion();
     }
 
     private void closeStore( StoreType type )

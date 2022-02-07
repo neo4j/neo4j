@@ -147,7 +147,9 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
                     return new Result( Outcome.unexpectedUpgradingVersion, version, metaDataFile.toAbsolutePath().toString() );
                 }
 
-                if ( fromFormat.getFormatFamily() == toFormat.getFormatFamily() && fromFormat.generation() > toFormat.generation() )
+                if ( fromFormat.getFormatFamily() == toFormat.getFormatFamily() &&
+                     ( fromFormat.majorVersion() > toFormat.majorVersion() ||
+                       ( fromFormat.majorVersion() == toFormat.majorVersion() && fromFormat.minorVersion() > toFormat.minorVersion() ) ) )
                 {
                     // Tried to downgrade, that isn't supported
                     return new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), metaDataFile.toAbsolutePath().toString() );

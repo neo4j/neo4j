@@ -37,16 +37,18 @@ import static org.neo4j.internal.helpers.ArrayUtil.contains;
  */
 public abstract class BaseRecordFormats implements RecordFormats
 {
-    private final int generation;
+    private final int majorFormatVersion;
+    private final int minorFormatVersion;
     private final Capability[] capabilities;
     private final String storeVersion;
     private final String introductionVersion;
 
-    protected BaseRecordFormats( String storeVersion, String introductionVersion, int generation,
+    protected BaseRecordFormats( String storeVersion, String introductionVersion, int majorFormatVersion, int minorFormatVersion,
             Capability... capabilities )
     {
         this.storeVersion = storeVersion;
-        this.generation = generation;
+        this.majorFormatVersion = majorFormatVersion;
+        this.minorFormatVersion = minorFormatVersion;
         this.capabilities = capabilities;
         this.introductionVersion = introductionVersion;
     }
@@ -64,6 +66,18 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
+    public int majorVersion()
+    {
+        return majorFormatVersion;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return minorFormatVersion;
+    }
+
+    @Override
     public RecordFormat<MetaDataRecord> metaData()
     {
         return new MetaDataRecordFormat();
@@ -77,7 +91,8 @@ public abstract class BaseRecordFormats implements RecordFormats
             return false;
         }
 
-        return  generation == other.generation() &&
+        return  majorFormatVersion == other.majorVersion() &&
+                minorFormatVersion == other.minorVersion() &&
                 node().equals( other.node() ) &&
                 relationship().equals( other.relationship() ) &&
                 relationshipGroup().equals( other.relationshipGroup() ) &&
@@ -107,12 +122,6 @@ public abstract class BaseRecordFormats implements RecordFormats
     public String toString()
     {
         return "RecordFormat:" + getClass().getSimpleName() + "[" + storeVersion() + "]";
-    }
-
-    @Override
-    public int generation()
-    {
-        return generation;
     }
 
     @Override

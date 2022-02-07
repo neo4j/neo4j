@@ -105,9 +105,15 @@ class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public int generation()
+        public int majorVersion()
         {
-            return 0;
+            return NO_GENERATION;
+        }
+
+        @Override
+        public int minorVersion()
+        {
+            return NO_GENERATION;
         }
 
         @Override
