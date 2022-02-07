@@ -88,7 +88,7 @@ object SizeEstimation {
     val visitedOneTimes = mutable.Set.empty[IntermediateRepresentation]
     ir.treeFold(0) {
 
-      case f: Field =>
+      case _: Field =>
         acc => SkipChildren(acc)
 
       case op: IntermediateRepresentation =>
