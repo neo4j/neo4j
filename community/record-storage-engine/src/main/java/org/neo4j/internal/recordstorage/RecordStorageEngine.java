@@ -46,7 +46,6 @@ import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.exceptions.TransactionApplyKernelException;
@@ -145,7 +144,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final boolean consistencyCheckApply;
     private final boolean parallelIndexUpdatesApply;
     private IndexUpdatesWorkSync indexUpdatesSync;
-    private final IdController idController;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker otherMemoryTracker;
     private final CommandLockVerification.Factory commandLockVerificationFactory;
@@ -173,7 +171,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LockService lockService,
             Health databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
-            IdController idController,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
@@ -192,7 +189,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
         this.constraintSemantics = constraintSemantics;
-        this.idController = idController;
         this.contextFactory = contextFactory;
         this.otherMemoryTracker = otherMemoryTracker;
         this.commandLockVerificationFactory = commandLockVerificationFactory;
@@ -555,7 +551,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             neoStores.start( cursorContext );
             countsStore.start( cursorContext, storeCursors, otherMemoryTracker );
             groupDegreesStore.start( cursorContext, storeCursors, otherMemoryTracker );
-            idController.start();
         }
     }
 
@@ -572,7 +567,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void stop() throws Exception
     {
-        executeAll( idController::stop );
     }
 
     @Override

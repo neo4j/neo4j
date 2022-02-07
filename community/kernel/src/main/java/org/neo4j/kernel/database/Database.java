@@ -442,7 +442,7 @@ public class Database extends LifecycleAdapter
             idController.initialize( () -> kernelModule.kernelTransactions().get(), otherDatabaseMemoryTracker );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
-                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
+                    constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, databaseHealth, internalLogProvider,
                     userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, tailMetadata, otherDatabaseMemoryTracker,
                     cursorContextFactory );
 
@@ -508,6 +508,7 @@ public class Database extends LifecycleAdapter
 
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
+            life.add( idController );
             life.add( onStart( this::registerUpgradeListener ) );
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );

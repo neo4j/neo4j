@@ -46,7 +46,6 @@ import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaRule;
@@ -121,7 +120,7 @@ public interface StorageEngineFactory
      */
     StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
+            IdGeneratorFactory idGeneratorFactory, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata, MemoryTracker memoryTracker,
             CursorContextFactory contextFactory )

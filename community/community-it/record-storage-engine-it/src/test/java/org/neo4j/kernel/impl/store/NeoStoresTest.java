@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSlotDistribution;
@@ -567,7 +566,7 @@ public class NeoStoresTest
         storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                         new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintRuleAccessor(), i -> i, NO_LOCK_SERVICE,
-                        mock( Health.class ), idGeneratorFactory, new DefaultIdController(), immediate(), true, INSTANCE, writable(),
+                        mock( Health.class ), idGeneratorFactory, immediate(), true, INSTANCE, writable(),
                         EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, CONTEXT_FACTORY );
         life = new LifeSupport();
         life.add( storageEngine );

@@ -25,9 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
@@ -95,7 +93,7 @@ public class RecordStorageEngineSupport
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         RecordStorageEngine engine = new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, nullLogProvider, tokenHolders,
                 mock( SchemaState.class ), constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory,
-                new DefaultIdController(), transactionApplierTransformer );
+                transactionApplierTransformer );
         engine.addIndexUpdateListener( indexUpdateListener );
         life.add( engine );
         return engine;
@@ -219,11 +217,11 @@ public class RecordStorageEngineSupport
                 ConstraintRuleAccessor constraintSemantics,
                 IndexConfigCompleter indexConfigCompleter,
                 LockService lockService, Health databaseHealth,
-                IdGeneratorFactory idGeneratorFactory, IdController idController,
+                IdGeneratorFactory idGeneratorFactory,
                 Function<TransactionApplierFactoryChain,TransactionApplierFactoryChain> transactionApplierTransformer )
         {
             super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
-                    indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(),
+                    indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, RecoveryCleanupWorkCollector.immediate(),
                      true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(), EMPTY_LOG_TAIL,
                     CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             this.transactionApplierTransformer = transactionApplierTransformer;

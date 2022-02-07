@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.function.ThrowingBiConsumer;
-import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -72,7 +71,7 @@ public class RecordStorageEngineTestUtils
                 createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                 mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
-                new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(),  true,
+                new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), immediate(),  true,
                 EmptyMemoryTracker.INSTANCE, writable(), EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE,
                 new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }

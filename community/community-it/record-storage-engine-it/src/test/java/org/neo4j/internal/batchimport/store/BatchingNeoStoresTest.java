@@ -37,7 +37,6 @@ import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
-import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.CommandLockVerification;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor;
@@ -409,7 +408,7 @@ class BatchingNeoStoresTest
                             NullLogProvider.getInstance(), tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
-                            new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),
+                            new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ),
                             recoveryCleanupWorkCollector,  true, INSTANCE, writable(), EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE,
                             LockVerificationMonitor.Factory.IGNORE, CONTEXT_FACTORY ) );
             // Create the relationship type token

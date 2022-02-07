@@ -59,7 +59,6 @@ import org.neo4j.internal.batchimport.staging.SpectrumExecutionMonitor;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.id.SchemaIdType;
@@ -205,13 +204,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StorageEngine instantiate( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, TokenHolders tokenHolders,
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
-            IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
+            IdGeneratorFactory idGeneratorFactory, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata, MemoryTracker memoryTracker,
             CursorContextFactory contextFactory )
     {
         return new RecordStorageEngine( convert( databaseLayout ), config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState,
-                constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, recoveryCleanupWorkCollector,
+                constraintSemantics, indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, recoveryCleanupWorkCollector,
                 createStoreIfNotExists, memoryTracker, readOnlyChecker, logTailMetadata, new CommandLockVerification.Factory.RealFactory( config ),
                 LockVerificationMonitor.Factory.defaultFactory( config ), contextFactory );
     }
