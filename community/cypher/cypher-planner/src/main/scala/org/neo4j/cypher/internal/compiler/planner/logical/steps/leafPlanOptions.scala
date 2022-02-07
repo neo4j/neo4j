@@ -45,8 +45,18 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 
 object leafPlanOptions extends LeafPlanFinder {
+
+  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] = {
+    val m = mutable.LinkedHashMap.empty[K, collection.Seq[A]].withDefault(_ => new mutable.ArrayBuffer[A])
+    xs.foreach { x =>
+      val k = f(x)
+      m(k) = m(k) :+ x
+    }
+    m.toSeq
+  }
 
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
@@ -58,11 +68,9 @@ object leafPlanOptions extends LeafPlanFinder {
     val leafPlanCandidates = config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
-    val bestPlansPerAvailableSymbols = leafPlanCandidatesWithSelections
-      // Group by available symbols which are part of the query graph.
-      .groupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
-      .values
-      .map { bucket =>
+    val bestPlansPerAvailableSymbols =
+      groupByOrdered(leafPlanCandidatesWithSelections.toSeq)(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
+      .map { case (_, bucket) =>
         val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
         if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
