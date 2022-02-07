@@ -17,9 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
-import org.neo4j.cypher.internal.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
@@ -143,6 +143,7 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     logger.notifications
   }
 
-  private def parse(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None))
+  private def parse(queryText: String): Statement = JavaCCParser.parse(queryText.replace("\r\n", "\n"), OpenCypherExceptionFactory(None),
+    new AnonymousVariableNameGenerator())
 
 }

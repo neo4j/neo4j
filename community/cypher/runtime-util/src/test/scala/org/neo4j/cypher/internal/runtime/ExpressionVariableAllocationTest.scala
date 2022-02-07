@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -42,7 +43,6 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
-import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.util.Rewriter
@@ -50,8 +50,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.topDown
-import org.parboiled.scala.ReportingParseRunner
-import org.parboiled.scala.Rule1
 
 import scala.collection.mutable
 
@@ -432,14 +430,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   }
 }
 
-class ExpressionParser extends Expressions {
-  private val parser: Rule1[Expression] = Expression
+class ExpressionParser {
 
-  def parse(text: String): Expression = {
-    val res = ReportingParseRunner(parser).run(text)
-    res.result match {
-      case Some(e) => e
-      case None => throw new IllegalArgumentException(s"Could not parse expression: ${res.parseErrors}")
-    }
-  }
+  def parse(text: String): Expression = JavaccRule.fromParser(_.Expression).apply(text)
 }

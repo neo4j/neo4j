@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
-import org.neo4j.cypher.internal.frontend.phases.Parsing
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
@@ -169,7 +168,7 @@ class SemanticAnalysisTest extends CypherFunSuite {
     val startState = initStartState(query)
     val context = new ErrorCollectingContext()
 
-    val pipeline = Parsing andThen ProjectNamedPathsPhase andThen SemanticAnalysis(warn = true)
+    val pipeline = OpenCypherJavaCCParsing andThen ProjectNamedPathsPhase andThen SemanticAnalysis(warn = true)
 
     val result = pipeline.transform(startState, context)
     val scopeTree = result.semantics().scopeTree

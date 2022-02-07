@@ -16,16 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend
 
+import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.parser.Expressions
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.parboiled.scala.Parser
-import org.parboiled.scala.ReportingParseRunner
 
-class ExpressionStringifierIT extends CypherFunSuite with Parser with Expressions {
-  val stringifier = ExpressionStringifier()
-  val parser = ReportingParseRunner(Expression)
+class ExpressionStringifierIT extends CypherFunSuite {
+  val stringifier: ExpressionStringifier = ExpressionStringifier()
 
   val tests: Seq[(String, String)] =
     Seq[(String, String)](
@@ -84,13 +80,8 @@ class ExpressionStringifierIT extends CypherFunSuite with Parser with Expression
   tests foreach {
     case (inputString, expected) =>
       test(inputString) {
-        val parsingResults = parser.run(inputString)
-        if (parsingResults.parseErrors.nonEmpty) {
-          fail("Parsing failed")
-        }
-        val value1: Expression = parsingResults.result.get
-
-        val str = stringifier(value1)
+        val expression = JavaccRule.fromParser(_.Expression()).apply(inputString)
+        val str = stringifier(expression)
         str should equal(expected)
       }
   }

@@ -20,9 +20,6 @@
 package cypher.features
 
 import cypher.features
-import org.neo4j.cypher.internal.parser.Base
-import org.neo4j.cypher.internal.parser.Expressions
-import org.neo4j.cypher.internal.parser.Literals
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
@@ -37,72 +34,104 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
-import org.parboiled.scala.Parser
-import org.parboiled.scala.ReportingParseRunner
-import org.parboiled.scala.Rule1
-import org.parboiled.scala.group
 
 /**
  * This parses procedure signatures as specified by the Cypher type system and returned
  * by dbms.procedures()
  */
-class ProcedureSignatureParser extends Parser with Base with Expressions with Literals {
+class ProcedureSignatureParser {
 
   @throws(classOf[SyntaxException])
   def parse(signatureText: String): ProcedureSignature = {
-    val parsingResults = ReportingParseRunner(ProcedureSignature).run(signatureText.trim)
-    parsingResults.result match {
-      case Some(signature) =>
-        signature
-      case None =>
-        val errors = parsingResults.parseErrors
-        throw new SyntaxException(s"Errors parsing procedure signature: ${errors.mkString(", ")}")
+    val signature = signatureText.trim
+
+    // Extract everything before the first parentheses = the full procedure name
+    val parts = signature.split("(?=\\()", 2)
+    if(parts.size < 2) {
+      throw new SyntaxException("Error parsing procedure signature: expected '(' after procedure name")
+    }
+
+    // Split full procedure name into namespace and name by splitting on '.'
+    val nameParts = parts.head.split("\\.")
+
+    // Split procedure input and output fields. They should be on the format (input) :: (output)
+    val (inputPart, outputPart) = extractInputAndOutputParts(parts.last)
+
+    val inputs = extractProcedureInputFields(inputPart)
+    val outputs = extractProcedureOutputFields(outputPart)
+
+   features.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
+  }
+
+  private def extractInputAndOutputParts(inputAndOutputString: String): (String, String) = {
+
+    // Check that the first and last char are parenthesis
+    if (inputAndOutputString.head != '(' || inputAndOutputString.last != ')') {
+      throw new SyntaxException("Error parsing procedure signature: expected input fields to be on the format '(input) :: (output)'")
+    }
+
+    // Check there is exactly one ') :: (' and split on it
+    val inputAndOutput = inputAndOutputString.split("\\) :: \\(")
+    if (inputAndOutput.size != 2) {
+      throw new SyntaxException("Error parsing procedure signature: expected exactly one ') :: (' between input and output.")
+    }
+
+    // Remove the first and last parenthesis
+    (inputAndOutput.head.drop(1), inputAndOutput.last.dropRight(1))
+  }
+
+  private def extractProcedureInputFields(inputString: String): Seq[(String, CypherType)] = {
+    if (inputString.isEmpty) {
+      Seq()
+    } else {
+      // Check that the rest is a comma-separated list
+      val inputFields = inputString.split(",")
+
+      // Check that each field in the list has valid format
+      inputFields.map(x => extractProcedureField(x)).toSeq
     }
   }
 
-  private def ProcedureSignature: Rule1[ProcedureSignature] = rule("procedure signature") {
-    ProcedureSignatureNameParts ~ ProcedureSignatureInputs ~~ "::" ~~ ProcedureSignatureOutputs ~~> {
-      (nameParts: Seq[String], inputs: Seq[(String, CypherType)], outputs: Option[Seq[(String, CypherType)]]) =>
-        features.ProcedureSignature(nameParts.dropRight(1), nameParts.last, inputs, outputs)
+  private def extractProcedureOutputFields(outputString: String): Option[Seq[(String, CypherType)]] = {
+    if (outputString.isEmpty || outputString.trim.equals("VOID")) {
+      None
+    } else {
+      // Check that the rest is a comma-separated list
+      val outputFields = outputString.split(",")
+
+      // Check that each field in the list has valid format
+      Some(outputFields.map(x => extractProcedureField(x)).toSeq)
     }
   }
 
-  private def ProcedureSignatureNameParts: Rule1[Seq[String]] = rule("procedure signature name parts") {
-    oneOrMore(SymbolicNameString, separator=".")
+  private def extractProcedureField(procedureField: String): (String, CypherType) = {
+    // Expected format 'name :: type'
+    val fieldParts = procedureField.split("::")
+
+    if (fieldParts.size != 2) {
+      throw new SyntaxException("Error parsing procedure signature: expected exactly one '::' between procedure field parts.")
+    }
+
+    val fieldName = fieldParts.head.trim
+    val cypherType = extractCypherType(fieldParts.last.trim)
+    (fieldName, cypherType)
   }
 
-  private def ProcedureSignatureInputs: Rule1[Seq[(String, CypherType)]] = rule("procedure signature inputs") {
-    ProcedureSignatureFields
-  }
-
-  private def ProcedureSignatureOutputs: Rule1[Option[Seq[(String, CypherType)]]] = rule("procedure signature outputs") {
-    group(ProcedureSignatureFields ~~> { outputs => if (outputs.isEmpty) None else Some(outputs) }) | VoidProcedure
-  }
-
-  private def ProcedureSignatureFields: Rule1[Seq[(String, CypherType)]] = rule("procedure signature columns") {
-    "(" ~~ zeroOrMore(ProcedureSignatureField ~ WS, separator = "," ~ WS) ~ ")"
-  }
-
-  private def ProcedureSignatureField: Rule1[(String, CypherType)] = rule("procedure signature column") {
-    group(SymbolicNameString ~~ "::" ~~ ProcedureFieldType) ~~> { (name: String, tpe: CypherType) => name -> tpe }
-  }
-
-  private def VoidProcedure: Rule1[Option[Nothing]] = rule {
-    "VOID" ~ push(None)
-  }
-
-  private def ProcedureFieldType: Rule1[CypherType] = rule("cypher type") {
-    group("ANY?" ~ push(CTAny)) |
-    group("MAP?" ~ push(CTMap)) |
-    group("NODE?" ~ push(CTNode)) |
-    group("RELATIONSHIP?" ~ push(CTRelationship)) |
-    group("POINT?" ~ push(CTPoint)) |
-    group("PATH?" ~ push(CTPath)) |
-    group("LIST?" ~~ "OF" ~~ ProcedureFieldType ~~> { tpe: CypherType => CTList(tpe) }) |
-    group("STRING?" ~ push(CTString)) |
-    group("BOOLEAN?" ~ push(CTBoolean)) |
-    group("NUMBER?" ~ push(CTNumber)) |
-    group("INTEGER?" ~ push(CTInteger)) |
-    group("FLOAT?" ~ push(CTFloat))
+  private def extractCypherType(typeString: String): CypherType = {
+     typeString match {
+      case "ANY?" => CTAny
+      case "MAP?" => CTMap
+      case "NODE?" => CTNode
+      case "RELATIONSHIP?" => CTRelationship
+      case "POINT?" => CTPoint
+      case "PATH?" => CTPath
+      case "STRING?" => CTString
+      case "BOOLEAN?" => CTBoolean
+      case "NUMBER?" => CTNumber
+      case "INTEGER?" => CTInteger
+      case "FLOAT?" => CTFloat
+      case s if s.startsWith("LIST? OF ") => CTList(extractCypherType(s.stripPrefix("LIST? OF ")))
+      case unexpected => throw new SyntaxException(s"Error parsing procedure signature: unexpected Cypher type $unexpected")
+    }
   }
 }
