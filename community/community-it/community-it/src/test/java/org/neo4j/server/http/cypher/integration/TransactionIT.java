@@ -32,6 +32,7 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.net.Socket;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -65,6 +66,7 @@ import static org.neo4j.server.http.cypher.integration.TransactionConditions.con
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
+import static org.neo4j.server.web.HttpHeaderUtils.ACCESS_MODE_HEADER;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
@@ -972,6 +974,134 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         // then no errors (in particular no NPE)
         assertThat( response.status() ).isEqualTo( 200 );
         assertThat( response.get( "errors" ).size() ).isEqualTo( 0 );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void writeSettingsBeginAndCommit( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin and execute
+        Response begin = POST( txUri,
+                               quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ),
+                               Map.of( ACCESS_MODE_HEADER, "WRITE") );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit
+        Response commit = POST( commitResource );
+
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldErrorWhenWriteAttemptedWithReadSetting( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        // begin and execute and commit
+        Response begin = POST( transactionCommitUri(),
+                               quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ),
+                               Map.of( ACCESS_MODE_HEADER, "READ" ) );
+
+        assertThat( begin.status() ).isEqualTo( 200 );
+        assertThat( begin ).satisfies( hasErrors( Status.Statement.Request.Invalid ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void readSettingsBeginAndCommit( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        // begin and execute
+        Response begin = POST( txUri,
+                               quotedJson( "{'statements': [ { 'statement': 'MATCH (n) RETURN n' } ] }" ),
+                               Map.of( ACCESS_MODE_HEADER, "READ" ) );
+
+        String commitResource = begin.stringFromContent( "commit" );
+
+        // commit
+        Response commit = POST( commitResource );
+
+        assertThat( commit.status() ).isEqualTo( 200 );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void beginWithSettingsOnlyAndThenExecuteCommit( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        long nodesInDatabaseBeforeTransaction = countNodes();
+
+        // begin
+        Response begin = POST( txUri, quotedJson( "" ), Map.of( ACCESS_MODE_HEADER, "WRITE" ) );
+
+        assertThat( begin.status() ).isEqualTo( 201 );
+        assertHasTxLocation( begin, txUri );
+
+        String commitResource = begin.stringFromContent( "commit" );
+        assertThat( commitResource ).matches( format( "http://localhost:\\d+/%s/\\d+/commit", txUri ) );
+        assertThat( begin.get( "transaction" ).get( "expires" ).asText() ).satisfies( validRFCTimestamp() );
+
+        // execute
+        Response execute =
+                POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
+        assertThat( execute.status() ).isEqualTo( 200 );
+        assertThat( execute.get( "transaction" ).get( "expires" ).asText() ).satisfies( validRFCTimestamp() );
+
+        // commit
+        Response commit = POST( commitResource );
+
+        assertThat( commit.status() ).isEqualTo( 200 );
+        assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction + 1 );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldIgnoreAccessModeHeaderOnSecondRequest( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        // begin
+        Response begin = POST( txUri,
+                               quotedJson( "" ),
+                               Map.of( ACCESS_MODE_HEADER, "READ" ) );
+
+        assertThat( begin.status() ).isEqualTo( 201 );
+        assertHasTxLocation( begin, txUri );
+
+        String commitResource = begin.stringFromContent( "commit" );
+        assertThat( commitResource ).matches( format( "http://localhost:\\d+/%s/\\d+/commit", txUri ) );
+        assertThat( begin.get( "transaction" ).get( "expires" ).asText() ).satisfies( validRFCTimestamp() );
+
+        // execute
+        Response execute =
+                POST( begin.location(), quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ),
+                      Map.of( ACCESS_MODE_HEADER, "WRITE" ) );
+        assertThat( execute.status() ).isEqualTo( 200 );
+        assertThat( execute ).satisfies( hasErrors( Status.Request.Invalid ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "argumentsProvider" )
+    public void shouldErrorWithInvalidAccessModeHeader( String txUri ) throws Exception
+    {
+        this.txUri = txUri;
+
+        // begin
+        Response begin = POST( txUri,
+                               quotedJson( "" ),
+                               Map.of( ACCESS_MODE_HEADER, "INVALID!" ) );
+
+        assertThat( begin.status() ).isEqualTo( 200 );
+        assertThat( begin ).satisfies( hasErrors( Status.Request.InvalidFormat ) );
     }
 
     private String transactionCommitUri()

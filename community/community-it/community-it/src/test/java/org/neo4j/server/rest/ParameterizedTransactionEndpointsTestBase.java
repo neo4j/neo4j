@@ -21,6 +21,7 @@ package org.neo4j.server.rest;
 
 import org.junit.jupiter.params.provider.Arguments;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.test.server.HTTP;
@@ -44,6 +45,11 @@ public abstract class ParameterizedTransactionEndpointsTestBase extends Abstract
     public HTTP.Response POST( String uri, HTTP.RawPayload payload )
     {
         return http.request( "POST", uri, payload );
+    }
+
+    public HTTP.Response POST( String uri, HTTP.RawPayload payload, Map<String,String> headers )
+    {
+        return http.request( "POST", uri, payload, headers );
     }
 
     public HTTP.Response DELETE( String uri )

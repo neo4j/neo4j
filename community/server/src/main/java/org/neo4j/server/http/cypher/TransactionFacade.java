@@ -90,6 +90,18 @@ class TransactionFacade
                                       authManager, clock, readByDefault );
     }
 
+    TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
+                                            LoginContext loginContext, ClientConnectionInfo clientConnectionInfo,
+                                            MemoryTracker memoryTracker, long customTransactionTimeout,
+                                            SystemNanoClock clock, boolean isReadOnlyTransaction )
+    {
+        memoryTracker.allocateHeap( TransactionHandle.SHALLOW_SIZE );
+
+        return new TransactionHandle( databaseName, engine, registry, uriScheme, implicitTransaction,
+                                      loginContext, clientConnectionInfo, customTransactionTimeout, transactionManager, logProvider, boltSPI, memoryTracker,
+                                      authManager, clock, isReadOnlyTransaction );
+    }
+
     TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException
     {
         return registry.acquire( txId );

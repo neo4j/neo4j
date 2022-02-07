@@ -40,6 +40,7 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
@@ -195,18 +196,24 @@ public final class HTTP
 
         public Response request( String method, String uri, Object payload )
         {
+            return request( method, uri, payload, emptyMap() );
+        }
+
+        public Response request( String method, String uri, Object payload, Map<String,String> headers )
+        {
             if ( payload == null )
             {
                 return request( method, uri );
             }
             var jsonPayload = payload instanceof RawPayload ? ((RawPayload) payload).get() : createJsonFrom( payload );
 
-            var request = requestBuilder( uri )
+            var requestBuilder = requestBuilder( uri )
                     .method( method, BodyPublishers.ofString( jsonPayload ) )
-                    .setHeader( CONTENT_TYPE, APPLICATION_JSON )
-                    .build();
+                    .setHeader( CONTENT_TYPE, APPLICATION_JSON );
 
-            var response = send( request );
+            headers.forEach( requestBuilder::setHeader );
+
+            var response = send( requestBuilder.build() );
 
             return new Response( response );
         }

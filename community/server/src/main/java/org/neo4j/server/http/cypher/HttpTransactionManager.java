@@ -110,6 +110,17 @@ public class HttpTransactionManager
                                       transactionManager, userLogProvider, boltSPI, authManager, readByDefault );
     }
 
+    public TransactionFacade createTransactionFacade( GraphDatabaseAPI databaseAPI, MemoryTracker memoryTracker, String databaseName,
+                                                      boolean isReadOnlyTransaction )
+    {
+        var dependencyResolver = databaseAPI.getDependencyResolver();
+
+        memoryTracker.allocateHeap( TransactionFacade.SHALLOW_SIZE );
+        return new TransactionFacade( databaseName,
+                                      dependencyResolver.resolveDependency( QueryExecutionEngine.class ), transactionRegistry,
+                                      transactionManager, userLogProvider, boltSPI, authManager, isReadOnlyTransaction );
+    }
+
     private void scheduleTransactionTimeout( Duration timeout )
     {
         long timeoutMillis = timeout.toMillis();
