@@ -124,7 +124,7 @@ object SizeEstimation {
             case i: Int => sizeOfIntPush(i)
             case l: Long => if (l == 0L || l == 1L) 1 else WIDE_LDC_INSTRUCTION //constant pool (unless 0 or 1)
             case _: Boolean => 1
-            case _: Double => WIDE_LDC_INSTRUCTION
+            case d: Double =>  if (d == 0.0 || d == 1.0) 1 else WIDE_LDC_INSTRUCTION //constant pool (unless 0 or 1)
             case null => 1
             case _ => LDC_INSTRUCTION
           }

@@ -110,7 +110,7 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", constant(v))
       )
 
-    val constants = Seq(0L, -26L, 130L, Long.MaxValue, Long.MinValue)
+    val constants = Seq(0L, 1L, -26L, 130L, Long.MaxValue, Long.MinValue)
     constants.foreach(v => {
       val representation = declareAndAssign(v)
       withClue(s"Wrong estimation of $v") {
@@ -144,7 +144,7 @@ class SizeEstimationTest extends CypherFunSuite {
         assign("a", constant(v))
       )
 
-    val constants = Seq(0.0, Math.E, Math.PI, Double.MinPositiveValue, Double.MinValue, Double.MaxValue, Double.NegativeInfinity, Double.PositiveInfinity)
+    val constants = Seq(0.0, 1.0, Math.E, Math.PI, Double.MinPositiveValue, Double.MinValue, Double.MaxValue, Double.NegativeInfinity, Double.PositiveInfinity)
     constants.foreach(v => {
       val representation = declareAndAssign(v)
       withClue(s"Wrong estimation of $v") {

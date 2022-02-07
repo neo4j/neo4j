@@ -55,6 +55,8 @@ import static org.objectweb.asm.Opcodes.DALOAD;
 import static org.objectweb.asm.Opcodes.DASTORE;
 import static org.objectweb.asm.Opcodes.DCMPG;
 import static org.objectweb.asm.Opcodes.DCMPL;
+import static org.objectweb.asm.Opcodes.DCONST_0;
+import static org.objectweb.asm.Opcodes.DCONST_1;
 import static org.objectweb.asm.Opcodes.DLOAD;
 import static org.objectweb.asm.Opcodes.DMUL;
 import static org.objectweb.asm.Opcodes.DSUB;
@@ -312,7 +314,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
         else if ( value instanceof Double )
         {
-            methodVisitor.visitLdcInsn( value );
+            pushDouble( (Double) value );
         }
         else if ( value instanceof Float )
         {
@@ -872,6 +874,22 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         else
         {
             methodVisitor.visitLdcInsn( integer );
+        }
+    }
+
+    private void pushDouble( double number )
+    {
+        if ( number == 0.0 )
+        {
+            methodVisitor.visitInsn( DCONST_0 );
+        }
+        else if ( number == 1.0 )
+        {
+            methodVisitor.visitInsn( DCONST_1 );
+        }
+        else
+        {
+            methodVisitor.visitLdcInsn( number );
         }
     }
 
