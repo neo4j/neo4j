@@ -44,12 +44,12 @@ public class NettyMemoryManagerWrapper implements ByteBufAllocator
 
     public NettyMemoryManagerWrapper( ByteBufferManger pooledBufferManger )
     {
-        this.pooledBufferManger = pooledBufferManger;
-        delegateForCapacityCalculation = true;
+        this( pooledBufferManger, true );
     }
 
     private NettyMemoryManagerWrapper( ByteBufferManger pooledBufferManger, boolean delegateForCapacityCalculation )
     {
+        assert UnsafeUtil.unsafeByteBufferAccessAvailable() : "Unsafe ByteBuffer access is required for NettyMemoryManagerWrapper" ;
         this.pooledBufferManger = pooledBufferManger;
         this.delegateForCapacityCalculation = delegateForCapacityCalculation;
     }

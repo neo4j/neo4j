@@ -17,21 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.graphdb.aligned;
 
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ScopedBuffer;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
+@EnabledOnOs( OS.LINUX )
+public class DirectAlignedRecordFormatNoOpensIT extends DirectAlignedRecordFormatIT
 {
-    PhysicalFlushableLogChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
-    {
-        super( channel, scopedBuffer );
-    }
-
-    void setChannel( StoreChannel channel )
-    {
-        this.channel = channel;
-    }
 }

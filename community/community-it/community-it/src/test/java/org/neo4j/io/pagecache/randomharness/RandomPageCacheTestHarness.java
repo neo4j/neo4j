@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
@@ -384,7 +385,7 @@ public class RandomPageCacheTestHarness implements Closeable
             fs = new AdversarialFileSystemAbstraction( adversary, fs );
         }
 
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         MuninnPageCache cache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( cachePageCount )
                 .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) );

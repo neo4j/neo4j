@@ -910,7 +910,10 @@ public abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, ByteBuffer buf )
     {
-        if ( buf.getClass() == UnsafeUtil.DIRECT_BYTE_BUFFER_CLASS && buf.isDirect() && !buf.isReadOnly() )
+        if ( buf.getClass() == UnsafeUtil.DIRECT_BYTE_BUFFER_CLASS
+             && buf.isDirect()
+             && !buf.isReadOnly()
+             && UnsafeUtil.unsafeByteBufferAccessAvailable() )
         {
             // We expect that the mutable direct byte buffer is implemented with a class that is distinct from the
             // non-mutable (read-only) and non-direct (on-heap) byte buffers. By comparing class object instances,

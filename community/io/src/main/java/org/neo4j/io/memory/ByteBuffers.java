@@ -43,7 +43,15 @@ public final class ByteBuffers
     public static ByteBuffer allocate( int capacity, MemoryTracker memoryTracker )
     {
         memoryTracker.allocateHeap( capacity );
-        return ByteBuffer.allocate( capacity );
+        try
+        {
+            return ByteBuffer.allocate( capacity );
+        }
+        catch ( Throwable any )
+        {
+            memoryTracker.releaseHeap( capacity );
+            throw any;
+        }
     }
 
     /**
@@ -55,8 +63,7 @@ public final class ByteBuffers
      */
     public static ByteBuffer allocate( int capacity, ByteOrder order, MemoryTracker memoryTracker )
     {
-        memoryTracker.allocateHeap( capacity );
-        return ByteBuffer.allocate( capacity ).order( order );
+        return allocate( capacity, memoryTracker ).order( order );
     }
 
     /**
@@ -69,8 +76,7 @@ public final class ByteBuffers
     public static ByteBuffer allocate( int capacity, ByteUnit capacityUnit, MemoryTracker memoryTracker )
     {
         int bufferCapacity = toIntExact( capacityUnit.toBytes( capacity ) );
-        memoryTracker.allocateHeap( bufferCapacity );
-        return ByteBuffer.allocate( bufferCapacity );
+        return allocate( bufferCapacity, memoryTracker );
     }
 
     /**
@@ -82,21 +88,55 @@ public final class ByteBuffers
      */
     public static ByteBuffer allocateDirect( int capacity, MemoryTracker memoryTracker )
     {
-        return UnsafeUtil.allocateByteBuffer( capacity, memoryTracker );
+        if ( UnsafeUtil.unsafeByteBufferAccessAvailable() )
+        {
+            return UnsafeUtil.allocateByteBuffer( capacity, memoryTracker );
+        }
+        else
+        {
+            return allocateDirectFallback( capacity, memoryTracker );
+        }
     }
 
     /**
      * Release all the memory that was allocated for the buffer in case its native.
-     * Noop for on heap buffers
      * @param byteBuffer byte buffer to release
      */
     public static void releaseBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
+    {
+        if ( UnsafeUtil.unsafeByteBufferAccessAvailable() )
+        {
+            UnsafeUtil.releaseBuffer( byteBuffer, memoryTracker );
+        }
+        else
+        {
+            releaseBufferFallback( byteBuffer, memoryTracker );
+        }
+    }
+
+    private static ByteBuffer allocateDirectFallback( int capacity, MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateNative( capacity );
+        try
+        {
+            return ByteBuffer.allocateDirect( capacity );
+        }
+        catch ( Throwable any )
+        {
+            memoryTracker.releaseNative( capacity );
+            throw any;
+        }
+    }
+
+    private static void releaseBufferFallback( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
     {
         if ( !byteBuffer.isDirect() )
         {
             memoryTracker.releaseHeap( byteBuffer.capacity() );
             return;
         }
-        UnsafeUtil.freeByteBuffer( byteBuffer, memoryTracker );
+        var capacity = byteBuffer.capacity();
+        UnsafeUtil.invokeCleaner( byteBuffer );
+        memoryTracker.releaseNative( capacity );
     }
 }

@@ -49,6 +49,7 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -219,7 +220,7 @@ class PhysicalFlushableChannelTest
         channel.putInt( intValue );
         channel.putLong( longValue );
         channel.prepareForFlush().flush();
-        channel.close();
+        versionedStoreChannel.close();
 
         // "Rotate" and continue
         storeChannel = fileSystem.write( secondFile );
@@ -268,7 +269,26 @@ class PhysicalFlushableChannelTest
     }
 
     @Test
-    void shouldThrowIllegalStateExceptionAfterClosed() throws Exception
+    void shouldThrowIllegalStateExceptionOnFlushAfterClosed() throws Exception
+    {
+        // GIVEN
+        final Path file = directory.homePath().resolve( "file" );
+        StoreChannel storeChannel = fileSystem.write( file );
+        PhysicalLogVersionedStoreChannel versionedStoreChannel =
+                new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer );
+        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel, INSTANCE );
+
+        // closing the WritableLogChannel, then the underlying channel is what PhysicalLogFile does
+        channel.close();
+        storeChannel.close();
+
+        // WHEN wanting to empty buffer into the channel
+        assertThatThrownBy( channel::prepareForFlush ).isInstanceOf( IllegalStateException.class )
+                                                      .hasMessageContaining( "This log channel has been closed" );
+    }
+
+    @Test
+    void shouldThrowsOnWriteAfterClosed() throws Exception
     {
         // GIVEN
         final Path file = directory.homePath().resolve( "file" );
@@ -282,9 +302,8 @@ class PhysicalFlushableChannelTest
         storeChannel.close();
 
         // WHEN just appending something to the buffer
-        channel.put( (byte) 0 );
-        // and wanting to empty that into the channel
-        assertThrows( IllegalStateException.class, channel::prepareForFlush );
+        // attempt to write to closed channel throws different exceptions if assertions enabled or not
+        assertThatThrownBy( () -> channel.put( (byte) 0 ) ).isInstanceOf( Throwable.class );
     }
 
     @Test

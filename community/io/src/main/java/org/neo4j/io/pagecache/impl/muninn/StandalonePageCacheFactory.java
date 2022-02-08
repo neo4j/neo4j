@@ -46,7 +46,7 @@ public final class StandalonePageCacheFactory
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer, EmptyMemoryTracker.INSTANCE );
         int pageSize = PageCache.PAGE_SIZE;
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
@@ -55,14 +55,14 @@ public final class StandalonePageCacheFactory
     {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         int pageSize = PageCache.PAGE_SIZE;
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer, EmptyMemoryTracker.INSTANCE );
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, int pageSize )
     {
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer, EmptyMemoryTracker.INSTANCE );
         return createPageCache( factory, jobScheduler, cacheTracer, pageSize );
     }
 
@@ -77,7 +77,7 @@ public final class StandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, JobScheduler jobScheduler, PageCacheTracer cacheTracer,
             MuninnPageCache.Configuration configuration )
     {
-        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer );
+        SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory( fileSystem, cacheTracer, EmptyMemoryTracker.INSTANCE );
         return createPageCache( factory, configuration, jobScheduler );
     }
 

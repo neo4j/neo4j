@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -866,6 +867,6 @@ class LabelsAcceptanceTest
 
     private static PageSwapperFactory swapper( EphemeralFileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer )
     {
-        return new SingleFilePageSwapperFactory( fileSystem, pageCacheTracer );
+        return new SingleFilePageSwapperFactory( fileSystem, pageCacheTracer, EmptyMemoryTracker.INSTANCE );
     }
 }

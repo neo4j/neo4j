@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -85,7 +86,7 @@ public class PageCacheStressTest
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
+            PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
             try ( PageCache pageCacheUnderTest = new MuninnPageCache( swapperFactory, jobScheduler, config( numberOfCachePages )
                     .pageCacheTracer( tracer ).reservedPageBytes( reservedPageBytes ) ) )
             {

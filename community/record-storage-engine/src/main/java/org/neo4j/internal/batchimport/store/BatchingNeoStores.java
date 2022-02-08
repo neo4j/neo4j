@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -345,7 +346,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, PageCacheTracer tracer, JobScheduler jobScheduler,
             MemoryTracker memoryTracker )
     {
-        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem, tracer );
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fileSystem, tracer, EmptyMemoryTracker.INSTANCE );
         MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), memoryTracker );
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
                 .pageCacheTracer( tracer )

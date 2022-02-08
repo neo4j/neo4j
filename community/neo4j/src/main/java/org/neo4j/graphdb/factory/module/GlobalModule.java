@@ -42,6 +42,7 @@ import org.neo4j.internal.collector.RecentQueryBuffer;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.bufferpool.impl.NeoByteBufferPool;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -121,6 +122,7 @@ import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 @IgnoreApiCheck
 public class GlobalModule
 {
+
     private final PageCache pageCache;
     private final Monitors globalMonitors;
     private final Dependencies globalDependencies;
@@ -204,7 +206,7 @@ public class GlobalModule
         globalConfig.addListener( memory_transaction_global_max_size, ( before, after ) -> transactionsMemoryPool.setSize( after ) );
         globalDependencies.satisfyDependency( memoryPools );
 
-        centralBufferMangerHolder = createCentralBufferManger();
+        centralBufferMangerHolder = createCentralBufferManger( logService );
 
         var recentQueryBuffer = new RecentQueryBuffer( globalConfig.get( data_collector_max_recent_query_count ),
                                                    memoryPools.pool( MemoryGroup.RECENT_QUERY_BUFFER, 0, null ).getPoolMemoryTracker() );
@@ -224,7 +226,7 @@ public class GlobalModule
                 logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock, globalConfig ) );
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
-        collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
+        collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife, logService );
 
         ioControllerService = loadIOControllerService();
         pageCache = tryResolveOrCreate( PageCache.class,
@@ -359,7 +361,7 @@ public class GlobalModule
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fileSystem, config, tracers.getPageCacheTracer(), pageCacheLog,
-                jobScheduler, clock, memoryPools );
+                                                                                        jobScheduler, clock, memoryPools );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 
         if ( config.get( GraphDatabaseInternalSettings.dump_configuration ) )
@@ -369,39 +371,55 @@ public class GlobalModule
         return pageCache;
     }
 
-    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config, LifeSupport life )
+    private static CollectionsFactorySupplier createCollectionsFactorySupplier( Config config, LifeSupport life, LogService logService )
     {
         final TransactionStateMemoryAllocation allocation = config.get( tx_state_memory_allocation );
-        switch ( allocation )
+        if ( allocation == TransactionStateMemoryAllocation.OFF_HEAP )
         {
-        case ON_HEAP:
-            return CollectionsFactorySupplier.ON_HEAP;
-        case OFF_HEAP:
-            final CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator(
-                    config.get( tx_state_off_heap_max_cacheable_block_size ),
-                    config.get( tx_state_off_heap_block_cache_size ) );
-            final OffHeapBlockAllocator sharedBlockAllocator;
-            final long maxMemory = config.get( tx_state_max_off_heap_memory );
-            if ( maxMemory > 0 )
+            if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
             {
-                sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( allocator, maxMemory );
+                var log = logService.getInternalLog( GlobalModule.class );
+                log.warn( tx_state_memory_allocation.name() + " is set to " + TransactionStateMemoryAllocation.OFF_HEAP +
+                          " but unsafe access to java.nio.DirectByteBuffer is not available. Defaulting to " + TransactionStateMemoryAllocation.ON_HEAP + "." );
+                return CollectionsFactorySupplier.ON_HEAP;
             }
-            else
-            {
-                sharedBlockAllocator = allocator;
-            }
-            life.add( onShutdown( sharedBlockAllocator::release ) );
-            return () -> new OffHeapCollectionsFactory( sharedBlockAllocator );
-        default:
-            throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
+
+            return createOffHeapCollectionsFactory( config, life );
         }
+        return CollectionsFactorySupplier.ON_HEAP;
     }
 
-    private CentralBufferMangerHolder createCentralBufferManger()
+    private static CollectionsFactorySupplier createOffHeapCollectionsFactory( Config config, LifeSupport life )
+    {
+        final CachingOffHeapBlockAllocator allocator = new CachingOffHeapBlockAllocator(
+                config.get( tx_state_off_heap_max_cacheable_block_size ),
+                config.get( tx_state_off_heap_block_cache_size ) );
+        final OffHeapBlockAllocator sharedBlockAllocator;
+        final long maxMemory = config.get( tx_state_max_off_heap_memory );
+        if ( maxMemory > 0 )
+        {
+            sharedBlockAllocator = new CapacityLimitingBlockAllocatorDecorator( allocator, maxMemory );
+        }
+        else
+        {
+            sharedBlockAllocator = allocator;
+        }
+        life.add( onShutdown( sharedBlockAllocator::release ) );
+        return () -> new OffHeapCollectionsFactory( sharedBlockAllocator );
+    }
+
+    private CentralBufferMangerHolder createCentralBufferManger( LogService logService )
     {
         // since network buffers are currently the only use of the central byte buffer manager ...
         if ( !globalConfig.get( GraphDatabaseInternalSettings.managed_network_buffers ) )
         {
+            return CentralBufferMangerHolder.EMPTY;
+        }
+        if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
+        {
+            var log = logService.getInternalLog( GlobalModule.class );
+            log.warn( GraphDatabaseInternalSettings.managed_network_buffers.name() + " is set to true" +
+                      " but unsafe access to java.nio.DirectByteBuffer is not available. Managed network buffers are not enabled." );
             return CentralBufferMangerHolder.EMPTY;
         }
 

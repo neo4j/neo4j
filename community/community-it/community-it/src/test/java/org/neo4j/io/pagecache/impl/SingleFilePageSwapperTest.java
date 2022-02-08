@@ -64,6 +64,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PageSwapperTest;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
+import org.neo4j.memory.EmptyMemoryTracker;
 
 import static java.util.concurrent.ConcurrentHashMap.newKeySet;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -107,7 +108,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     @Override
     protected PageSwapperFactory swapperFactory( FileSystemAbstraction fileSystem )
     {
-        return new SingleFilePageSwapperFactory( fileSystem, new DefaultPageCacheTracer() );
+        return new SingleFilePageSwapperFactory( fileSystem, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE );
     }
 
     @Override

@@ -17,21 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.pagecache.impl;
 
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ScopedBuffer;
+import org.junit.jupiter.api.BeforeAll;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
+import static org.neo4j.noopens.NoOpensIT.assertByteBufferClosed;
+
+public class SingleFilePageSwapperWithFallbackTest extends SingleFilePageSwapperTest
 {
-    PhysicalFlushableLogChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
+    @BeforeAll
+    static void before()
     {
-        super( channel, scopedBuffer );
-    }
-
-    void setChannel( StoreChannel channel )
-    {
-        this.channel = channel;
+        assertByteBufferClosed();
     }
 }

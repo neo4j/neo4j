@@ -75,6 +75,7 @@ import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.util.concurrent.Futures;
 
@@ -4683,7 +4684,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     private static SingleFilePageSwapperFactory flushCountingPageSwapperFactory( FileSystemAbstraction fs, AtomicInteger flushCounter,
             PageCacheTracer pageCacheTracer )
     {
-        return new SingleFilePageSwapperFactory( fs, pageCacheTracer )
+        return new SingleFilePageSwapperFactory( fs, pageCacheTracer, EmptyMemoryTracker.INSTANCE )
         {
             @Override
             public PageSwapper createPageSwapper( Path path, int filePageSize, PageEvictionCallback onEviction, boolean createIfNotExist, boolean useDirectIO,

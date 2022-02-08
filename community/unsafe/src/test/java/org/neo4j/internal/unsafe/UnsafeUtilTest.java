@@ -203,6 +203,60 @@ class UnsafeUtilTest
     }
 
     @Test
+    void shouldPutAndGetByteWiseLittleEndianShort()
+    {
+        // GIVEN
+        int sizeInBytes = 2;
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
+        short value = (short) 0b11001100_10101010;
+
+        // WHEN
+        UnsafeUtil.putShortByteWiseLittleEndian( p, value );
+        short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
+
+        // THEN
+        free( p, sizeInBytes, tracker );
+        assertEquals( value, readValue );
+    }
+
+    @Test
+    void shouldPutAndGetByteWiseLittleEndianInt()
+    {
+        // GIVEN
+        int sizeInBytes = 4;
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
+        int value = 0b11001100_10101010_10011001_01100110;
+
+        // WHEN
+        UnsafeUtil.putIntByteWiseLittleEndian( p, value );
+        int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
+
+        // THEN
+        free( p, sizeInBytes, tracker );
+        assertEquals( value, readValue );
+    }
+
+    @Test
+    void shouldPutAndGetByteWiseLittleEndianLong()
+    {
+        // GIVEN
+        int sizeInBytes = 8;
+        var tracker = new LocalMemoryTracker();
+        long p = allocateMemory( sizeInBytes, tracker );
+        long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
+
+        // WHEN
+        UnsafeUtil.putLongByteWiseLittleEndian( p, value );
+        long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
+
+        // THEN
+        free( p, sizeInBytes, tracker );
+        assertEquals( value, readValue );
+    }
+
+    @Test
     void directByteBufferCreationAndInitialisation() throws Throwable
     {
         int sizeInBytes = 313;
@@ -273,60 +327,6 @@ class UnsafeUtilTest
         {
             UnsafeUtil.exchangeNativeAccessCheckEnabled( nativeAccessCheckEnabled );
         }
-    }
-
-    @Test
-    void shouldPutAndGetByteWiseLittleEndianShort()
-    {
-        // GIVEN
-        int sizeInBytes = 2;
-        var tracker = new LocalMemoryTracker();
-        long p = allocateMemory( sizeInBytes, tracker );
-        short value = (short) 0b11001100_10101010;
-
-        // WHEN
-        UnsafeUtil.putShortByteWiseLittleEndian( p, value );
-        short readValue = UnsafeUtil.getShortByteWiseLittleEndian( p );
-
-        // THEN
-        free( p, sizeInBytes, tracker );
-        assertEquals( value, readValue );
-    }
-
-    @Test
-    void shouldPutAndGetByteWiseLittleEndianInt()
-    {
-        // GIVEN
-        int sizeInBytes = 4;
-        var tracker = new LocalMemoryTracker();
-        long p = allocateMemory( sizeInBytes, tracker );
-        int value = 0b11001100_10101010_10011001_01100110;
-
-        // WHEN
-        UnsafeUtil.putIntByteWiseLittleEndian( p, value );
-        int readValue = UnsafeUtil.getIntByteWiseLittleEndian( p );
-
-        // THEN
-        free( p, sizeInBytes, tracker );
-        assertEquals( value, readValue );
-    }
-
-    @Test
-    void shouldPutAndGetByteWiseLittleEndianLong()
-    {
-        // GIVEN
-        int sizeInBytes = 8;
-        var tracker = new LocalMemoryTracker();
-        long p = allocateMemory( sizeInBytes, tracker );
-        long value = 0b11001100_10101010_10011001_01100110__10001000_01000100_00100010_00010001L;
-
-        // WHEN
-        UnsafeUtil.putLongByteWiseLittleEndian( p, value );
-        long readValue = UnsafeUtil.getLongByteWiseLittleEndian( p );
-
-        // THEN
-        free( p, sizeInBytes, tracker );
-        assertEquals( value, readValue );
     }
 
     @Test

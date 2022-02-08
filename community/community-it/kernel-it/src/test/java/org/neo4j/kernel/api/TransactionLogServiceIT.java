@@ -359,9 +359,18 @@ class TransactionLogServiceIT
         availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
 
         var metadataBefore = metadataProvider.getLastClosedTransaction();
-        for ( int i = 0; i < 100; i++ )
+        var buffer = createBuffer().put( new byte[]{1, 2, 3, 4, 5} );
+        try
         {
-            logService.append( createBuffer().put( new byte[]{1, 2, 3, 4, 5} ), empty() );
+            for ( int i = 0; i < 100; i++ )
+            {
+                buffer.rewind();
+                logService.append( buffer, empty() );
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( buffer, INSTANCE );
         }
 
         assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
@@ -375,12 +384,19 @@ class TransactionLogServiceIT
         var metadataBefore = metadataProvider.getLastClosedTransaction();
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            logService.append( appendData, OptionalLong.of( i ) );
-            appendData.rewind();
+            for ( int i = 0; i < appendIterations; i++ )
+            {
+                logService.append( appendData, OptionalLong.of( i ) );
+                appendData.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         assertEquals( metadataBefore, metadataProvider.getLastClosedTransaction() );
@@ -397,12 +413,19 @@ class TransactionLogServiceIT
 
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            logService.append( appendData, OptionalLong.of( i ) );
-            appendData.rewind();
+            for ( int i = 0; i < appendIterations; i++ )
+            {
+                logService.append( appendData, OptionalLong.of( i ) );
+                appendData.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         var logVersionAfter = metadataProvider.getCurrentLogVersion();
@@ -417,13 +440,20 @@ class TransactionLogServiceIT
 
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
-            appendData.rewind();
+            for ( int i = 0; i < appendIterations; i++ )
+            {
+                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+                appendData.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         LogFile logFile = logFiles.getLogFile();
@@ -452,15 +482,23 @@ class TransactionLogServiceIT
         var positionAfterTransaction = systemMetadata.getLastClosedTransaction().getLogPosition();
         long systemLastClosedTransactionId = systemMetadata.getLastClosedTransactionId();
         var buffer = readTransactionIntoBuffer( systemDatabase, positionBeforeTransaction, positionAfterTransaction );
-
-        availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
-        long lastTransactionBeforeBufferAppend = metadataProvider.getLastClosedTransaction().getTransactionId();
-        var positionBeforeRecovery = metadataProvider.getLastClosedTransaction().getLogPosition();
-
-        for ( int i = 0; i < 3; i++ )
+        LogPosition positionBeforeRecovery = null;
+        try
         {
-            logService.append( buffer, OptionalLong.of( lastTransactionBeforeBufferAppend + i + 1 ) );
-            buffer.rewind();
+            availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
+            long lastTransactionBeforeBufferAppend = metadataProvider.getLastClosedTransaction().getTransactionId();
+
+            positionBeforeRecovery = metadataProvider.getLastClosedTransaction().getLogPosition();
+
+            for ( int i = 0; i < 3; i++ )
+            {
+                logService.append( buffer, OptionalLong.of( lastTransactionBeforeBufferAppend + i + 1 ) );
+                buffer.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( buffer, INSTANCE );
         }
 
         // restart db and trigger shutdown checkpoint and recovery
@@ -481,13 +519,20 @@ class TransactionLogServiceIT
         BulkAppendLogRotationMonitor monitorListener = new BulkAppendLogRotationMonitor();
         databaseAPI.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener( monitorListener );
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
-            appendData.rewind();
+            for ( int i = 0; i < appendIterations; i++ )
+            {
+                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+                appendData.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         List<Long> observedVersions = monitorListener.getObservedVersions();
@@ -502,13 +547,20 @@ class TransactionLogServiceIT
         DatabaseTracers databaseTracers = databaseAPI.getDependencyResolver().resolveDependency( DatabaseTracers.class );
         assertEquals( 0, databaseTracers.getDatabaseTracer().numberOfLogRotations() );
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         int transactionalShift = 10;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
-            appendData.rewind();
+            for ( int i = 0; i < appendIterations; i++ )
+            {
+                logService.append( appendData, OptionalLong.of( transactionalShift + i ) );
+                appendData.rewind();
+            }
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         // first append is not rotated
@@ -551,19 +603,26 @@ class TransactionLogServiceIT
         availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
-        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
         int appendIterations = 100;
         LogPosition previousPosition = null;
-        for ( int i = 0; i < appendIterations; i++ )
+        var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
+        try
         {
-            var position = logService.append( appendData, OptionalLong.empty() );
-            if ( previousPosition != null )
+            for ( int i = 0; i < appendIterations; i++ )
             {
-                assertEquals( previousPosition, position );
+                var position = logService.append( appendData, OptionalLong.empty() );
+                if ( previousPosition != null )
+                {
+                    assertEquals( previousPosition, position );
+                }
+                logService.restore( position );
+                previousPosition = position;
+                appendData.rewind();
             }
-            logService.restore( position );
-            previousPosition = position;
-            appendData.rewind();
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
         }
 
         assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
@@ -576,22 +635,29 @@ class TransactionLogServiceIT
         long logVersionBefore = metadataProvider.getCurrentLogVersion();
 
         var appendData = createBuffer().put( randomAscii( (int) (THRESHOLD + 1) ).getBytes( UTF_8 ) );
-        int appendIterations = 100;
-        LogPosition firstPosition = null;
-        for ( int i = 0; i < appendIterations; i++ )
+        try
         {
-            var position = logService.append( appendData, OptionalLong.of( i + 5 ) );
-            if ( firstPosition == null )
+            int appendIterations = 100;
+            LogPosition firstPosition = null;
+            for ( int i = 0; i < appendIterations; i++ )
             {
-                firstPosition = position;
+                var position = logService.append( appendData, OptionalLong.of( i + 5 ) );
+                if ( firstPosition == null )
+                {
+                    firstPosition = position;
+                }
+                appendData.rewind();
             }
-            appendData.rewind();
-        }
-        assertThat( logFiles.getLogFile().getHighestLogVersion() ).isGreaterThanOrEqualTo( firstPosition.getLogVersion() );
-        logService.restore( firstPosition );
+            assertThat( logFiles.getLogFile().getHighestLogVersion() ).isGreaterThanOrEqualTo( firstPosition.getLogVersion() );
+            logService.restore( firstPosition );
 
-        assertEquals( firstPosition, logService.append( appendData, OptionalLong.of( 5 ) ) );
-        assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
+            assertEquals( firstPosition, logService.append( appendData, OptionalLong.of( 5 ) ) );
+            assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
+        }
+        finally
+        {
+            ByteBuffers.releaseBuffer( appendData, INSTANCE );
+        }
     }
 
     private ByteBuffer readTransactionIntoBuffer( GraphDatabaseAPI db, LogPosition positionBeforeTransaction, LogPosition positionAfterTransaction )

@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -174,6 +175,6 @@ class MuninnPageCursorTest
 
     private PageSwapperFactory defaultPageSwapperFactory()
     {
-        return new SingleFilePageSwapperFactory( fs, new DefaultPageCacheTracer() );
+        return new SingleFilePageSwapperFactory( fs, new DefaultPageCacheTracer(), EmptyMemoryTracker.INSTANCE );
     }
 }

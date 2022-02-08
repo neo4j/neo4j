@@ -140,7 +140,7 @@ public class GBPTreeBootstrapper implements Closeable
             return;
         }
         closePageCache();
-        var swapper = new SingleFilePageSwapperFactory( fs, PageCacheTracer.NULL );
+        var swapper = new SingleFilePageSwapperFactory( fs, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
         long expectedMemory = Math.max( MuninnPageCache.memoryRequiredForPages( 100 ), 3L * pageSize );
         pageCache = new MuninnPageCache( swapper, jobScheduler, config( createAllocator( expectedMemory, EmptyMemoryTracker.INSTANCE ) ).pageSize( pageSize )
                 .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );

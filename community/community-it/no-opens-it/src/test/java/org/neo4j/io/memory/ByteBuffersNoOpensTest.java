@@ -32,7 +32,7 @@ import static org.neo4j.io.memory.ByteBuffers.allocateDirect;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
 
-class ByteBuffersTest
+class ByteBuffersNoOpensTest
 {
     @Test
     void trackMemoryAllocationsForNativeByteBuffers()
@@ -71,44 +71,5 @@ class ByteBuffersTest
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
         assertEquals( 0, memoryTracker.usedNativeMemory() );
     }
-
-    @Test
-    void byteBufferMustThrowOutOfBoundsAfterRelease()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
-    }
-
-    @Test
-    void heapByteBufferMustThrowOutOfBoundsAfterRelease()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
-    }
-
-    @Test
-    void doubleFreeOfByteBufferIsOkay()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
-    }
-
-    @Test
-    void doubleFreeOfHeapByteBufferIsOkay()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocate( Long.BYTES, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
-    }
 }
+

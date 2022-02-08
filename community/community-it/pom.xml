@@ -54,6 +54,7 @@
         <module>community-it</module>
         <module>fabric-it</module>
         <module>security-it</module>
+        <module>no-opens-it</module>
     </modules>
 
     <profiles>

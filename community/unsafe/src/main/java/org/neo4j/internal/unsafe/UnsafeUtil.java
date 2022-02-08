@@ -75,11 +75,11 @@ public final class UnsafeUtil
     private static final AtomicLong freeCounter = new AtomicLong();
 
     public static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
-    private static final VarHandle DIRECT_BYTE_BUFFER_MARK;
-    private static final VarHandle DIRECT_BYTE_BUFFER_POSITION;
-    private static final VarHandle DIRECT_BYTE_BUFFER_LIMIT;
-    private static final VarHandle DIRECT_BYTE_BUFFER_CAPACITY;
-    private static final VarHandle DIRECT_BYTE_BUFFER_ADDRESS;
+    private static final VarHandle BYTE_BUFFER_MARK;
+    private static final VarHandle BYTE_BUFFER_POSITION;
+    private static final VarHandle BYTE_BUFFER_LIMIT;
+    private static final VarHandle BYTE_BUFFER_CAPACITY;
+    private static final VarHandle BYTE_BUFFER_ADDRESS;
     private static final VarHandle DIRECT_BYTE_BUFFER_ATTACHMENT;
     private static final MethodHandle DIRECT_BYTE_BUFFER_CONSTRUCTOR;
 
@@ -91,56 +91,7 @@ public final class UnsafeUtil
     static
     {
         unsafe = UnsafeAccessor.getUnsafe();
-
-        Class<?> dbbClass = null;
-        VarHandle dbbMark = null;
-        VarHandle dbbPosition = null;
-        VarHandle dbbLimit = null;
-        VarHandle dbbCapacity = null;
-        VarHandle dbbAddress = null;
-        VarHandle dbbAttachment = null;
-        MethodHandle dbbCtor = null;
-        int ps = 4096;
-        try
-        {
-            MethodHandles.Lookup bufferLookup = MethodHandles.privateLookupIn( Buffer.class, MethodHandles.lookup() );
-            dbbMark = bufferLookup.findVarHandle( Buffer.class, "mark", int.class );
-            dbbPosition = bufferLookup.findVarHandle( Buffer.class, "position", int.class );
-            dbbLimit = bufferLookup.findVarHandle( Buffer.class, "limit", int.class );
-            dbbCapacity = bufferLookup.findVarHandle( Buffer.class, "capacity", int.class );
-            dbbAddress = bufferLookup.findVarHandle( Buffer.class, "address", long.class );
-
-            dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
-            MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
-            dbbAttachment = directByteBufferLookup.findVarHandle( dbbClass, "att", Object.class );
-
-            ps = unsafe.pageSize();
-        }
-        catch ( Throwable e )
-        {
-            if ( dbbClass == null )
-            {
-                throw new LinkageError( "Cannot to link java.nio.DirectByteBuffer", e );
-            }
-            try
-            {
-                MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
-                dbbCtor = directByteBufferLookup.findConstructor( dbbClass, MethodType.methodType( void.class, long.class, int.class ) );
-            }
-            catch ( Throwable e1 )
-            {
-                throw new LinkageError( "Cannot find JNI constructor for java.nio.DirectByteBuffer", e1 );
-            }
-        }
-        DIRECT_BYTE_BUFFER_CLASS = dbbClass;
-        DIRECT_BYTE_BUFFER_MARK = dbbMark;
-        DIRECT_BYTE_BUFFER_POSITION = dbbPosition;
-        DIRECT_BYTE_BUFFER_LIMIT = dbbLimit;
-        DIRECT_BYTE_BUFFER_CAPACITY = dbbCapacity;
-        DIRECT_BYTE_BUFFER_ADDRESS = dbbAddress;
-        DIRECT_BYTE_BUFFER_ATTACHMENT = dbbAttachment;
-        DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
-        pageSize = ps;
+        pageSize = unsafe.pageSize();
 
         // See java.nio.Bits.unaligned() and its uses.
         String alignmentProperty = System.getProperty( allowUnalignedMemoryAccessProperty );
@@ -160,6 +111,51 @@ public final class UnsafeUtil
                     };
         }
         storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
+
+        Class<?> dbbClass = null;
+        VarHandle bbMark = null;
+        VarHandle bbPosition = null;
+        VarHandle bbLimit = null;
+        VarHandle bbCapacity = null;
+        VarHandle bbAddress = null;
+        VarHandle dbbAttachment = null;
+        MethodHandle dbbCtor = null;
+        try
+        {
+            var bufferLookup = MethodHandles.privateLookupIn( Buffer.class, MethodHandles.lookup() );
+            bbMark = bufferLookup.findVarHandle( Buffer.class, "mark", int.class );
+            bbPosition = bufferLookup.findVarHandle( Buffer.class, "position", int.class );
+            bbLimit = bufferLookup.findVarHandle( Buffer.class, "limit", int.class );
+            bbCapacity = bufferLookup.findVarHandle( Buffer.class, "capacity", int.class );
+            bbAddress = bufferLookup.findVarHandle( Buffer.class, "address", long.class );
+
+            dbbClass = Class.forName( "java.nio.DirectByteBuffer" );
+            MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
+            dbbAttachment = directByteBufferLookup.findVarHandle( dbbClass, "att", Object.class );
+        }
+        catch ( Throwable e )
+        {
+            if ( dbbClass != null )
+            {
+                try
+                {
+                    MethodHandles.Lookup directByteBufferLookup = MethodHandles.privateLookupIn( dbbClass, MethodHandles.lookup() );
+                    dbbCtor = directByteBufferLookup.findConstructor( dbbClass, MethodType.methodType( void.class, long.class, int.class ) );
+                }
+                catch ( Throwable e1 )
+                {
+                    // ignore
+                }
+            }
+        }
+        DIRECT_BYTE_BUFFER_CLASS = dbbClass;
+        BYTE_BUFFER_MARK = bbMark;
+        BYTE_BUFFER_POSITION = bbPosition;
+        BYTE_BUFFER_LIMIT = bbLimit;
+        BYTE_BUFFER_CAPACITY = bbCapacity;
+        BYTE_BUFFER_ADDRESS = bbAddress;
+        DIRECT_BYTE_BUFFER_ATTACHMENT = dbbAttachment;
+        DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
     }
 
     private UnsafeUtil()
@@ -248,74 +244,6 @@ public final class UnsafeUtil
             }
         }
         while ( !UnsafeUtil.compareAndSwapLong( object, fieldOffset, currentValue, newValue ) );
-    }
-
-    /**
-     * Allocates a {@link ByteBuffer}
-     * @param size The size of the buffer to allocate
-     */
-    public static ByteBuffer allocateByteBuffer( int size, MemoryTracker memoryTracker )
-    {
-        try
-        {
-            long addr = allocateMemory( size, memoryTracker );
-            setMemory( addr, size, (byte) 0 );
-            return newDirectByteBuffer( addr, size );
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /**
-     * Allocates a {@link ByteBuffer}
-     * @param byteBuffer The ByteBuffer to free, allocated by {@link #allocateByteBuffer(int, MemoryTracker)}
-     */
-    public static void freeByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
-    {
-        int bytes = byteBuffer.capacity();
-        long addr = getDirectByteBufferAddress( byteBuffer );
-        if ( addr == 0 )
-        {
-            return; // This buffer has already been freed.
-        }
-
-        // Nerf the byte buffer, causing all future accesses to get out-of-bounds.
-        DIRECT_BYTE_BUFFER_MARK.set( byteBuffer, -1 );
-        DIRECT_BYTE_BUFFER_POSITION.set( byteBuffer, 0 );
-        DIRECT_BYTE_BUFFER_LIMIT.set( byteBuffer, 0 );
-        DIRECT_BYTE_BUFFER_CAPACITY.set( byteBuffer, 0 );
-        DIRECT_BYTE_BUFFER_ADDRESS.set( byteBuffer, 0L );
-
-        // Free the buffer.
-        free( addr, bytes, memoryTracker );
-    }
-
-    /**
-     * Unwraps an original buffer from a suspected buffer slice.
-     * If the submitted buffer is not a slice, {@code null} will be returned.
-     * <p>
-     * This method works only with direct buffers and an exception
-     * will be thrown if a heap buffer is submitted.
-     */
-    public static ByteBuffer getOriginalBufferFromSlice( ByteBuffer byteBuffer )
-    {
-        if ( !byteBuffer.isDirect() )
-        {
-            throw new IllegalArgumentException( "The submitted buffer is not a direct one:" + byteBuffer );
-        }
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get( byteBuffer );
-    }
-
-    /**
-     * Invokes cleaner for provided direct byte buffer.
-     *
-     * @param byteBuffer provided byte buffer.
-     */
-    public static void invokeCleaner( ByteBuffer byteBuffer )
-    {
-        unsafe.invokeCleaner( byteBuffer );
     }
 
     /**
@@ -581,52 +509,6 @@ public final class UnsafeUtil
     }
 
     /**
-     * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
-     * <p>
-     * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
-     */
-    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Throwable
-    {
-        checkAccess( addr, cap );
-        if ( DIRECT_BYTE_BUFFER_CONSTRUCTOR == null )
-        {
-            // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
-            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( DIRECT_BYTE_BUFFER_CLASS );
-            initDirectByteBuffer( dbb, addr, cap );
-            return dbb;
-        }
-        // Reflection based fallback code.
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact( addr, cap );
-    }
-
-    /**
-     * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
-     */
-    public static void initDirectByteBuffer( ByteBuffer dbb, long addr, int cap )
-    {
-        checkAccess( addr, cap );
-        dbb.order( ByteOrder.BIG_ENDIAN );
-        DIRECT_BYTE_BUFFER_MARK.set( dbb, -1 );
-        DIRECT_BYTE_BUFFER_POSITION.set( dbb, 0 );
-        DIRECT_BYTE_BUFFER_LIMIT.set( dbb, cap );
-        DIRECT_BYTE_BUFFER_CAPACITY.set( dbb, cap );
-        DIRECT_BYTE_BUFFER_ADDRESS.set( dbb, addr );
-    }
-
-    /**
-     * Read the value of the address field in the (assumed to be) DirectByteBuffer.
-     * <p>
-     * <strong>NOTE:</strong> calling this method on a non-direct ByteBuffer is undefined behaviour.
-     *
-     * @param dbb The direct byte buffer to read the address field from.
-     * @return The native memory address in the given direct byte buffer.
-     */
-    public static long getDirectByteBufferAddress( ByteBuffer dbb )
-    {
-        return (long) DIRECT_BYTE_BUFFER_ADDRESS.get( dbb );
-    }
-
-    /**
      * Change if native access checking is enabled by setting it to the given new setting, and returning the old
      * setting.
      * <p>
@@ -757,6 +639,175 @@ public final class UnsafeUtil
         UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
     }
 
+    /**
+     * If this method returns false most operation from this class will throw
+     *
+     * @return if deep reflection access for ByteBuffer's is available
+     */
+    public static boolean unsafeByteBufferAccessAvailable()
+    {
+        return DIRECT_BYTE_BUFFER_CLASS != null;
+    }
+
+    private static void assertUnsafeByteBufferAccess()
+    {
+        if ( !unsafeByteBufferAccessAvailable() )
+        {
+            throw new IllegalStateException( "java.nio.DirectByteBuffer is not available" );
+        }
+    }
+
+    /**
+     * Allocates a {@link ByteBuffer}
+     *
+     * @param size The size of the buffer to allocate
+     */
+    public static ByteBuffer allocateByteBuffer( int size, MemoryTracker memoryTracker )
+    {
+        assertUnsafeByteBufferAccess();
+        try
+        {
+            long addr = allocateMemory( size, memoryTracker );
+            setMemory( addr, size, (byte) 0 );
+            return newDirectByteBuffer( addr, size );
+        }
+        catch ( Throwable e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * Releases a {@link ByteBuffer}
+     * @param byteBuffer The ByteBuffer to free, allocated by {@link UnsafeUtil#allocateByteBuffer(int, MemoryTracker)}
+     */
+    public static void freeByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
+    {
+        assertUnsafeByteBufferAccess();
+        int bytes = byteBuffer.capacity();
+        long addr = getDirectByteBufferAddress( byteBuffer );
+        if ( addr == 0 )
+        {
+            return; // This buffer has already been freed.
+        }
+
+        // Nerf the byte buffer, causing all future accesses to get out-of-bounds.
+        nerfBuffer( byteBuffer );
+
+        // Free the buffer.
+        free( addr, bytes, memoryTracker );
+    }
+
+    private static void nerfBuffer( ByteBuffer byteBuffer )
+    {
+        assertUnsafeByteBufferAccess();
+        BYTE_BUFFER_MARK.set( byteBuffer, -1 );
+        BYTE_BUFFER_POSITION.set( byteBuffer, 0 );
+        BYTE_BUFFER_LIMIT.set( byteBuffer, 0 );
+        BYTE_BUFFER_CAPACITY.set( byteBuffer, 0 );
+        BYTE_BUFFER_ADDRESS.set( byteBuffer, 0L );
+    }
+
+    /**
+     * Unwraps an original buffer from a suspected buffer slice. If the submitted buffer is not a slice, {@code null} will be returned.
+     * <p>
+     * This method works only with direct buffers and an exception will be thrown if a heap buffer is submitted.
+     */
+    public static ByteBuffer getOriginalBufferFromSlice( ByteBuffer byteBuffer )
+    {
+        assertUnsafeByteBufferAccess();
+        if ( !byteBuffer.isDirect() )
+        {
+            throw new IllegalArgumentException( "The submitted buffer is not a direct one:" + byteBuffer );
+        }
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get( byteBuffer );
+    }
+
+    /**
+     * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
+     * <p>
+     * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
+     */
+    public static ByteBuffer newDirectByteBuffer( long addr, int cap ) throws Throwable
+    {
+        assertUnsafeByteBufferAccess();
+        checkAccess( addr, cap );
+        if ( DIRECT_BYTE_BUFFER_CONSTRUCTOR == null )
+        {
+            // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
+            ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance( DIRECT_BYTE_BUFFER_CLASS );
+            initDirectByteBuffer( dbb, addr, cap );
+            return dbb;
+        }
+        // Reflection based fallback code.
+        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact( addr, cap );
+    }
+
+    /**
+     * Initialize (simulate calling the constructor of) the given DirectByteBuffer.
+     */
+    public static void initDirectByteBuffer( ByteBuffer dbb, long addr, int cap )
+    {
+        assertUnsafeByteBufferAccess();
+        checkAccess( addr, cap );
+        dbb.order( ByteOrder.BIG_ENDIAN );
+        BYTE_BUFFER_MARK.set( dbb, -1 );
+        BYTE_BUFFER_POSITION.set( dbb, 0 );
+        BYTE_BUFFER_LIMIT.set( dbb, cap );
+        BYTE_BUFFER_CAPACITY.set( dbb, cap );
+        BYTE_BUFFER_ADDRESS.set( dbb, addr );
+    }
+
+    /**
+     * Read the value of the address field in the (assumed to be) DirectByteBuffer.
+     * <p>
+     * <strong>NOTE:</strong> calling this method on a non-direct ByteBuffer is undefined behaviour.
+     *
+     * @param dbb The direct byte buffer to read the address field from.
+     * @return The native memory address in the given direct byte buffer.
+     */
+    public static long getDirectByteBufferAddress( ByteBuffer dbb )
+    {
+        assertUnsafeByteBufferAccess();
+        return (long) BYTE_BUFFER_ADDRESS.get( dbb );
+    }
+
+    /**
+     * Invokes cleaner for provided direct byte buffer. This can be used even ByteBuffer reflection isn't available.
+     *
+     * @param byteBuffer provided byte buffer.
+     */
+    public static void invokeCleaner( ByteBuffer byteBuffer )
+    {
+        unsafe.invokeCleaner( byteBuffer );
+    }
+
+    /**
+     * Releases provided buffer. Resets buffer capacity to 0 which makes it impossible to use after that.
+     */
+    public static void releaseBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
+    {
+        if ( !byteBuffer.isDirect() )
+        {
+            freeHeapByteBuffer( byteBuffer, memoryTracker );
+            return;
+        }
+        freeByteBuffer( byteBuffer, memoryTracker );
+    }
+
+    private static void freeHeapByteBuffer( ByteBuffer byteBuffer, MemoryTracker memoryTracker )
+    {
+        var capacity = byteBuffer.capacity();
+        if ( capacity == 0 )
+        {
+            // nothing to "free"
+            return;
+        }
+        // nerf buffer to break any future access
+        nerfBuffer( byteBuffer );
+        memoryTracker.releaseHeap( capacity );
+    }
+
     private static final class Allocation
     {
         private final long pointer;
@@ -814,5 +865,4 @@ public final class UnsafeUtil
             return format( "0x%x of %6d bytes, freed %s µs ago at", pointer, allocation.sizeInBytes, (referenceTime - nanoTime) / 1000 );
         }
     }
-
 }

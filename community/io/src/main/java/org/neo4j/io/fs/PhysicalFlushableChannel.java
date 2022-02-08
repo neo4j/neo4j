@@ -28,6 +28,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
@@ -47,6 +48,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
     protected StoreChannel channel;
     protected ByteBuffer buffer;
 
+    @VisibleForTesting
     public PhysicalFlushableChannel( StoreChannel channel, MemoryTracker memoryTracker )
     {
         this( channel, new HeapScopedBuffer( DEFAULT_BUFFER_SIZE, memoryTracker ) );
@@ -150,6 +152,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
         this.channel.close();
         this.scopedBuffer.close();
         this.scopedBuffer = EMPTY_BUFFER;
+        this.buffer = EMPTY_BUFFER.getBuffer();
     }
 
     /**

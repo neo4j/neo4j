@@ -182,24 +182,4 @@ class ByteBufferFactoryTest
 
         assertEquals( 0, memoryTracker.estimatedHeapMemory() );
     }
-
-    @Test
-    void byteBufferMustThrowOutOfBoundsAfterRelease()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        buffer.get( 0 );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) );
-    }
-
-    @Test
-    void doubleFreeOfByteBufferIsOkay()
-    {
-        var tracker = new LocalMemoryTracker();
-        ByteBuffer buffer = ByteBuffers.allocateDirect( Long.BYTES, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker );
-        ByteBuffers.releaseBuffer( buffer, tracker ); // This must not throw.
-        assertThrows( IndexOutOfBoundsException.class, () -> buffer.get( 0 ) ); // And this still throws.
-    }
 }

@@ -122,7 +122,6 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     public void close() throws IOException
     {
         channel.close();
-        channel.setScopedBuffer( EMPTY_BUFFER );
     }
 
     @Override

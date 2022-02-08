@@ -61,34 +61,6 @@ import static org.neo4j.io.fs.FileSystemAbstraction.INVALID_FILE_DESCRIPTOR;
  */
 public class SingleFilePageSwapper implements PageSwapper
 {
-    private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
-
-    private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
-    {
-        ByteBuffer buf = PROXY_CACHE.get();
-        if ( buf != null )
-        {
-            UnsafeUtil.initDirectByteBuffer( buf, buffer, bufferLength );
-            return buf;
-        }
-        return createAndGetNewBuffer( buffer, bufferLength );
-    }
-
-    private static ByteBuffer createAndGetNewBuffer( long buffer, int bufferLength ) throws IOException
-    {
-        ByteBuffer buf;
-        try
-        {
-            buf = UnsafeUtil.newDirectByteBuffer( buffer, bufferLength );
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( e );
-        }
-        PROXY_CACHE.set( buf );
-        return buf;
-    }
-
     private final FileSystemAbstraction fs;
     private final Path path;
     private final IOController ioController;
@@ -98,9 +70,10 @@ public class SingleFilePageSwapper implements PageSwapper
     private volatile PageEvictionCallback onEviction;
     private StoreChannel channel;
     private FileLock fileLock;
-    private final boolean hasPositionLock;
+    private final boolean canDoVectorizedIO;
     private final int swapperId;
     private final PageFileSwapperTracer fileSwapperTracer;
+    private final BlockSwapper blockSwapper;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -123,7 +96,8 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     SingleFilePageSwapper( Path path, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean useDirectIO,
-            boolean preallocateStoreFiles, IOController ioController, SwapperSet swapperSet, PageFileSwapperTracer fileSwapperTracer ) throws IOException
+                           boolean preallocateStoreFiles, IOController ioController, SwapperSet swapperSet, PageFileSwapperTracer fileSwapperTracer,
+                           BlockSwapper blockSwapper ) throws IOException
     {
         this.fs = fs;
         this.path = path;
@@ -160,8 +134,9 @@ public class SingleFilePageSwapper implements PageSwapper
             }
             throw e;
         }
-        hasPositionLock = channel.hasPositionLock();
-        swapperId = swapperSet.allocate( this );
+        this.canDoVectorizedIO = channel.hasPositionLock() && UnsafeUtil.unsafeByteBufferAccessAvailable();
+        this.swapperId = swapperSet.allocate( this );
+        this.blockSwapper = blockSwapper;
     }
 
     private StoreChannel createStoreChannel() throws IOException
@@ -231,59 +206,17 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private int swapIn( long bufferAddress, long fileOffset, int bufferSize ) throws IOException
     {
-        int readTotal = 0;
-        try
-        {
-            ByteBuffer bufferProxy = proxy( bufferAddress, bufferSize );
-            int read;
-            do
-            {
-                read = channel.read( bufferProxy, fileOffset + readTotal );
-            }
-            while ( read != -1 && (readTotal += read) < bufferSize );
-            ioController.reportIO( 1 );
-
-            // Zero-fill the rest.
-            int rest = bufferSize - readTotal;
-            if ( rest > 0 )
-            {
-                UnsafeUtil.setMemory( bufferAddress + readTotal, rest, MuninnPageCache.ZERO_BYTE );
-            }
-            return readTotal;
-        }
-        catch ( IOException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( formatSwapInErrorMessage( fileOffset, bufferSize, readTotal ), e );
-        }
-    }
-
-    private static String formatSwapInErrorMessage( long fileOffset, int size, int readTotal )
-    {
-        return "Read failed after " + readTotal + " of " + size + " bytes from fileOffset " + fileOffset + ".";
+        var readTotal = blockSwapper.swapIn( channel, bufferAddress, fileOffset, bufferSize );
+        ioController.reportIO( 1 );
+        return readTotal;
     }
 
     private int swapOut( long bufferAddress, long fileOffset, int bufferLength, boolean countIo ) throws IOException
     {
-        try
+        blockSwapper.swapOut( channel, bufferAddress, fileOffset, bufferLength );
+        if ( countIo )
         {
-            ByteBuffer bufferProxy = proxy( bufferAddress, bufferLength );
-            channel.writeAll( bufferProxy, fileOffset );
-            if ( countIo )
-            {
-                ioController.reportIO( 1 );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw e;
-        }
-        catch ( Throwable e )
-        {
-            throw new IOException( e );
+            ioController.reportIO( 1 );
         }
         return bufferLength;
     }
@@ -341,7 +274,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 try
                 {
-                    if ( hasPositionLock )
+                    if ( canDoVectorizedIO )
                     {
                         return readPositionedVectoredToFileChannel( startFilePageId, bufferAddresses, bufferLengths, length );
                     }
@@ -482,7 +415,7 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 try
                 {
-                    if ( hasPositionLock )
+                    if ( canDoVectorizedIO )
                     {
                         return writePositionedVectoredToFileChannel( startFilePageId, bufferAddresses, bufferLengths, length );
                     }

@@ -17,21 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.pagecache.impl;
 
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
+import java.io.IOException;
+
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ScopedBuffer;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel
+sealed interface BlockSwapper permits UnsafeBlockSwapper, FallbackBlockSwapper
 {
-    PhysicalFlushableLogChannel( StoreChannel channel, ScopedBuffer scopedBuffer )
-    {
-        super( channel, scopedBuffer );
-    }
+    /**
+     * Reads from channel to specified location in memory
+     */
+    int swapIn( StoreChannel channel, long bufferAddress, long fileOffset, int bufferSize ) throws IOException;
 
-    void setChannel( StoreChannel channel )
-    {
-        this.channel = channel;
-    }
+    /**
+     * Writes to channel from specified location in memory
+     */
+    void swapOut( StoreChannel channel, long bufferAddress, long fileOffset, int bufferLength ) throws IOException;
 }

@@ -23,8 +23,6 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
 
 final class UnsafeAccessor
 {
@@ -36,35 +34,30 @@ final class UnsafeAccessor
     {
         try
         {
-            PrivilegedExceptionAction<Unsafe> getUnsafe = () ->
-            {
-                try
-                {
-                    return Unsafe.getUnsafe();
-                }
-                catch ( Exception e )
-                {
-                    Class<Unsafe> type = Unsafe.class;
-                    Field[] fields = type.getDeclaredFields();
-                    for ( Field field : fields )
-                    {
-                        if ( Modifier.isStatic( field.getModifiers() )
-                                && type.isAssignableFrom( field.getType() ) )
-                        {
-                            field.setAccessible( true );
-                            return type.cast( field.get( null ) );
-                        }
-                    }
-                    LinkageError error = new LinkageError( "No static field of type sun.misc.Unsafe" );
-                    error.addSuppressed( e );
-                    throw error;
-                }
-            };
-            return AccessController.doPrivileged( getUnsafe );
+            return Unsafe.getUnsafe();
         }
         catch ( Exception e )
         {
-            throw new LinkageError( "Cannot access sun.misc.Unsafe", e );
+            Class<Unsafe> type = Unsafe.class;
+            try
+            {
+                Field[] fields = type.getDeclaredFields();
+                for ( Field field : fields )
+                {
+                    if ( Modifier.isStatic( field.getModifiers() ) && type.isAssignableFrom( field.getType() ) )
+                    {
+                        field.setAccessible( true );
+                        return type.cast( field.get( null ) );
+                    }
+                }
+            }
+            catch ( IllegalAccessException iae )
+            {
+                e.addSuppressed( iae );
+            }
+            var error = new LinkageError( "Cannot access sun.misc.Unsafe", e );
+            error.addSuppressed( e );
+            throw error;
         }
     }
 }

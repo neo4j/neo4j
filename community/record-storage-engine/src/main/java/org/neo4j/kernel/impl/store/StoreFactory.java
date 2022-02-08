@@ -29,6 +29,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -151,7 +152,10 @@ public class StoreFactory
         {
             return openOptions;
         }
-
+        if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
+        {
+            return openOptions;
+        }
         if ( openOptions.contains( DIRECT ) )
         {
             return openOptions;

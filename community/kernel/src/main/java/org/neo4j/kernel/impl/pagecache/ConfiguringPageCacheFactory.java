@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -48,7 +49,6 @@ import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
 
 public class ConfiguringPageCacheFactory
 {
-    private PageSwapperFactory swapperFactory;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final PageCacheTracer pageCacheTracer;
@@ -93,17 +93,18 @@ public class ConfiguringPageCacheFactory
     {
         if ( pageCache == null )
         {
-            this.swapperFactory = createAndConfigureSwapperFactory( fs, pageCacheTracer );
+
             this.pageCache = createPageCache();
         }
         return pageCache;
     }
 
-    protected PageCache createPageCache()
+    private PageCache createPageCache()
     {
         long pageCacheMaxMemory = getPageCacheMaxMemory( config );
         var memoryPool = memoryPools.pool( PAGE_CACHE, pageCacheMaxMemory, false, null );
         var memoryTracker = memoryPool.getPoolMemoryTracker();
+        var swapperFactory = createAndConfigureSwapperFactory( fs, pageCacheTracer, memoryTracker, log );
         MemoryAllocator memoryAllocator = buildMemoryAllocator( pageCacheMaxMemory, memoryTracker );
         var bufferFactory = new ConfigurableIOBufferFactory( config, memoryTracker );
         MuninnPageCache.Configuration configuration = MuninnPageCache.config( memoryAllocator )
@@ -198,8 +199,15 @@ public class ConfiguringPageCacheFactory
         log.info( msg );
     }
 
-    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer )
+    private static PageSwapperFactory createAndConfigureSwapperFactory( FileSystemAbstraction fs, PageCacheTracer pageCacheTracer,
+                                                                        MemoryTracker memoryTracker, Log log )
     {
-        return new SingleFilePageSwapperFactory( fs, pageCacheTracer );
+        if ( !UnsafeUtil.unsafeByteBufferAccessAvailable() )
+        {
+            log.warn( "Reflection access to java.nio.DirectByteBuffer is not available, using fallback mode. " +
+                      "This could have negative impact on performance and memory usage. " +
+                      "Consider adding --add-opens=java.base/java.nio=ALL-UNNAMED to VM options." );
+        }
+        return new SingleFilePageSwapperFactory( fs, pageCacheTracer, memoryTracker );
     }
 }

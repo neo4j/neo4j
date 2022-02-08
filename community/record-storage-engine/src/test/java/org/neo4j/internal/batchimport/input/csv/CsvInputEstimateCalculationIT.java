@@ -171,7 +171,7 @@ class CsvInputEstimateCalculationIT
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 
             // then compare estimates with actual disk sizes
-            SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, cacheTracer );
+            SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, cacheTracer, EmptyMemoryTracker.INSTANCE );
             try ( PageCache pageCache = new MuninnPageCache( swapperFactory, jobScheduler, MuninnPageCache.config( 1000 )
                     .reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );
                     NeoStores stores = new StoreFactory( databaseLayout, config,

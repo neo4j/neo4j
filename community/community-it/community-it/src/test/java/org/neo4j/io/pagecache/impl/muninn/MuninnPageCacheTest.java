@@ -75,6 +75,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.recording.RecordingPageCursorTracer.Fault;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
 
 import static java.time.Duration.ofMillis;
@@ -154,8 +155,8 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
         var customFixture = new MuninnPageCacheFixture();
         customFixture.withReservedBytes( reservedBytes );
         var cacheTracer = PageCacheTracer.NULL;
-        try ( var pageCache = customFixture.createPageCache( new SingleFilePageSwapperFactory( fs, cacheTracer ), 10, cacheTracer, jobScheduler,
-                DISABLED_BUFFER_FACTORY ) )
+        try ( var pageCache = customFixture.createPageCache( new SingleFilePageSwapperFactory( fs, cacheTracer, EmptyMemoryTracker.INSTANCE ),
+                                                             10, cacheTracer, jobScheduler, DISABLED_BUFFER_FACTORY ) )
         {
             assertEquals( reservedBytes, pageCache.pageReservedBytes() );
             assertEquals( PAGE_SIZE, pageCache.pageSize() );
@@ -2311,7 +2312,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         MultiChunkSwapperFilePageSwapperFactory( PageCacheTracer pageCacheTracer )
         {
-            super( MuninnPageCacheTest.this.fs, pageCacheTracer );
+            super( MuninnPageCacheTest.this.fs, pageCacheTracer, EmptyMemoryTracker.INSTANCE );
         }
 
         @Override

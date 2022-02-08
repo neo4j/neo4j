@@ -42,6 +42,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
@@ -129,7 +130,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected T createPageCache( FileSystemAbstraction fs, int maxPages, PageCacheTracer tracer )
     {
-        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer );
+        PageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory( fs, tracer, EmptyMemoryTracker.INSTANCE );
         return createPageCache( swapperFactory, maxPages, tracer );
     }
 

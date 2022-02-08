@@ -31,6 +31,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -104,7 +105,7 @@ class GBPTreePartialCreateFuzzIT
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs, PageCacheTracer.NULL );
+            SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory( fs, PageCacheTracer.NULL, EmptyMemoryTracker.INSTANCE );
             try ( PageCache pageCache = new MuninnPageCache( swapper, jobScheduler, config( 10 ) ) )
             {
                 fs.deleteFile( file );

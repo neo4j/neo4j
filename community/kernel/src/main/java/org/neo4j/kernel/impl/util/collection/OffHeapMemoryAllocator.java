@@ -26,9 +26,9 @@ import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.unsafe.UnsafeUtil.newDirectByteBuffer;
 import static org.neo4j.internal.unsafe.UnsafeUtil.copyMemory;
 import static org.neo4j.internal.unsafe.UnsafeUtil.getLong;
-import static org.neo4j.internal.unsafe.UnsafeUtil.newDirectByteBuffer;
 import static org.neo4j.internal.unsafe.UnsafeUtil.putLong;
 import static org.neo4j.internal.unsafe.UnsafeUtil.setMemory;
 import static org.neo4j.util.Preconditions.checkState;
