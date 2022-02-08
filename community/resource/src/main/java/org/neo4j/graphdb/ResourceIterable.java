@@ -77,7 +77,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @see ResourceIterator
  */
 @PublicApi
-public interface ResourceIterable<T> extends Iterable<T>, Resource
+public interface ResourceIterable<T> extends Iterable<T>
 {
     /**
      * Returns an {@link ResourceIterator iterator} with associated resources that may be managed.

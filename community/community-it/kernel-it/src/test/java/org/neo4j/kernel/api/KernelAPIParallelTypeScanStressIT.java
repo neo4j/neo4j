@@ -100,7 +100,7 @@ class KernelAPIParallelTypeScanStressIT
 
         try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, LoginContext.AUTH_DISABLED ) )
         {
-            new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, tx );
+            new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, tx, null, null );
             types[0] = createRelationships( tx, N_RELS, "TYPE1" );
             types[1] = createRelationships( tx, N_RELS, "TYPE2" );
             types[2] = createRelationships( tx, N_RELS, "TYPE3" );

@@ -106,6 +106,7 @@ public final class Iterables
     }
 
     @SafeVarargs
+    @SuppressWarnings( "unchecked" )
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
         return Arrays.asList( items );
@@ -193,14 +194,7 @@ public final class Iterables
         {
             return (ResourceIterable<T>) iterable;
         }
-        return new AbstractResourceIterable<>()
-        {
-            @Override
-            protected ResourceIterator<T> newIterator()
-            {
-                return Iterators.asResourceIterator( iterable.iterator() );
-            }
-        };
+        return () -> Iterators.asResourceIterator( iterable.iterator() );
     }
 
     public static String toString( Iterable<?> values, String separator )
@@ -430,16 +424,7 @@ public final class Iterables
 
     public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
     {
-        return new AbstractResourceIterable<>()
-        {
-            @Override
-            protected ResourceIterator<T> newIterator()
-            {
-                Iterator<T> iterator = iterable.iterator();
-                Resource resource = ( iterator instanceof Resource ) ? (Resource) iterator : Resource.EMPTY;
-                return Iterators.resourceIterator( iterator, resource );
-            }
-        };
+        return () -> Iterators.resourceIterator( iterable.iterator(), Resource.EMPTY );
     }
 
     public static <T> Iterable<T> option( final T item )
@@ -525,12 +510,6 @@ public final class Iterables
         public ResourceIterator<T> iterator()
         {
             return Iterators.emptyResourceIterator();
-        }
-
-        @Override
-        public void close()
-        {
-            // no-op
         }
     }
 }

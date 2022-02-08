@@ -24,17 +24,14 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.internal.helpers.collection.Iterators.iterator;
-import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 class IterablesTest
 {
@@ -66,47 +63,16 @@ class IterablesTest
         catch ( RuntimeException e )
         {
             // then good
-            assertThat( subjects ).isEqualTo( seenSubjects );
+            assertEquals( subjects, seenSubjects );
             Iterator<String> failed = failedSubjects.iterator();
-            assertThat( failed.hasNext() ).isTrue();
-            assertThat( e.getMessage() ).isEqualTo( failed.next() );
+            assertTrue( failed.hasNext() );
+            assertEquals( e.getMessage(), failed.next() );
             for ( Throwable suppressed : e.getSuppressed() )
             {
-                assertThat( failed.hasNext() ).isTrue();
-                assertThat( suppressed.getMessage() ).isEqualTo( failed.next() );
+                assertTrue( failed.hasNext() );
+                assertEquals( suppressed.getMessage(), failed.next() );
             }
-            assertThat( failed.hasNext() ).isFalse();
+            assertFalse( failed.hasNext() );
         }
-    }
-
-    @Test
-    void resourceIterableShouldNotCloseIfNoIteratorCreated()
-    {
-        // Given
-        AtomicBoolean closed = new AtomicBoolean( false );
-        ResourceIterator<Integer> resourceIterator = newResourceIterator( iterator( new Integer[0] ), () -> closed.set( true ) );
-
-        // When
-        Iterables.resourceIterable( () -> resourceIterator ).close();
-
-        // Then
-        assertThat( closed.get() ).isFalse();
-    }
-
-    @Test
-    void resourceIterableShouldAlsoCloseIteratorIfResource()
-    {
-        // Given
-        AtomicBoolean closed = new AtomicBoolean( false );
-        ResourceIterator<Integer> resourceIterator = newResourceIterator( iterator( new Integer[] {1} ), () -> closed.set( true ) );
-
-        // When
-        try ( ResourceIterable<Integer> integers = Iterables.resourceIterable( () -> resourceIterator ) )
-        {
-            integers.iterator().next();
-        }
-
-        // Then
-        assertThat( closed.get() ).isTrue();
     }
 }

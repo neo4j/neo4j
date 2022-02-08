@@ -27,10 +27,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -38,7 +35,6 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -52,13 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TransactionImplTest
@@ -67,7 +59,6 @@ class TransactionImplTest
     private final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
-    private final ResourceTracker resourceTracker = mock( ResourceTracker.class );
 
     @Test
     void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
@@ -76,12 +67,11 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new TransactionFailureException( Status.Transaction.ConstraintsChanged,
-                                                  "Proving that transaction does the right thing" ) ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = createTransaction( kernelTransaction );
+                "Proving that transaction does the right thing" ) ).when( kernelTransaction ).commit();
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
         transaction.commit();
-        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -91,11 +81,10 @@ class TransactionImplTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.isOpen() ).thenReturn( true );
         doThrow( new RuntimeException( "Just a random failure" ) ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = createTransaction( kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
         transaction.commit();
-        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -113,11 +102,10 @@ class TransactionImplTest
                      }
                  }
         ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = createTransaction( kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         // WHEN
         transaction.commit();
-        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -127,10 +115,9 @@ class TransactionImplTest
         doReturn( true ).when( kernelTransaction ).isOpen();
         RuntimeException error = new TransactionTerminatedException( Status.Transaction.Terminated );
         doThrow( error ).when( kernelTransaction ).commit();
-        TransactionImpl transaction = createTransaction( kernelTransaction );
+        TransactionImpl transaction = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         transaction.commit();
-        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -140,7 +127,7 @@ class TransactionImplTest
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )
                 .thenReturn( Optional.of( Status.Transaction.Terminated ) );
 
-        TransactionImpl tx = createTransaction( kernelTransaction );
+        TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null );
 
         Optional<Status> terminationReason1 = tx.terminationReason();
         Optional<Status> terminationReason2 = tx.terminationReason();
@@ -148,8 +135,6 @@ class TransactionImplTest
         assertFalse( terminationReason1.isPresent() );
         assertTrue( terminationReason2.isPresent() );
         assertEquals( Status.Transaction.Terminated, terminationReason2.get() );
-
-        verify( resourceTracker, never() ).closeAllCloseableResources();
     }
 
     @Test
@@ -159,28 +144,27 @@ class TransactionImplTest
         MutableLong calls = new MutableLong();
 
         // commit
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
         {
             tx.addCloseCallback( calls::increment );
             tx.commit();
         }
 
         // and rollback
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
         {
             tx.addCloseCallback( calls::increment );
             tx.rollback();
         }
 
         // and nothing
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
         {
             tx.addCloseCallback( calls::increment );
         }
 
         // should all invoke the callback
         assertEquals( 3, calls.longValue() );
-        verify( resourceTracker, times( 3 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -241,48 +225,6 @@ class TransactionImplTest
         checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null ), "Property values" );
     }
 
-    @Test
-    void getAllNodesShouldRegisterAndUnregisterAsResource()
-    {
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-
-        // commit
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
-        {
-            ResourceIterable<Node> nodes = tx.getAllNodes();
-            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
-            verify( resourceTracker, never() ).unregisterCloseableResource( any() );
-
-            nodes.close();
-            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
-            verify( resourceTracker, times( 1 ) ).unregisterCloseableResource( eq( nodes ) );
-
-            tx.commit();
-            verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
-        }
-    }
-
-    @Test
-    void getAllRelationshipsShouldRegisterAndUnregisterAsResource()
-    {
-        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
-
-        // commit
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
-        {
-            ResourceIterable<Relationship> nodes = tx.getAllRelationships();
-            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
-            verify( resourceTracker, never() ).unregisterCloseableResource( any() );
-
-            nodes.close();
-            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
-            verify( resourceTracker, times( 1 ) ).unregisterCloseableResource( eq( nodes ) );
-
-            tx.commit();
-            verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
-        }
-    }
-
     private void checkForIAE( Consumer<Transaction> consumer, String message )
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -291,14 +233,9 @@ class TransactionImplTest
         when( kernelTransaction.tokenRead() ).thenReturn( mock( TokenRead.class ) );
         when( kernelTransaction.schemaRead() ).thenReturn( mock );
 
-        try ( TransactionImpl tx = createTransaction( kernelTransaction ) )
+        try ( TransactionImpl tx = new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null ) )
         {
             assertThatThrownBy( () -> consumer.accept( tx ) ).isInstanceOf( IllegalArgumentException.class ).hasMessageContaining( message );
         }
-    }
-
-    private TransactionImpl createTransaction( KernelTransaction kernelTransaction )
-    {
-        return new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, resourceTracker, null, null );
     }
 }
