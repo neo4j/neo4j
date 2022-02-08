@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -71,7 +73,7 @@ class LenientStoreInputChunkTest
 
         ReadBehaviour readBehaviour = mock( ReadBehaviour.class );
         LenientStoreInputChunk chunk = new LenientStoreInputChunk( readBehaviour, propertyStore, mock( TokenHolders.class ),
-                PageCacheTracer.NULL, StoreCursors.NULL, mock( PageCursor.class ) )
+                new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), StoreCursors.NULL, mock( PageCursor.class ) )
         {
             @Override
             void readAndVisit( long id, InputEntityVisitor visitor, StoreCursors storeCursors )

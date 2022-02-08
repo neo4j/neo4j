@@ -23,8 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -46,14 +45,14 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     private final PropertyStore propertyStore;
     private final LongIterator nodeIds;
     private final DataImporter.Monitor storeMonitor;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final NeoStores neoStores;
 
     private long nodesRemoved;
     private long propertiesRemoved;
 
     public DeleteDuplicateNodesStep( StageControl control, Configuration config, LongIterator nodeIds, NeoStores neoStores,
-            DataImporter.Monitor storeMonitor, PageCacheTracer pageCacheTracer )
+            DataImporter.Monitor storeMonitor, CursorContextFactory contextFactory )
     {
         super( control, "DEDUP", config );
         this.neoStores = neoStores;
@@ -61,7 +60,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
         this.propertyStore = neoStores.getPropertyStore();
         this.nodeIds = nodeIds;
         this.storeMonitor = storeMonitor;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
     }
 
     @Override
@@ -69,7 +68,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
     {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( DELETE_DUPLICATE_IMPORT_STEP_TAG ) );
+        try ( var cursorContext = contextFactory.create( DELETE_DUPLICATE_IMPORT_STEP_TAG );
               var storeCursors = new CachedStoreCursors( neoStores, cursorContext ) )
         {
             while ( nodeIds.hasNext() )

@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -43,9 +43,9 @@ class LenientNodeReader extends LenientStoreInputChunk
     private final boolean compactNodeStore;
 
     LenientNodeReader( ReadBehaviour readBehaviour, NodeStore nodeStore, PropertyStore propertyStore, TokenHolders tokenHolders,
-            PageCacheTracer pageCacheTracer, StoreCursors storeCursors, boolean compactNodeStore )
+            CursorContextFactory cursorFactory, StoreCursors storeCursors, boolean compactNodeStore )
     {
-        super( readBehaviour, propertyStore, tokenHolders, pageCacheTracer, storeCursors, storeCursors.readCursor( NODE_CURSOR ) );
+        super( readBehaviour, propertyStore, tokenHolders, cursorFactory, storeCursors, storeCursors.readCursor( NODE_CURSOR ) );
         this.nodeStore = nodeStore;
         this.record = nodeStore.newRecord();
         this.compactNodeStore = compactNodeStore;

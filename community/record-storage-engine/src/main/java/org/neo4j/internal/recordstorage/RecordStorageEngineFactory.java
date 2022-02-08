@@ -542,14 +542,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache, PageCacheTracer pageCacheTracer,
+    public Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
             Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace, CursorContextFactory contextFactory )
     {
         NeoStores neoStores =
                 new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem, NullLogProvider.getInstance(),
                         contextFactory, readOnly() ).openAllNeoStores();
         return new LenientStoreInput( neoStores, readBehaviour.decorateTokenHolders( loadReadOnlyTokens( neoStores, true, contextFactory ) ),
-                compactNodeIdSpace, pageCacheTracer, readBehaviour );
+                compactNodeIdSpace, contextFactory, readBehaviour );
     }
 
     /**

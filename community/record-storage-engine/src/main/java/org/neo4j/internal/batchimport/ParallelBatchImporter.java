@@ -95,7 +95,7 @@ public class ParallelBatchImporter implements BatchImporter
                       config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker, contextFactory );
               ImportLogic logic = new ImportLogic(
                       databaseLayout, store, config, dbConfig, logService, executionMonitor, badCollector,
-                      monitor, pageCacheTracer, contextFactory, indexImporterFactory, memoryTracker ) )
+                      monitor, contextFactory, indexImporterFactory, memoryTracker ) )
         {
             store.createNew();
             logic.initialize( input );

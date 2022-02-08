@@ -49,7 +49,7 @@ import org.neo4j.internal.batchimport.stats.StepStats;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.io.IoMonitor;
 import org.neo4j.internal.helpers.NamedThreadFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
 
 import static java.lang.String.format;
@@ -175,20 +175,20 @@ public class DataImporter
     }
 
     static void importNodes( Configuration configuration, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
-            ExecutionMonitor executionMonitor, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
+            ExecutionMonitor executionMonitor, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker ) throws IOException
     {
-        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, pageCacheTracer, memoryTracker );
+        Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor, contextFactory, memoryTracker );
         importData( NODE_IMPORT_NAME, configuration, input.nodes( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
     static DataStatistics importRelationships( Configuration configuration, Input input,
             BatchingNeoStores stores, IdMapper idMapper, Collector badCollector, ExecutionMonitor executionMonitor,
-            Monitor monitor, boolean validateRelationshipData, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker ) throws IOException
+            Monitor monitor, boolean validateRelationshipData, CursorContextFactory contextFactory, MemoryTracker memoryTracker ) throws IOException
     {
         DataStatistics typeDistribution = new DataStatistics( monitor, new DataStatistics.RelationshipTypeCount[0] );
         Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
-                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), pageCacheTracer, memoryTracker );
+                badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits(), contextFactory, memoryTracker );
         importData( RELATIONSHIP_IMPORT_NAME, configuration, input.relationships( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
         return typeDistribution;

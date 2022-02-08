@@ -28,7 +28,7 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -73,9 +73,9 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter
     private final DynamicRecordAllocator dynamicArrayRecordAllocator;
     protected final CursorContext cursorContext;
 
-    EntityImporter( BatchingNeoStores stores, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    EntityImporter( BatchingNeoStores stores, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( ENTITY_IMPORTER_TAG ) );
+        this.cursorContext = contextFactory.create( ENTITY_IMPORTER_TAG );
         this.storeCursors = new CachedStoreCursors( stores.getNeoStores(), cursorContext );
         this.tempStoreCursors = new CachedStoreCursors( stores.getTemporaryNeoStores(), cursorContext );
         this.propertyStore = stores.getPropertyStore();

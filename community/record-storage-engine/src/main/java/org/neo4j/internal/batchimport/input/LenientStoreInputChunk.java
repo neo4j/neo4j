@@ -28,7 +28,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -59,12 +59,12 @@ public abstract class LenientStoreInputChunk implements InputChunk
     private final PropertyRecord propertyRecord;
 
     LenientStoreInputChunk( ReadBehaviour readBehaviour, PropertyStore propertyStore, TokenHolders tokenHolders,
-            PageCacheTracer pageCacheTracer, StoreCursors storeCursors, PageCursor cursor )
+            CursorContextFactory contextFactory, StoreCursors storeCursors, PageCursor cursor )
     {
         this.readBehaviour = readBehaviour;
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
-        this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( COPY_STORE_READER_TAG ) );
+        this.cursorContext = contextFactory.create( COPY_STORE_READER_TAG );
         this.storeCursors = storeCursors;
         this.cursor = cursor;
         this.propertyCursor = storeCursors.readCursor( PROPERTY_CURSOR );

@@ -89,13 +89,15 @@ class DeleteDuplicateNodesStepTest
 
     private NeoStores neoStores;
     private CachedStoreCursors storeCursors;
+    private CursorContextFactory contextFactory;
 
     @BeforeEach
     void before()
     {
+        contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
         var storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
+                pageCache, fs, NullLogProvider.getInstance(), contextFactory, writable() );
         neoStores = storeFactory.openAllNeoStores( true );
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }
@@ -128,7 +130,7 @@ class DeleteDuplicateNodesStepTest
         SimpleStageControl control = new SimpleStageControl();
         NodeStore nodeStore = neoStores.getNodeStore();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), neoStores, monitor, PageCacheTracer.NULL ) )
+                iterator( duplicateNodeIds ), neoStores, monitor, contextFactory ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );
@@ -168,15 +170,17 @@ class DeleteDuplicateNodesStepTest
                         PageCursor valueCursor;
                         switch ( property.getType() )
                         {
-                        case STRING:
+                        case STRING ->
+                        {
                             valueStore = neoStores.getPropertyStore().getStringStore();
                             valueCursor = storeCursors.readCursor( DYNAMIC_STRING_STORE_CURSOR );
-                            break;
-                        case ARRAY:
+                        }
+                        case ARRAY ->
+                        {
                             valueStore = neoStores.getPropertyStore().getArrayStore();
                             valueCursor = storeCursors.readCursor( DYNAMIC_ARRAY_STORE_CURSOR );
-                            break;
-                        default: throw new IllegalArgumentException( propertyRecord + " " + property );
+                        }
+                        default -> throw new IllegalArgumentException( propertyRecord + " " + property );
                         }
                         assertEquals( expectedToBeInUse, valueStore.isInUse( valueRecord.getId(), valueCursor ) );
                     }
@@ -204,7 +208,7 @@ class DeleteDuplicateNodesStepTest
         SimpleStageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), neoStores, monitor, cacheTracer ) )
+                iterator( duplicateNodeIds ), neoStores, monitor, contextFactory ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );

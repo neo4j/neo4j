@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.ReadBehaviour;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -39,9 +39,9 @@ class LenientRelationshipReader extends LenientStoreInputChunk
     private final RelationshipRecord record;
 
     LenientRelationshipReader( ReadBehaviour readBehaviour, RelationshipStore relationshipStore, PropertyStore propertyStore, TokenHolders tokenHolders,
-            PageCacheTracer pageCacheTracer, StoreCursors storeCursors )
+            CursorContextFactory contextFactory, StoreCursors storeCursors )
     {
-        super( readBehaviour, propertyStore, tokenHolders, pageCacheTracer, storeCursors, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
+        super( readBehaviour, propertyStore, tokenHolders, contextFactory, storeCursors, storeCursors.readCursor( RELATIONSHIP_CURSOR ) );
         this.relationshipStore = relationshipStore;
         this.record = relationshipStore.newRecord();
     }

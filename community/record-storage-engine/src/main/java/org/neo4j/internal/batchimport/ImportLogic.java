@@ -98,7 +98,6 @@ public class ImportLogic implements Closeable
     private final Configuration config;
     private final Config dbConfig;
     private final Log log;
-    private final PageCacheTracer pageCacheTracer;
     private final CursorContextFactory contextFactory;
     private final IndexImporterFactory indexImporterFactory;
     private final MemoryTracker memoryTracker;
@@ -138,7 +137,7 @@ public class ImportLogic implements Closeable
      */
     public ImportLogic( DatabaseLayout databaseLayout, BatchingNeoStores neoStore, Configuration config, Config dbConfig, LogService logService,
             ExecutionMonitor executionMonitor, Collector badCollector, Monitor monitor,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, IndexImporterFactory indexImporterFactory,
+            CursorContextFactory contextFactory, IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker )
     {
         this.databaseDirectory = databaseLayout.databaseDirectory();
@@ -150,7 +149,6 @@ public class ImportLogic implements Closeable
         this.badCollector = badCollector;
         this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
-        this.pageCacheTracer = pageCacheTracer;
         this.contextFactory = contextFactory;
         this.indexImporterFactory = indexImporterFactory;
         this.memoryTracker = memoryTracker;
@@ -235,7 +233,7 @@ public class ImportLogic implements Closeable
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
         DataImporter.importNodes( config, input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
-                pageCacheTracer, memoryTracker );
+                contextFactory, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }
@@ -257,7 +255,7 @@ public class ImportLogic implements Closeable
             final LongIterator duplicateNodeIds = idMapper.leftOverDuplicateNodesIds();
             if ( duplicateNodeIds.hasNext() )
             {
-                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore.getNeoStores(), storeUpdateMonitor, pageCacheTracer ) );
+                executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore.getNeoStores(), storeUpdateMonitor, contextFactory ) );
             }
             updatePeakMemoryUsage();
         }
@@ -276,7 +274,7 @@ public class ImportLogic implements Closeable
         neoStore.startFlushingPageCache();
         DataStatistics typeDistribution = DataImporter.importRelationships(
                 config, input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor,
-                !badCollector.isCollectingBadRelationships(), pageCacheTracer, memoryTracker );
+                !badCollector.isCollectingBadRelationships(), contextFactory, memoryTracker );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
         idMapper.close();

@@ -32,7 +32,7 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.batchimport.store.PrepareIdSequence;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -70,9 +70,9 @@ public class RelationshipImporter extends EntityImporter
 
     protected RelationshipImporter( BatchingNeoStores stores, IdMapper idMapper, DataStatistics typeDistribution,
             DataImporter.Monitor monitor, Collector badCollector, boolean validateRelationshipData, boolean doubleRecordUnits,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+            CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
-        super( stores, monitor, pageCacheTracer, memoryTracker );
+        super( stores, monitor, contextFactory, memoryTracker );
         this.doubleRecordUnits = doubleRecordUnits;
         this.relationshipTypeTokenRepository = stores.getRelationshipTypeRepository();
         this.idMapper = idMapper;

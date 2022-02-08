@@ -25,7 +25,7 @@ import java.io.UncheckedIOException;
 import org.neo4j.internal.batchimport.InputIterable;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -47,11 +47,11 @@ public class LenientStoreInput implements Input
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final boolean compactNodeIdSpace;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final ReadBehaviour readBehaviour;
     private final Groups groups = new Groups();
 
-    public LenientStoreInput( NeoStores neoStores, TokenHolders tokenHolders, boolean compactNodeIdSpace, PageCacheTracer pageCacheTracer,
+    public LenientStoreInput( NeoStores neoStores, TokenHolders tokenHolders, boolean compactNodeIdSpace, CursorContextFactory contextFactory,
             ReadBehaviour readBehaviour )
     {
         this.propertyStore = neoStores.getPropertyStore();
@@ -60,7 +60,7 @@ public class LenientStoreInput implements Input
         this.neoStores = neoStores;
         this.tokenHolders = tokenHolders;
         this.compactNodeIdSpace = compactNodeIdSpace;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.readBehaviour = readBehaviour;
     }
 
@@ -72,7 +72,7 @@ public class LenientStoreInput implements Input
             @Override
             public InputChunk newChunk()
             {
-                return new LenientNodeReader( readBehaviour, nodeStore, propertyStore, tokenHolders, pageCacheTracer,
+                return new LenientNodeReader( readBehaviour, nodeStore, propertyStore, tokenHolders, contextFactory,
                         new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ), compactNodeIdSpace );
             }
         };
@@ -86,7 +86,7 @@ public class LenientStoreInput implements Input
             @Override
             public InputChunk newChunk()
             {
-                return new LenientRelationshipReader( readBehaviour, relationshipStore, propertyStore, tokenHolders, pageCacheTracer,
+                return new LenientRelationshipReader( readBehaviour, relationshipStore, propertyStore, tokenHolders, contextFactory,
                         new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) );
             }
         };

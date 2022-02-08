@@ -87,7 +87,7 @@ class ImportLogicTest
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
+                    Collector.EMPTY, NO_MONITOR, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -168,7 +168,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
-                    Collector.EMPTY, NO_MONITOR, NULL, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
+                    Collector.EMPTY, NO_MONITOR, contextFactory, factory, EmptyMemoryTracker.INSTANCE ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

@@ -29,7 +29,7 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.batchimport.store.BatchingTokenRepository;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -67,9 +67,9 @@ public class NodeImporter extends EntityImporter
     private long highestId = -1;
     private boolean hasLabelField;
 
-    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor, PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker )
+    NodeImporter( BatchingNeoStores stores, IdMapper idMapper, Monitor monitor, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
-        super( stores, monitor, pageCacheTracer, memoryTracker );
+        super( stores, monitor, contextFactory, memoryTracker );
         this.labelTokenRepository = stores.getLabelRepository();
         this.idMapper = idMapper;
         this.nodeStore = stores.getNodeStore();
