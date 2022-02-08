@@ -27,9 +27,9 @@ import java.util.Date;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.consistency.checker.DebugContext;
 import org.neo4j.consistency.checker.NodeBasedMemoryLimiter;
+import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -38,6 +38,7 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.counts.CountsBuilder;
@@ -46,11 +47,14 @@ import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -59,6 +63,7 @@ import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -67,10 +72,13 @@ import org.neo4j.logging.DuplicatingLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLog;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MachineMemory;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
@@ -82,15 +90,19 @@ import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
+import static java.lang.Long.max;
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Strings.joinAsLines;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
+import static org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckService
@@ -153,6 +165,12 @@ public class ConsistencyCheckService
             ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
+
+        // Now that there's no existing page cache we have the opportunity to change that setting for the benefit of a faster
+        // consistency check ahead of us. Ask the checker what the optimal amount of available off-heap memory would be
+        // and change the page cache memory setting a bit in that direction.
+        config = tweakConfigForOptimalOffHeapMemory( databaseLayout, config, logProvider, fileSystem );
+
         JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         var pageCacheTracer = PageCacheTracer.NULL;
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
@@ -185,6 +203,64 @@ public class ConsistencyCheckService
             {
                 log.error( "Failure during shutdown of the job scheduler", e );
             }
+        }
+    }
+
+    private Config tweakConfigForOptimalOffHeapMemory( DatabaseLayout databaseLayout, Config config, LogProvider logProvider, FileSystemAbstraction fileSystem )
+            throws ConsistencyCheckIncompleteException
+    {
+        long availablePhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
+        if ( availablePhysicalMemory != OsBeanUtil.VALUE_UNAVAILABLE )
+        {
+            availablePhysicalMemory *= config.get( GraphDatabaseInternalSettings.consistency_check_memory_limit_factor );
+            long optimalOffHeapMemory = calculateOptimalOffHeapMemoryForChecker( fileSystem, databaseLayout, config );
+            // Check the configured page cache memory setting and potentially change it a bit to get closer to the
+            // optimal amount of off-heap for the checker
+
+            // [heap|pageCache|                        ]
+            long heapMemory = Runtime.getRuntime().maxMemory();
+            Long pageCacheMemory = config.get( pagecache_memory ) != null ? ByteUnit.parse( config.get( pagecache_memory ) ) : null;
+            pageCacheMemory = pageCacheMemory != null ? pageCacheMemory : defaultHeuristicPageCacheMemory( MachineMemory.DEFAULT );
+            long availableOffHeapMemory = availablePhysicalMemory - heapMemory - pageCacheMemory;
+            if ( availableOffHeapMemory < optimalOffHeapMemory )
+            {
+                // current: [heap|        pageCache      |          ]
+                // optimal: [heap|pageCache|                        ]
+                // Reduce the page cache memory setting, although not below 20% of what it was configured to
+                long newPageCacheMemory = max( (long) (pageCacheMemory * 0.2D), availablePhysicalMemory - optimalOffHeapMemory - heapMemory );
+                config = Config.newBuilder().fromConfig( config ).set( pagecache_memory, String.valueOf( newPageCacheMemory ) ).build();
+                logProvider.getLog( ConsistencyCheckService.class ).info(
+                        "%s setting was tweaked from %s down to %s for better overall performance of the consistency checker",
+                        pagecache_memory.name(), bytesToString( pageCacheMemory ), bytesToString( newPageCacheMemory ) );
+            }
+        }
+        return config;
+    }
+
+    /**
+     * Starts a tiny page cache just to ask the store about rough number of entities in it. Based on that the storage can then decide
+     * what the optimal amount of available off-heap memory should be when running the consistency check.
+     */
+    private long calculateOptimalOffHeapMemoryForChecker( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config )
+            throws ConsistencyCheckIncompleteException
+    {
+        try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache tempPageCache = new ConfiguringPageCacheFactory( fileSystem,
+                        Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ), PageCacheTracer.NULL, NullLog.getInstance(), jobScheduler,
+                        Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache() )
+        {
+            StoreFactory factory =
+                    new StoreFactory( layout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), tempPageCache, fileSystem, NullLogProvider.getInstance(),
+                            PageCacheTracer.NULL, DatabaseReadOnlyChecker.readOnly() );
+            try ( NeoStores neoStores = factory.openNeoStores( StoreType.NODE_LABEL, StoreType.NODE ) )
+            {
+                long highNodeId = neoStores.getNodeStore().getHighId();
+                return ByteArrayBitsManipulator.MAX_BYTES * highNodeId;
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new ConsistencyCheckIncompleteException( e );
         }
     }
 

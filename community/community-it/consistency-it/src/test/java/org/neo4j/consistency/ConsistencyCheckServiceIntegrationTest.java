@@ -50,6 +50,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -61,6 +62,9 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
@@ -74,6 +78,7 @@ import org.neo4j.time.Clocks;
 import static java.lang.String.format;
 import static java.nio.file.Files.exists;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -313,6 +318,30 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( result.isSuccessful() );
     }
 
+    @Test
+    void shouldTweakPageCacheMemorySettingForOptimalPerformance() throws ConsistencyCheckIncompleteException
+    {
+        assumeThat( OsBeanUtil.getTotalPhysicalMemory() ).isNotEqualTo( OsBeanUtil.VALUE_UNAVAILABLE );
+
+        fixture.apply( tx ->
+        {
+            for ( int i = 0; i < 1000; i++ )
+            {
+                tx.createNode();
+            }
+        } );
+
+        Config configuration = Config.newBuilder()
+                .set( settings() )
+                .set( GraphDatabaseSettings.pagecache_memory, String.valueOf( OsBeanUtil.getTotalPhysicalMemory() ) )
+                .build();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Result result = runFullConsistencyCheck( service, configuration, databaseLayout, logProvider );
+        assertTrue( result.isSuccessful() );
+        LogAssertions.assertThat( logProvider ).containsMessages( GraphDatabaseSettings.pagecache_memory.name() + " setting was tweaked from" );
+    }
+
     private void createIndex( Label label, String propKey )
     {
         fixture.apply( tx -> tx.schema().indexFor( label ).on( propKey ).create() );
@@ -421,9 +450,14 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout )
             throws ConsistencyCheckIncompleteException
     {
+        return runFullConsistencyCheck( service, configuration, databaseLayout, NullLogProvider.getInstance() );
+    }
+
+    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, DatabaseLayout databaseLayout, LogProvider logProvider )
+            throws ConsistencyCheckIncompleteException
+    {
         fixture.close();
-        return service.runFullConsistencyCheck( databaseLayout,
-                configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+        return service.runFullConsistencyCheck( databaseLayout, configuration, ProgressMonitorFactory.NONE, logProvider, false );
     }
 
     protected String getRecordFormatName()
