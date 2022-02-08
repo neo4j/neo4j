@@ -192,6 +192,11 @@ public abstract class AbstractBaseRecord
         this.created = true;
     }
 
+    public void setCreated( boolean created )
+    {
+        this.created = created;
+    }
+
     public final boolean isCreated()
     {
         return created;

@@ -52,9 +52,21 @@ public enum Record
     public static final int ADDITIONAL_FLAG_2 = 0b0100_0000;
     public static final int ADDITIONAL_FLAG_3 = 0b1000_0000;
 
+    // Beware using these flags together and with ADDITIONAL_FLAG_*
     public static final int SECONDARY_UNIT_CREATED_IN_TX = ADDITIONAL_FLAG_1;
+    public static final int TOKEN_INTERNAL =  ADDITIONAL_FLAG_1;
+    public static final int DYNAMIC_RECORD_START_RECORD =  ADDITIONAL_FLAG_1;
     public static final int PROPERTY_OWNED_BY_NODE = ADDITIONAL_FLAG_2;
     public static final int PROPERTY_OWNED_BY_RELATIONSHIP = ADDITIONAL_FLAG_3;
+
+    // not to use within the same byte with IN_USE and CREATED_IN_TX
+    public static final byte RELATIONSHIP_FIRST_IN_FIRST_CHAIN = 0b0000_0001;
+    public static final byte RELATIONSHIP_FIRST_IN_SECOND_CHAIN = 0b0000_0010;
+
+    // not to use within the same byte with other flags
+    public static final byte RELATIONSHIP_GROUP_EXTERNAL_DEGREES_OUT = 0b0000_0001;
+    public static final byte RELATIONSHIP_GROUP_EXTERNAL_DEGREES_IN = 0b0000_0010;
+    public static final byte RELATIONSHIP_GROUP_EXTERNAL_DEGREES_LOOP = 0b0000_0100;
 
     private final byte byteValue;
     private final int intValue;

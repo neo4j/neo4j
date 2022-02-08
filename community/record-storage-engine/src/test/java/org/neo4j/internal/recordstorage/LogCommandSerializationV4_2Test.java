@@ -371,7 +371,7 @@ class LogCommandSerializationV4_2Test
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( before, after ).serialize( channel );
+        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
 
         // When
         CommandReader reader = createReader();

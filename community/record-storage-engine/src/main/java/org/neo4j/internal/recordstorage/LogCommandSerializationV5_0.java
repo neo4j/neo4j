@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -29,10 +30,15 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static org.neo4j.util.Bits.bitFlag;
@@ -64,15 +70,12 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         byte flags = channel.get();
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean createdInTx = bitFlag( flags, Record.CREATED_IN_TX );
-        boolean internal = bitFlag( flags, Record.ADDITIONAL_FLAG_1 );
+        boolean internal = bitFlag( flags, Record.TOKEN_INTERNAL );
 
         PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
         record.setInUse( inUse );
         record.setInternal( internal );
-        if ( createdInTx )
-        {
-            record.setCreated();
-        }
+        record.setCreated( createdInTx );
         record.setPropertyCount( channel.getInt() );
         record.setNameId( channel.getInt() );
         readDynamicRecords( channel, record::addNameRecord );
@@ -93,7 +96,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         // flags(byte)+propertyCount(int)+nameId(int)+nr_key_records(int)
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
-                               bitFlag( record.isInternal(), Record.ADDITIONAL_FLAG_1 ) );
+                               bitFlag( record.isInternal(), Record.TOKEN_INTERNAL ) );
         channel.put( flags );
         channel.putInt( record.getPropertyCount() );
         channel.putInt( record.getNameId() );
@@ -105,6 +108,102 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         {
             writeDynamicRecords( channel, record.getNameRecords() );
         }
+    }
+
+    @Override
+    protected Command readLabelTokenCommand( ReadableChannel channel ) throws IOException
+    {
+        int id = channel.getInt();
+        LabelTokenRecord before = readLabelTokenRecord( id, channel );
+        LabelTokenRecord after = readLabelTokenRecord( id, channel );
+        return new Command.LabelTokenCommand( this, before, after );
+    }
+
+    private static LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean createdInTx = bitFlag( flags, Record.CREATED_IN_TX );
+        boolean internal = bitFlag( flags, Record.TOKEN_INTERNAL );
+
+        LabelTokenRecord record = new LabelTokenRecord( id );
+        record.setInUse( inUse );
+        record.setInternal( internal );
+        record.setCreated( createdInTx );
+
+        record.setNameId( channel.getInt() );
+        readDynamicRecords( channel, record::addNameRecord );
+        return record;
+    }
+
+    @Override
+    public void writeLabelTokenCommand( WritableChannel channel, Command.LabelTokenCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.LABEL_KEY_COMMAND );
+        channel.putInt( command.getAfter().getIntId() );
+        writeLabelTokenRecord( channel, command.getBefore() );
+        writeLabelTokenRecord( channel, command.getAfter() );
+    }
+
+    private static void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
+    {
+        // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                               bitFlag( record.isInternal(), Record.TOKEN_INTERNAL ) );
+
+        channel.put( flags )
+               .putInt( record.getNameId() );
+        writeDynamicRecords( channel, record.getNameRecords() );
+    }
+
+    @Override
+    protected Command readRelationshipTypeTokenCommand( ReadableChannel channel ) throws IOException
+    {
+        int id = channel.getInt();
+        var before = readRelationshipTypeTokenRecord( id, channel );
+        var after = readRelationshipTypeTokenRecord( id, channel );
+        return new Command.RelationshipTypeTokenCommand( this, before, after );
+    }
+
+    private static RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
+            throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean createdInTx = bitFlag( flags, Record.CREATED_IN_TX );
+        boolean internal = bitFlag( flags, Record.TOKEN_INTERNAL );
+
+        var record = new RelationshipTypeTokenRecord( id );
+        record.setInUse( inUse );
+        record.setInternal( internal );
+        record.setCreated( createdInTx );
+
+        record.setNameId( channel.getInt() );
+        readDynamicRecords( channel, record::addNameRecord );
+        return record;
+    }
+
+    @Override
+    public void writeRelationshipTypeTokenCommand( WritableChannel channel, Command.RelationshipTypeTokenCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.REL_TYPE_COMMAND );
+        channel.putInt( command.getAfter().getIntId() );
+        writeRelationshipTypeTokenRecord( channel, command.getBefore() );
+        writeRelationshipTypeTokenRecord( channel, command.getAfter() );
+    }
+
+    private static void writeRelationshipTypeTokenRecord( WritableChannel channel, RelationshipTypeTokenRecord record ) throws IOException
+    {
+        // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                               bitFlag( record.isInternal(), Record.TOKEN_INTERNAL ) );
+        channel.put( flags );
+        channel.putInt( record.getNameId() );
+        writeDynamicRecords( channel, record.getNameRecords() );
     }
 
     @Override
@@ -136,10 +235,7 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
             schemaRecord.setConstraint( bitFlag( schemaFlags, SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT ) );
             schemaRecord.setNextProp( channel.getLong() );
         }
-        if ( createdInTx )
-        {
-            schemaRecord.setCreated();
-        }
+        schemaRecord.setCreated( createdInTx );
 
         return schemaRecord;
     }
@@ -189,20 +285,13 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
 
         boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
         boolean isCreated = bitFlag( flags, Record.CREATED_IN_TX );
-        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
-        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
-        boolean secondaryUnitCreated = bitFlag( flags, Record.SECONDARY_UNIT_CREATED_IN_TX );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
         boolean nodeProperty = bitFlag( flags, Record.PROPERTY_OWNED_BY_NODE );
         boolean relProperty = bitFlag( flags, Record.PROPERTY_OWNED_BY_RELATIONSHIP );
 
         record.setInUse( inUse );
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         record.setUseFixedReferences( usesFixedReferenceFormat );
-        if ( isCreated )
-        {
-            record.setCreated();
-        }
+        record.setCreated( isCreated );
 
         long nextProp = channel.getLong(); // 8
         long prevProp = channel.getLong(); // 8
@@ -211,13 +300,6 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
 
         long primitiveId = channel.getLong(); // 8
         setPropertyRecordOwner( record, nodeProperty, relProperty, primitiveId );
-
-        if ( hasSecondaryUnit )
-        {
-            var secondaryUnitId = channel.getLong(); // 8
-            record.setSecondaryUnitIdOnLoad( secondaryUnitId );
-            record.setSecondaryUnitCreated( secondaryUnitCreated );
-        }
 
         int nrPropBlocks = channel.get(); // 1
         assert nrPropBlocks >= 0;
@@ -291,12 +373,10 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
 
     private static void writePropertyRecord( WritableChannel channel, PropertyRecord record ) throws IOException
     {
+        assert !record.hasSecondaryUnitId() : "secondary units are not supported for property records";
         byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
                                bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
-                               bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
-                               bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
                                bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
-                               bitFlag( record.isSecondaryUnitCreated(), Record.SECONDARY_UNIT_CREATED_IN_TX ),
                                bitFlag( record.isNodeSet(), Record.PROPERTY_OWNED_BY_NODE ),
                                bitFlag( record.isRelSet(), Record.PROPERTY_OWNED_BY_RELATIONSHIP ) );
 
@@ -306,10 +386,6 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         long entityId = record.getEntityId();
         channel.putLong( entityId ); // 8
 
-        if ( record.hasSecondaryUnitId() )
-        {
-            channel.putLong( record.getSecondaryUnitId() );
-        }
         int numberOfProperties = record.numberOfProperties();
         channel.put( (byte) numberOfProperties ); // 1
         PropertyBlock[] blocks = record.getPropertyBlocks();
@@ -354,6 +430,269 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         }
     }
 
+    @Override
+    public void writeNodeCommand( WritableChannel channel, Command.NodeCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.NODE_COMMAND );
+        channel.putLong( command.getAfter().getId() );
+        writeNodeRecord( channel, command.getBefore() );
+        writeNodeRecord( channel, command.getAfter() );
+    }
+
+    private static void writeNodeRecord( WritableChannel channel, NodeRecord record ) throws IOException
+    {
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                               bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                               bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                               bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
+                               bitFlag( record.isSecondaryUnitCreated(), Record.SECONDARY_UNIT_CREATED_IN_TX ) );
+        channel.put( flags );
+        if ( record.inUse() )
+        {
+            channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
+            channel.putLong( record.getNextRel() )
+                   .putLong( record.getNextProp() );
+            channel.putLong( record.getLabelField() );
+        }
+        if ( record.hasSecondaryUnitId() )
+        {
+            channel.putLong( record.getSecondaryUnitId() );
+        }
+        // Always write dynamic label records because we want to know which ones have been deleted
+        // especially if the node has been deleted.
+        writeDynamicRecords( channel, record.getDynamicLabelRecords() );
+    }
+
+    @Override
+    protected Command readNodeCommand( ReadableChannel channel ) throws IOException
+    {
+        long id = channel.getLong();
+        NodeRecord before = readNodeRecord( id, channel );
+        NodeRecord after = readNodeRecord( id, channel );
+        return new Command.NodeCommand( this, before, after );
+    }
+
+    private static NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean isCreated = bitFlag( flags, Record.CREATED_IN_TX );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+        boolean secondaryUnitCreated = bitFlag( flags, Record.SECONDARY_UNIT_CREATED_IN_TX );
+
+        var record = new NodeRecord( id );
+        if ( inUse )
+        {
+            boolean dense = channel.get() == 1;
+            long nextRel = channel.getLong();
+            long nextProp = channel.getLong();
+            long labelField = channel.getLong();
+            record.initialize( true, nextProp, dense, nextRel, labelField );
+        }
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+        }
+        record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        record.setSecondaryUnitCreated( secondaryUnitCreated );
+
+        List<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
+        readDynamicRecords( channel, dynamicLabelRecords::add );
+        record.setLabelField( record.getLabelField(), dynamicLabelRecords );
+
+        record.setCreated( isCreated );
+        return record;
+    }
+
+    @Override
+    public void writeRelationshipCommand( WritableChannel channel, Command.RelationshipCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.REL_COMMAND );
+        channel.putLong( command.getAfter().getId() );
+        writeRelationshipRecord( channel, command.getBefore() );
+        writeRelationshipRecord( channel, command.getAfter() );
+    }
+
+    private static void writeRelationshipRecord( WritableChannel channel, RelationshipRecord record ) throws IOException
+    {
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                               bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                               bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                               bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
+                               bitFlag( record.isSecondaryUnitCreated(), Record.SECONDARY_UNIT_CREATED_IN_TX ) );
+        channel.put( flags );
+        if ( record.inUse() )
+        {
+            channel.putLong( record.getFirstNode() )
+                   .putLong( record.getSecondNode() )
+                   .putInt( record.getType() )
+                   .putLong( record.getFirstPrevRel() )
+                   .putLong( record.getFirstNextRel() )
+                   .putLong( record.getSecondPrevRel() )
+                   .putLong( record.getSecondNextRel() )
+                   .putLong( record.getNextProp() );
+            var extraByte = bitFlags( bitFlag( record.isFirstInFirstChain(), Record.RELATIONSHIP_FIRST_IN_FIRST_CHAIN ),
+                                  bitFlag( record.isFirstInSecondChain(), Record.RELATIONSHIP_FIRST_IN_SECOND_CHAIN ) );
+            channel.put( extraByte );
+        }
+        else
+        {
+            channel.putInt( record.getType() );
+        }
+        if ( record.hasSecondaryUnitId() )
+        {
+            channel.putLong( record.getSecondaryUnitId() );
+        }
+    }
+
+    @Override
+    protected Command readRelationshipCommand( ReadableChannel channel ) throws IOException
+    {
+        long id = channel.getLong();
+        RelationshipRecord before = readRelationshipRecord( id, channel );
+        RelationshipRecord after = readRelationshipRecord( id, channel );
+        return new Command.RelationshipCommand( this, before, after );
+    }
+
+    private static RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean isCreated = bitFlag( flags, Record.CREATED_IN_TX );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+        boolean secondaryUnitCreated = bitFlag( flags, Record.SECONDARY_UNIT_CREATED_IN_TX );
+
+        var record = new RelationshipRecord( id );
+        if ( inUse )
+        {
+            record.setInUse( true );
+            record.setLinks( channel.getLong(), channel.getLong(), channel.getInt() );
+            record.setFirstPrevRel( channel.getLong() );
+            record.setFirstNextRel( channel.getLong() );
+            record.setSecondPrevRel( channel.getLong() );
+            record.setSecondNextRel( channel.getLong() );
+            record.setNextProp( channel.getLong() );
+            byte extraByte = channel.get();
+            record.setFirstInFirstChain( bitFlag( extraByte, Record.RELATIONSHIP_FIRST_IN_FIRST_CHAIN ) );
+            record.setFirstInSecondChain( bitFlag( extraByte, Record.RELATIONSHIP_FIRST_IN_SECOND_CHAIN ) );
+        }
+        else
+        {
+            record.setLinks( -1, -1, channel.getInt() );
+            record.setInUse( false );
+        }
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+        }
+        record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        record.setSecondaryUnitCreated( secondaryUnitCreated );
+
+        record.setCreated( isCreated );
+
+        return record;
+    }
+
+    @Override
+    public void writeRelationshipGroupCommand( WritableChannel channel, Command.RelationshipGroupCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.REL_GROUP_COMMAND );
+        channel.putLong( command.getAfter().getId() );
+        writeRelationshipGroupRecord( channel, command.getBefore() );
+        writeRelationshipGroupRecord( channel, command.getAfter() );
+    }
+
+    private static void writeRelationshipGroupRecord( WritableChannel channel, RelationshipGroupRecord record )
+            throws IOException
+    {
+        byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                               bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                               bitFlag( record.requiresSecondaryUnit(), Record.REQUIRE_SECONDARY_UNIT ),
+                               bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ),
+                               bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
+                               bitFlag( record.isSecondaryUnitCreated(), Record.SECONDARY_UNIT_CREATED_IN_TX ) );
+
+        channel.put( flags );
+        channel.putInt( record.getType() );
+        channel.putLong( record.getNext() );
+        channel.putLong( record.getFirstOut() );
+        channel.putLong( record.getFirstIn() );
+        channel.putLong( record.getFirstLoop() );
+        channel.putLong( record.getOwningNode() );
+        byte externalDegreesFlags = bitFlags( bitFlag( record.hasExternalDegreesOut(), Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_OUT ),
+                                              bitFlag( record.hasExternalDegreesIn(), Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_IN ),
+                                              bitFlag( record.hasExternalDegreesLoop(), Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_LOOP ) );
+        channel.put( externalDegreesFlags );
+        if ( record.hasSecondaryUnitId() )
+        {
+            channel.putLong( record.getSecondaryUnitId() );
+        }
+    }
+
+    @Override
+    protected Command readRelationshipGroupCommand( ReadableChannel channel ) throws IOException
+    {
+        long id = channel.getLong();
+        var before = readRelationshipGroupRecord( id, channel );
+        var after = readRelationshipGroupRecord( id, channel );
+
+        return new Command.RelationshipGroupCommand( this, before, after );
+    }
+
+    private static RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
+            throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean isCreated = bitFlag( flags, Record.CREATED_IN_TX );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+        boolean secondaryUnitCreated = bitFlag( flags, Record.SECONDARY_UNIT_CREATED_IN_TX );
+
+        int type = channel.getInt();
+        long next = channel.getLong();
+        long firstOut = channel.getLong();
+        long firstIn = channel.getLong();
+        long firstLoop = channel.getLong();
+        long owningNode = channel.getLong();
+        var record = new RelationshipGroupRecord( id ).initialize( inUse, type, firstOut, firstIn, firstLoop, owningNode, next );
+
+        byte externalDegreesFlags = channel.get();
+        boolean hasExternalDegreesOut = bitFlag( externalDegreesFlags, Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_OUT );
+        boolean hasExternalDegreesIn = bitFlag( externalDegreesFlags, Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_IN );
+        boolean hasExternalDegreesLoop = bitFlag( externalDegreesFlags, Record.RELATIONSHIP_GROUP_EXTERNAL_DEGREES_LOOP );
+        record.setHasExternalDegreesOut( hasExternalDegreesOut );
+        record.setHasExternalDegreesIn( hasExternalDegreesIn );
+        record.setHasExternalDegreesLoop( hasExternalDegreesLoop );
+
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+        }
+
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        record.setSecondaryUnitCreated( secondaryUnitCreated );
+        record.setCreated( isCreated );
+        return record;
+    }
+
+    @Override
+    protected Command readRelationshipGroupExtendedCommand( ReadableChannel channel ) throws IOException
+    {
+        // 5.0 serialization doesn't write "extended" group command and therefore doesn't support reading it
+        throw unsupportedInThisVersionException();
+    }
+
     private static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records ) throws IOException
     {
         var size = records.size();
@@ -369,18 +708,12 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )
         {
-            byte inUse = Record.IN_USE.byteValue();
-            if ( record.isCreated() )
-            {
-                inUse |= Record.CREATED_IN_TX;
-            }
-            if ( record.isStartRecord() )
-            {
-                inUse |= Record.ADDITIONAL_FLAG_1;
-            }
+            byte flags = bitFlags( bitFlag( true, Record.IN_USE.byteValue() ),
+                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                                   bitFlag( record.isStartRecord(), Record.DYNAMIC_RECORD_START_RECORD ) );
             channel.putLong( record.getId() )
                    .putInt( record.getTypeAsInt() )
-                   .put( inUse )
+                   .put( flags )
                    .putInt( record.getLength() )
                    .putLong( record.getNextBlock() );
             byte[] data = record.getData();
@@ -389,10 +722,9 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         }
         else
         {
-            byte inUse = Record.NOT_IN_USE.byteValue();
             channel.putLong( record.getId() )
                    .putInt( record.getTypeAsInt() )
-                   .put( inUse );
+                   .put( Record.NOT_IN_USE.byteValue() );
         }
     }
 
@@ -400,26 +732,21 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
-        assert id >= 0 && id <= (1L << 36) - 1 : id + " is not a valid dynamic record id";
+        assert id >= 0 : id + " is not a valid dynamic record id";
         int type = channel.getInt();
-        byte inUseFlag = channel.get();
-        boolean inUse = (inUseFlag & Record.IN_USE.byteValue()) != 0;
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean created = bitFlag( flags, Record.CREATED_IN_TX );
         DynamicRecord record = new DynamicRecord( id );
         record.setInUse( inUse, type );
         if ( inUse )
         {
-            record.setStartRecord( (inUseFlag & Record.ADDITIONAL_FLAG_1) != 0 );
-            if ( (inUseFlag & Record.CREATED_IN_TX) != 0 )
-            {
-                record.setCreated();
-            }
+            record.setStartRecord( bitFlag( flags, Record.DYNAMIC_RECORD_START_RECORD ) );
+            record.setCreated( created );
             int nrOfBytes = channel.getInt();
-            assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   + " is not valid for a number of bytes field of " + "a dynamic record";
+            assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes + " is not valid for a number of bytes field of a dynamic record";
             long nextBlock = channel.getLong();
-            assert (nextBlock >= 0 && nextBlock <= (1L << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       + " is not valid for a next record field of " + "a dynamic record";
+            assert (nextBlock >= 0) || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock + " is not valid for a next record field of a dynamic record";
             record.setNextBlock( nextBlock );
             byte[] data = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
