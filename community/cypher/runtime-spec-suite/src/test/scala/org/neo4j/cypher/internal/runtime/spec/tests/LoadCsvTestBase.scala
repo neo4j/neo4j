@@ -432,6 +432,29 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
       )
   }
 
+  test("should load csv file with one empty header") {
+    // given
+    val fileString = createCSVTempFileURL { writer: PrintWriter =>
+      writer.println("a,b,")
+      Range(0, 10).foreach(i => writer.println(s"$i,${2 * i},${3 * i}"))
+    }
+    val url = wrapInQuotations(fileString.cypherEscape)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .projection("line[''] as x")
+      .loadCSV(url, variableName = "line", HasHeaders)
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = Range(0, 10).map(i => Array((i * 3L).toString))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
   Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>
     test(s"should load csv create node with properties with periodic commit with batch size $explicitBatchSize") {
       // given an empty data base

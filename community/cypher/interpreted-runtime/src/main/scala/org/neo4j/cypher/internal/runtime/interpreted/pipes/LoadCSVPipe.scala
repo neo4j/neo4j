@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.net.URL
-
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
@@ -39,6 +37,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.net.URL
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class LoadCSVPipe(source: Pipe,
@@ -157,10 +156,15 @@ abstract class AbstractLoadCSVPipe(source: Pipe,
         case HasHeaders =>
           val iterator = getLoadCSVIterator(state, url, useHeaders = true)
           val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
-          new IteratorWithHeaders(headers, row, url.getFile, iterator)
+          new IteratorWithHeaders(replaceNoValues(headers), row, url.getFile, iterator)
         case NoHeaders =>
           new IteratorWithoutHeaders(row, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
       }
     })
+  }
+
+  private def replaceNoValues(headers: IndexedSeq[Value]): IndexedSeq[Value] = headers.map {
+    case noValue if noValue eq Values.NO_VALUE => Values.stringValue("")
+    case other => other
   }
 }
