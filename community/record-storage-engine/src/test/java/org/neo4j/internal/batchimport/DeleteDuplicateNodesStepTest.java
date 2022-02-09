@@ -208,7 +208,7 @@ class DeleteDuplicateNodesStepTest
         SimpleStageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
         try ( DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep( control, Configuration.DEFAULT,
-                iterator( duplicateNodeIds ), neoStores, monitor, contextFactory ) )
+                iterator( duplicateNodeIds ), neoStores, monitor, new CursorContextFactory( cacheTracer, EMPTY ) ) )
         {
             control.steps( step );
             startAndAwaitCompletionOf( step );

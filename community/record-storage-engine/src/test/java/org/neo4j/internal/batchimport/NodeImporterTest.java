@@ -125,7 +125,8 @@ class NodeImporterTest
                 int numberOfLabels = 50;
                 long nodeId = 0;
                 var cacheTracer = new DefaultPageCacheTracer();
-                try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), CONTEXT_FACTORY, INSTANCE ) )
+                var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+                try ( NodeImporter importer = new NodeImporter( stores, IdMappers.actual(), new DataImporter.Monitor(), contextFactory, INSTANCE ) )
                 {
                     importer.id( nodeId );
                     String[] labels = new String[numberOfLabels];
