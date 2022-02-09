@@ -428,9 +428,9 @@ object AstGenerator {
     Arbitrary.arbBool.arbitrary
 
   def char: Gen[Char] =
-    Arbitrary.arbChar.arbitrary.suchThat(acceptedByParboiled)
+    Arbitrary.arbChar.arbitrary.suchThat(acceptedChar)
 
-  def acceptedByParboiled(c: Char): Boolean = {
+  def acceptedChar(c: Char): Boolean = {
     val DEL_ERROR = '\ufdea'
     val INS_ERROR = '\ufdeb'
     val RESYNC = '\ufdec'

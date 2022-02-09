@@ -21,10 +21,6 @@ Feature "Boolean4 - NOT logical operations": Scenario "Fail when using NOT on a 
 Feature "List11 - Create a list from a range": Scenario "Create an empty list if range direction and step direction are inconsistent"
 Feature "List11 - Create a list from a range": Scenario "Create list from `range()` with explicitly given step": Example "10"
 
-// Failing with M16 TCK - require investigation
-// TODO: the below case does currently fallback to the parboiled parser, needs to be re-added/fixed when we remove the fallback for START
-// Feature "Literals7 - List": Scenario "Fail on a nested list with non-matching brackets"
-
 // Failing with M17 TCK - Not yet implemented
 Feature "Call5 - Results projection": Scenario "Fail on in-query call to procedure with YIELD *"
 

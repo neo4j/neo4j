@@ -997,7 +997,7 @@ TOKEN :
 }
 /**
 * The unknown token has to be below an identifier, since they parse the same length.
-* The extra fobidden characters are to avoid parsing a token which is allowed to follow another without a space in parboiled
+* The extra fobidden characters are to avoid parsing a token which is allowed to follow another without a space in the old parboiled parser
 */
 <DEFAULT>
 TOKEN :

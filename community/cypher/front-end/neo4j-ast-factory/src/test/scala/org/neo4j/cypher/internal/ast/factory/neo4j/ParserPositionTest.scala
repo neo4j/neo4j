@@ -116,7 +116,6 @@ class ParserPositionTest extends CypherFunSuite with TestName  {
   }
 
   test("DROP INDEX ON :Person(name)") {
-    // PropertyKeyName in this AST is not the same in JavaCC and parboiled
     validatePosition(testName, _.isInstanceOf[PropertyKeyName], InputPosition(22, 1, 23))
   }
 
