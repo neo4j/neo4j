@@ -381,8 +381,18 @@ sealed abstract class PrivilegeCommand(privilege: PrivilegeType, qualifier: List
   extends WriteAdministrationCommand {
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-      SemanticState.recordCurrentScope(this)
+    privilege match {
+      case GraphPrivilege(_, scope) if scope.exists {
+        case _: DefaultGraphScope => true
+        case _ => false
+      } => error("`ON DEFAULT GRAPH` is not supported. Use `ON HOME GRAPH` instead.", position)
+      case DatabasePrivilege(_, scope) if scope.exists {
+        case _: DefaultDatabaseScope => true
+        case _ => false
+      } => error("`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", position)
+      case _ => super.semanticCheck chain
+        SemanticState.recordCurrentScope(this)
+    }
 }
 
 final case class GrantPrivilege(privilege: PrivilegeType,
