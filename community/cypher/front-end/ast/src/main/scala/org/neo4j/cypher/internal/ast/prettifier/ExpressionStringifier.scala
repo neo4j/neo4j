@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ChainableBinaryOperatorExpression
@@ -332,6 +333,9 @@ private class DefaultExpressionStringifier(
       case CoerceToPredicate(expr) =>
         val inner = apply(expr)
         s"CoerceToPredicate($inner)"
+
+      case AssertIsNode(argument) =>
+        s"assertIsNode(${apply(argument)})"
 
       case _ =>
         extension(this)(ast)
