@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -305,6 +306,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext, anonymousVar
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case Length3_5(arg) => commands.expressions.Length3_5Function(self.toCommandExpression(id, arg))
+      case AssertIsNode(expr) => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
       case _ => null
     }
 

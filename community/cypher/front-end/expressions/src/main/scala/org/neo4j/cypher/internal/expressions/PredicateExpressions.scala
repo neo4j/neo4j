@@ -295,3 +295,5 @@ case class HasDegree(node: Expression,
   override def asCanonicalStringVal: String =
     s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) = ${degree.asCanonicalStringVal}"
 }
+
+case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends BooleanExpression
