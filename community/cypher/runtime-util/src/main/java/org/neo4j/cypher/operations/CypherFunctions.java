@@ -1492,6 +1492,19 @@ public final class CypherFunctions
         return (int) asLong( value );
     }
 
+    public static BooleanValue assertIsNode( AnyValue item )
+    {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( item instanceof VirtualNodeValue )
+        {
+            return TRUE;
+        }
+        else
+        {
+            throw new CypherTypeException( "Expected a Node, got: " + item );
+        }
+    }
+
     private static CypherTypeException needsNumbers( String method )
     {
         return new CypherTypeException( format( "%s requires numbers", method ), null );
