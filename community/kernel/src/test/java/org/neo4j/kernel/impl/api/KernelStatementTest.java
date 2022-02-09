@@ -30,8 +30,8 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 class KernelStatementTest
@@ -61,8 +62,9 @@ class KernelStatementTest
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.isSuccess() ).thenReturn( true );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         KernelStatement statement = createStatement( transaction );
-        var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        var cursorContext = contextFactory.create( "test" );
         statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
         statement.acquire();
 
@@ -86,13 +88,14 @@ class KernelStatementTest
     void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction, cpuClockRef, false );
         when( transaction.getStatistics() ).thenReturn( statistics );
         when( transaction.executingQuery() ).thenReturn( Optional.empty() );
 
         KernelStatement statement = createStatement( transaction );
-        var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        var cursorContext = contextFactory.create( "test" );
         statement.initialize( mock( Locks.Client.class ), cursorContext, 1 );
         statement.acquire();
 
@@ -111,9 +114,10 @@ class KernelStatementTest
     void emptyPageCacheStatisticOnClosedStatement()
     {
         var transaction = mock( KernelTransactionImplementation.class, RETURNS_DEEP_STUBS );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         try ( var statement = createStatement( transaction ) )
         {
-            var cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+            var cursorContext = contextFactory.create( "test" );
             statement.initialize( mock( Locks.Client.class ), cursorContext, 100 );
             statement.acquire();
 

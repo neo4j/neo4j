@@ -31,8 +31,9 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -63,7 +64,9 @@ class PageCachePrefetchingTest
     void setUp()
     {
         file = dir.createFile( "file" );
-        cursorContext = new CursorContext( new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "test" ) );
+        var pageCacheTracer = new DefaultPageCacheTracer();
+        var cursorContextFactory = new CursorContextFactory( pageCacheTracer, EmptyVersionContextSupplier.EMPTY );
+        cursorContext = cursorContextFactory.create( "test" );
     }
 
     @Test

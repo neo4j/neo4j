@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -42,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralTestDirectoryExtension
 class GBPTreeWriterTest
@@ -113,8 +115,8 @@ class GBPTreeWriterTest
     @Test
     void trackPageCacheAccessOnMerge() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnMerge" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnMerge" );
 
         assertZeroCursor( cursorContext );
 
@@ -134,8 +136,8 @@ class GBPTreeWriterTest
     @Test
     void trackPageCacheAccessOnPut() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnPut" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnPut" );
 
         assertZeroCursor( cursorContext );
 
@@ -155,8 +157,8 @@ class GBPTreeWriterTest
     @Test
     void trackPageCacheAccessOnRemove() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemove" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnRemove" );
 
         try ( var gbpTree = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
               var treeWriter = gbpTree.writer( 0, cursorContext ) )
@@ -183,8 +185,8 @@ class GBPTreeWriterTest
     @Test
     void trackPageCacheAccessOnRemoveWhenNothingToRemove() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnRemoveWhenNothingToRemove" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnRemoveWhenNothingToRemove" );
 
         assertZeroCursor( cursorContext );
 
@@ -203,8 +205,8 @@ class GBPTreeWriterTest
     @Test
     void trackPageCacheAccessOnClose() throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnClose" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnClose" );
 
         assertZeroCursor( cursorContext );
 

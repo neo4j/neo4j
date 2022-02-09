@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -103,6 +104,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -712,7 +714,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         KernelTransactionImplementation.Statistics statistics =
             new KernelTransactionImplementation.Statistics( transaction, new AtomicReference<>( new ThreadBasedCpuClock() ), false );
         PredictablePageCursorTracer tracer = new PredictablePageCursorTracer();
-        statistics.init( 2, new CursorContext( tracer ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        statistics.init( 2, contextFactory.create( tracer ) );
 
         assertEquals( 2, statistics.cpuTimeMillis() );
         assertEquals( 13, statistics.estimatedHeapMemory() );
@@ -727,7 +730,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         statistics.reset();
         transaction.memoryTracker().reset();
 
-        statistics.init( 4, new CursorContext( tracer ) );
+        statistics.init( 4, contextFactory.create( tracer ) );
         assertEquals( 4, statistics.cpuTimeMillis() );
         assertEquals( 0, statistics.estimatedHeapMemory() );
         assertEquals( 0, statistics.usedNativeMemory() );

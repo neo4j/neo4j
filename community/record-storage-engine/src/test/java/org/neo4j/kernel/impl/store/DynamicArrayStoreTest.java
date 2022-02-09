@@ -90,16 +90,16 @@ class DynamicArrayStoreTest
     @MethodSource( "data" )
     void tracePageCacheAccessOnRecordAllocation( Supplier<Object> dataSupplier ) throws IOException
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         try ( var store = dynamicArrayStore() )
         {
-            tracePageCacheAccessOnAllocation( store, pageCacheTracer, dataSupplier.get() );
+            tracePageCacheAccessOnAllocation( store, contextFactory, dataSupplier.get() );
         }
     }
 
-    private static void tracePageCacheAccessOnAllocation( DynamicArrayStore store, DefaultPageCacheTracer pageCacheTracer, Object array )
+    private static void tracePageCacheAccessOnAllocation( DynamicArrayStore store, CursorContextFactory contextFactory, Object array )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnAllocation" ) ) )
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnAllocation" ) )
         {
             assertZeroCursor( cursorContext );
             prepareDirtyGenerator( store );

@@ -33,7 +33,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 import static org.neo4j.kernel.impl.index.schema.TokenScanValueIterator.NO_ID;
 
@@ -115,7 +116,8 @@ class TokenIndexUpdaterTest
         //Given
         int nodeCount = 5;
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnWrite" ) );
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnWrite" );
 
         //When
         try ( TokenIndexUpdater writer = new TokenIndexUpdater( nodeCount ) )

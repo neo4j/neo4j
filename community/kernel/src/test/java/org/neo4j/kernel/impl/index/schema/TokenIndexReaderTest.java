@@ -31,17 +31,17 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityTokenClient;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.Math.toIntExact;
@@ -51,6 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @ExtendWith( RandomExtension.class )
 @PageCacheExtension
@@ -94,7 +95,8 @@ class TokenIndexReaderTest
 
         // WHEN the index is queried
         var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCache" ) );
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCache" );
         var reader = new DefaultTokenIndexReader( tree );
         var tokenClient = new SimpleEntityTokenClient();
         reader.query( tokenClient, unconstrained(), new TokenPredicate( labelId ), cursorContext );

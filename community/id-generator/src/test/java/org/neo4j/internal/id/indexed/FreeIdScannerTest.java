@@ -48,6 +48,7 @@ import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -62,6 +63,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.OtherThreadExecutor.command;
 
 @PageCacheExtension
@@ -651,7 +653,8 @@ class FreeIdScannerTest
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation, true );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracerPageCacheAccessOnCacheScan" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracerPageCacheAccessOnCacheScan" ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
@@ -674,7 +677,8 @@ class FreeIdScannerTest
         int cacheSize = IDS_PER_ENTRY / 2;
         FreeIdScanner scanner = scanner( IDS_PER_ENTRY, cacheSize, generation, true );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCacheClear" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnCacheClear" ) )
         {
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();

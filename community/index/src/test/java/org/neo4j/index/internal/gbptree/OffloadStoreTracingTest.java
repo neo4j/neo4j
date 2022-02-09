@@ -28,6 +28,7 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.test.extension.Inject;
@@ -37,6 +38,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.OffloadIdValidator.ALWAYS_TRUE;
 import static org.neo4j.index.internal.gbptree.RawBytes.EMPTY_BYTES;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @PageCacheExtension
 class OffloadStoreTracingTest
@@ -48,6 +50,7 @@ class OffloadStoreTracingTest
 
     private final SimpleByteArrayLayout layout = new SimpleByteArrayLayout( false );
     private final DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+    private final CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
     private OffloadStoreImpl<RawBytes,RawBytes> offloadStore;
     private CursorContext cursorContext;
     private PagedFile pagedFile;
@@ -56,7 +59,7 @@ class OffloadStoreTracingTest
     @BeforeEach
     void setUp() throws IOException
     {
-        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testCursorTracer" ) );
+        cursorContext = contextFactory.create( "testCursorTracer" );
         pagedFile = pageCache.map( testDirectory.createFile( "file" ), pageCache.pageSize(), "neo4j" );
         OffloadPageCursorFactory pcFactory = pagedFile::io;
         idProvider = new FreeListIdProvider( pagedFile, 10 );

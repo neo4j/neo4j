@@ -91,8 +91,8 @@ class PropertyCreatorTest
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
         StoreCursors storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "propertyStore" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        cursorContext = contextFactory.create( "propertyStore" );
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore, storeCursors ), cursorContext, PROPERTY_CURSOR,
                 storeCursors );
         creator = new PropertyCreator( propertyStore, new PropertyTraverser(), cursorContext, INSTANCE );
@@ -476,14 +476,8 @@ class PropertyCreatorTest
         }
     }
 
-    private static class ExpectedRecord
+    private record ExpectedRecord(ExpectedProperty... properties)
     {
-        private final ExpectedProperty[] properties;
-
-        ExpectedRecord( ExpectedProperty... properties )
-        {
-            this.properties = properties;
-        }
     }
 
     private static ExpectedProperty property( int key, Object value )

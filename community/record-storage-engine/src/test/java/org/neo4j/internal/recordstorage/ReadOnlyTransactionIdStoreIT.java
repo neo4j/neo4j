@@ -28,7 +28,6 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -58,8 +57,8 @@ class ReadOnlyTransactionIdStoreIT
         new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
                 DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true ).close();
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "testPageCacheAccessOnTransactionIdStoreConstruction" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "testPageCacheAccessOnTransactionIdStoreConstruction" );
 
         // when
         new ReadOnlyTransactionIdStore( directory.getFileSystem(), pageCache, databaseLayout, cursorContext );

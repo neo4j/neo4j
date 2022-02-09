@@ -82,8 +82,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -118,6 +120,7 @@ import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -1769,7 +1772,9 @@ class GBPTreeTest
 
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
-        CursorContext cursorContext = new CursorContext( trackingPageCursorTracer( trace, onOffSwitch ) );
+        var cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        CursorContext cursorContext = contextFactory.create( trackingPageCursorTracer( cacheTracer, trace, onOffSwitch ) );
 
         // Build a tree with root and two children.
         try ( PageCache pageCache = createPageCache( defaultPageSize );
@@ -1804,7 +1809,9 @@ class GBPTreeTest
     {
         List<Long> trace = new ArrayList<>();
         MutableBoolean onOffSwitch = new MutableBoolean( true );
-        CursorContext cursorContext = new CursorContext( trackingPageCursorTracer( trace, onOffSwitch ) );
+        var cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
+        CursorContext cursorContext = contextFactory.create( trackingPageCursorTracer( cacheTracer, trace, onOffSwitch ) );
 
         // Build a tree with root and two children.
         try ( PageCache pageCache = createPageCache( defaultPageSize );
@@ -1915,11 +1922,11 @@ class GBPTreeTest
     void trackPageCacheAccessOnVisit() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
         {
-            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "traverseTree" ) );
+            var cursorContext = contextFactory.create( "traverseTree" );
             tree.visit( new GBPTreeVisitor.Adaptor<>(), cursorContext );
 
             var cursorTracer = cursorContext.getCursorTracer();
@@ -1933,6 +1940,7 @@ class GBPTreeTest
     void trackPageCacheAccessOnTreeSeek() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         int additionalAffectedPages = PageCache.RESERVED_BYTES > 0 ? 1 : 0;
         try ( PageCache pageCache = createPageCache( (int) ByteUnit.kibiBytes( 4 ) );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
@@ -1942,7 +1950,7 @@ class GBPTreeTest
                 insert( tree, i, 1 );
             }
 
-            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" ) );
+            var cursorContext = contextFactory.create( "trackPageCacheAccessOnTreeSeek" );
 
             try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( Integer.MAX_VALUE ), cursorContext ) )
             {
@@ -1964,10 +1972,11 @@ class GBPTreeTest
     void trackPageCacheAccessOnEmptyTreeSeek() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         try ( PageCache pageCache = createPageCache( defaultPageSize );
                 var tree = index( pageCache ).with( pageCacheTracer ).build() )
         {
-            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnTreeSeek" ) );
+            var cursorContext = contextFactory.create( "trackPageCacheAccessOnTreeSeek" );
             try ( var seeker = tree.seek( new MutableLong( 0 ), new MutableLong( 1000 ), cursorContext ) )
             {
                 while ( seeker.next() )
@@ -2075,9 +2084,9 @@ class GBPTreeTest
         }
     }
 
-    private DefaultPageCursorTracer trackingPageCursorTracer( List<Long> trace, MutableBoolean onOffSwitch )
+    private DefaultPageCursorTracer trackingPageCursorTracer( PageCacheTracer pageCacheTracer, List<Long> trace, MutableBoolean onOffSwitch )
     {
-        return new DefaultPageCursorTracer( new DefaultPageCacheTracer(), "tracking" )
+        return new DefaultPageCursorTracer( pageCacheTracer, "tracking" )
         {
             @Override
             public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )

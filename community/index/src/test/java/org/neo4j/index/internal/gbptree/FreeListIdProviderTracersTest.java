@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -33,6 +34,7 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @PageCacheExtension
 public class FreeListIdProviderTracersTest
@@ -43,11 +45,12 @@ public class FreeListIdProviderTracersTest
     @Inject
     private TestDirectory testDirectory;
     private final DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+    private final CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
 
     @Test
     void trackPageCacheAccessOnInitialize() throws IOException
     {
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnInitialize" ) );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnInitialize" );
         assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "init" ), pageCache.pageSize(), DATABASE_NAME ) )
@@ -62,7 +65,7 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnNewIdGeneration() throws IOException
     {
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnNewIdGeneration" ) );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnNewIdGeneration" );
         assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "newId" ), pageCache.pageSize(), DATABASE_NAME ) )
@@ -78,7 +81,7 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnIdReleaseOnTheSamePage() throws IOException
     {
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnTheSamePage" ) );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnIdReleaseOnTheSamePage" );
         assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "releaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
@@ -98,7 +101,7 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnIdReleaseOnDifferentPage() throws IOException
     {
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReleaseOnDifferentPage" ) );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnIdReleaseOnDifferentPage" );
         assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "differentReleaseId" ), pageCache.pageSize(), DATABASE_NAME ) )
@@ -120,7 +123,7 @@ public class FreeListIdProviderTracersTest
     @Test
     void trackPageCacheAccessOnFreeListTraversal() throws IOException
     {
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "trackPageCacheAccessOnFreeListTraversal" ) );
+        var cursorContext = contextFactory.create( "trackPageCacheAccessOnFreeListTraversal" );
         assertZeroCursor( cursorContext );
 
         try ( var freeListFile = pageCache.map( testDirectory.createFile( "traversal" ), pageCache.pageSize(), DATABASE_NAME ) )

@@ -94,8 +94,8 @@ class AbstractDynamicStoreTest
     @Test
     void tracePageCacheAccessOnNextRecord()
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnNextRecord" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnNextRecord" );
               var store = newTestableDynamicStore() )
         {
             assertZeroCursor( cursorContext );
@@ -111,9 +111,8 @@ class AbstractDynamicStoreTest
     @Test
     void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext()
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext(
-                pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        try ( var cursorContext = contextFactory.create( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext" );
               var store = newTestableDynamicStore() )
         {
             assertZeroCursor( cursorContext );
@@ -127,8 +126,8 @@ class AbstractDynamicStoreTest
     @Test
     void tracePageCacheAccessOnRecordsAllocation()
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnRecordsAllocation" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnRecordsAllocation" );
               var store = newTestableDynamicStore() )
         {
             assertZeroCursor( cursorContext );
@@ -144,8 +143,8 @@ class AbstractDynamicStoreTest
     @Test
     void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree()
     {
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        try ( var cursorContext = contextFactory.create( "noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTree" );
               var store = newTestableDynamicStore() )
         {
             assertZeroCursor( cursorContext );

@@ -32,9 +32,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -66,7 +64,7 @@ public class CommandCreationContextIT
     @Inject
     private RecordStorageEngine storageEngine;
     @Inject
-    private PageCacheTracer pageCacheTracer;
+    private CursorContextFactory contextFactory;
     private NeoStores neoStores;
     private long nodeId;
     private long relationshipId;
@@ -96,7 +94,7 @@ public class CommandCreationContextIT
     void trackPageCacheAccessOnIdReservation( Function<NeoStores, CommonAbstractStore<?,?>> storeProvider,
             ToLongFunction<CommandCreationContext> idReservation )
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "trackPageCacheAccessOnIdReservation" ) ) )
+        try ( var cursorContext = contextFactory.create( "trackPageCacheAccessOnIdReservation" ) )
         {
             prepareIdGenerator( storeProvider.apply( neoStores ).getIdGenerator() );
             try ( var creationContext = storageEngine.newCommandCreationContext( INSTANCE ) )
@@ -163,14 +161,6 @@ public class CommandCreationContextIT
                 arguments( (Function<NeoStores,CommonAbstractStore<?,?>>) NeoStores::getRelationshipTypeTokenStore,
                         (ToLongFunction<CommandCreationContext>) CommandCreationContext::reserveRelationshipTypeTokenId )
         );
-    }
-
-    private static void assertCursorZero( CursorContext cursorContext )
-    {
-        PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isZero();
-        assertThat( cursorTracer.unpins() ).isZero();
-        assertThat( cursorTracer.hits() ).isZero();
     }
 
     private static void prepareIdGenerator( IdGenerator idGenerator )

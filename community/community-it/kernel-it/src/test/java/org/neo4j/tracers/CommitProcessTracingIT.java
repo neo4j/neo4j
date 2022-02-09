@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -52,6 +53,7 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -86,7 +88,8 @@ public class CommitProcessTracingIT
         }
 
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnCommandCreation" ) );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnCommandCreation" );
               var reader = storageEngine.newReader() )
         {
             assertZeroCursor( cursorContext );
@@ -110,7 +113,8 @@ public class CommitProcessTracingIT
     {
         var transaction = new PhysicalTransactionRepresentation( emptyList(), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnEmptyTransactionApply" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnEmptyTransactionApply" ) )
         {
             assertZeroCursor( cursorContext );
 
@@ -125,7 +129,8 @@ public class CommitProcessTracingIT
     {
         var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionApply" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnTransactionApply" ) )
         {
             assertZeroCursor( cursorContext );
 

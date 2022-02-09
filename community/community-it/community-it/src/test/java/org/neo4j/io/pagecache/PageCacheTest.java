@@ -64,6 +64,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCursor;
@@ -108,6 +109,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.buffer.IOBufferFactory.DISABLED_BUFFER_FACTORY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
@@ -2493,6 +2495,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer( true );
+            var contextFactory = new CursorContextFactory( tracer, EMPTY );
             getPageCache( fs, maxPages, tracer );
 
             generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
@@ -2501,8 +2504,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             long initialUnpins = tracer.unpins();
             long countedPages = 0;
             long countedFaults = 0;
-            try ( CursorContext cursorContext = new CursorContext(
-                    tracer.createPageCursorTracer( "tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading" ) );
+            try ( CursorContext cursorContext = contextFactory.create( "tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading" );
                   PagedFile pagedFile = map( file( "a" ), filePageSize );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
             {
@@ -2560,13 +2562,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         {
             long pagesToGenerate = 142;
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer( true );
+            var contextFactory = new CursorContextFactory( tracer, EMPTY );
             getPageCache( fs, maxPages, tracer );
 
             long initialPins = tracer.pins();
             long initialUnpins = tracer.unpins();
 
-            try ( CursorContext cursorContext = new CursorContext(
-                    tracer.createPageCursorTracer( "tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting" ) );
+            try ( CursorContext cursorContext = contextFactory.create( "tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting" );
                   PagedFile pagedFile = map( file( "a" ), filePageSize );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, cursorContext ) )
             {
@@ -2635,6 +2637,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 return super.beginPin( writeLock, filePageId, swapper );
             }
         };
+        var contextFactory = new CursorContextFactory( tracer, EMPTY );
         getPageCache( fs, maxPages, tracer );
 
         generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
@@ -2644,7 +2647,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, new CursorContext( pageCursorTracer ) ) )
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, contextFactory.create( pageCursorTracer ) ) )
             {
                 for ( int i = 0; i < pinsForRead; i++ )
                 {
@@ -2652,7 +2655,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            dirtyManyPages( pagedFile, pinsForWrite, new CursorContext( pageCursorTracer ) );
+            dirtyManyPages( pagedFile, pinsForWrite, contextFactory.create( pageCursorTracer ) );
         }
 
         assertThat( readCount.get() ).as( "wrong read pin count" ).isEqualTo( pinsForRead );
@@ -2663,11 +2666,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void restartByShouldRetryMustCarryOverExistingPin() throws IOException
     {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( tracer, EMPTY );
         getPageCache( fs, maxPages, tracer );
         generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
-              CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( "test" ) ) )
+              CursorContext cursorContext = contextFactory.create( "test" ) )
         {
             try ( PageCursor reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
             {
@@ -2698,11 +2702,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         RandomAdversary adversary = new RandomAdversary( 0.0, 0.9, 0.0 );
         adversary.setProbabilityFactor( 0.0 );
         AdversarialFileSystemAbstraction afs = new AdversarialFileSystemAbstraction( adversary, fs );
+        var contextFactory = new CursorContextFactory( tracer, EMPTY );
         getPageCache( afs, maxPages, tracer );
         generateFileWithRecords( file( "a" ), recordCount, recordSize, recordsPerFilePage, reservedBytes );
 
         try ( PagedFile pagedFile = map( file( "a" ), filePageSize );
-              CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( "test" ) ) )
+              CursorContext cursorContext = contextFactory.create( "test" ) )
         {
             try ( PageCursor reader = pagedFile.io( 0, PF_SHARED_READ_LOCK, cursorContext ) )
             {
@@ -6258,14 +6263,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultReadOfPagesNotInMemory" ) );
-                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
+              CursorContext cursorContext = contextFactory.create( "noFaultReadOfPagesNotInMemory" );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorContext, nofault, initialFaults );
         }
@@ -6275,14 +6281,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultWriteOnPagesNotInMemory" ) );
-                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorContext ) )
+              CursorContext cursorContext = contextFactory.create( "noFaultWriteOnPagesNotInMemory" );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorContext ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorContext, nofault, initialFaults );
             verifyNoFaultWriteIsOutOfBounds( nofault );
@@ -6293,15 +6300,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultLinkedReadOfPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultLinkedReadOfPagesNotInMemory" ) );
-                PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext );
-                PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+              CursorContext cursorContext = contextFactory.create( "noFaultLinkedReadOfPagesNotInMemory" );
+              PageCursor nofault = pf.io( 0, PF_SHARED_READ_LOCK | PF_NO_FAULT, cursorContext );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorContext, linkedNoFault, initialFaults );
         }
@@ -6311,15 +6319,16 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     void noFaultLinkedWriteOnPagesNotInMemory() throws Exception
     {
         DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory( cacheTracer, EMPTY );
         getPageCache( fs, maxPages, cacheTracer );
 
         Path file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize, recordsPerFilePage, reservedBytes );
         long initialFaults = cacheTracer.faults();
         try ( PagedFile pf = map( file, filePageSize );
-                CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "noFaultLinkedWriteOnPagesNotInMemory" ) );
-                PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorContext );
-                PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
+              CursorContext cursorContext = contextFactory.create( "noFaultLinkedWriteOnPagesNotInMemory" );
+              PageCursor nofault = pf.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_FAULT, cursorContext );
+              PageCursor linkedNoFault = nofault.openLinkedCursor( 0 ) )
         {
             verifyNoFaultAccessToPagesNotInMemory( cacheTracer, cursorContext, linkedNoFault, initialFaults );
             verifyNoFaultWriteIsOutOfBounds( linkedNoFault );

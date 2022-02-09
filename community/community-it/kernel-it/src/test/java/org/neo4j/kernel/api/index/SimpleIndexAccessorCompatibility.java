@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,7 +28,6 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,7 +42,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexOrderCapability;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -78,10 +76,10 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.range;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringPrefix;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringSuffix;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.values.storable.DateTimeValue.datetime;
 import static org.neo4j.values.storable.DateValue.epochDate;
-import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
@@ -148,7 +146,8 @@ abstract class SimpleIndexAccessorCompatibility extends IndexAccessorCompatibili
     void tracePageCacheAccessOnConsistencyCheck()
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnConsistencyCheck" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnConsistencyCheck" ) )
         {
             accessor.consistencyCheck( ReporterFactories.noopReporterFactory(), cursorContext );
 

@@ -829,8 +829,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAccessOnSetRecord() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnSetRecord" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnSetRecord" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             MetaDataStore.setRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, 3, databaseLayout.getDatabaseName(),
@@ -846,8 +846,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAccessOnGetRecord() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnGetRecord" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnGetRecord" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             MetaDataStore.getRecord( pageCache, metaDataStore.getStorageFile(), MetaDataStore.Position.RANDOM_NUMBER, databaseLayout.getDatabaseName(),
@@ -863,8 +863,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAssessOnGetStoreId() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnGetStoreId" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAssessOnGetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorContext );
@@ -879,8 +879,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAssessOnSetStoreId() throws IOException
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnSetStoreId" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAssessOnSetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             var storeId = new StoreId( 1, 2, 3, 4, 5 );
@@ -896,8 +896,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAssessOnUpgradeTransactionSet()
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnUpgradeTransactionSet" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAssessOnUpgradeTransactionSet" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             metaDataStore.setUpgradeTransaction( 1, 2, 3, cursorContext );
@@ -911,8 +911,8 @@ class MetaDataStoreTest
     @Test
     void tracePageCacheAssessOnIncrementAndGetVersion()
     {
-        var cacheTracer = new DefaultPageCacheTracer();
-        var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAssessOnIncrementAndGetVersion" ) );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+        var cursorContext = contextFactory.create( "tracePageCacheAssessOnIncrementAndGetVersion" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             metaDataStore.incrementAndGetVersion( cursorContext );

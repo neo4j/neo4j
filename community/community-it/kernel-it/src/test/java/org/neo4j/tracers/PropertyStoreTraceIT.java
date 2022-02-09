@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
@@ -46,6 +46,7 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -86,7 +87,8 @@ class PropertyStoreTraceIT
         var propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
         prepareIdGenerator( propertyStore.getStringStore().getIdGenerator() );
         var pageCacheTracer = new DefaultPageCacheTracer();
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnPropertyBlockIdGeneration" ) ) )
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnPropertyBlockIdGeneration" ) )
         {
             var propertyBlock = new PropertyBlock();
             var dynamicRecord = new DynamicRecord( 2 );

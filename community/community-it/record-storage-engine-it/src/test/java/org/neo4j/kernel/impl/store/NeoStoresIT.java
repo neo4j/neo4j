@@ -33,7 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
-import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @DbmsExtension( configurationCallback = "configure" )
 class NeoStoresIT
@@ -63,6 +64,7 @@ class NeoStoresIT
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );
     private static final String LONG_STRING_VALUE = randomAscii( 2048 );
+    private final CursorContextFactory contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
 
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
@@ -88,7 +90,7 @@ class NeoStoresIT
             }
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnHighIdScan" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnHighIdScan" );
         propertyStore.scanForHighId( cursorContext );
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -111,7 +113,7 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRawRecordData" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnGetRawRecordData" );
         try ( var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             propertyStore.getRawRecordData( 1L, storeCursors.readCursor( PROPERTY_CURSOR ) );
@@ -137,7 +139,7 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnInUseCheck" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnInUseCheck" );
         try ( var cursor = propertyStore.openPageCursorForReading( 1L, cursorContext ) )
         {
             propertyStore.isInUse( 1L, cursor );
@@ -165,7 +167,7 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnGetRecord" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnGetRecord" );
         NodeRecord nodeRecord = new NodeRecord( nodeId );
         try ( var cursor = nodeStore.openPageCursorForReading( nodeId, cursorContext ) )
         {
@@ -195,7 +197,7 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnUpdateRecord" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnUpdateRecord" );
         try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
             nodeStore.updateRecord( new NodeRecord( nodeId ), storeCursor, cursorContext, storeCursors );
@@ -221,7 +223,7 @@ class NeoStoresIT
             transaction.commit();
         }
 
-        var cursorContext = new CursorContext( new DefaultPageCacheTracer().createPageCursorTracer( "tracePageCacheAccessOnTokenReads" ) );
+        var cursorContext = contextFactory.create( "tracePageCacheAccessOnTokenReads" );
         try ( StoreCursors storageCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             propertyKeys.getAllReadableTokens( storageCursors );

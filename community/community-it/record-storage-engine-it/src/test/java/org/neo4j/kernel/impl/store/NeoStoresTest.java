@@ -624,8 +624,8 @@ public class NeoStoresTest
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
-            var cacheTracer = new DefaultPageCacheTracer();
-            var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCloseCall" ) );
+            var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+            var cursorContext = contextFactory.create( "tracePageCacheAccessOnTransactionCloseCall" );
             store.transactionClosed( store.nextCommittingTransactionId(), 6666, 15, cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
@@ -643,8 +643,8 @@ public class NeoStoresTest
         try ( NeoStores neoStore = factory.openAllNeoStores( true ) )
         {
             MetaDataStore store = neoStore.getMetaDataStore();
-            var cacheTracer = new DefaultPageCacheTracer();
-            var cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "tracePageCacheAccessOnTransactionCommittedCall" ) );
+            var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
+            var cursorContext = contextFactory.create( "tracePageCacheAccessOnTransactionCommittedCall" );
             store.transactionCommitted( 42, 6666, BASE_TX_COMMIT_TIMESTAMP, cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

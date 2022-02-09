@@ -128,7 +128,8 @@ class CountsComputerTest
             GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
             var countsStore = db.getDependencyResolver().resolveDependency( GBPTreeCountsStore.class );
             var pageCacheTracer = new DefaultPageCacheTracer();
-            var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnInitialization" ) );
+            var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+            var cursorContext = contextFactory.create( "tracePageCacheAccessOnInitialization" );
 
             countsStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
 

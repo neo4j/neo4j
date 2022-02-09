@@ -22,8 +22,6 @@ package org.neo4j.consistency.checking.index;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -33,7 +31,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -66,9 +63,10 @@ class IndexIteratorIT
 
     private IndexAccessors indexAccessors;
     private DefaultPageCacheTracer pageCacheTracer;
+    private CursorContextFactory contextFactory;
 
     @BeforeEach
-    void setUp() throws IOException
+    void setUp()
     {
         var label = label( "any" );
         var propertyName = "property";
@@ -89,15 +87,15 @@ class IndexIteratorIT
         }
 
         var neoStores = storageEngine.testAccessNeoStores();
+        pageCacheTracer = new DefaultPageCacheTracer();
+        contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator(
                     SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST )
-                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP,
-                    new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, contextFactory );
         }
-        pageCacheTracer = new DefaultPageCacheTracer();
     }
 
     @Test
@@ -105,7 +103,10 @@ class IndexIteratorIT
     {
         var descriptors = indexAccessors.onlineRules();
         assertThat( descriptors ).hasSize( 1 );
-        try ( CursorContext cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( "tracePageCacheAccessOnIteration" ) ) )
+        long initialPins = pageCacheTracer.pins();
+        long initialUnpins = pageCacheTracer.unpins();
+        long initialHits = pageCacheTracer.hits();
+        try ( CursorContext cursorContext = contextFactory.create( "tracePageCacheAccessOnIteration" ) )
         {
             for ( IndexDescriptor descriptor : descriptors )
             {
@@ -116,8 +117,8 @@ class IndexIteratorIT
             }
         }
 
-        assertThat( pageCacheTracer.pins() ).isOne();
-        assertThat( pageCacheTracer.unpins() ).isOne();
-        assertThat( pageCacheTracer.hits() ).isOne();
+        assertThat( pageCacheTracer.pins() - initialPins ).isOne();
+        assertThat( pageCacheTracer.unpins() - initialUnpins ).isOne();
+        assertThat( pageCacheTracer.hits() - initialHits ).isOne();
     }
 }
