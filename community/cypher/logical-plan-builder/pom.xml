@@ -75,12 +75,6 @@
     </dependency>
 
     <!-- neo4j -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-parser</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-logical-plans</artifactId>

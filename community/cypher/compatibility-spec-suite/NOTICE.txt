@@ -57,8 +57,6 @@ Apache Software License, Version 2.0
   magnolia
   mercator
   openCypher TCK Features and Graphs
-  parboiled-core
-  parboiled-scala
   picocli
   Scala Compiler
   Scalap

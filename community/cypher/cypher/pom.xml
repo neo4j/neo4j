@@ -255,14 +255,6 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-front-end</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -275,13 +267,6 @@
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-
-        <!-- neo4j-cypher re-include excluded (with correct version) -->
-
-        <dependency>
-            <groupId>org.parboiled</groupId>
-            <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
         </dependency>
 
         <!-- other -->

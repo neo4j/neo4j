@@ -101,8 +101,6 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
   oauth-sign
-  parboiled-core
-  parboiled-scala
   picocli
   protobufjs
   request

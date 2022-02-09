@@ -56,8 +56,6 @@ Apache Software License, Version 2.0
   jProcesses
   magnolia
   mercator
-  parboiled-core
-  parboiled-scala
   picocli
   Scala Compiler
   Scalap

@@ -46,8 +46,6 @@ Apache Software License, Version 2.0
   openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
-  parboiled-core
-  parboiled-scala
   Scala Compiler
   scala-collection-compat
 

@@ -19,8 +19,6 @@ Apache Software License, Version 2.0
   Jettison
   magnolia
   mercator
-  parboiled-core
-  parboiled-scala
   Scala Compiler
 ------------------------------------------------------------------------------
 

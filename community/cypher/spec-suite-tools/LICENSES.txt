@@ -71,8 +71,6 @@ Apache Software License, Version 2.0
   Non-Blocking Reactive Foundation for the JVM
   openCypher TCK API
   openCypher TCK Features and Graphs
-  parboiled-core
-  parboiled-scala
   picocli
   Scala Compiler
   scala-collection-compat

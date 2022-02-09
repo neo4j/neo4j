@@ -44,8 +44,6 @@ Apache Software License, Version 2.0
   Netty/Transport/Classes/Epoll
   Netty/Transport/Native/Epoll
   Netty/Transport/Native/Unix/Common
-  parboiled-core
-  parboiled-scala
   picocli
   Scala Compiler
   WMI4Java

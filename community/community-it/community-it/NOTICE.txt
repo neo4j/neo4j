@@ -91,8 +91,6 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/Epoll
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
-  parboiled-core
-  parboiled-scala
   picocli
   Scala Compiler
   WMI4Java

@@ -77,11 +77,6 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-macros</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -113,24 +108,9 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-parser</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-cypher-ast-factory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-ast-factory</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
         </dependency>
 
         <!-- scala -->
@@ -151,11 +131,6 @@
         </dependency>
 
         <!-- other -->
-
-        <dependency>
-            <groupId>org.parboiled</groupId>
-            <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>

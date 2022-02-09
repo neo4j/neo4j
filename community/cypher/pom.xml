@@ -104,18 +104,6 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.parboiled</groupId>
-                <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-                <version>1.2.0</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>scala-library</artifactId>
-                        <groupId>org.scala-lang</groupId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
                 <groupId>com.propensive</groupId>
                 <artifactId>magnolia_${scala.binary.version}</artifactId>
                 <version>0.17.0</version>
