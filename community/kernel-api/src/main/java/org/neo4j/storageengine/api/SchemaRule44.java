@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -53,6 +54,10 @@ public interface SchemaRule44
             IndexType indexType
     ) implements SchemaRule44
     {
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return SchemaUserDescription.forConstraint( tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex );
+        }
     }
 
     enum IndexType
@@ -67,9 +72,28 @@ public interface SchemaRule44
 
     enum ConstraintRuleType
     {
-        UNIQUE,
-        EXISTS,
-        UNIQUE_EXISTS
+        UNIQUE( true, ConstraintType.UNIQUE ),
+        EXISTS( false, ConstraintType.EXISTS ),
+        UNIQUE_EXISTS( true, ConstraintType.UNIQUE_EXISTS );
+
+        private boolean isIndexBacked;
+        private final ConstraintType constraintType;
+
+        ConstraintRuleType( boolean isIndexBacked, ConstraintType constraintType )
+        {
+            this.isIndexBacked = isIndexBacked;
+            this.constraintType = constraintType;
+        }
+
+        public boolean isIndexBacked()
+        {
+            return isIndexBacked;
+        }
+
+        ConstraintType asConstraintType()
+        {
+            return constraintType;
+        }
     }
 
     IndexProviderDescriptor NATIVE_BTREE_10 = new IndexProviderDescriptor( "native-btree", "1.0" );

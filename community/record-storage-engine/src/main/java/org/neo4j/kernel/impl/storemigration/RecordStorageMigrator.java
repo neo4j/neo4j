@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
@@ -114,6 +115,7 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.io.IOUtils.lineIterator;
@@ -290,7 +292,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
                     {
                         persistNodeLabelIndex( dstAccess );
-                        filterOurBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
+                        filterOutBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
                                                SYSTEM_DATABASE_NAME.equals( directoryLayoutArg.getDatabaseName() ) );
                     }
                     dstStore.flush( cursorContext );
@@ -348,8 +350,27 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private static void filterOurBtreeIndexes( SchemaStore44Reader schemaStore44Reader, CachedStoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess,
-                                               TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
+    /**
+     * If a BTREE index has a replacement index - RANGE, TEXT or POINT index on same schema - the BTREE index will be removed.
+     * If BTREE index doesn't have any replacement, an exception will be thrown.
+     * If a constraint backed by a BTREE index has a replacement constraint - constraint of same type, on same schema,
+     * backed by other index type than BTREE - the BTREE backed constraint will be removed.
+     * If constraint backed by BTREE index doesn't have any replacement, an exception will be thrown.
+     *
+     * The SchemaStore (and naturally also the PropertyStore) will be updated non-transactionally.
+     *
+     * BTREE index type was deprecated in 4.4 and removed in 5.0.
+     *
+     * @param schemaStore44Reader {@link SchemaStore44Reader} reader for legacy schema store
+     * @param dstCursors {@link StoreCursors} cursors to use when reading from legacy store
+     * @param dstAccess {@link SchemaRuleMigrationAccess} access to the SchemaStore at migration destination.
+     * @param dstTokensHolders {@link TokenHolders} token holders for migration destination store.
+     * @param systemDb true if the migrating database is system db, otherwise false.
+     * @throws KernelException if BTREE index or BTREE backed constraint lacks replacement.
+     */
+    @VisibleForTesting
+    static void filterOutBtreeIndexes( SchemaStore44Reader schemaStore44Reader, StoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess,
+                                       TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
     {
         if ( systemDb )
         {
@@ -360,12 +381,28 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         var all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
 
         // Organize indexes by SchemaDescriptor
+
         var indexesBySchema = new HashMap<SchemaDescriptor,List<SchemaRule44.Index>>();
+        var indexesByName = new HashMap<String,SchemaRule44.Index>();
+        var constraintBySchemaAndType = new HashMap<SchemaDescriptor,EnumMap<SchemaRule44.ConstraintRuleType,List<SchemaRule44.Constraint>>>();
         for ( var schemaRule : all )
         {
             if ( schemaRule instanceof SchemaRule44.Index index )
             {
-                indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
+                indexesByName.put( index.name(), index );
+                if ( !index.unique() )
+                {
+                    indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
+                }
+            }
+            if ( schemaRule instanceof SchemaRule44.Constraint constraint )
+            {
+                if ( constraint.constraintRuleType().isIndexBacked() )
+                {
+                    var constraintsByType =
+                            constraintBySchemaAndType.computeIfAbsent( constraint.schema(), k -> new EnumMap<>( SchemaRule44.ConstraintRuleType.class ) );
+                    constraintsByType.computeIfAbsent( constraint.constraintRuleType(), k -> new ArrayList<>() ).add( constraint );
+                }
             }
         }
 
@@ -402,18 +439,59 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
         }
 
+        // Figure out which constraints, backed by btree indexes, that has replacement and can be deleted and which don't
+        var constraintsToDelete = new ArrayList<SchemaRule44.Constraint>();
+        var nonReplacedConstraints = new ArrayList<SchemaRule44.Constraint>();
+        constraintBySchemaAndType.values() // Collection<EnumMap<ConstraintType,List<ConstraintDescriptor>>>
+                                 .stream().flatMap( enumMap -> enumMap.values().stream() ) // Stream<List<ConstraintDescriptor>>
+                                 .forEach( constraintsGroupedBySchemaAndType ->
+                                           {
+                                               SchemaRule44.Constraint btreeConstraint = null;
+                                               SchemaRule44.Index backingBtreeIndex = null;
+                                               boolean hasReplacement = false;
+                                               for ( var constraint : constraintsGroupedBySchemaAndType )
+                                               {
+                                                   var backingIndex = indexesByName.get( constraint.name() );
+                                                   if ( backingIndex.indexType() == SchemaRule44.IndexType.BTREE )
+                                                   {
+                                                       btreeConstraint = constraint;
+                                                       backingBtreeIndex = backingIndex;
+                                                   }
+                                                   else if ( backingIndex.indexType() == SchemaRule44.IndexType.RANGE )
+                                                   {
+                                                       hasReplacement = true;
+                                                   }
+                                               }
+                                               if ( btreeConstraint != null )
+                                               {
+                                                   if ( hasReplacement )
+                                                   {
+                                                       constraintsToDelete.add( btreeConstraint );
+                                                       indexesToDelete.add( backingBtreeIndex );
+                                                   }
+                                                   else
+                                                   {
+                                                       nonReplacedConstraints.add( btreeConstraint );
+                                                   }
+                                               }
+                                           }
+                                 );
+
         // Throw if non-replaced index exists
-        if ( !nonReplacedIndexes.isEmpty() )
+        if ( !nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty() )
         {
             var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
+            var nonReplacedConstraintsString = new StringJoiner( ", ", "[", "]" );
             nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
+            nonReplacedConstraints.forEach( constraint -> nonReplacedConstraintsString.add( constraint.userDescription( dstTokensHolders ) ) );
             throw new IllegalStateException(
-                    "Migration will remove all BTREE indexes. " +
-                    "To guard from unintentionally removing indexes, " +
-                    "all BTREE indexes must either have been removed before this migration or need to have a corresponding " +
-                    "RANGE, TEXT or POINT index as replacement for migration to succeed. " +
-                    "Please drop your BTREE indexes or create RANGE, TEXT or POINT indexes as replacements and retry the migration. " +
-                    "BTREE indexes without replacement: " + nonReplacedIndexString
+                    "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
+                    "To guard from unintentionally removing indexes or constraints, " +
+                    "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or " +
+                    "need to have a valid replacement. " +
+                    "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. " +
+                    "Please drop your indexes and constraints or create replacements and retry the migration. " +
+                    "The indexes and constraints without replacement are: " + nonReplacedIndexString + " and " + nonReplacedConstraintsString
             );
         }
 
@@ -421,6 +499,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         for ( SchemaRule44.Index indexToDelete : indexesToDelete )
         {
             dstAccess.deleteSchemaRule( indexToDelete.id() );
+        }
+        // Delete all btree backed constraints
+        for ( SchemaRule44.Constraint constraintToDelete : constraintsToDelete )
+        {
+            dstAccess.deleteSchemaRule( constraintToDelete.id() );
         }
     }
 

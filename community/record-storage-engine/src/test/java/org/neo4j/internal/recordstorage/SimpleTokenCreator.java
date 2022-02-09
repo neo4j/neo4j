@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.token.TokenCreator;
 
-class SimpleTokenCreator implements TokenCreator
+public class SimpleTokenCreator implements TokenCreator
 {
     private final AtomicInteger highId = new AtomicInteger( 1 );
 
