@@ -29,6 +29,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
@@ -78,6 +80,22 @@ class NativeIndexFileFilterTest
     {
         // given
         Path dir = subProviderDirectoryStructure( storeDir, LUCENE_DESCRTIPTOR ).forProvider( LUCENE_DESCRTIPTOR ).directoryForIndex( 1 );
+        shouldNotAcceptFileInDirectory( dir );
+    }
+
+    @Test
+    void shouldNotAcceptTextIndex() throws IOException
+    {
+        // given
+        Path dir = directoriesByProvider( storeDir ).forProvider( TextIndexProvider.DESCRIPTOR ).directoryForIndex( 1 );
+        shouldNotAcceptFileInDirectory( dir );
+    }
+
+    @Test
+    void shouldNotAcceptFulltextIndex() throws IOException
+    {
+        // given
+        Path dir = directoriesByProvider( storeDir ).forProvider( FulltextIndexProviderFactory.DESCRIPTOR ).directoryForIndex( 1 );
         shouldNotAcceptFileInDirectory( dir );
     }
 

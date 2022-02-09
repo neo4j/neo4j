@@ -22,7 +22,9 @@ package org.neo4j.kernel.internal;
 import java.nio.file.Path;
 import java.util.function.Predicate;
 
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 
 /**
  * A filter which only matches native index files.
@@ -52,16 +54,27 @@ public class NativeIndexFileFilter implements Predicate<Path>
         Path schemaPath = indexRoot.relativize( path );
         int nameCount = schemaPath.getNameCount();
 
+        if ( nameCount == 0 )
+        {
+            return false;
+        }
+
         // - schema/index/lucene
         // - schema/index/lucene_native-1.0
         // - schema/index/lucene_native-2.0
-        boolean isDeprecatedProviderFile = nameCount >= 1 && (
-                schemaPath.getName( 0 ).toString().equals( "lucene" ) ||
-                        schemaPath.getName( 0 ).toString().equals( "lucene_native-1.0" ) ||
-                        schemaPath.getName( 0 ).toString().equals( "lucene_native-2.0" ));
+        String schemaBaseName = schemaPath.getName( 0 ).toString();
+        boolean isDeprecatedProviderFile =
+                schemaBaseName.equals( "lucene" ) ||
+                schemaBaseName.equals( "lucene_native-1.0" ) ||
+                schemaBaseName.equals( "lucene_native-2.0" );
+
+        boolean isLuceneBackedTextIndex =
+                schemaBaseName.equals( TextIndexProvider.DESCRIPTOR.name() ) ||
+                schemaBaseName.equals( FulltextIndexProviderFactory.DESCRIPTOR.name() );
+
         // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
         boolean isFusionLuceneProviderFile = nameCount >= 3 && schemaPath.getName( 2 ).toString().startsWith( "lucene-" );
 
-        return !isDeprecatedProviderFile && !isFusionLuceneProviderFile;
+        return !isDeprecatedProviderFile && !isFusionLuceneProviderFile && !isLuceneBackedTextIndex;
     }
 }
