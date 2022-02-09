@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
-import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -87,7 +86,6 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
-import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -531,47 +529,6 @@ class FulltextIndexConsistencyCheckIT
             updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringValue( "value" ) ) );
         }
 
-        managementService.shutdown();
-
-        ConsistencyCheckService.Result result = checkConsistency();
-        assertFalse( result.isSuccessful() );
-    }
-
-    @Disabled( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
-            "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
-    @Test
-    void mustDiscoverNodeInIndexMissingFromStore() throws Exception
-    {
-        GraphDatabaseService db = createDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "prop" ) ) ).close();
-            tx.commit();
-        }
-        long nodeId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
-            Node node = tx.createNode( Label.label( "Label" ) );
-            nodeId = node.getId();
-            node.setProperty( "prop", "value" );
-            tx.commit();
-        }
-
-        // Remove the property without updating the index
-        managementService.shutdown();
-        DatabaseManagementService managementService =
-                new TestDatabaseManagementServiceBuilder( databaseLayout )
-                        .setFileSystem( fs )
-                        .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
-                        .setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() )
-                        .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.getNodeById( nodeId ).removeProperty( "prop" );
-            tx.commit();
-        }
         managementService.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
