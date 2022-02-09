@@ -24,10 +24,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Log;

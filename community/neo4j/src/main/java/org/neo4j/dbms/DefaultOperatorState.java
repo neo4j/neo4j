@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms;
 
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 
 public enum DefaultOperatorState implements OperatorState
 {

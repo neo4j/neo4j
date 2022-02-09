@@ -26,7 +26,6 @@ import java.util.Set;
 
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;

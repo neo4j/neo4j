@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.dbms.systemgraph;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +44,15 @@ import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.logging.Level;
+import org.neo4j.values.storable.StringValue;
+
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDLE_TEST;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENABLED;
 
 public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 {
@@ -158,8 +168,17 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     @Override
     public Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName )
     {
+        // A uniqueness constraint at the Cypher level should prevent two references from ever having the same name, but
+        // in case they do, we simply prefer the internal reference.
         return getInternalDatabaseReference( databaseName )
                 .or( () -> getExternalDatabaseReference( databaseName ) );
+    }
+
+    @Override
+    public Optional<DriverSettings> getDriverSettings( String databaseName )
+    {
+        return Optional.ofNullable( tx.findNode( REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName ) )
+                       .flatMap( CommunityTopologyGraphDbmsModel::getDriverSettings );
     }
 
     private Optional<DatabaseReference> getInternalDatabaseReference( String databaseName )
@@ -223,6 +242,34 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
                                   .map( Relationship::getEndNode )
                                   .map( CommunityTopologyGraphDbmsModel::getDatabaseId );
         } );
+    }
+
+    private static Optional<DriverSettings> getDriverSettings( Node aliasNode )
+    {
+        return ignoreConcurrentDeletes( () ->
+        {
+            var connectsWith = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, CONNECTS_WITH_RELATIONSHIP ).spliterator(), false )
+                    .collect( Collectors.toList() ); // Must be collected to exhaust the underlying iterator
+
+            return connectsWith.stream().findFirst()
+                               .map( Relationship::getEndNode )
+                               .map( CommunityTopologyGraphDbmsModel::createDriverSettings );
+        } );
+    }
+
+    private static DriverSettings createDriverSettings( Node driverSettingsNode )
+    {
+        var sslEnabled = (Boolean) driverSettingsNode.getProperty( SSL_ENABLED.toString() );
+        var connectionTimeout = (Duration) driverSettingsNode.getProperty( CONNECTION_TIMEOUT.toString() );
+        var connectionMaxLifetime = (Duration) driverSettingsNode.getProperty( CONNECTION_MAX_LIFETIME.toString() );
+        var connectionPoolAcquisitionTimeout = (Duration) driverSettingsNode.getProperty( CONNECTION_POOL_ACQUISITION_TIMEOUT.toString() );
+        var connectionPoolIdleTest = (Duration) driverSettingsNode.getProperty( CONNECTION_POOL_IDLE_TEST.toString() );
+        var connectionPoolMaxSize = (Integer) driverSettingsNode.getProperty( CONNECTION_TIMEOUT.toString() );
+        var loggingLevelString = (String) driverSettingsNode.getProperty( LOGGING_LEVEL.toString() );
+        var loggingLevel = Level.valueOf( loggingLevelString );
+
+        return new DriverSettings( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
+                                   connectionPoolMaxSize, loggingLevel );
     }
 
     private static NamedDatabaseId getDatabaseId( Node databaseNode )

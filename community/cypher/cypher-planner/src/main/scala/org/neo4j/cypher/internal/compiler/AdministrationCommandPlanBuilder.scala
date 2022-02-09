@@ -119,9 +119,9 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
 /**

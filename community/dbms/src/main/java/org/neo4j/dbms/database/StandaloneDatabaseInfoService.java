@@ -34,8 +34,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_ONLY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
 
 public class StandaloneDatabaseInfoService implements DatabaseInfoService
 {

@@ -19,17 +19,14 @@
  */
 package org.neo4j.kernel.database;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
 public class SystemGraphDatabaseIdRepository implements DatabaseIdRepository

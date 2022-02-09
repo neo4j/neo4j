@@ -24,12 +24,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.dbms.api.DatabaseManagementException;
-import org.neo4j.dbms.database.CommunityTopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.CommunityTopologyGraphDbmsModel;
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.TopologyGraphDbmsModel;
+import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.dbms.systemgraph;
 
 import java.util.Optional;
 import java.util.Set;
@@ -203,4 +203,13 @@ public interface TopologyGraphDbmsModel
      * @return the corresponding {@link DatabaseReference}
      */
     Optional<DatabaseReference> getDatabaseRefByAlias( String databaseName );
+
+    /**
+     * Fetches the {@link DriverSettings} corresponding to the provided name
+     * if the name exists and is associated with a {@link DatabaseReference.External}
+     *
+     * @param databaseName - the remote database alias to resolve driver settings for
+     * @return the corresponding {@link DriverSettings}
+     */
+    Optional<DriverSettings> getDriverSettings( String databaseName );
 }
