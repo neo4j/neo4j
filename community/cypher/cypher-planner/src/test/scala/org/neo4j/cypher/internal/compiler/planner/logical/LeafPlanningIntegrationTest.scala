@@ -23,7 +23,6 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LookupRelationshipsByTypeDisabled
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
@@ -82,18 +81,13 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
-import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
-import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.graphdb.schema.IndexType
 
@@ -426,6 +420,15 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan NodeByIdSeek and Argument instead of scans") {
+    val config =
+      plannerBuilder()
+        .setAllNodesCardinality(100)
+        .setRelationshipCardinality("()-[]->()", 10)
+        .setRelationshipCardinality("()-[:REL]->()", 10)
+        .setRelationshipCardinality("()-[]->(:Role)", 1)
+        .setLabelCardinality("Role", 10)
+        .build()
+
     val query =
       """
         |MATCH (n)-[:REL]->(m)
@@ -434,35 +437,23 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |RETURN n
         |""".stripMargin
 
-      val plan = (new given {
-        statistics = new MinimumGraphStatistics(
-          new DelegatingGraphStatistics(parent.graphStatistics) {
-            override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = Cardinality(10.0)
-            override def nodesAllCardinality(): Cardinality = Cardinality(100.0)
-            override def patternStepCardinality(fromLabel: Option[LabelId],
-                                                relTypeId: Option[RelTypeId],
-                                                toLabel: Option[LabelId]): Cardinality = Cardinality(0.0)
-          }
-        )
-        lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
-      } getLogicalPlanFor query)._2
+    val plan = config.plan(query)
 
-      plan should beLike {
-        case Apply(
-              Expand(
-                NodeByIdSeek("m", _, _),
-              "m", _, _, "n", _, _),
-              Optional(
-                Selection(_,
-                  Expand(
-                    Expand(
-                        Argument(SetExtractor("n")),
-                    _, _, _, _, _, _)
-                  , _, _, _, _, _, _)
-                ),
-              _), _
-            ) => ()
-      }
+    val expected =
+      config
+        .planBuilder()
+        .produceResults("n")
+        .apply()
+        .|.optional("m", "anon_0", "n")
+        .|.filter("role:Role", "not anon_1 = anon_2")
+        .|.expandAll("(middle)-[anon_2]->(role)")
+        .|.expandAll("(n)-[anon_1]->(middle)")
+        .|.argument("n")
+        .expandAll("(m)<-[anon_0:REL]-(n)")
+        .nodeByIdSeek("m", Set(), 1)
+        .build()
+
+    plan shouldEqual expected
   }
 
   test("should plan directed rel by ID lookup based on an IN predicate with a param as the rhs") {
