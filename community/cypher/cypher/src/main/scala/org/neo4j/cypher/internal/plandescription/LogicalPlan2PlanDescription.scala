@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
@@ -827,6 +828,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case Foreach(_, variable, expression, mutations) =>
         val details = pretty"${asPrettyString(variable)} IN ${asPrettyString(expression)}" +: mutations.map(mutatingPatternString)
         PlanDescriptionImpl(id, "Foreach", children, Seq(Details(details)), variables, withRawCardinalities)
+
+      case ArgumentTracker(_) =>
+        PlanDescriptionImpl(id, "ArgumentTracker", children, Seq(), variables, withRawCardinalities)
+
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

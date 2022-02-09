@@ -135,6 +135,7 @@ import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
@@ -1855,6 +1856,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("ValueHashJoin") {
     assertGood(attach(ValueHashJoin(lhsLP, rhsLP, Equals(prop("a", "foo"), prop("b", "foo"))(pos)), 2345.0),
       planDescription(id, "ValueHashJoin", TwoChildren(lhsPD, rhsPD), Seq(details("a.foo = b.foo")), Set("a", "b")))
+  }
+
+  test("ArgumentTracker") {
+    assertGood(attach(ArgumentTracker(lhsLP), 113.0),
+      planDescription(id, "ArgumentTracker", SingleChild(lhsPD), Seq(), Set("a")))
   }
 
   def assertGood(logicalPlan: LogicalPlan, expectedPlanDescription: InternalPlanDescription, validateAllArgs: Boolean = false): Unit = {
