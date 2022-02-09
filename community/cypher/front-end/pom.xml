@@ -29,7 +29,6 @@
     <modules>
         <module>ast</module>
         <module>rewriting</module>
-        <module>parser</module>
         <module>frontend</module>
         <module>util</module>
         <module>test-util</module>
