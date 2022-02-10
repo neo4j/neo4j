@@ -19,6 +19,9 @@ package org.neo4j.pushtocloud;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.http.RequestMethod;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import com.github.tomakehurst.wiremock.matching.UrlPattern;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -521,16 +524,25 @@ class HttpCopierTest
     @Test
     void shouldHandleUnexpectedResponseFromInitiateUploadTargetRequest() throws IOException
     {
-        HttpCopier copier = new HttpCopier( ctx );
+        HttpCopier copier = new HttpCopier( ctx, 2, 2 );
         Path source = createDump();
         String authorizationTokenResponse = "abc";
         wireMock.stubFor( authenticationRequest( false ).willReturn( successfulAuthorizationResponse( authorizationTokenResponse ) ) );
         wireMock.stubFor( initiateUploadTargetRequest( authorizationTokenResponse ).willReturn( aResponse()
                                                                                                         .withStatus( HTTP_BAD_GATEWAY ) ) );
-
         // when
         assertThrows( CommandFailedException.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating upload target" ) ),
                       () -> authenticateAndCopy( copier, source, 1234, true, "user", "pass".toCharArray() ) );
+        // 1 initial call plus 2 retries are 3 expected calls
+        wireMock.verify(3, new RequestPatternBuilder( RequestMethod.ANY, UrlPattern.fromOneOf( "/import", null, null, null ) ) );
+
+        // increase maximum retries
+        HttpCopier copier2 = new HttpCopier( ctx, 20, 2 );
+        // and call it again.
+        assertThrows( CommandFailedException.class, allOf( containsString( "Unexpected response" ), containsString( "Initiating upload target" ) ),
+                () -> authenticateAndCopy( copier2, source, 1234, true, "user", "pass".toCharArray() ) );
+        // 24 = 3 from previous copier + 1 initial call + 20 retries
+        wireMock.verify(24, new RequestPatternBuilder( RequestMethod.ANY, UrlPattern.fromOneOf( "/import", null, null, null ) ) );
     }
 
     @Test
