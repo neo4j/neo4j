@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,14 +48,12 @@ class StaticIndexProviderMapTest
     {
         var tokenIndexProvider = mockProvider( TokenIndexProvider.class );
         var btreeIndexProvider = mockProvider( GenericNativeIndexProvider.class );
-        var fusionIndexProvider = mockProvider( FusionIndexProvider.class );
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
-                                              fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
@@ -78,14 +75,12 @@ class StaticIndexProviderMapTest
     {
         var tokenIndexProvider = mockProvider( TokenIndexProvider.class );
         var btreeIndexProvider = mockProvider( GenericNativeIndexProvider.class );
-        var fusionIndexProvider = mockProvider( FusionIndexProvider.class );
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
-                                              fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
@@ -94,7 +89,7 @@ class StaticIndexProviderMapTest
                                               new Dependencies() );
         map.init();
 
-        asList( tokenIndexProvider, btreeIndexProvider, fusionIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider, pointIndexProvider )
+        asList( tokenIndexProvider, btreeIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider, pointIndexProvider )
                 .forEach(
                         p ->
                         {
@@ -109,14 +104,12 @@ class StaticIndexProviderMapTest
     {
         var tokenIndexProvider = mockProvider( TokenIndexProvider.class );
         var btreeIndexProvider = mockProvider( GenericNativeIndexProvider.class );
-        var fusionIndexProvider = mockProvider( FusionIndexProvider.class );
         var textIndexProvider = mockProvider( TextIndexProvider.class );
         var fulltextIndexProvider = mockProvider( FulltextIndexProvider.class );
         var rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var pointIndexProvider = mockProvider( PointIndexProvider.class );
         var map = new StaticIndexProviderMap( tokenIndexProvider,
                                               btreeIndexProvider,
-                                              fusionIndexProvider,
                                               textIndexProvider,
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
@@ -128,7 +121,7 @@ class StaticIndexProviderMapTest
         var accepted = new ArrayList<>();
         map.accept( accepted::add );
 
-        assertThat( accepted ).containsExactlyInAnyOrder( tokenIndexProvider, btreeIndexProvider, fusionIndexProvider, textIndexProvider,
+        assertThat( accepted ).containsExactlyInAnyOrder( tokenIndexProvider, btreeIndexProvider, textIndexProvider,
                 fulltextIndexProvider, rangeIndexProvider, pointIndexProvider );
     }
 
@@ -144,7 +137,6 @@ class StaticIndexProviderMapTest
         RangeIndexProvider rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var map = new StaticIndexProviderMap( mockProvider( TokenIndexProvider.class ),
                                               mockProvider( GenericNativeIndexProvider.class ),
-                                              mockProvider( FusionIndexProvider.class ),
                                               mockProvider( TextIndexProvider.class ),
                                               mockProvider( FulltextIndexProvider.class ),
                                               rangeIndexProvider,

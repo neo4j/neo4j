@@ -19,93 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.nio.file.Path;
-
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.DatabaseIndexContext;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.logging.InternalLog;
-import org.neo4j.monitoring.Monitors;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.token.TokenHolders;
-import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-public class NativeLuceneFusionIndexProviderFactory30 extends AbstractIndexProviderFactory<FusionIndexProvider>
+public class NativeLuceneFusionIndexProviderFactory30
 {
     public static final String KEY = NATIVE30.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE30.providerVersion() );
-
-    @Override
-    protected Class<?> loggingClass()
-    {
-        return FusionIndexProvider.class;
-    }
-
-    @Override
-    public IndexProviderDescriptor descriptor()
-    {
-        return DESCRIPTOR;
-    }
-
-    @Override
-    protected FusionIndexProvider internalCreate( PageCache pageCache, FileSystemAbstraction fs, Monitors monitors, String monitorTag,
-                                                  Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                                  RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                                  DatabaseLayout databaseLayout, InternalLog log,
-                                                  TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
-    {
-        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
-                       contextFactory, databaseLayout.getDatabaseName() );
-    }
-
-    @VisibleForTesting
-    public static FusionIndexProvider create( PageCache pageCache, Path databaseDirectory, FileSystemAbstraction fs,
-                                              Monitors monitors, String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker,
-                                              RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                                              CursorContextFactory contextFactory, String databaseName )
-    {
-        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
-        boolean archiveFailedIndex = config.get( GraphDatabaseInternalSettings.archive_failed_index );
-
-        DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseName )
-                                                                        .withMonitors( monitors ).withTag( monitorTag )
-                                                                        .withReadOnlyChecker( readOnlyChecker )
-                                                                        .build();
-        GenericNativeIndexProvider generic =
-                new GenericNativeIndexProvider( databaseIndexContext, childDirectoryStructure,
-                        recoveryCleanupWorkCollector, config );
-        LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitors, config, readOnlyChecker );
-
-        return new FusionIndexProvider( generic, lucene, new FusionSlotSelector30(),
-                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex, readOnlyChecker );
-    }
-
-    @VisibleForTesting
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path databaseDirectory )
-    {
-        return subProviderDirectoryStructure( databaseDirectory, DESCRIPTOR );
-    }
-
-    @VisibleForTesting
-    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( Path databaseDirectory, IndexProviderDescriptor descriptor )
-    {
-        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( databaseDirectory ).forProvider( descriptor );
-        return directoriesBySubProvider( parentDirectoryStructure );
-    }
 }

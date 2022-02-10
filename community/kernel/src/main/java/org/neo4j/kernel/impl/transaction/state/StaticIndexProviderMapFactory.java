@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.index.schema.PointIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -72,10 +71,6 @@ public class StaticIndexProviderMapFactory
                 pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
                 recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
 
-        var fusionIndexProvider = life.add( new NativeLuceneFusionIndexProviderFactory30().create(
-                pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
-                recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
-
         var textIndexProvider = life.add( new TextIndexProviderFactory().create(
                 pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
                 recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
@@ -92,7 +87,7 @@ public class StaticIndexProviderMapFactory
                 pageCache, fs, logService, monitors, databaseConfig, readOnlyChecker, dbmsInfo,
                 recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
 
-        return new StaticIndexProviderMap( tokenIndexProvider, nativeIndexProvider, fusionIndexProvider, textIndexProvider, fulltextIndexProvider,
+        return new StaticIndexProviderMap( tokenIndexProvider, nativeIndexProvider, textIndexProvider, fulltextIndexProvider,
                                            rangeIndexProvider, pointIndexProvider, databaseConfig, dependencies );
     }
 }

@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
@@ -49,7 +48,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
     private final IndexProvider tokenIndexProvider;
     private final IndexProvider btreeIndexProvider;
-    private final IndexProvider fusionIndexProvider;
     private final IndexProvider textIndexProvider;
     private final IndexProvider fulltextIndexProvider;
     private final IndexProvider rangeIndexProvider;
@@ -58,14 +56,12 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final DependencyResolver dependencies;
     private volatile IndexProvider btreeDefaultIndexProvider;
 
-    public StaticIndexProviderMap( TokenIndexProvider tokenIndexProvider, GenericNativeIndexProvider btreeIndexProvider,
-                                   FusionIndexProvider fusionIndexProvider, TextIndexProvider textIndexProvider,
+    public StaticIndexProviderMap( TokenIndexProvider tokenIndexProvider, GenericNativeIndexProvider btreeIndexProvider, TextIndexProvider textIndexProvider,
                                    FulltextIndexProvider fulltextIndexProvider, RangeIndexProvider rangeIndexProvider,
                                    PointIndexProvider pointIndexProvider, Config config, DependencyResolver dependencies )
     {
         this.tokenIndexProvider = tokenIndexProvider;
         this.btreeIndexProvider = btreeIndexProvider;
-        this.fusionIndexProvider = fusionIndexProvider;
         this.textIndexProvider = textIndexProvider;
         this.fulltextIndexProvider = fulltextIndexProvider;
         this.rangeIndexProvider = rangeIndexProvider;
@@ -79,7 +75,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     {
         add( tokenIndexProvider );
         add( btreeIndexProvider );
-        add( fusionIndexProvider );
         add( textIndexProvider );
         add( fulltextIndexProvider );
         add( rangeIndexProvider );

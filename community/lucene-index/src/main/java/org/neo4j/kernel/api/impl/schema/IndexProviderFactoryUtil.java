@@ -30,12 +30,6 @@ import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directory
 
 public class IndexProviderFactoryUtil
 {
-    public static LuceneIndexProvider luceneProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            Monitors monitors, Config config, DatabaseReadOnlyChecker readOnlyChecker )
-    {
-        return new LuceneIndexProvider( fs, directoryFactory( config.get( ephemeral_lucene ) ), directoryStructure, monitors, config, readOnlyChecker );
-    }
-
     public static TextIndexProvider textProvider( FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
             Monitors monitors, Config config, DatabaseReadOnlyChecker readOnlyChecker )
     {
