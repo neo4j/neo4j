@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLog;
@@ -167,9 +168,11 @@ public class TransactionLogInitializer
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
         long transactionId = committedTx.transactionId();
-        TransactionLogWriter transactionLogWriter = logFiles.getLogFile().getTransactionLogWriter();
+        LogFile logFile = logFiles.getLogFile();
+        TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp );
         int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
+        logFile.forceAfterAppend( LogAppendEvent.NULL );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position );
         try ( CursorContext cursorContext = new CursorContext( tracer.createPageCursorTracer( LOGS_UPGRADER_TRACER_TAG ) ) )
