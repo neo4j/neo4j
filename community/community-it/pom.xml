@@ -44,7 +44,6 @@
         <module>it-test-support</module>
         <module>record-storage-engine-it</module>
         <module>kernel-it</module>
-        <module>batch-insert-it</module>
         <module>index-it</module>
         <module>import-it</module>
         <module>dbms-it</module>

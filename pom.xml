@@ -246,10 +246,6 @@
                 <packages>org.neo4j.logging:org.neo4j.logging.*</packages>
               </group>
               <group>
-                <title>Import</title>
-                <packages>org.neo4j.batchinsert</packages>
-              </group>
-              <group>
                 <title>Procedures</title>
                 <packages>org.neo4j.procedure</packages>
               </group>
@@ -265,7 +261,7 @@
 
             <!-- Include the following packages... (yes, has to be one line) -->
             <subpackages>
-              org.neo4j.graphalgo:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.batchinsert:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit:org.neo4j.configuration
+              org.neo4j.graphalgo:org.neo4j.graphdb:org.neo4j.dbms.api:org.neo4j.server.helpers:org.neo4j.server.rest.repr:org.neo4j.server.rest.web:org.neo4j.logging:org.neo4j.procedure:org.neo4j.harness.junit:org.neo4j.configuration
             </subpackages>
             <!-- ...unless the package contains -->
             <excludePackageNames>
