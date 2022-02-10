@@ -98,7 +98,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         seekCheckpointChannel( version );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
         writer = new PositionAwarePhysicalFlushableChecksumChannel( channel, buffer );
-        checkpointWriter = new DetachedCheckpointLogEntryWriter( writer );
+        checkpointWriter = new DetachedCheckpointLogEntryWriter( writer, context.getKernelVersionProvider() );
     }
 
     private void seekCheckpointChannel( long expectedVersion ) throws IOException

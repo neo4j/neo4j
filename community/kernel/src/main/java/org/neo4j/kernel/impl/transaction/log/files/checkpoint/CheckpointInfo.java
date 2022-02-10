@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.storageengine.api.StoreId;
@@ -29,22 +30,25 @@ public class CheckpointInfo
     private final LogPosition checkpointEntryPosition;
     private final LogPosition channelPositionAfterCheckpoint;
     private final LogPosition checkpointFilePostReadPosition;
+    private final KernelVersion version;
     private final StoreId storeId;
 
     public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )
     {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition );
+        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
+                checkpoint.getVersion() );
     }
 
     public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
-            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition )
+            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version )
     {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
         this.checkpointEntryPosition = checkpointEntryPosition;
         this.channelPositionAfterCheckpoint = channelPositionAfterCheckpoint;
         this.checkpointFilePostReadPosition = checkpointFilePostReadPosition;
+        this.version = version;
     }
 
     public LogPosition getTransactionLogPosition()
@@ -70,6 +74,11 @@ public class CheckpointInfo
     public LogPosition getCheckpointFilePostReadPosition()
     {
         return checkpointFilePostReadPosition;
+    }
+
+    public KernelVersion getVersion()
+    {
+        return version;
     }
 
     @Override
