@@ -59,22 +59,13 @@ public class NativeIndexFileFilter implements Predicate<Path>
             return false;
         }
 
-        // - schema/index/lucene
-        // - schema/index/lucene_native-1.0
-        // - schema/index/lucene_native-2.0
+        // - schema/index/text-1.0
+        // - schema/index/fulltext-1.0
         String schemaBaseName = schemaPath.getName( 0 ).toString();
-        boolean isDeprecatedProviderFile =
-                schemaBaseName.equals( "lucene" ) ||
-                schemaBaseName.equals( "lucene_native-1.0" ) ||
-                schemaBaseName.equals( "lucene_native-2.0" );
-
         boolean isLuceneBackedTextIndex =
                 schemaBaseName.equals( TextIndexProvider.DESCRIPTOR.name() ) ||
                 schemaBaseName.equals( FulltextIndexProviderFactory.DESCRIPTOR.name() );
 
-        // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
-        boolean isFusionLuceneProviderFile = nameCount >= 3 && schemaPath.getName( 2 ).toString().startsWith( "lucene-" );
-
-        return !isDeprecatedProviderFile && !isFusionLuceneProviderFile && !isLuceneBackedTextIndex;
+        return !isLuceneBackedTextIndex;
     }
 }
