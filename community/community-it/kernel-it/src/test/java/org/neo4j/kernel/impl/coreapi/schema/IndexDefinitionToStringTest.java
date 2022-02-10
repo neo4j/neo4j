@@ -125,31 +125,31 @@ class IndexDefinitionToStringTest
             assertIndexString( relTypeTokenIndex,
                                "IndexDefinition[relationship type:<any-types>] " +
                                "(Index( id=%d, name='relTypeTokenIndex', type='TOKEN LOOKUP', " +
-                               "schema=-[:<any-types>]-, indexProvider='token-lookup-1.0' ))" );
+                               "schema=()-[:<any-types>]-(), indexProvider='token-lookup-1.0' ))" );
             assertIndexString( relTypeProperty,
                                "IndexDefinition[relationship type:someRelationship on:someProperty] " +
                                "(Index( id=%d, name='relTypeIndexName', type='GENERAL BTREE', " +
-                               "schema=-[:someRelationship {someProperty}]-, indexProvider='native-btree-1.0' ))" );
+                               "schema=()-[:someRelationship {someProperty}]-(), indexProvider='native-btree-1.0' ))" );
             assertIndexString( relTypeProperties,
                                "IndexDefinition[relationship type:someRelationship on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='relTypeIndexNames', type='GENERAL BTREE', " +
-                               "schema=-[:someRelationship {someProperty, someOtherProperty}]-, indexProvider='native-btree-1.0' ))" );
+                               "schema=()-[:someRelationship {someProperty, someOtherProperty}]-(), indexProvider='native-btree-1.0' ))" );
             assertIndexString( rangeRelTypeProperties,
                                "IndexDefinition[relationship type:someRelationship on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='rangeRelTypeIndexNames', type='GENERAL RANGE', " +
-                               "schema=-[:someRelationship {someProperty, someOtherProperty}]-, indexProvider='range-1.0' ))" );
+                               "schema=()-[:someRelationship {someProperty, someOtherProperty}]-(), indexProvider='range-1.0' ))" );
             assertIndexString( fulltextRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
                                "(Index( id=%d, name='fulltextRelTypePropertyIndex', type='GENERAL FULLTEXT', " +
-                               "schema=-[:TYPE {prop}]-, indexProvider='fulltext-1.0' ))" );
+                               "schema=()-[:TYPE {prop}]-(), indexProvider='fulltext-1.0' ))" );
             assertIndexString( fulltextRelTypesProperties, "IndexDefinition[relationship types:TYPE,OTHER_TYPE on:prop,otherProp] " +
                                "(Index( id=%d, name='fulltextRelTypesPropertiesIndex', type='GENERAL FULLTEXT', " +
-                               "schema=-[:TYPE:OTHER_TYPE {prop, otherProp}]-, indexProvider='fulltext-1.0' ))" );
+                               "schema=()-[:TYPE:OTHER_TYPE {prop, otherProp}]-(), indexProvider='fulltext-1.0' ))" );
             assertIndexString( textRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
                                "(Index( id=%d, name='textRelTypePropertyIndex', type='GENERAL TEXT', " +
-                               "schema=-[:TYPE {prop}]-, indexProvider='text-1.0' ))" );
+                               "schema=()-[:TYPE {prop}]-(), indexProvider='text-1.0' ))" );
             assertIndexString( pointRelTypeProperty, "IndexDefinition[relationship type:TYPE on:prop] " +
                                "(Index( id=%d, name='pointRelTypePropertyIndex', type='GENERAL POINT', " +
-                               "schema=-[:TYPE {prop}]-, indexProvider='point-1.0' ))" );
+                               "schema=()-[:TYPE {prop}]-(), indexProvider='point-1.0' ))" );
         }
     }
 

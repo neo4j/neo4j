@@ -40,8 +40,8 @@ public final class SchemaUserDescription
 
     static String forSchema( TokenNameLookup tokenNameLookup, EntityType entityType, int[] entityTokens, int[] propertyKeyIds )
     {
-        String prefix = entityType == RELATIONSHIP ? "-[" : "(";
-        String suffix = entityType == RELATIONSHIP ? "]-" : ")";
+        String prefix = entityType == RELATIONSHIP ? "()-[" : "(";
+        String suffix = entityType == RELATIONSHIP ? "]-()" : ")";
 
         // Token indexes, that works on all entity tokens, have no specified entityTokens or propertyKeyIds.
         if ( entityTokens.length == 0 && propertyKeyIds.length == 0 )

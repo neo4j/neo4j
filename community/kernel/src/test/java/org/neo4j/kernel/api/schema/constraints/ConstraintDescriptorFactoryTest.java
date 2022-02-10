@@ -112,7 +112,7 @@ class ConstraintDescriptorFactoryTest
         assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).withId( 1 ).withName( "Constraint 1" ).userDescription( SIMPLE_NAME_LOOKUP ) )
                 .isEqualTo( "Constraint( id=1, name='Constraint 1', type='NODE PROPERTY EXISTENCE', schema=(:Label1 {property2}) )" );
         assertThat( ConstraintDescriptorFactory.existsForRelType( 1, 3 ).withId( 2 ).withName( "Constraint 2" ).userDescription( SIMPLE_NAME_LOOKUP ) )
-                .isEqualTo( "Constraint( id=2, name='Constraint 2', type='RELATIONSHIP PROPERTY EXISTENCE', schema=-[:RelType1 {property3}]- )" );
+                .isEqualTo( "Constraint( id=2, name='Constraint 2', type='RELATIONSHIP PROPERTY EXISTENCE', schema=()-[:RelType1 {property3}]-() )" );
         assertThat( ConstraintDescriptorFactory.uniqueForLabel( 2, 4 ).withId( 3 ).withName( "Constraint 3" ).userDescription( SIMPLE_NAME_LOOKUP ) )
                 .isEqualTo( "Constraint( id=3, name='Constraint 3', type='UNIQUENESS', schema=(:Label2 {property4}) )" );
     }

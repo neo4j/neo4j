@@ -130,7 +130,7 @@ class SchemaStorageTest
 
         var e = assertThrows( SchemaRuleNotFoundException.class, () ->
             storage.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), StoreCursors.NULL ) );
-        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for -[:Type1 {prop1}]-." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "No relationship type property existence constraint was found for ()-[:Type1 {prop1}]-()." );
     }
 
     @Test
@@ -147,7 +147,7 @@ class SchemaStorageTest
         var e = assertThrows( DuplicateSchemaRuleException.class, () ->
             schemaStorageSpy.constraintsGetSingle( ConstraintDescriptorFactory.existsForRelType( TYPE1_ID, PROP1_ID ), StoreCursors.NULL ) );
 
-        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for -[:Type1 {prop1}]-." );
+        assertThat( e, tokenNameLookup ).hasUserMessage( "Multiple relationship type property existence constraints found for ()-[:Type1 {prop1}]-()." );
     }
 
     private static TokenNameLookup getDefaultTokenNameLookup()

@@ -88,11 +88,11 @@ class SchemaDescriptorTest
     void shouldGiveNiceUserDescriptions()
     {
         assertThat( SchemaDescriptors.forLabel( 1, 2 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "(:Label1 {property2})" );
-        assertThat( SchemaDescriptors.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "-[:RelType1 {property3}]-" );
+        assertThat( SchemaDescriptors.forRelType( 1, 3 ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) ).isEqualTo( "()-[:RelType1 {property3}]-()" );
         assertThat( SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) )
                 .isEqualTo( "(:<any-labels>)" );
         assertThat( SchemaDescriptors.forAnyEntityTokens( EntityType.RELATIONSHIP ).userDescription( SchemaTestUtil.SIMPLE_NAME_LOOKUP ) )
-                .isEqualTo( "-[:<any-types>]-" );
+                .isEqualTo( "()-[:<any-types>]-()" );
     }
 
     @ParameterizedTest
