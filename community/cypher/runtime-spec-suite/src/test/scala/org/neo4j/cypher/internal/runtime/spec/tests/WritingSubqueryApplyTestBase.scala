@@ -48,7 +48,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.eager()
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -61,11 +61,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
   test("should handle RHS with R/W dependencies - with Argument on RHS") {
     // given
     val sizeHint = 16
-    val inputVals = (0 until sizeHint).toArray
-    val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
-      nodeGraph(1)
+    val nodes = given {
+      nodeGraph(sizeHint)
     }
 
     // when
@@ -73,15 +71,13 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .produceResults("x")
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.argument("x")
-      .input(variables = Seq("x"))
-      .build()
+      .allNodeScan("x")
+      .build(readOnly = false)
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime)
 
-    // val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
-    val expected = inputVals
+    val expected = nodes
 
     // then
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
@@ -106,7 +102,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.eager()
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -119,11 +115,9 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
   test("should handle RHS with R/W dependencies - with aggregation on top of Apply and Argument on RHS") {
     // given
     val sizeHint = 16
-    val inputVals = (0 until sizeHint).toArray
-    val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
-      nodeGraph(1)
+    val nodes = given {
+      nodeGraph(sizeHint)
     }
 
     // when
@@ -132,14 +126,13 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.argument("x")
-      .input(variables = Seq("x"))
-      .build()
+      .allNodeScan("x")
+      .build(readOnly = false)
 
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = inputVals.length
+    val expected = nodes.length
 
     // then
     runtimeResult should beColumns("c").withSingleRow(expected)
@@ -165,7 +158,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -188,12 +181,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .produceResults("x")
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.nodeHashJoin("x")
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -224,7 +216,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -248,12 +240,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.nodeHashJoin("x")
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -284,7 +275,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -317,12 +308,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .produceResults("x")
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.union()
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -354,7 +344,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -388,12 +378,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.union()
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -424,7 +413,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("z", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -457,12 +446,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .produceResults("x")
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.cartesianProduct()
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -494,7 +482,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("z", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -528,12 +516,11 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.cartesianProduct()
       .|.|.argument("z", "x")
       .|.argument("y", "x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -567,7 +554,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -600,7 +587,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .produceResults("x")
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.union()
       .|.|.union()
       .|.|.|.limit(1)
@@ -608,7 +594,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -643,7 +629,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.allNodeScan("y", "x")
       .|.allNodeScan("y", "x")
       .input(variables = Seq("x"))
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
 
@@ -677,7 +663,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .aggregation(Seq.empty, Seq("count(x) AS c"))
       .apply(fromSubquery = true)
       .|.create(createNode("n"))
-      .|.eager()
       .|.union()
       .|.|.union()
       .|.|.|.limit(1)
@@ -685,7 +670,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .|.|.argument("x")
       .|.argument("x")
       .allNodeScan("x")
-      .build()
+      .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
 
