@@ -291,7 +291,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
                     try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
                     {
-                        persisNodeLabelIndex( dstAccess );
+                        persistNodeLabelIndex( dstAccess );
                         filterOurBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
                                                directoryLayoutArg.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) );
                     }
@@ -321,7 +321,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      *    {@link IndexDescriptor#INJECTED_NLI} will be injected by {@link org.neo4j.internal.recordstorage.SchemaStorage}
      *    when reading schema rules. In this case we materialise this injected rule with a new real id (instead of -2).
      */
-    private static void persisNodeLabelIndex( SchemaRuleMigrationAccess dstAccess ) throws KernelException
+    private static void persistNodeLabelIndex( SchemaRuleMigrationAccess dstAccess ) throws KernelException
     {
         SchemaRule foundNLIThatNeedsUpdate = null;
         Iterable<SchemaRule> all = dstAccess.getAll();
