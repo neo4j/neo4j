@@ -22,10 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeHasProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeProperty
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedProperty
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedRelationshipHasProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedRelationshipProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -35,6 +39,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
@@ -195,96 +202,178 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
   override def children: Seq[AstNode[_]] = Seq(variable, propertyKey)
 }
 
-case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Predicate {
+abstract class CachedNodePropertyExists(cp: AbstractCachedProperty) extends Predicate {
+
+  protected def readFromStoreAndCache(nodeId: Long,
+                                      propId: Int,
+                                      ctx: ReadableRow,
+                                      query: QueryContext,
+                                      nodeCursor: NodeCursor,
+                                      propertyCursor: PropertyCursor): Boolean
+
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    cachedNodeProperty match {
-      case cp: AbstractCachedNodeProperty =>
-        val nodeId = cp.getId(ctx)
-        if (nodeId == StatementConstants.NO_SUCH_NODE) {
-          None
-        } else {
-          cp.getPropertyKey(state.query) match {
-            case StatementConstants.NO_SUCH_PROPERTY_KEY =>
-              Some(false)
-            case propId =>
-              state.query.nodeReadOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
-                case None => // no change in TX state
-                  cp.getCachedProperty(ctx) match {
-                    case null =>
-                      // the cached node property has been invalidated
-                      val property = state.query.nodeReadOps.getProperty(nodeId, propId, state.cursors.nodeCursor, state.cursors.propertyCursor, throwOnDeleted = false)
-                      // Re-cache the value
-                      cp.setCachedProperty(ctx, property)
-                      Some(!(property eq Values.NO_VALUE))
-                    case IsNoValue() =>
-                      Some(false)
-                    case _ =>
-                      Some(true)
-                  }
-                case changedInTXState =>
-                  changedInTXState
+    val nodeId = cp.getId(ctx)
+    if (nodeId == StatementConstants.NO_SUCH_NODE) {
+      None
+    } else {
+      val query = state.query
+      cp.getPropertyKey(query) match {
+        case StatementConstants.NO_SUCH_PROPERTY_KEY =>
+          Some(false)
+        case propId =>
+          query.nodeReadOps.hasTxStatePropertyForCachedProperty(nodeId, propId) match {
+            case None => // no change in TX state
+              cp.getCachedProperty(ctx) match {
+                case null =>
+                  // the cached node property has been invalidated
+                  val cursors = state.cursors
+                  Some(readFromStoreAndCache(nodeId, propId, ctx, query, cursors.nodeCursor, cursors.propertyCursor))
+                case IsNoValue() =>
+                  Some(false)
+                case _ =>
+                  Some(true)
               }
+            case changedInTXState =>
+              changedInTXState
           }
-        }
-      case _ => throw new CypherTypeException("Expected " + cachedNodeProperty + " to be a cached node property.")
+      }
     }
   }
 
-  override def toString: String = s"hasCachedNodeProp($cachedNodeProperty)"
+  override def rewrite(f: Expression => Expression): Expression =
+    f(CachedNodePropertyExists(cp.rewrite(f)))
+
+  override def toString: String = s"hasCachedNodeProp($cp)"
 
   override def containsIsNull = false
 
-  override def rewrite(f: Expression => Expression): Expression = f(CachedNodePropertyExists(cachedNodeProperty.rewrite(f)))
+  override def arguments: Seq[Expression] = Seq(cp)
 
-  override def arguments: Seq[Expression] = Seq(cachedNodeProperty)
-
-  override def children: Seq[AstNode[_]] = Seq(cachedNodeProperty)
+  override def children: Seq[AstNode[_]] = Seq(cp)
 }
 
-case class CachedRelationshipPropertyExists(cachedRelProperty: Expression) extends Predicate {
+object CachedNodePropertyExists {
+  def apply(expression: Expression): CachedNodePropertyExists = expression match {
+    case cp: AbstractCachedNodeProperty => CachedNodePropertyExistsWithValue(cp)
+    case cp: AbstractCachedNodeHasProperty => CachedNodePropertyExistsWithoutValue(cp)
+    case _ => throw new CypherTypeException("Expected " + expression + " to be a cached node property.")
+  }
+}
+
+case class CachedNodePropertyExistsWithValue(cachedNodeProperty: AbstractCachedNodeProperty) extends CachedNodePropertyExists(cachedNodeProperty) {
+
+  override protected def readFromStoreAndCache(nodeId: Long,
+                                               propId: Int,
+                                               ctx: ReadableRow,
+                                               query: QueryContext,
+                                               nodeCursor: NodeCursor,
+                                               propertyCursor: PropertyCursor): Boolean = {
+    val property = query.nodeReadOps.getProperty(nodeId, propId, nodeCursor, propertyCursor, throwOnDeleted = false)
+    // Re-cache the value
+    cachedNodeProperty.setCachedProperty(ctx, property)
+    !(property eq Values.NO_VALUE)
+  }
+}
+
+case class CachedNodePropertyExistsWithoutValue(cachedNodeProperty: AbstractCachedNodeHasProperty) extends CachedNodePropertyExists(cachedNodeProperty) {
+  override protected def readFromStoreAndCache(nodeId: Long,
+                                               propId: Int,
+                                               ctx: ReadableRow,
+                                               query: QueryContext,
+                                               nodeCursor: NodeCursor,
+                                               propertyCursor: PropertyCursor): Boolean = {
+    //NOTE: we don't need the actual value
+    val hasProp = query.nodeReadOps.hasProperty(nodeId, propId, nodeCursor, propertyCursor)
+    // Re-cache if the value was there or not
+    cachedNodeProperty.setCachedProperty(ctx, if (hasProp) Values.TRUE else Values.NO_VALUE)
+    hasProp
+  }
+}
+
+abstract class CachedRelationshipPropertyExists(cp: AbstractCachedProperty) extends Predicate {
+
+  protected def readFromStoreAndCache(relId: Long,
+                                      propId: Int,
+                                      ctx: ReadableRow,
+                                      query: QueryContext,
+                                      relCursor: RelationshipScanCursor,
+                                      propertyCursor: PropertyCursor): Boolean
+
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    cachedRelProperty match {
-      case cp: AbstractCachedRelationshipProperty =>
-        val relId = cp.getId(ctx)
-        if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
-          None
-        } else {
-          cp.getPropertyKey(state.query) match {
-            case StatementConstants.NO_SUCH_PROPERTY_KEY =>
-              Some(false)
-            case propId =>
-              state.query.relationshipReadOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
-                case None => // no change in TX state
-                  cp.getCachedProperty(ctx) match {
-                    case null =>
-                      // the cached rel property has been invalidated
-                      val property = state.query.relationshipReadOps.getProperty(relId, propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, throwOnDeleted = false)
-                      // Re-cache the value
-                      cp.setCachedProperty(ctx, property)
-                      Some(!(property eq Values.NO_VALUE))
-                    case IsNoValue() =>
-                      Some(false)
-                    case _ =>
-                      Some(true)
-                  }
-                case changedInTXState =>
-                  changedInTXState
+    val relId = cp.getId(ctx)
+    if (relId == StatementConstants.NO_SUCH_RELATIONSHIP) {
+      None
+    } else {
+      val query = state.query
+      cp.getPropertyKey(query) match {
+        case StatementConstants.NO_SUCH_PROPERTY_KEY =>
+          Some(false)
+        case propId =>
+          query.relationshipReadOps.hasTxStatePropertyForCachedProperty(relId, propId) match {
+            case None => // no change in TX state
+              cp.getCachedProperty(ctx) match {
+                case null =>
+                  // the cached rel property has been invalidated
+                  val cursors = state.cursors
+                  Some(readFromStoreAndCache(relId, propId, ctx, query, cursors.relationshipScanCursor, cursors.propertyCursor))
+                case IsNoValue() =>
+                  Some(false)
+                case _ =>
+                  Some(true)
               }
+            case changedInTXState =>
+              changedInTXState
           }
-        }
-      case _ => throw new CypherTypeException("Expected " + cachedRelProperty + " to be a cached relationship property.")
+      }
     }
   }
 
-  override def toString: String = s"hasCachedRelationshipProp($cachedRelProperty)"
+  override def rewrite(f: Expression => Expression): Expression = f(CachedRelationshipPropertyExists(cp.rewrite(f)))
+
+  override def toString: String = s"hasCachedRelationshipProp($cp)"
 
   override def containsIsNull = false
 
-  override def rewrite(f: Expression => Expression): Expression = f(CachedRelationshipPropertyExists(cachedRelProperty.rewrite(f)))
+  override def arguments: Seq[Expression] = Seq(cp)
 
-  override def arguments: Seq[Expression] = Seq(cachedRelProperty)
+  override def children: Seq[AstNode[_]] = Seq(cp)
+}
 
-  override def children: Seq[AstNode[_]] = Seq(cachedRelProperty)
+object CachedRelationshipPropertyExists {
+  def apply(expression: Expression): CachedRelationshipPropertyExists = expression match {
+    case cp: AbstractCachedRelationshipProperty => CachedRelationshipPropertyExistsWithValue(cp)
+    case cp: AbstractCachedRelationshipHasProperty => CachedRelationshipPropertyExistsWithoutValue(cp)
+    case _ => throw new CypherTypeException("Expected " + expression + " to be a cached relationship property.")
+  }
+}
+
+case class CachedRelationshipPropertyExistsWithValue(cachedRelProperty: AbstractCachedRelationshipProperty) extends CachedRelationshipPropertyExists(cachedRelProperty) {
+  override protected def readFromStoreAndCache(relId: Long,
+                                               propId: Int,
+                                               ctx: ReadableRow,
+                                               query: QueryContext,
+                                               relCursor: RelationshipScanCursor,
+                                               propertyCursor: PropertyCursor): Boolean = {
+    val property = query.relationshipReadOps.getProperty(relId, propId, relCursor, propertyCursor, throwOnDeleted = false)
+    // Re-cache the value
+    cachedRelProperty.setCachedProperty(ctx, property)
+    !(property eq Values.NO_VALUE)
+  }
+}
+
+case class CachedRelationshipPropertyExistsWithoutValue(cachedRelProperty: AbstractCachedRelationshipHasProperty) extends CachedRelationshipPropertyExists(cachedRelProperty) {
+  override protected def readFromStoreAndCache(relId: Long,
+                                               propId: Int,
+                                               ctx: ReadableRow,
+                                               query: QueryContext,
+                                               relCursor: RelationshipScanCursor,
+                                               propertyCursor: PropertyCursor): Boolean = {
+    //NOTE: we don't need the actual value
+    val hasProp = query.relationshipReadOps.hasProperty(relId, propId, relCursor, propertyCursor)
+    // Re-cache if the value was there or not
+    cachedRelProperty.setCachedProperty(ctx, if (hasProp) Values.TRUE else Values.NO_VALUE)
+    hasProp
+  }
 }
 
 trait StringOperator {
