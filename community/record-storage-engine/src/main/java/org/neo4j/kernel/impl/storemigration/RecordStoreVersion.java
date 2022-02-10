@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.util.Optional;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -67,9 +68,9 @@ public class RecordStoreVersion implements StoreVersion
     }
 
     @Override
-    public String latestStoreVersion()
+    public String latestStoreVersion( Config config )
     {
-        return RecordFormatSelector.findLatestSupportedFormatInFamily( format ).map( RecordFormats::storeVersion ).orElse( storeVersion() );
+        return RecordFormatSelector.findLatestSupportedFormatInFamily( format, config ).map( RecordFormats::storeVersion ).orElse( storeVersion() );
     }
 
     @Override

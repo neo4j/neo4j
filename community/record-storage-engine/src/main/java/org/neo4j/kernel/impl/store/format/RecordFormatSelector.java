@@ -317,6 +317,17 @@ public class RecordFormatSelector
         }
     }
 
+    public static Optional<RecordFormats> findLatestSupportedFormatInFamily( RecordFormats result, Config config )
+    {
+        var specificFormat = config.get( GraphDatabaseInternalSettings.select_specific_record_format );
+        var includeDevFormats = config.get( GraphDatabaseInternalSettings.include_versions_under_development );
+        if ( StringUtils.isNotEmpty( specificFormat ) )
+        {
+            return Optional.of( selectSpecificFormat( specificFormat, includeDevFormats ) );
+        }
+        return findLatestFormatInFamily( result, includeDevFormats );
+    }
+
     public static Optional<RecordFormats> findLatestSupportedFormatInFamily( RecordFormats result )
     {
         return findLatestFormatInFamily( result, false );

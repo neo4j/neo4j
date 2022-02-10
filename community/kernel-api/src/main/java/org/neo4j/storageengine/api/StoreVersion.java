@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.util.Optional;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.util.Bits;
@@ -53,8 +54,9 @@ public interface StoreVersion
 
     /**
      * @return the latest store version within the same version history line as this store version.
+     * @param config
      */
-    String latestStoreVersion();
+    String latestStoreVersion( Config config );
 
     boolean isCompatibleWith( StoreVersion otherVersion );
 

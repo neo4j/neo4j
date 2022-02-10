@@ -77,7 +77,7 @@ public class StoreVersionLoader implements AutoCloseable
 
         String storeVersion = versionCheck.storeVersion( CursorContext.NULL_CONTEXT )
             .orElseThrow( () -> new IllegalStateException( "Can not read store version of database " + layout.getDatabaseName() ) );
-        return new Result( storeVersion, sef.versionInformation( storeVersion ).latestStoreVersion() );
+        return new Result( storeVersion, sef.versionInformation( storeVersion ).latestStoreVersion( config ) );
     }
 
     public static class Result

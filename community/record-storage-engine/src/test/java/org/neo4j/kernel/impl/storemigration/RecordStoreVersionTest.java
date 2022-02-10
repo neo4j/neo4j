@@ -74,7 +74,7 @@ class RecordStoreVersionTest
 
     private static void assertVersionFindsLatest( RecordFormats format, RecordFormats latest )
     {
-        assertThat( new RecordStoreVersion( format ).latestStoreVersion() ).isEqualTo( latest.storeVersion() );
+        assertThat( new RecordStoreVersion( format ).latestStoreVersion( Config.defaults() ) ).isEqualTo( latest.storeVersion() );
     }
 
     @Nested
