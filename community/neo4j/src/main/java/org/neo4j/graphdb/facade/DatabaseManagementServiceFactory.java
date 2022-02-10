@@ -290,7 +290,7 @@ public class DatabaseManagementServiceFactory
             Path proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
             LogService logService = globalModule.getLogService();
             InternalLog internalLog = logService.getInternalLog( GlobalProcedures.class );
-            InternalLog proceduresLog = logService.getUserLog( GlobalProcedures.class );
+            Log proceduresLog = logService.getUserLog( GlobalProcedures.class );
 
             ProcedureConfig procedureConfig = new ProcedureConfig( globalConfig );
             Edition neo4jEdition = globalModule.getDbmsInfo().edition;

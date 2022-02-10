@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.Log;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
@@ -123,7 +124,7 @@ class BuiltInProceduresTest
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
     private final SystemGraphComponents systemGraphComponents = new SystemGraphComponents();
-    private final InternalLog log = mock( InternalLog.class );
+    private final Log log = mock( InternalLog.class );
 
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
 
@@ -138,7 +139,7 @@ class BuiltInProceduresTest
         procs.registerComponent( ProcedureCallContext.class, Context::procedureCallContext, true );
         procs.registerComponent( SystemGraphComponents.class, ctx -> systemGraphComponents, false );
 
-        procs.registerComponent( InternalLog.class, ctx -> log, false );
+        procs.registerComponent( Log.class, ctx -> log, false );
         procs.registerType( Node.class, NTNode );
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
