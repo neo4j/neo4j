@@ -58,8 +58,8 @@ public class LogHeaderWriter
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
         channel.putLong( storeId.getStoreVersion() );
-        channel.putLong( storeId.getUpgradeTime() );
-        channel.putLong( storeId.getUpgradeTxId() );
+        channel.putLong( 0 /* reserved */ );
+        channel.putLong( 0 /* reserved */ );
         channel.putLong( 0 /* reserved */ );
     }
 
@@ -74,8 +74,8 @@ public class LogHeaderWriter
             buffer.putLong( storeId.getCreationTime() );
             buffer.putLong( storeId.getRandomId() );
             buffer.putLong( storeId.getStoreVersion() );
-            buffer.putLong( storeId.getUpgradeTime() );
-            buffer.putLong( storeId.getUpgradeTxId() );
+            buffer.putLong( 0 /* reserved */ );
+            buffer.putLong( 0 /* reserved */ );
             buffer.putLong( 0 /* reserved */ );
             buffer.flip();
             channel.writeAll( buffer );

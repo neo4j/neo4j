@@ -87,7 +87,7 @@ class CheckPointerImplTest
     private final long transactionId = 42L;
     private final LogPosition logPosition = new LogPosition( 16L, 233L );
     private final Clock clock = Clocks.fakeClock();
-    private final StoreId storeId = new StoreId( 1, 2, 3, 4, 5 );
+    private final StoreId storeId = new StoreId( 1, 2, 3 );
 
     @Test
     void shouldNotFlushIfItIsNotNeeded() throws Throwable

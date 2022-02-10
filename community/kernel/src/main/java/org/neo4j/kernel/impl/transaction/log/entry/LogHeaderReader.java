@@ -109,7 +109,9 @@ public final class LogHeaderReader
                 return null;
             }
             long previousCommittedTx = buffer.getLong();
-            StoreId storeId = new StoreId( buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong(), buffer.getLong() );
+            StoreId storeId = new StoreId( buffer.getLong(), buffer.getLong(), buffer.getLong() );
+            buffer.getLong(); // legacy upgrade time
+            buffer.getLong(); // legacy upgrade tx id
             buffer.getLong(); // reserved
             return new LogHeader( logFormatVersion, logVersion, previousCommittedTx, storeId, LOG_HEADER_SIZE_4_0 );
         }

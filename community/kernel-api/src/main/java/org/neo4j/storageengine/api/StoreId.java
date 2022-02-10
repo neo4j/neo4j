@@ -25,15 +25,13 @@ import java.util.Random;
 
 public final class StoreId
 {
-    public static final StoreId UNKNOWN = new StoreId( -1, -1, -1, -1, -1 );
+    public static final StoreId UNKNOWN = new StoreId( -1, -1, -1 );
 
     private static final Random r = new SecureRandom();
 
     private final long creationTime;
     private final long randomId;
     private final long storeVersion;
-    private final long upgradeTime;
-    private final long upgradeTxId;
 
     public StoreId( long storeVersion )
     {
@@ -43,22 +41,13 @@ public final class StoreId
         this.storeVersion = storeVersion;
         this.creationTime = currentTimeMillis;
         this.randomId = randomLong;
-        this.upgradeTime = currentTimeMillis;
-        this.upgradeTxId = randomLong;
     }
 
     public StoreId( long creationTime, long randomId, long storeVersion )
     {
-        this( creationTime, randomId, storeVersion, creationTime, randomId );
-    }
-
-    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeTxId )
-    {
         this.creationTime = creationTime;
         this.randomId = randomId;
         this.storeVersion = storeVersion;
-        this.upgradeTime = upgradeTime;
-        this.upgradeTxId = upgradeTxId;
     }
 
     public long getCreationTime()
@@ -69,16 +58,6 @@ public final class StoreId
     public long getRandomId()
     {
         return randomId;
-    }
-
-    public long getUpgradeTime()
-    {
-        return upgradeTime;
-    }
-
-    public long getUpgradeTxId()
-    {
-        return upgradeTxId;
     }
 
     public long getStoreVersion()
@@ -100,9 +79,7 @@ public final class StoreId
         StoreId storeId = (StoreId) o;
         return creationTime == storeId.creationTime &&
                randomId == storeId.randomId &&
-               storeVersion == storeId.storeVersion &&
-               upgradeTime == storeId.upgradeTime &&
-               upgradeTxId == storeId.upgradeTxId;
+               storeVersion == storeId.storeVersion;
     }
 
     public boolean equalsIgnoringVersion( Object o )
@@ -117,22 +94,6 @@ public final class StoreId
         }
         StoreId storeId = (StoreId) o;
         return creationTime == storeId.creationTime && randomId == storeId.randomId;
-    }
-
-    public boolean equalsIgnoringLocalUpgradeMetadata( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        StoreId storeId = (StoreId) o;
-        return creationTime == storeId.creationTime &&
-               randomId == storeId.randomId &&
-               storeVersion == storeId.storeVersion;
     }
 
     public boolean compatibleIncludingMinorUpgrade( StorageEngineFactory storageEngineFactory, StoreId otherStoreId )
@@ -152,7 +113,7 @@ public final class StoreId
     @Override
     public int hashCode()
     {
-        return Objects.hash( creationTime, randomId, storeVersion, upgradeTime, upgradeTxId );
+        return Objects.hash( creationTime, randomId, storeVersion );
     }
 
     @Override
@@ -162,8 +123,6 @@ public final class StoreId
                 "creationTime=" + creationTime +
                 ", randomId=" + randomId +
                 ", storeVersion=" + storeVersion +
-                ", upgradeTime=" + upgradeTime +
-                ", upgradeTxId=" + upgradeTxId +
                 '}';
     }
 }

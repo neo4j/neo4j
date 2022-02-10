@@ -46,7 +46,9 @@ class DetachedCheckpointLogEntryParser extends LogEntryParser
         long logVersion = channel.getLong();
         long byteOffset = channel.getLong();
         long checkpointTimeMillis = channel.getLong();
-        StoreId storeId = new StoreId( channel.getLong(), channel.getLong(), channel.getLong(), channel.getLong(), channel.getLong() );
+        StoreId storeId = new StoreId( channel.getLong(), channel.getLong(), channel.getLong() );
+        channel.getLong(); // legacy upgrade time
+        channel.getLong(); // legacy upgrade tx id
         short reasonBytesLength = channel.getShort();
         byte[] bytes = new byte[MAX_DESCRIPTION_LENGTH];
         channel.get( bytes, MAX_DESCRIPTION_LENGTH );

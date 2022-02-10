@@ -69,7 +69,7 @@ class DetachedCheckpointLogEntryParserTest
     void parseDetachedCheckpointRecord() throws IOException
     {
         KernelVersion version = KernelVersion.V4_3_D4;
-        var storeId = new StoreId( 4, 5, 6, 7, 8 );
+        var storeId = new StoreId( 4, 5, 6 );
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;
         String checkpointDescription = "checkpoint";
@@ -83,8 +83,8 @@ class DetachedCheckpointLogEntryParserTest
                .putLong( storeId.getCreationTime() )
                .putLong( storeId.getRandomId() )
                .putLong( storeId.getStoreVersion() )
-               .putLong( storeId.getUpgradeTime() )
-               .putLong( storeId.getUpgradeTxId() )
+               .putLong( 0 ) // legacy upgrade timestamp
+               .putLong( 0 ) // legacy upgrade tx id
                .putShort( (short) checkpointDescription.getBytes().length )
                .put( bytes, bytes.length );
         channel.putChecksum();

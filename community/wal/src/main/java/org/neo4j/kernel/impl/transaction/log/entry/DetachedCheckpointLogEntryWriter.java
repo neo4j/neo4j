@@ -61,8 +61,8 @@ public class DetachedCheckpointLogEntryWriter
                .putLong( storeId.getCreationTime() )
                .putLong( storeId.getRandomId() )
                .putLong( storeId.getStoreVersion() )
-               .putLong( storeId.getUpgradeTime() )
-               .putLong( storeId.getUpgradeTxId() )
+               .putLong( 0 ) // legacy update time
+               .putLong( 0 ) // legacy upgrade tx id
                .putShort( length )
                .put( descriptionBytes, descriptionBytes.length );
         channel.putChecksum();

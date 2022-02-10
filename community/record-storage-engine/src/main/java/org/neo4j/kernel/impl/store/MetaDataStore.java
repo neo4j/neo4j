@@ -438,8 +438,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime(), databaseName, cursorContext );
         setRecord( pageCache, neoStore, Position.RANDOM_NUMBER, storeId.getRandomId(), databaseName, cursorContext );
         setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, storeId.getUpgradeTime(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, storeId.getUpgradeTxId(), databaseName, cursorContext );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, 0, databaseName, cursorContext );
+        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, 0, databaseName, cursorContext );
 
         setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, upgradeTxChecksum, databaseName, cursorContext );
         setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, databaseName, cursorContext );
@@ -502,7 +502,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     @Override
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );
+        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
     }
 
     @Override
@@ -518,9 +518,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return new StoreId(
                 getRecord( pageCache, neoStore, Position.TIME, databaseName, cursorContext ),
                 getRecord( pageCache, neoStore, Position.RANDOM_NUMBER, databaseName, cursorContext ),
-                getRecord( pageCache, neoStore, Position.STORE_VERSION, databaseName, cursorContext ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TIME, databaseName, cursorContext ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, databaseName, cursorContext )
+                getRecord( pageCache, neoStore, Position.STORE_VERSION, databaseName, cursorContext )
         );
     }
 

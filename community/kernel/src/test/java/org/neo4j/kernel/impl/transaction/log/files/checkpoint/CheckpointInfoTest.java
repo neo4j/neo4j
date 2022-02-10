@@ -34,7 +34,7 @@ class CheckpointInfoTest
     void checkpointInfoOfDetachedCheckpointEntry()
     {
         var logPosition = new LogPosition( 0, 1 );
-        var storeId = new StoreId( 3, 4, 5, 6, 7 );
+        var storeId = new StoreId( 3, 4, 5 );
         LogPosition position = new LogPosition( 1, 2 );
         LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
         LogPosition postReaderPosition = new LogPosition( 5, 6 );

@@ -76,7 +76,7 @@ class LogHeaderReaderTest
     {
         expectedLogVersion = random.nextLong( 0, LOG_VERSION_MASK );
         expectedTxId = random.nextLong();
-        expectedStoreId = new StoreId( random.nextLong(), random.nextLong(), random.nextLong(), random.nextLong(), random.nextLong() );
+        expectedStoreId = new StoreId( random.nextLong(), random.nextLong(), random.nextLong() );
     }
 
     @Test
@@ -142,8 +142,8 @@ class LogHeaderReaderTest
                     buffer.putLong( expectedStoreId.getCreationTime() );
                     buffer.putLong( expectedStoreId.getRandomId() );
                     buffer.putLong( expectedStoreId.getStoreVersion() );
-                    buffer.putLong( expectedStoreId.getUpgradeTime() );
-                    buffer.putLong( expectedStoreId.getUpgradeTxId() );
+                    buffer.putLong( 0 ); // reserved
+                    buffer.putLong( 0 ); // reserved
                     buffer.putLong( 0 ); // reserved
                     return Long.BYTES * 7;
                 }
@@ -182,8 +182,6 @@ class LogHeaderReaderTest
         buffer.putLong( expectedStoreId.getCreationTime() );
         buffer.putLong( expectedStoreId.getRandomId() );
         buffer.putLong( expectedStoreId.getStoreVersion() );
-        buffer.putLong( expectedStoreId.getUpgradeTime() );
-        buffer.putLong( expectedStoreId.getUpgradeTxId() );
 
         try ( OutputStream stream = fileSystem.openAsOutputStream( file, false ) )
         {

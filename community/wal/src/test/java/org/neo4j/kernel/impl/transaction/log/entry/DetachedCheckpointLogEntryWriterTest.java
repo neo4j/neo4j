@@ -109,10 +109,8 @@ class DetachedCheckpointLogEntryWriterTest
 
     private static void writeCheckpoint( DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason ) throws IOException
     {
-        var storeId = new StoreId( 3, 4, 5, 6, 7 );
-
+        var storeId = new StoreId( 3, 4, 5 );
         LogPosition logPosition = new LogPosition( 1, 2 );
-
         checkpointLogEntryWriter.writeCheckPointEntry( logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
     }
 }

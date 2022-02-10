@@ -763,12 +763,10 @@ class MetaDataStoreTest
         int creationTime = 1;
         int randomId = 2;
         long storeVersion = versionStringToLong( defaultFormat().storeVersion() );
-        int upgradeTime = 4;
-        int upgradeTxId = 5;
         int upgradeTxChecksum = 6;
         long upgradeTxCommitTimestamp = 7;
 
-        StoreId storeId = new StoreId( creationTime, randomId, storeVersion, upgradeTime, upgradeTxId );
+        StoreId storeId = new StoreId( creationTime, randomId, storeVersion );
 
         // when
         try ( MetaDataStore store = newMetaDataStore() )
@@ -783,10 +781,6 @@ class MetaDataStoreTest
             assertEquals( creationTime, store.getCreationTime() );
             assertEquals( randomId, store.getRandomNumber() );
             assertEquals( storeVersion, store.getStoreVersion() );
-            assertEquals( upgradeTime, store.getUpgradeTime() );
-
-            TransactionId expectedTx = new TransactionId( upgradeTxId, upgradeTxChecksum, upgradeTxCommitTimestamp );
-            assertEquals( expectedTx, store.getUpgradeTransaction() );
         }
     }
 
@@ -883,7 +877,7 @@ class MetaDataStoreTest
         var cursorContext = contextFactory.create( "tracePageCacheAssessOnSetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            var storeId = new StoreId( 1, 2, 3, 4, 5 );
+            var storeId = new StoreId( 1, 2, 3 );
             MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, databaseLayout.getDatabaseName(), cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

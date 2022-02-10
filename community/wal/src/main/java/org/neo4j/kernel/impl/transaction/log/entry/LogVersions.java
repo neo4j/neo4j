@@ -44,8 +44,8 @@ public class LogVersions
      * Total 64 bytes
      * - 8 bytes version
      * - 8 bytes last committed tx id
-     * - 40 bytes {@link StoreId}
-     * - 8 bytes reserved
+     * - 24 bytes {@link StoreId}
+     * - 24 bytes reserved
      * <pre>
      *   |<-                      LOG_HEADER_SIZE                  ->|
      *   |<-LOG_HEADER_VERSION_SIZE->|                               |
