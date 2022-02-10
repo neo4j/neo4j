@@ -19,9 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaUserDescription;
 
 public interface SchemaRule44
 {
@@ -36,6 +38,10 @@ public interface SchemaRule44
             Long owningConstraintId
     ) implements SchemaRule44
     {
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return SchemaUserDescription.forIndex( tokenNameLookup, id, name, unique, indexType.name(), schema, providerDescriptor, owningConstraintId );
+        }
     }
 
     record Constraint(

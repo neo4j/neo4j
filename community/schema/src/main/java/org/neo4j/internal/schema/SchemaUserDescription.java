@@ -55,16 +55,16 @@ public final class SchemaUserDescription
                 TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyKeyIds, '{', '}' ) + suffix;
     }
 
-    static String forPrototype( TokenNameLookup tokenNameLookup, String name, boolean isUnique, IndexType indexType,
-            SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
+    static String forPrototype( TokenNameLookup tokenNameLookup, String name, boolean isUnique, String indexType,
+                                SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Index( ", " )" );
         addPrototypeParams( tokenNameLookup, name, isUnique, indexType, schema, indexProvider, joiner );
         return joiner.toString();
     }
 
-    static String forIndex( TokenNameLookup tokenNameLookup, long id, String name, boolean isUnique, IndexType indexType,
-            SchemaDescriptor schema, IndexProviderDescriptor indexProvider, Long owningConstraintId )
+    public static String forIndex( TokenNameLookup tokenNameLookup, long id, String name, boolean isUnique, String indexType,
+                                   SchemaDescriptor schema, IndexProviderDescriptor indexProvider, Long owningConstraintId )
     {
         StringJoiner joiner = new StringJoiner( ", ", "Index( ", " )" );
         joiner.add( "id=" + id );
@@ -117,8 +117,8 @@ public final class SchemaUserDescription
         }
     }
 
-    private static void addPrototypeParams( TokenNameLookup tokenNameLookup, String name, boolean isUnique, IndexType indexType, SchemaDescriptor schema,
-            IndexProviderDescriptor indexProvider, StringJoiner joiner )
+    private static void addPrototypeParams( TokenNameLookup tokenNameLookup, String name, boolean isUnique, String indexType, SchemaDescriptor schema,
+                                            IndexProviderDescriptor indexProvider, StringJoiner joiner )
     {
         maybeAddName( name, joiner );
         addType( indexType( schema.isAnyTokenSchemaDescriptor(), isUnique, indexType ), joiner );
@@ -126,7 +126,7 @@ public final class SchemaUserDescription
         joiner.add( "indexProvider='" + indexProvider.name() + "'" );
     }
 
-    private static String indexType( boolean isToken, boolean isUnique, IndexType indexType )
+    private static String indexType( boolean isToken, boolean isUnique, String indexType )
     {
         return (isToken ? "TOKEN" : isUnique ? "UNIQUE" : "GENERAL") + " " + indexType;
     }

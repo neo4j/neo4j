@@ -61,12 +61,12 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
+import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.IOUtils;
@@ -93,6 +93,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.NullLogProvider;
@@ -101,6 +102,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogFilesInitializer;
+import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -286,12 +288,15 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     metaDataStore.regenerateMetadata( storeId, externalId, cursorContext );
                     metaDataStore.setDatabaseIdUuid( databaseId, cursorContext );
 
-                    persisNodeLabelIndex( dstAccess );
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
-                    filterOurBtreeIndexes( dstAccess, dstTokensHolders, directoryLayoutArg.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) );
+                    try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
+                    {
+                        persisNodeLabelIndex( dstAccess );
+                        filterOurBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
+                                               directoryLayoutArg.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) );
+                    }
                     dstStore.flush( cursorContext );
                 }
-
             }
 
             MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
@@ -345,7 +350,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private static void filterOurBtreeIndexes( SchemaRuleMigrationAccess dstAccess, TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
+    private static void filterOurBtreeIndexes( SchemaStore44Reader schemaStore44Reader, CachedStoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess,
+                                               TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
     {
         if ( systemDb )
         {
@@ -353,34 +359,34 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             return;
         }
 
-        Iterable<SchemaRule> all = dstAccess.getAll();
+        var all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
 
         // Organize indexes by SchemaDescriptor
-        var indexesBySchema = new HashMap<SchemaDescriptor,List<IndexDescriptor>>();
+        var indexesBySchema = new HashMap<SchemaDescriptor,List<SchemaRule44.Index>>();
         for ( var schemaRule : all )
         {
-            if ( schemaRule instanceof IndexDescriptor index )
+            if ( schemaRule instanceof SchemaRule44.Index index )
             {
                 indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
             }
         }
 
         // Figure out which btree indexes that has replacement and can be deleted and which don't
-        var indexesToDelete = new ArrayList<IndexDescriptor>();
-        var nonReplacedIndexes = new ArrayList<IndexDescriptor>();
+        var indexesToDelete = new ArrayList<SchemaRule44.Index>();
+        var nonReplacedIndexes = new ArrayList<SchemaRule44.Index>();
         for ( var schema : indexesBySchema.keySet() )
         {
-            IndexDescriptor btreeIndex = null;
+            SchemaRule44.Index btreeIndex = null;
             boolean hasReplacement = false;
-            for ( IndexDescriptor index : indexesBySchema.get( schema ) )
+            for ( SchemaRule44.Index index : indexesBySchema.get( schema ) )
             {
-                if ( index.getIndexType() == IndexType.BTREE )
+                if ( index.indexType() == SchemaRule44.IndexType.BTREE )
                 {
                     btreeIndex = index;
                 }
-                else if ( index.getIndexType() == IndexType.RANGE ||
-                          index.getIndexType() == IndexType.TEXT ||
-                          index.getIndexType() == IndexType.POINT )
+                else if ( index.indexType() == SchemaRule44.IndexType.RANGE ||
+                          index.indexType() == SchemaRule44.IndexType.TEXT ||
+                          index.indexType() == SchemaRule44.IndexType.POINT )
                 {
                     hasReplacement = true;
                 }
@@ -413,9 +419,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
 
         // Delete all btree indexes
-        for ( IndexDescriptor indexToDelete : indexesToDelete )
+        for ( SchemaRule44.Index indexToDelete : indexesToDelete )
         {
-            dstAccess.deleteSchemaRule( indexToDelete.getId() );
+            dstAccess.deleteSchemaRule( indexToDelete.id() );
         }
     }
 
@@ -760,6 +766,26 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                                          StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         tokenHolders.setInitialTokens( allTokens( stores ), cursors );
         return tokenHolders;
+    }
+
+    private SchemaStore44Reader getSchemaStore44Reader( RecordDatabaseLayout recordDatabaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory,
+                                                        NeoStores neoStores, TokenHolders tokenHolders )
+    {
+        return new SchemaStore44Reader(
+                neoStores.getPropertyStore(),
+                tokenHolders,
+                neoStores.getMetaDataStore(),
+                recordDatabaseLayout.schemaStore(),
+                recordDatabaseLayout.idSchemaStore(),
+                config,
+                SchemaIdType.SCHEMA,
+                idGeneratorFactory,
+                pageCache,
+                contextFactory,
+                NullLogProvider.getInstance(),
+                formats,
+                recordDatabaseLayout.getDatabaseName(),
+                org.eclipse.collections.api.factory.Sets.immutable.empty() );
     }
 
     @Override
