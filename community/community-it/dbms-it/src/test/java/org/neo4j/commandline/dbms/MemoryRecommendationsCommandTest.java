@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Arrays;
 
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
@@ -40,10 +41,13 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -68,11 +72,9 @@ import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.OFF_HEAP;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
@@ -332,7 +334,7 @@ class MemoryRecommendationsCommandTest
         Files.createDirectories( configDir );
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         Files.createFile( configFile );
-        createDatabaseWithNativeIndexes( homeDir, DEFAULT_DATABASE_NAME );
+        createDatabaseWithIndexes( homeDir, DEFAULT_DATABASE_NAME );
 
         var outputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( outputStream );
@@ -377,7 +379,7 @@ class MemoryRecommendationsCommandTest
         for ( int i = 0; i < 5; i++ )
         {
             DatabaseLayout databaseLayout = neo4jLayout.databaseLayout( "db" + i );
-            createDatabaseWithNativeIndexes( homeDir, databaseLayout.getDatabaseName() );
+            createDatabaseWithIndexes( homeDir, databaseLayout.getDatabaseName() );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];
             totalLuceneIndexesSize += expectedSizes[1];
@@ -418,9 +420,8 @@ class MemoryRecommendationsCommandTest
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException
                 {
-                    Path name = path.getName( path.getNameCount() - 3 );
-                    boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
-                            (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
+                    String name = path.getName( path.getNameCount() - 4 ).toString();
+                    boolean isLuceneFile = TextIndexProvider.DESCRIPTOR.name().equals( name ) || FulltextIndexProviderFactory.DESCRIPTOR.name().equals( name );
                     if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( path.getFileName().toString() ) )
                     {
                         (isLuceneFile ? luceneTotal : pageCacheTotal).add( Files.size( path ) );
@@ -432,22 +433,21 @@ class MemoryRecommendationsCommandTest
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
-    private static void createDatabaseWithNativeIndexes( Path homeDirectory, String databaseName )
+    private static void createDatabaseWithIndexes( Path homeDirectory, String databaseName )
     {
         // Create one index for every provider that we have
-        for ( SchemaIndex schemaIndex : SchemaIndex.values() )
+        for ( IndexType indexType : Arrays.stream( IndexType.values() ).filter( type -> type != IndexType.LOOKUP ).toList() )
         {
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDirectory )
-                    .setConfig( default_schema_provider, schemaIndex.providerName() )
                     .setConfig( default_database, databaseName ).build();
             GraphDatabaseService db = managementService.database( databaseName );
-            String key = "key-" + schemaIndex.name();
+            String key = "key-" + indexType.name();
             try
             {
                 Label labelOne = Label.label( "one" );
                 try ( Transaction tx = db.beginTx() )
                 {
-                    tx.schema().indexFor( labelOne ).on( key ).create();
+                    tx.schema().indexFor( labelOne ).on( key ).withIndexType( indexType ).create();
                     tx.commit();
                 }
 
@@ -457,6 +457,11 @@ class MemoryRecommendationsCommandTest
                     for ( int i = 0; i < 10_000; i++ )
                     {
                         tx.createNode( labelOne ).setProperty( key, randomValues.nextValue().asObject() );
+                    }
+                    // Some strings just to make sure or string indexes aren't empty
+                    for ( int i = 0; i < 10; i++ )
+                    {
+                        tx.createNode( labelOne ).setProperty( key, randomValues.nextTextValue().asObject() );
                     }
                     tx.commit();
                 }

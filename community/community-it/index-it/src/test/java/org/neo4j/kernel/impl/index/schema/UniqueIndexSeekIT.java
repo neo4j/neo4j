@@ -43,7 +43,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -103,7 +102,6 @@ class UniqueIndexSeekIT
     private static Stream<Arguments> indexProviderFactories()
     {
         return Stream.of(
-                Arguments.of( new NativeLuceneFusionIndexProviderFactory30(), IndexType.BTREE ),
                 Arguments.of( new GenericNativeIndexProviderFactory(), IndexType.BTREE ),
                 Arguments.of( new RangeIndexProviderFactory(), IndexType.RANGE ) );
     }

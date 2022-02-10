@@ -21,7 +21,8 @@ package org.neo4j.kernel.internal;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,92 +33,72 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.bytesToString;
 
-@Neo4jLayoutExtension
+@DbmsExtension
 class KernelDiagnosticsIT
 {
     @Inject
-    private FileSystemAbstraction fs;
+    private GraphDatabaseAPI db;
 
     @Inject
-    private Neo4jLayout neo4jLayout;
+    private FileSystemAbstraction fs;
 
-    @Test
-    void shouldIncludeNativeIndexFilesInTotalMappedSize()
+    @ParameterizedTest
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void shouldIncludeNativeIndexFilesInTotalMappedSize( IndexType indexType )
     {
-        for ( GraphDatabaseSettings.SchemaIndex schemaIndex : GraphDatabaseSettings.SchemaIndex.values() )
-        {
-            // given
-            Neo4jLayout layout = neo4jLayout;
-            createIndexInIsolatedDbInstance( layout.homeDirectory(), schemaIndex );
+        // given
+        createIndexAndData( indexType );
 
-            // when
-            DatabaseLayout databaseLayout = layout.databaseLayout( DEFAULT_DATABASE_NAME );
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-            StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
-            SizeCapture capture = new SizeCapture();
-            files.dump( capture::log );
-            assertNotNull( capture.size );
+        // when
+        DatabaseLayout databaseLayout = db.databaseLayout();
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
+        StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
+        SizeCapture capture = new SizeCapture();
+        files.dump( capture::log );
+        assertNotNull( capture.size );
 
-            // then
-            long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory() );
-            assertEquals( bytesToString( expected ), capture.size );
-        }
+        // then
+        long expected = manuallyCountTotalMappedFileSize( databaseLayout.databaseDirectory() );
+        assertEquals( bytesToString( expected ), capture.size );
     }
 
-    private static void createIndexInIsolatedDbInstance( Path homeDir, GraphDatabaseSettings.SchemaIndex index )
+    private void createIndexAndData( IndexType indexType )
     {
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( homeDir )
-                        .setConfig( GraphDatabaseSettings.default_schema_provider, index.providerName() )
-                        .build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try
+        Label label = Label.label( "Label-" + indexType );
+        String key = "key";
+        try ( Transaction tx = db.beginTx() )
         {
-            Label label = Label.label( "Label-" + index.providerName() );
-            String key = "key";
-            try ( Transaction tx = db.beginTx() )
+            for ( int i = 0; i < 100; i++ )
             {
-                for ( int i = 0; i < 100; i++ )
-                {
-                    tx.createNode( label ).setProperty( key, i );
-                }
-                tx.commit();
+                tx.createNode( label ).setProperty( key, "" + i );
             }
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().indexFor( label ).on( key ).create();
-                tx.commit();
-            }
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.schema().awaitIndexesOnline( 2, MINUTES );
-                tx.commit();
-            }
+            tx.commit();
         }
-        finally
+        try ( Transaction tx = db.beginTx() )
         {
-            managementService.shutdown();
+            tx.schema().indexFor( label ).on( key ).withIndexType( indexType ).create();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
+            tx.commit();
         }
     }
 

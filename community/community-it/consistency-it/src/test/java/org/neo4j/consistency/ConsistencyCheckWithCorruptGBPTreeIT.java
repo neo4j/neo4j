@@ -43,7 +43,6 @@ import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -57,11 +56,7 @@ import org.neo4j.index.internal.gbptree.GBPTreePointerType;
 import org.neo4j.index.internal.gbptree.InspectingVisitor;
 import org.neo4j.index.internal.gbptree.LayoutBootstrapper;
 import org.neo4j.internal.counts.CountsLayout;
-import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -70,21 +65,17 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.SchemaLayouts;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.utils.TestDirectory;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -670,51 +661,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         assertResultContainsMessage( result, "Number of inconsistent ID_STORE records: " + idStoreFiles.length );
     }
 
-    @Test
-    void multipleCorruptionsInFusionIndex() throws Exception
-    {
-        // Because NATIVE30 provider use Lucene internally we can not use the snapshot from ephemeral file system because
-        // lucene will not use it to store the files. Therefor we use a default file system together with TestDirectory
-        // for cleanup.
-        final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-        final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-        testDirectory.prepareDirectory( ConsistencyCheckWithCorruptGBPTreeIT.class, "multipleCorruptionsInFusionIndex" );
-
-        try
-        {
-            final Path neo4jHome = testDirectory.homePath();
-            dbmsAction( neo4jHome, fs, db ->
-            {
-                Label label = Label.label( "label2" );
-                indexWithNumberData( db, label );
-            }, builder -> {} );
-
-            RecordDatabaseLayout layout = RecordDatabaseLayout.of( Config.defaults( neo4j_home, neo4jHome ) );
-
-            final Path[] indexFiles = schemaIndexFiles( fs, layout.databaseDirectory(), NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR );
-            final List<Path> files = corruptIndexes( fs, readOnly(), ( tree, inspection ) -> {
-                long leafNode = inspection.leafNodes().get( 1 );
-                long internalNode = inspection.internalNodes().get( 0 );
-                tree.unsafe( pageSpecificCorruption( leafNode, GBPTreeCorruption.rightSiblingPointToNonExisting() ),
-                        CursorContext.NULL_CONTEXT );
-                tree.unsafe( pageSpecificCorruption( internalNode, GBPTreeCorruption.setChild( 0, internalNode ) ),
-                        CursorContext.NULL_CONTEXT );
-            }, indexFiles );
-
-            ConsistencyCheckService.Result result =
-                    runConsistencyCheck( fs, neo4jHome, layout, NullLogProvider.getInstance(), null, DEFAULT );
-            for ( Path file : files )
-            {
-                assertResultContainsMessage( fs, result,
-                        "Index will be excluded from further consistency checks. Index file: " + file.toAbsolutePath() );
-            }
-        }
-        finally
-        {
-            testDirectory.cleanup();
-        }
-    }
-
     private void assertResultContainsMessage( ConsistencyCheckService.Result result, String expectedMessage ) throws IOException
     {
         assertResultContainsMessage( fs, result, expectedMessage );
@@ -744,12 +690,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider ) throws ConsistencyCheckIncompleteException
     {
         return runConsistencyCheck( logProvider, (OutputStream) null );
-    }
-
-    private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, Consumer<Config> adaptConfig )
-            throws ConsistencyCheckIncompleteException
-    {
-        return runConsistencyCheck( fs, neo4jHome, databaseLayout, logProvider, null, DEFAULT, adaptConfig );
     }
 
     private ConsistencyCheckService.Result runConsistencyCheck( InternalLogProvider logProvider, ConsistencyFlags consistencyFlags )
@@ -885,36 +825,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         }
         assertThat( treeFiles ).withFailMessage( "No index files corrupted, check that bootstrap of the files work correctly" ).isNotEmpty();
         return treeFiles;
-    }
-
-    private static void indexWithNumberData( GraphDatabaseService db, Label label )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 1000; i++ )
-            {
-                Node node = tx.createNode( label );
-                node.setProperty( propKey1, i );
-            }
-            tx.commit();
-        }
-
-        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
-        {
-            KernelTransaction kernelTransaction = tx.kernelTransaction();
-            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
-            IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                            tokenWrite.propertyKeyGetOrCreateForName( propKey1 ) ), NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR )
-                    .withIndexType( org.neo4j.internal.schema.IndexType.BTREE );
-
-            kernelTransaction.schemaWrite().indexCreate( prototype );
-            tx.commit();
-        }
-        catch ( KernelException e )
-        {
-            throw new RuntimeException( e );
-        }
-        awaitIndexes( db );
     }
 
     private static void indexWithStringData( GraphDatabaseService db, Label label )

@@ -19,17 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.newapi.ReadTestSupport;
-
 class NativeBtree10IndexParams implements IndexParams
 {
-
-    @Override
-    public void enrichSettings( ReadTestSupport testSupport )
-    {
-        testSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-    }
 
     @Override
     public String providerKey()

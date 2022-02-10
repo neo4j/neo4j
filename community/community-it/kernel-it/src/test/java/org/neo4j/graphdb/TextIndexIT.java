@@ -21,14 +21,10 @@ package org.neo4j.graphdb;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -46,17 +42,16 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
 import static java.lang.String.format;
-import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.StringSearchMode.CONTAINS;
 import static org.neo4j.graphdb.StringSearchMode.PREFIX;
 import static org.neo4j.graphdb.StringSearchMode.SUFFIX;
 import static org.neo4j.graphdb.schema.IndexType.BTREE;
+import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.conditions.Conditions.condition;
 
@@ -196,22 +191,21 @@ public class TextIndexIT
         dbms.shutdown();
     }
 
-    @ParameterizedTest
-    @MethodSource( "providers" )
-    void shouldFindNodesUsingTextIndex( String provider )
+    @Test
+    void shouldFindNodesUsingTextIndex()
     {
         // Given a database with different index types
         var person = label( "PERSON" );
         var monitor = new IndexAccessMonitor();
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
-                .setConfig( default_schema_provider, provider )
                 .build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
         {
             tx.schema().indexFor( person ).on( "name" ).withIndexType( IndexType.TEXT ).create();
             tx.schema().indexFor( person ).on( "name" ).withIndexType( BTREE ).create();
+            tx.schema().indexFor( person ).on( "name" ).withIndexType( RANGE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )
@@ -241,9 +235,8 @@ public class TextIndexIT
         dbms.shutdown();
     }
 
-    @ParameterizedTest
-    @MethodSource( "providers" )
-    void shouldFindRelationshipsUsingTextIndex( String provider )
+    @Test
+    void shouldFindRelationshipsUsingTextIndex()
     {
         // Given a database with different index types
         var person = label( "PERSON" );
@@ -251,13 +244,13 @@ public class TextIndexIT
         var monitor = new IndexAccessMonitor();
         var dbms = new TestDatabaseManagementServiceBuilder( databaseLayout )
                 .setMonitors( monitor.monitors() )
-                .setConfig( default_schema_provider, provider )
                 .build();
         var db = dbms.database( DEFAULT_DATABASE_NAME );
         try ( var tx = db.beginTx() )
         {
             tx.schema().indexFor( relation ).on( "since" ).withIndexType( IndexType.TEXT ).create();
             tx.schema().indexFor( relation ).on( "since" ).withIndexType( BTREE ).create();
+            tx.schema().indexFor( relation ).on( "since" ).withIndexType( RANGE ).create();
             tx.commit();
         }
         try ( var tx = db.beginTx() )
@@ -447,10 +440,5 @@ public class TextIndexIT
             var index = (IndexDefinitionImpl) tx.schema().getIndexByName( indexName );
             return db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ).indexSample( index.getIndexReference().getId() );
         }
-    }
-
-    private static Stream<String> providers()
-    {
-        return stream( SchemaIndex.values() ).map( SchemaIndex::toString );
     }
 }

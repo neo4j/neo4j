@@ -24,7 +24,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +73,7 @@ public class DefaultSchemaIndexConfigTest
 
     private static Stream<GraphDatabaseSettings.SchemaIndex> providers()
     {
-        List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>( Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() ) );
+        List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>( List.of( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10 ) );
         providers.add( null ); // <-- to exercise the default option
         return providers.stream();
     }

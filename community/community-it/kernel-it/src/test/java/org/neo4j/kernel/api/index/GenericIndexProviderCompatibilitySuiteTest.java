@@ -44,8 +44,6 @@ import org.neo4j.monitoring.Monitors;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCompatibilityTestSuite
@@ -94,11 +92,5 @@ class GenericIndexProviderCompatibilitySuiteTest extends PropertyIndexProviderCo
     void consistencyCheck( IndexPopulator populator )
     {
         ((ConsistencyCheckable) populator).consistencyCheck( ReporterFactories.throwingReporterFactory(), NULL_CONTEXT );
-    }
-
-    @Override
-    void additionalConfig( Config.Builder configBuilder )
-    {
-        configBuilder.set( default_schema_provider, NATIVE_BTREE10.providerName() );
     }
 }

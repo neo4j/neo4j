@@ -81,7 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -273,30 +272,6 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( exists( reportFile ), "Consistency check report file should be generated." );
         assertThat( Files.readString( reportFile ) ).as( "Expected to see report about schema index not being online" ).contains(
                 "schema rule" ).contains( "not online" );
-    }
-
-    @Test
-    void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
-    {
-        Label label = Label.label( "label" );
-        String propKey = "propKey";
-
-        // Given a lucene index
-        createIndex( label, propKey );
-        fixture.apply( tx ->
-        {
-            tx.createNode( label ).setProperty( propKey, 1 );
-            tx.createNode( label ).setProperty( propKey, "string" );
-        } );
-
-        Config configuration = Config.newBuilder()
-                .set( settings() )
-                .set( GraphDatabaseSettings.default_schema_provider, NATIVE_BTREE10.providerName() )
-                .build();
-        Result result = consistencyCheckService()
-                .with( configuration )
-                .runFullConsistencyCheck();
-        assertTrue( result.isSuccessful() );
     }
 
     @Test

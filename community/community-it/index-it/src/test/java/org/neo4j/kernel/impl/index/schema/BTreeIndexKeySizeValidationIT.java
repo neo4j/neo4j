@@ -62,8 +62,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.kernel.impl.index.schema.PointKeyUtil.SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE;
 import static org.neo4j.kernel.impl.index.schema.Types.SIZE_BOOLEAN;
@@ -388,7 +386,6 @@ public class BTreeIndexKeySizeValidationIT
     private void startDb( int pageSize )
     {
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jLayout );
-        builder.setConfig( default_schema_provider, NATIVE_BTREE10.providerName() );
         scheduler = JobSchedulerFactory.createInitialisedScheduler();
         PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, scheduler, PageCacheTracer.NULL,
                 config( 100 ).pageSize( pageSize ).reservedPageBytes( reserved_page_header_bytes.defaultValue() ) );

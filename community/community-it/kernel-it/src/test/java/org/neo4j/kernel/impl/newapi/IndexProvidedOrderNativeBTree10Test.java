@@ -19,17 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexType;
 
 abstract class IndexProvidedOrderNativeBTree10Test extends AbstractIndexProvidedOrderTest
 {
-    @Override
-    GraphDatabaseSettings.SchemaIndex getSchemaIndex()
-    {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
-    }
-
     @Override
     IndexType getIndexType()
     {

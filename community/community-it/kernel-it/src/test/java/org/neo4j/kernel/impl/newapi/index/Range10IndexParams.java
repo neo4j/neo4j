@@ -19,15 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.kernel.impl.newapi.ReadTestSupport;
-
 class Range10IndexParams implements IndexParams
 {
-
-    @Override
-    public void enrichSettings( ReadTestSupport testSupport )
-    {
-    }
 
     @Override
     public String providerKey()

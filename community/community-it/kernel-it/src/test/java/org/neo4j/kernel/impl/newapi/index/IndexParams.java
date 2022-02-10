@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi.index;
 
-import org.neo4j.kernel.impl.newapi.ReadTestSupport;
-
 interface IndexParams
 {
-    void enrichSettings( ReadTestSupport testSupport );
-
     String providerKey();
 
     String providerVersion();

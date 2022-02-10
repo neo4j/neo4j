@@ -19,18 +19,12 @@
  */
 package org.neo4j.schema;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,30 +32,25 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.values.storable.PointValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
-@TestDirectoryExtension
+@DbmsExtension
 class UniqueSpatialIndexIT
 {
     private static final String KEY = "prop";
 
     @Inject
-    private TestDirectory directory;
     private GraphDatabaseService db;
     private PointValue point1;
     private PointValue point2;
-    private DatabaseManagementService managementService;
 
     @BeforeEach
     void setup()
@@ -71,21 +60,10 @@ class UniqueSpatialIndexIT
         point2 = collidingPoints.other();
     }
 
-    @AfterEach
-    void tearDown()
-    {
-        if ( db != null )
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource( "providerSettings" )
-    void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    @Test
+    void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve()
     {
         // given
-        setupDb( schemaIndex );
         Pair<Long,Long> nodeIds = createUniqueNodes();
 
         // when
@@ -95,12 +73,10 @@ class UniqueSpatialIndexIT
         assertBothNodesArePresent( nodeIds );
     }
 
-    @ParameterizedTest
-    @MethodSource( "providerSettings" )
-    void shouldAddPointsThatCollideOnSpaceFillingCurveToUniqueIndexInSameTx( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    @Test
+    void shouldAddPointsThatCollideOnSpaceFillingCurveToUniqueIndexInSameTx()
     {
         // given
-        setupDb( schemaIndex );
         createUniquenessConstraint();
 
         // when
@@ -110,33 +86,24 @@ class UniqueSpatialIndexIT
         assertBothNodesArePresent( nodeIds );
     }
 
-    @ParameterizedTest
-    @MethodSource( "providerSettings" )
-    void shouldThrowWhenPopulatingWithNonUniquePoints( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    @Test
+    void shouldThrowWhenPopulatingWithNonUniquePoints()
     {
         // given
-        setupDb( schemaIndex );
         createNonUniqueNodes();
 
         // then
         assertThrows( ConstraintViolationException.class, this::createUniquenessConstraint );
     }
 
-    @ParameterizedTest
-    @MethodSource( "providerSettings" )
-    void shouldThrowWhenAddingNonUniquePoints( GraphDatabaseSettings.SchemaIndex schemaIndex )
+    @Test
+    void shouldThrowWhenAddingNonUniquePoints()
     {
         // given
-        setupDb( schemaIndex );
         createUniquenessConstraint();
 
         // when
         assertThrows( ConstraintViolationException.class, this::createNonUniqueNodes );
-    }
-
-    private static Stream<GraphDatabaseSettings.SchemaIndex> providerSettings()
-    {
-        return Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() );
     }
 
     private void createNonUniqueNodes()
@@ -197,13 +164,5 @@ class UniqueSpatialIndexIT
             tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
             tx.commit();
         }
-    }
-
-    private void setupDb( GraphDatabaseSettings.SchemaIndex schemaIndex )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
-                .build();
-        db = managementService.database( DEFAULT_DATABASE_NAME );
     }
 }

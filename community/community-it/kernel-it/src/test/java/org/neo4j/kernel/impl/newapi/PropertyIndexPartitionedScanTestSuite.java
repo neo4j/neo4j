@@ -34,7 +34,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -229,7 +228,6 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
     protected enum TestIndexType
     {
         BTREE( IndexType.BTREE, GenericNativeIndexProvider.DESCRIPTOR ),
-        FUSION( IndexType.BTREE, NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR ),
         RANGE( IndexType.RANGE, RangeIndexProvider.DESCRIPTOR );
 
         private final IndexType type;

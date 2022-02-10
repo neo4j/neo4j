@@ -111,9 +111,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     @Override
     public ReadTestSupport newTestSupport()
     {
-        ReadTestSupport readTestSupport = new ReadTestSupport();
-        indexParams.enrichSettings( readTestSupport );
-        return readTestSupport;
+        return new ReadTestSupport();
     }
 
     @Override

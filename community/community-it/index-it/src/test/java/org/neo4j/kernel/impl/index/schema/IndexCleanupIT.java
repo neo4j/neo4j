@@ -43,7 +43,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -81,7 +80,6 @@ public class IndexCleanupIT
     private static Stream<Arguments> indexProviders()
     {
         return Stream.of(
-                Arguments.of( NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR, IndexType.BTREE ),
                 Arguments.of( GenericNativeIndexProvider.DESCRIPTOR, IndexType.BTREE ),
                 Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE ) );
     }

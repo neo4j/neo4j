@@ -22,11 +22,11 @@ package org.neo4j.schema;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,6 +53,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -64,6 +64,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -76,6 +77,8 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
@@ -168,14 +171,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         storageEngine = db.getDependencyResolver().resolveDependency( StorageEngine.class );
     }
 
-    private static Stream<GraphDatabaseSettings.SchemaIndex> parameters()
+    private static Stream<Arguments> parameters()
     {
-        return Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() );
+        return Stream.of(
+                Arguments.of( GenericNativeIndexProvider.DESCRIPTOR, IndexType.BTREE),
+                Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE),
+                Arguments.of( TextIndexProvider.DESCRIPTOR, IndexType.TEXT )
+        );
     }
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void applyConcurrentDeletesToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    void applyConcurrentDeletesToPopulatedIndex( IndexProviderDescriptor provider, IndexType indexType ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( country1.getId(), false ).withTokens( id( COUNTRY_LABEL ) )
@@ -183,7 +190,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
                 .removed( propertyId, Values.of( "green" ) ).build() );
 
-        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( provider, indexType, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction tx = db.beginTx() )
@@ -206,7 +213,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void applyConcurrentAddsToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    void applyConcurrentAddsToPopulatedIndex( IndexProviderDescriptor provider, IndexType indexType ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( otherNodes[0].getId(), false ).withTokens( id( COUNTRY_LABEL ) )
@@ -214,7 +221,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( otherNodes[1].getId(), false ).withTokens( id( CAR_LABEL ) )
                 .added( propertyId, Values.of( "BMW" ) ).build() );
 
-        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( provider, indexType, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction tx = db.beginTx() )
@@ -237,7 +244,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void applyConcurrentChangesToPopulatedIndex( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    void applyConcurrentChangesToPopulatedIndex( IndexProviderDescriptor provider, IndexType indexType ) throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
@@ -245,7 +252,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         updates.add( EntityUpdates.forEntity( car2.getId(), false ).withTokens( id( CAR_LABEL ) )
                 .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
-        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
+        launchCustomIndexPopulation( provider, indexType, labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
         try ( Transaction tx = db.beginTx() )
@@ -273,9 +280,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators( IndexProviderDescriptor provider, IndexType indexType ) throws Throwable
     {
-        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId,
+        launchCustomIndexPopulation( provider, indexType, labelsNameIdMap, propertyId,
                 new IndexDropAction( labelsNameIdMap.get( COLOR_LABEL ) ) );
         labelsNameIdMap.remove( COLOR_LABEL );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
@@ -286,10 +293,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void indexDroppedDuringPopulationDoesNotExist( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    void indexDroppedDuringPopulationDoesNotExist( IndexProviderDescriptor provider, IndexType indexType ) throws Throwable
     {
         Integer labelToDropId = labelsNameIdMap.get( COLOR_LABEL );
-        launchCustomIndexPopulation( schemaIndex, labelsNameIdMap, propertyId, new IndexDropAction( labelToDropId ) );
+        launchCustomIndexPopulation( provider, indexType, labelsNameIdMap, propertyId, new IndexDropAction( labelToDropId ) );
         labelsNameIdMap.remove( COLOR_LABEL );
         waitAndActivateIndexes( labelsNameIdMap, propertyId );
 
@@ -324,7 +331,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return indexService.getIndexProxy( index ).newValueReader();
     }
 
-    private void launchCustomIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex, Map<String,Integer> labelNameIdMap, int propertyId,
+    private void launchCustomIndexPopulation( IndexProviderDescriptor provider, IndexType indexType, Map<String,Integer> labelNameIdMap, int propertyId,
             Runnable customAction ) throws Throwable
     {
         RecordStorageEngine storageEngine = getStorageEngine();
@@ -349,7 +356,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                     mock( IndexStatisticsStore.class ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), INSTANCE, "", writable() );
             indexService.start();
 
-            rules = createIndexRules( schemaIndex, labelNameIdMap, propertyId );
+            rules = createIndexRules( provider, indexType, labelNameIdMap, propertyId );
             schemaCache = new SchemaCache( new StandardConstraintSemantics(), providerMap );
             schemaCache.load( iterable( rules ) );
 
@@ -413,16 +420,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         indexProxy.activate();
     }
 
-    private IndexDescriptor[] createIndexRules( GraphDatabaseSettings.SchemaIndex schemaIndex, Map<String,Integer> labelNameIdMap, int propertyId )
+    private IndexDescriptor[] createIndexRules( IndexProviderDescriptor provider, IndexType indexType, Map<String,Integer> labelNameIdMap, int propertyId )
     {
         final IndexProviderMap indexProviderMap = getIndexProviderMap();
-        IndexProvider indexProvider = indexProviderMap.lookup( schemaIndex.providerName() );
+        IndexProvider indexProvider = indexProviderMap.lookup( provider.name() );
         IndexProviderDescriptor providerDescriptor = indexProvider.getProviderDescriptor();
         List<IndexDescriptor> list = new ArrayList<>();
         for ( Integer labelId : labelNameIdMap.values() )
         {
             final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel( labelId, propertyId );
-            IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor )
+            IndexDescriptor index = IndexPrototype.forSchema( schema, providerDescriptor ).withIndexType( indexType )
                     .withName( "index_" + labelId ).materialise( labelId );
             index = indexProvider.completeConfiguration( index );
             list.add( index );

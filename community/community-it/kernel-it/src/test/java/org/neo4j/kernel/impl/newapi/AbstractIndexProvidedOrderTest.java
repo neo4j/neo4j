@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -91,12 +90,8 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     @Override
     public ReadTestSupport newTestSupport()
     {
-        ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, getSchemaIndex().providerName() );
-        return readTestSupport;
+        return new ReadTestSupport();
     }
-
-    abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
 
     abstract IndexType getIndexType();
 

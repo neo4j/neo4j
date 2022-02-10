@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -41,10 +40,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
@@ -57,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 @ExtendWith( RandomExtension.class )
-@DbmsExtension( configurationCallback = "config" )
+@DbmsExtension
 class CompositeStringLengthValidationIT
 {
     private static final Label LABEL = TestLabels.LABEL_ONE;
@@ -74,16 +71,10 @@ class CompositeStringLengthValidationIT
     private int firstSlotLength;
     private int secondSlotLength;
 
-    @ExtensionCallback
-    void config( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
-    }
-
     @BeforeEach
     void calculateSlotSizes()
     {
-        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageCache.payloadSize() ) - BtreeKey.ENTITY_ID_SIZE;
+        int totalSpace = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageCache.payloadSize() ) - NativeIndexKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + Types.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;

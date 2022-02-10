@@ -50,15 +50,6 @@ class PartitionedScanTest
         }
 
         @Nested
-        class Fusion extends NodePropertyIndexSeekPartitionedScanTestSuite
-        {
-            Fusion()
-            {
-                super( TestIndexType.FUSION );
-            }
-        }
-
-        @Nested
         class Range extends NodePropertyIndexSeekPartitionedScanTestSuite
         {
             Range()
@@ -99,15 +90,6 @@ class PartitionedScanTest
             BTree()
             {
                 super( TestIndexType.BTREE );
-            }
-        }
-
-        @Nested
-        class Fusion extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
-        {
-            Fusion()
-            {
-                super( TestIndexType.FUSION );
             }
         }
 

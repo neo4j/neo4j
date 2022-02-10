@@ -20,17 +20,16 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,15 +39,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
-import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
@@ -64,9 +61,6 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -84,15 +78,10 @@ public class IndexingServiceIntegrationTest
     private GraphDatabaseService database;
     private DatabaseManagementService managementService;
 
-    private static Stream<GraphDatabaseSettings.SchemaIndex> parameters()
+    @BeforeEach
+    void setUp()
     {
-        return Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() );
-    }
-
-    private void setUp( GraphDatabaseSettings.SchemaIndex schemaIndex )
-    {
-        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( directory.homePath() ).build();
         database = managementService.database( DEFAULT_DATABASE_NAME );
         createData( database );
     }
@@ -103,12 +92,9 @@ public class IndexingServiceIntegrationTest
         managementService.shutdown();
     }
 
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void tracePageCacheAccessOnIndexUpdatesApply( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws KernelException
+    @Test
+    void tracePageCacheAccessOnIndexUpdatesApply() throws KernelException
     {
-        setUp( schemaIndex );
-
         var marker = Label.label( "marker" );
         var propertyName = "property";
         var testConstraint = "testConstraint";
@@ -141,15 +127,14 @@ public class IndexingServiceIntegrationTest
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void testManualIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws InterruptedException, IndexNotFoundKernelException
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void testManualIndexPopulation( IndexType indexType ) throws InterruptedException, IndexNotFoundKernelException
     {
-        setUp( schemaIndex );
-
         IndexDescriptor index;
         try ( Transaction tx = database.beginTx() )
         {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME ).create();
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( FOOD_LABEL ) ).on( PROPERTY_NAME )
+                    .withIndexType( indexType ).create();
             index = indexDefinition.getIndexReference();
             tx.commit();
         }
@@ -164,19 +149,15 @@ public class IndexingServiceIntegrationTest
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void testManualRelationshipIndexPopulation( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Exception
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void testManualRelationshipIndexPopulation( IndexType indexType ) throws Exception
     {
-        setUp( schemaIndex );
-
         IndexDescriptor index;
-        Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
-        try ( KernelTransaction tx = kernel.beginTransaction( EXPLICIT, AUTH_DISABLED ) )
+        try ( Transaction tx = database.beginTx() )
         {
-            int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
-            int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );
-            RelationTypeSchemaDescriptor schema = forRelType( foodId, propertyId );
-            index = tx.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( "food names" ) );
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( RelationshipType.withName( FOOD_LABEL ) ).on( PROPERTY_NAME )
+                    .withIndexType( indexType ).create();
+            index = indexDefinition.getIndexReference();
             tx.commit();
         }
 
@@ -190,17 +171,15 @@ public class IndexingServiceIntegrationTest
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void testSchemaIndexMatchIndexingService( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws IndexNotFoundKernelException
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void testSchemaIndexMatchIndexingService( IndexType indexType ) throws IndexNotFoundKernelException
     {
-        setUp( schemaIndex );
-
         String constraintName = "MyConstraint";
         String indexName = "MyIndex";
         try ( Transaction transaction = database.beginTx() )
         {
             transaction.schema().constraintFor( Label.label( CLOTHES_LABEL ) ).assertPropertyIsUnique( PROPERTY_NAME ).withName( constraintName ).create();
-            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).withName( indexName ).create();
+            transaction.schema().indexFor( Label.label( WEATHER_LABEL ) ).on( PROPERTY_NAME ).withIndexType( indexType ).withName( indexName ).create();
 
             transaction.commit();
         }
@@ -219,18 +198,17 @@ public class IndexingServiceIntegrationTest
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void dropIndexDirectlyOnIndexingServiceRaceWithCheckpoint( IndexType indexType ) throws Throwable
     {
-        setUp( schemaIndex );
-
         IndexingService indexingService = getIndexingService( database );
         CheckPointer checkPointer = getCheckPointer( database );
 
         IndexDescriptor indexDescriptor;
         try ( Transaction tx = database.beginTx() )
         {
-            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( "label" ) ).on( "prop" ).create();
+            IndexDefinitionImpl indexDefinition = (IndexDefinitionImpl) tx.schema().indexFor( Label.label( "label" ) ).on( "prop" )
+                    .withIndexType( indexType ).create();
             indexDescriptor = indexDefinition.getIndexReference();
             tx.commit();
         }
@@ -248,11 +226,9 @@ public class IndexingServiceIntegrationTest
     }
 
     @ParameterizedTest
-    @MethodSource( "parameters" )
-    void dropIndexRaceWithCheckpoint( GraphDatabaseSettings.SchemaIndex schemaIndex ) throws Throwable
+    @EnumSource( value = IndexType.class, mode = EnumSource.Mode.EXCLUDE, names = { "LOOKUP" } )
+    void dropIndexRaceWithCheckpoint( IndexType indexType ) throws Throwable
     {
-        setUp( schemaIndex );
-
         CheckPointer checkPointer = getCheckPointer( database );
 
         int nbrOfIndexes = 100;
@@ -260,7 +236,7 @@ public class IndexingServiceIntegrationTest
         {
             for ( int i = 0; i < nbrOfIndexes; i++ )
             {
-                tx.schema().indexFor( Label.label( "label" ) ).on( "prop" + i ).create();
+                tx.schema().indexFor( Label.label( "label" ) ).on( "prop" + i ).withIndexType( indexType ).create();
             }
             tx.commit();
         }

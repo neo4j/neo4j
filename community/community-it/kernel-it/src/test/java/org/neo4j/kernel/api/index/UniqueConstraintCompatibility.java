@@ -39,27 +39,15 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.index.schema.NameOverridingStoreMigrationParticipant;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
-import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
 abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -73,10 +61,6 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
     /*
      * There are a quite a number of permutations to consider, when it comes to unique
      * constraints.
-     *
-     * We have two supported providers:
-     *  - InMemoryIndexProvider
-     *  - LuceneIndexProvider
      *
      * An index can be in a number of states, two of which are interesting:
      *  - ONLINE: the index is in active duty
@@ -130,13 +114,9 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
     @BeforeEach
     void setUp()
     {
-        var originalDescriptor = indexProvider.getProviderDescriptor();
-        var descriptorOverride = new IndexProviderDescriptor( "compatibility-test-" + originalDescriptor.getKey(), originalDescriptor.getVersion() );
         Config.Builder config = Config.newBuilder();
-        config.set( default_schema_provider, descriptorOverride.name() );
         testSuite.additionalConfig( config );
         managementService = new TestDatabaseManagementServiceBuilder( homePath )
-                .addExtension( new PredefinedIndexProviderFactory( indexProvider, descriptorOverride ) )
                 .noOpSystemGraphInitializer()
                 .impermanent()
                 .setConfig( config.build() )
@@ -969,44 +949,6 @@ abstract class UniqueConstraintCompatibility extends PropertyIndexProviderCompat
         catch ( InterruptedException e )
         {
             throw new AssertionError( "Interrupted", e );
-        }
-    }
-
-    private static class PredefinedIndexProviderFactory extends ExtensionFactory<PredefinedIndexProviderFactory.NoDeps>
-    {
-        private final IndexProvider indexProvider;
-        private final IndexProviderDescriptor descriptorOverride;
-
-        @Override
-        public Lifecycle newInstance( ExtensionContext context, NoDeps noDeps )
-        {
-            return new IndexProvider.Delegating( indexProvider )
-            {
-                @Override
-                public IndexProviderDescriptor getProviderDescriptor()
-                {
-                    return descriptorOverride;
-                }
-
-                @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-                                                                            StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
-                {
-                    return new NameOverridingStoreMigrationParticipant( super.storeMigrationParticipant( fs, pageCache, storageEngineFactory, contextFactory),
-                                                                        descriptorOverride.name() );
-                }
-            };
-        }
-
-        interface NoDeps
-        {
-        }
-
-        PredefinedIndexProviderFactory( IndexProvider indexProvider, IndexProviderDescriptor descriptorOverride )
-        {
-            super( ExtensionType.DATABASE, indexProvider.getClass().getSimpleName() );
-            this.indexProvider = indexProvider;
-            this.descriptorOverride = descriptorOverride;
         }
     }
 }

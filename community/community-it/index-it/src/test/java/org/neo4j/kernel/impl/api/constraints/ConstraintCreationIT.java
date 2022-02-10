@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.constraints;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -36,16 +35,12 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE30;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 
 @DbmsExtension
 class ConstraintCreationIT
@@ -70,26 +65,6 @@ class ConstraintCreationIT
         }
     }
 
-    @ExtensionCallback
-    void configureLuceneSubProvider( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( default_schema_provider, NATIVE30.providerName() );
-    }
-
-    @Test
-    @DbmsExtension( configurationCallback = "configureLuceneSubProvider" )
-    void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
-    {
-        // given
-        attemptAndFailConstraintCreation();
-
-        // then
-        IndexProvider indexProvider = indexProviderMap.getBtreeIndexProvider();
-        Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
-
-        assertFalse( Files.exists( indexDir ) );
-    }
-
     @ParameterizedTest
     @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
     void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails( IndexType indexType )
@@ -102,11 +77,6 @@ class ConstraintCreationIT
         Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( Files.exists( indexDir ) );
-    }
-
-    private void attemptAndFailConstraintCreation()
-    {
-        attemptAndFailConstraintCreation( IndexType.BTREE );
     }
 
     private void attemptAndFailConstraintCreation( IndexType indexType )
