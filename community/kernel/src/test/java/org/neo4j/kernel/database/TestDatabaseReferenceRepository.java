@@ -99,7 +99,7 @@ public final class TestDatabaseReferenceRepository
 
     public static class Fixed implements DatabaseReferenceRepository
     {
-        private final static DatabaseReference SYSTEM_DATABASE_REFERENCE =
+        private static final DatabaseReference SYSTEM_DATABASE_REFERENCE =
                 new DatabaseReference.Internal( new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), NAMED_SYSTEM_DATABASE_ID );
 
         private final Map<NormalizedDatabaseName,DatabaseReference> databaseReferences;

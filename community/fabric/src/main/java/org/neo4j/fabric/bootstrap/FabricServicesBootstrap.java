@@ -83,10 +83,10 @@ public abstract class FabricServicesBootstrap
     private final FabricConfig fabricConfig;
     private final Dependencies dependencies;
     private final LogService logService;
-    private final AbstractSecurityLog securityLog;
     private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
+    protected final AbstractSecurityLog securityLog;
     protected final DatabaseManager<? extends DatabaseContext> databaseManager;
     protected final DatabaseReferenceRepository databaseReferenceRepo;
 

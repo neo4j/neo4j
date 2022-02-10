@@ -50,6 +50,7 @@ import org.neo4j.values.storable.StringValue;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDLE_TEST;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_MAX_SIZE;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENABLED;
@@ -134,7 +135,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     {
         return ignoreConcurrentDeletes( () ->
         {
-            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY ) );
+            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( DATABASE_NAME, alias, NAME_PROPERTY, String.class ) );
             return Optional.of( new DatabaseReference.Internal( aliasName, targetedDatabase ) );
         } );
     }
@@ -154,9 +155,9 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     {
         return ignoreConcurrentDeletes( () ->
         {
-            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY );
-            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY ) );
-            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY ) );
+            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY, String.class );
+            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY, String.class ) );
+            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY, String.class ) );
 
             var uri = URI.create( uriString );
             var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
@@ -179,6 +180,13 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     {
         return Optional.ofNullable( tx.findNode( REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName ) )
                        .flatMap( CommunityTopologyGraphDbmsModel::getDriverSettings );
+    }
+
+    @Override
+    public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials( String databaseName )
+    {
+        return Optional.ofNullable( tx.findNode( REMOTE_DATABASE_LABEL, NAME_PROPERTY, databaseName ) )
+                       .flatMap( CommunityTopologyGraphDbmsModel::getDatabaseCredentials );
     }
 
     private Optional<DatabaseReference> getInternalDatabaseReference( String databaseName )
@@ -211,8 +219,8 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
                 return Optional.empty();
             }
 
-            var databaseName = getPropertyOnNode( DATABASE_LABEL.name(), node, DATABASE_NAME_PROPERTY );
-            var databaseUuid = getPropertyOnNode( DATABASE_LABEL.name(), node, DATABASE_UUID_PROPERTY );
+            var databaseName = getPropertyOnNode( DATABASE_LABEL.name(), node, DATABASE_NAME_PROPERTY, String.class );
+            var databaseUuid = getPropertyOnNode( DATABASE_LABEL.name(), node, DATABASE_UUID_PROPERTY, String.class );
 
             return Optional.of( DatabaseIdFactory.from( databaseName, UUID.fromString( databaseUuid ) ) );
         }
@@ -257,15 +265,27 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
         } );
     }
 
+    private static Optional<ExternalDatabaseCredentials> getDatabaseCredentials( Node aliasNode )
+    {
+        return ignoreConcurrentDeletes( () ->
+        {
+            var username = getPropertyOnNode( REMOTE_DATABASE, aliasNode, USERNAME_PROPERTY, String.class );
+            var password = getPropertyOnNode( REMOTE_DATABASE, aliasNode, PASSWORD_PROPERTY,  byte[].class );
+            var iv = getPropertyOnNode( REMOTE_DATABASE, aliasNode, IV_PROPERTY,  byte[].class );
+            return Optional.of( new ExternalDatabaseCredentials( username, password, iv ) );
+        } );
+    }
+
     private static DriverSettings createDriverSettings( Node driverSettingsNode )
     {
-        var sslEnabled = (Boolean) driverSettingsNode.getProperty( SSL_ENABLED.toString() );
-        var connectionTimeout = (Duration) driverSettingsNode.getProperty( CONNECTION_TIMEOUT.toString() );
-        var connectionMaxLifetime = (Duration) driverSettingsNode.getProperty( CONNECTION_MAX_LIFETIME.toString() );
-        var connectionPoolAcquisitionTimeout = (Duration) driverSettingsNode.getProperty( CONNECTION_POOL_ACQUISITION_TIMEOUT.toString() );
-        var connectionPoolIdleTest = (Duration) driverSettingsNode.getProperty( CONNECTION_POOL_IDLE_TEST.toString() );
-        var connectionPoolMaxSize = (Integer) driverSettingsNode.getProperty( CONNECTION_TIMEOUT.toString() );
-        var loggingLevelString = (String) driverSettingsNode.getProperty( LOGGING_LEVEL.toString() );
+        var sslEnabled = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, SSL_ENABLED.toString(), boolean.class );
+        var connectionTimeout = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_TIMEOUT.toString(), Duration.class );
+        var connectionMaxLifetime = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_MAX_LIFETIME.toString(), Duration.class );
+        var connectionPoolAcquisitionTimeout = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode,
+                                                                  CONNECTION_POOL_ACQUISITION_TIMEOUT.toString(), Duration.class );
+        var connectionPoolIdleTest = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_IDLE_TEST.toString(), Duration.class );
+        var connectionPoolMaxSize = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_MAX_SIZE.toString(), int.class );
+        var loggingLevelString = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, LOGGING_LEVEL.toString(), String.class );
         var loggingLevel = Level.valueOf( loggingLevelString );
 
         return new DriverSettings( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
@@ -279,18 +299,18 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
         return DatabaseIdFactory.from( name, uuid );
     }
 
-    private static String getPropertyOnNode( String labelName, Node node, String key )
+    private static <T> T getPropertyOnNode( String labelName, Node node, String key, Class<T> type )
     {
         var value = node.getProperty( key );
         if ( value == null )
         {
             throw new IllegalStateException( String.format( "%s has no property %s.", labelName, key ) );
         }
-        if ( !(value instanceof String) )
+        if ( !type.isInstance( value ) )
         {
-            throw new IllegalStateException( String.format( "%s has non String property %s.", labelName, key ) );
+            throw new IllegalStateException( String.format( "%s has non %s property %s.", labelName, type.getSimpleName(), key ) );
         }
-        return (String) value;
+        return type.cast( value );
     }
 
     private static <T> Optional<T> ignoreConcurrentDeletes( Supplier<Optional<T>> operation )

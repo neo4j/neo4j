@@ -36,7 +36,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 
 public class SystemGraphDatabaseReferenceRepository implements DatabaseReferenceRepository
 {
-    private final static DatabaseReference SYSTEM_DATABASE_REFERENCE =
+    private static final DatabaseReference SYSTEM_DATABASE_REFERENCE =
             new DatabaseReference.Internal( new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), NAMED_SYSTEM_DATABASE_ID );
 
     private final Supplier<DatabaseContext> systemDatabaseSupplier;

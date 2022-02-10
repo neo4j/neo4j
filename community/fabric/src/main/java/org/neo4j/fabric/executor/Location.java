@@ -181,5 +181,28 @@ public class Location
                         '}';
             }
         }
+
+        /**
+         * When connecting to an external neo4j instance via an internal driver, we need to authenticate with that remote instance.
+         *
+         * When a location is {@link External} we will attempt to connect with the credentials of the current authenticated user on this instance.
+         * When a location is {@link ExternalWithCredentials} we will look up specific credentials for that remote instance and use those, rather
+         * than the credentials of the current authenticated user.
+         */
+        public static class ExternalWithCredentials extends Remote
+        {
+            private final String locationName;
+
+            public ExternalWithCredentials( long id, UUID uuid, RemoteUri uri, String databaseName, String locationName )
+            {
+                super( id, uuid, uri, databaseName );
+                this.locationName = locationName;
+            }
+
+            public String locationName()
+            {
+                return locationName;
+            }
+        }
     }
 }
