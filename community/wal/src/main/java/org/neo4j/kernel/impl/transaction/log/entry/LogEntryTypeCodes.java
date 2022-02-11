@@ -32,4 +32,7 @@ public class LogEntryTypeCodes
     // type code 7 was used before 4.2 for inlined checkpoints log entries and got removed in 5.0
     // Detached check point log entries lives in a separate file
     public static final byte DETACHED_CHECK_POINT = (byte) 8;
+
+    // Checkpoint that contains transaction info (tx id, checksum, commit timestamp)
+    public static final byte DETACHED_CHECK_POINT_V5_0 = (byte) 9;
 }

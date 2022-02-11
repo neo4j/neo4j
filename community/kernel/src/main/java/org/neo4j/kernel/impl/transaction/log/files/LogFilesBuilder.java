@@ -492,7 +492,7 @@ public class LogFilesBuilder
         }
         if ( transactionIdStore != null )
         {
-            return () -> transactionIdStore.getLastClosedTransaction().getLogPosition();
+            return () -> transactionIdStore.getLastClosedTransaction().logPosition();
         }
         if ( fileBasedOperationsOnly )
         {
@@ -509,13 +509,13 @@ public class LogFilesBuilder
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
             TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
-            return () -> transactionIdStore.getLastClosedTransaction().getLogPosition();
+            return () -> transactionIdStore.getLastClosedTransaction().logPosition();
         }
         else
         {
             requireNonNull( dependencies, TransactionIdStore.class.getSimpleName() + " is required. " +
                     "Please provide an instance or a dependencies where it can be found." );
-            return () -> resolveDependency( TransactionIdStore.class ).getLastClosedTransaction().getLogPosition();
+            return () -> resolveDependency( TransactionIdStore.class ).getLastClosedTransaction().logPosition();
         }
     }
 

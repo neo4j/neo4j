@@ -56,7 +56,8 @@ class TransactionCommitment implements Commitment
     @Override
     public void publishAsClosed( CursorContext cursorContext )
     {
-        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset(), cursorContext );
+        transactionIdStore.transactionClosed( transactionId, logPosition.getLogVersion(), logPosition.getByteOffset(), transactionChecksum,
+                transactionCommitTimestamp, cursorContext );
     }
 
     @Override

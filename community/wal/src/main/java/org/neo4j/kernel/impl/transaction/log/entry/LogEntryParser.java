@@ -61,6 +61,6 @@ public abstract class LogEntryParser
      * @return the next {@link LogEntry} read and parsed from the {@code channel}.
      * @throws IOException I/O error from channel or if data was read past the end of the channel.
      */
-    abstract LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
-            throws IOException;
+    public abstract LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker,
+            CommandReaderFactory commandReaderFactory ) throws IOException;
 }

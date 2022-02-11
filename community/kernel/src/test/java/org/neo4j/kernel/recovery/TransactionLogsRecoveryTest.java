@@ -78,6 +78,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -180,7 +181,7 @@ class TransactionLogsRecoveryTest
             // check point pointing to the previously committed transaction
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, lastCommittedTxPosition, Instant.now(), "test" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new TransactionId( 4L, 2, 5L ), lastCommittedTxPosition, Instant.now(), "test" );
 
             // tx committed after checkpoint
             consumer.accept( marker );
@@ -292,6 +293,7 @@ class TransactionLogsRecoveryTest
         {
             LogEntryWriter<?> writer = pair.first();
             Consumer<LogPositionMarker> consumer = pair.other();
+            TransactionId transactionId = new TransactionId( 4L, BASE_TX_CHECKSUM, 5L );
 
             // last committed tx
             consumer.accept( marker );
@@ -302,7 +304,7 @@ class TransactionLogsRecoveryTest
             consumer.accept( marker );
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test" );
             return true;
         }, KernelVersion.LATEST );
 
@@ -376,12 +378,14 @@ class TransactionLogsRecoveryTest
         {
             LogEntryWriter<?> writer = pair.first();
             writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
+            TransactionId transactionId = new TransactionId( 1L, BASE_TX_CHECKSUM, 2L );
+
             writer.writeCommitEntry( 1L, 2L );
             Consumer<LogPositionMarker> other = pair.other();
             other.accept( marker );
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(), "test" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(), "test" );
 
             // write incomplete tx to trigger recovery
             writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
@@ -413,13 +417,15 @@ class TransactionLogsRecoveryTest
             LogEntryWriter<?> writer = pair.first();
             writer.writeStartEntry( 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY );
             writer.writeCommitEntry( 1L, 2L );
+            TransactionId transactionId = new TransactionId( 1L, BASE_TX_CHECKSUM, 2L );
+
             Consumer<LogPositionMarker> other = pair.other();
             other.accept( marker );
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, marker.newPosition(), Instant.now(),"valid checkpoint" );
-            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( marker.getLogVersion() + 1, marker.getByteOffset() ), Instant.now(),
-                    "invalid checkpoint" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, marker.newPosition(), Instant.now(),"valid checkpoint" );
+            checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, new LogPosition( marker.getLogVersion() + 1, marker.getByteOffset() ),
+                    Instant.now(), "invalid checkpoint" );
 
             // incomplete tx
             writer.writeStartEntry( 5L, 4L, 0, new byte[0] );
@@ -492,8 +498,8 @@ class TransactionLogsRecoveryTest
         // THEN
         assertTrue( recoveryRequired );
         var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-        LogPosition logPosition = lastClosedTransaction.getLogPosition();
-        assertEquals( transactionId, lastClosedTransaction.getTransactionId() );
+        LogPosition logPosition = lastClosedTransaction.logPosition();
+        assertEquals( transactionId, lastClosedTransaction.transactionId() );
         assertEquals( commitTimestamp, transactionIdStore.getLastCommittedTransaction().commitTimestamp() );
         assertEquals( logVersion, logPosition.getLogVersion() );
         assertEquals( marker.getByteOffset(), logPosition.getByteOffset() );

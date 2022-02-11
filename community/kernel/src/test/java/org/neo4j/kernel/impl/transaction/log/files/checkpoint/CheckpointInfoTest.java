@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -38,7 +38,7 @@ class CheckpointInfoTest
         LogPosition position = new LogPosition( 1, 2 );
         LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
         LogPosition postReaderPosition = new LogPosition( 5, 6 );
-        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpoint( KernelVersion.LATEST, logPosition, 2, storeId, "checkpoint" ), position,
+        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpointV4_2( KernelVersion.LATEST, logPosition, 2, storeId, "checkpoint" ), position,
                 positionAfterCheckpoint, postReaderPosition );
 
         assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );

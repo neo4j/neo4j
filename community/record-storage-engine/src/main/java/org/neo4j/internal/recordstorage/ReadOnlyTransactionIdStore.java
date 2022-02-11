@@ -36,6 +36,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
@@ -43,6 +44,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
     private final long transactionId;
     private final int transactionChecksum;
+    private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
 
     public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, CursorContext cursorContext )
@@ -52,18 +54,21 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
         int checksum = 0;
         long logVersion = 0;
         long byteOffset = 0;
+        long commitTimestamp = 0;
         if ( NeoStores.isStorePresent( fs, RecordDatabaseLayout.convert( databaseLayout ) ) )
         {
             Path neoStore = databaseLayout.metadataStore();
             String databaseName = databaseLayout.getDatabaseName();
             id = getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseName, cursorContext );
             checksum = (int) getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorContext );
+            commitTimestamp = getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseName, cursorContext );
             logVersion = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorContext );
             byteOffset = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorContext );
         }
 
         this.transactionId = id;
         this.transactionChecksum = checksum;
+        this.transactionCommitTimestamp = commitTimestamp;
         this.logPosition = new LogPosition( logVersion, byteOffset );
     }
 
@@ -112,7 +117,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     @Override
     public ClosedTransactionMetadata getLastClosedTransaction()
     {
-        return new ClosedTransactionMetadata( transactionId, logPosition );
+        return new ClosedTransactionMetadata( transactionId, logPosition, transactionChecksum, transactionCommitTimestamp );
     }
 
     @Override
@@ -123,13 +128,14 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
+            CursorContext cursorContext )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }

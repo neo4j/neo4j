@@ -47,6 +47,7 @@ import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
@@ -109,7 +110,7 @@ public class TransactionLogInitializer
             // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
             // log files will be started since on start we will try position writer on the last known good location
             store.resetLastClosedTransaction( store.getLastCommittedTransactionId(), store.getLastClosedTransactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE, true,
-                    cursorContext );
+                    store.getLastClosedTransaction().checksum(), store.getLastClosedTransaction().commitTimestamp(), cursorContext );
         }
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
@@ -189,6 +190,6 @@ public class TransactionLogInitializer
     private static void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException
     {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, position, Instant.now(), reason );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, TransactionIdStore.UNKNOWN_TRANSACTION_ID, position, Instant.now(), reason );
     }
 }

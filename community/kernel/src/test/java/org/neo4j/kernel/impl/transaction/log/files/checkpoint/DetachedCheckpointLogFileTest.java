@@ -43,6 +43,7 @@ import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -86,7 +87,8 @@ class DetachedCheckpointLogFileTest
     void findLogTailShouldWorkForDetachedCheckpoints() throws IOException
     {
         LogPosition logPosition = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition, Instant.now(), "detached" );
+        TransactionId transactionId = new TransactionId( 1, 2, 3 );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, transactionId, logPosition, Instant.now(), "detached" );
         CheckpointInfo lastCheckPoint = buildLogFiles().getTailInformation().lastCheckPoint;
         assertThat( lastCheckPoint.getTransactionLogPosition() ).isEqualTo( logPosition );
     }
@@ -96,7 +98,8 @@ class DetachedCheckpointLogFileTest
     {
         // Should find the detached checkpoint first
         LogPosition logPosition2 = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition2, Instant.now(), "detached" );
+        TransactionId transactionId = new TransactionId( 5, 6, 7 );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, transactionId, logPosition2, Instant.now(), "detached" );
         assertThat( checkpointFile.findLatestCheckpoint().orElseThrow().getTransactionLogPosition() ).isEqualTo( logPosition2 );
     }
 
@@ -109,8 +112,10 @@ class DetachedCheckpointLogFileTest
         // Add detached checkpoints
         LogPosition logPosition = new LogPosition( 0, 3 );
         LogPosition logPosition1 = new LogPosition( 0, 4 );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition, Instant.now(), "detached" );
-        checkpointFile.getCheckpointAppender().checkPoint( NULL, logPosition1, Instant.now(), "detached" );
+        TransactionId transactionId = new TransactionId( 5, 6, 7 );
+        TransactionId transactionId1 = new TransactionId( 6, 7, 8 );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, transactionId, logPosition, Instant.now(), "detached" );
+        checkpointFile.getCheckpointAppender().checkPoint( NULL, transactionId1, logPosition1, Instant.now(), "detached" );
 
         List<CheckpointInfo> reachableCheckpoints = checkpointFile.reachableCheckpoints();
         assertThat( reachableCheckpoints.size() ).isEqualTo( 2 );

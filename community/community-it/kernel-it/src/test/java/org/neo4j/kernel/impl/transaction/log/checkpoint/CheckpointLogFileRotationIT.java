@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -65,11 +66,12 @@ public class CheckpointLogFileRotationIT
     {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        LogPosition logPosition = new LogPosition( 1000, 12345 );
+        var logPosition = new LogPosition( 1000, 12345 );
+        var transactionId = new TransactionId( 100, 101, 102 );
         var reason = "checkpoint for rotation test";
         for ( int i = 0; i < 105; i++ )
         {
-            checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
+            checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
         }
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 22 );
@@ -93,10 +95,11 @@ public class CheckpointLogFileRotationIT
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition( 1000, 12345 );
+        var transactionId = new TransactionId( 100, 101, 102 );
         var reason = "checkpoint for rotation test";
         for ( int i = 0; i < 4; i++ )
         {
-            checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
+            checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
         }
         assertThat( checkpointFile.getDetachedCheckpointFiles() ).hasSize( 1 );
     }
@@ -107,10 +110,11 @@ public class CheckpointLogFileRotationIT
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
         LogPosition logPosition = new LogPosition( 1000, 12345 );
+        var transactionId = new TransactionId( 100, 101, 102 );
         var reason = "checkpoint for rotation test";
         for ( int i = 0; i < 5; i++ )
         {
-            checkpointAppender.checkPoint( NULL, logPosition, Instant.now(), reason );
+            checkpointAppender.checkPoint( NULL, transactionId, logPosition, Instant.now(), reason );
         }
         Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat( matchedFiles ).hasSize( 2 );

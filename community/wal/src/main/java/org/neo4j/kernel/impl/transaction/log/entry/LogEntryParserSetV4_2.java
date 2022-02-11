@@ -25,6 +25,7 @@ import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.DetachedCheckpointLogEntryParserV4_2;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -94,6 +95,6 @@ class LogEntryParserSetV4_2 extends LogEntryParserSet
         // follow the same scheme, which to some extent means slightly unnecessary version bumps for detached checkpoints if they don't change,
         // but that can be said for other log entries too that won't change between versions. And having them follow the same versioning is so
         // much easier on the brain. Thank you and good day.
-        register( new DetachedCheckpointLogEntryParser() );
+        register( new DetachedCheckpointLogEntryParserV4_2() );
     }
 }

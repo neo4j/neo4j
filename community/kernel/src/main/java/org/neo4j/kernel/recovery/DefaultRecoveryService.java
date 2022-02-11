@@ -37,6 +37,8 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
 public class DefaultRecoveryService implements RecoveryService
 {
@@ -106,11 +108,11 @@ public class DefaultRecoveryService implements RecoveryService
             // it will still reference old offset from logs that are gone and as result log position in checkpoint record will be incorrect
             // and that can cause partial next recovery.
             var lastClosedTransactionData = transactionIdStore.getLastClosedTransaction();
-            long logVersion = lastClosedTransactionData.getLogPosition().getLogVersion();
+            long logVersion = lastClosedTransactionData.logPosition().getLogVersion();
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.getTransactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true,
-                    cursorContext );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.transactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true,
+                    lastClosedTransactionData.checksum(), lastClosedTransactionData.commitTimestamp(), cursorContext );
             logVersionRepository.setCurrentLogVersion( logVersion, cursorContext );
             long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
             if ( checkpointLogVersion < 0 )
@@ -137,7 +139,7 @@ public class DefaultRecoveryService implements RecoveryService
             log.warn( "Recovery detected that transaction logs tail can't be trusted. " +
                     "Resetting offset of last closed transaction to point to the last recoverable log position: " + positionAfterLastRecoveredTransaction );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransactionId, positionAfterLastRecoveredTransaction.getLogVersion(),
-                    positionAfterLastRecoveredTransaction.getByteOffset(), false, cursorContext );
+                    positionAfterLastRecoveredTransaction.getByteOffset(), false, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, cursorContext );
         }
 
         logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion(), cursorContext );

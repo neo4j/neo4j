@@ -49,6 +49,7 @@ import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.time.Clocks;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -126,7 +127,8 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( any() );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                any( String.class ) );
         verify( threshold ).initialize( initialTransactionId, logPosition );
         verify( threshold ).checkPointHappened( transactionId, logPosition );
         verify( threshold ).isCheckPointingNeeded( transactionId, logPosition, INFO );
@@ -152,7 +154,8 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( any() );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                any( String.class ) );
         verify( threshold ).initialize( initialTransactionId, logPosition );
         verify( threshold ).checkPointHappened( transactionId, logPosition );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition, INFO );
@@ -177,7 +180,8 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( any() );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                any( String.class ) );
         verify( threshold ).initialize( initialTransactionId, logPosition );
         verify( threshold ).checkPointHappened( transactionId, logPosition );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition, INFO );
@@ -202,7 +206,8 @@ class CheckPointerImplTest
         assertEquals( transactionId, txId );
         verify( forceOperation ).flushAndForce( any() );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                any( String.class ) );
         verify( threshold ).initialize( initialTransactionId, logPosition );
         verify( threshold ).checkPointHappened( transactionId, logPosition );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, logPosition, INFO );
@@ -282,7 +287,8 @@ class CheckPointerImplTest
 
         checkPointing.forceCheckPoint( INFO );
 
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), any( String.class ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                any( String.class ) );
         reset( appender );
 
         checkPointing.tryCheckPoint( INFO );
@@ -317,7 +323,8 @@ class CheckPointerImplTest
         String triggerName = "Test checkpoint reason";
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( triggerName ) );
 
-        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), eq( logPosition ), any( Instant.class ), contains( triggerName ) );
+        verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), eq( logPosition ), any( Instant.class ),
+                contains( triggerName ) );
     }
 
     @Test
@@ -378,8 +385,8 @@ class CheckPointerImplTest
 
     private void mockTxIdStore()
     {
-        var initialCommitted = new ClosedTransactionMetadata( initialTransactionId, logPosition );
-        var otherCommitted = new ClosedTransactionMetadata( transactionId, logPosition );
+        var initialCommitted = new ClosedTransactionMetadata( initialTransactionId, logPosition, 4, 5 );
+        var otherCommitted = new ClosedTransactionMetadata( transactionId, logPosition, 6, 7 );
         when( metadataProvider.getLastClosedTransaction() ).thenReturn( initialCommitted, otherCommitted );
         when( metadataProvider.getLastClosedTransactionId() ).thenReturn( initialTransactionId, transactionId, transactionId );
     }
@@ -395,7 +402,8 @@ class CheckPointerImplTest
             try
             {
                 unlockCounter.incrementAndGet();
-                verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( LogPosition.class ), any( Instant.class ), any( String.class ) );
+                verify( appender ).checkPoint( any( LogCheckPointEvent.class ), any( TransactionId.class ), any( LogPosition.class ), any( Instant.class ),
+                        any( String.class ) );
                 reset( appender );
                 super.unlock();
             }

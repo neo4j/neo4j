@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
@@ -186,7 +186,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
             {
                 log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
-                LogEntryDetachedCheckpoint checkpoint;
+                LogEntryDetachedCheckpointV4_2 checkpoint;
                 var lastCheckpointLocation = reader.getCurrentPosition();
                 var lastLocation = lastCheckpointLocation;
                 while ( logEntryCursor.next() )
@@ -257,11 +257,11 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         return TransactionLogFilesHelper.getLogVersion( checkpointLogFile );
     }
 
-    private static LogEntryDetachedCheckpoint verify( LogEntry logEntry )
+    private static LogEntryDetachedCheckpointV4_2 verify( LogEntry logEntry )
     {
-        if ( logEntry instanceof LogEntryDetachedCheckpoint )
+        if ( logEntry instanceof LogEntryDetachedCheckpointV4_2 )
         {
-            return (LogEntryDetachedCheckpoint) logEntry;
+            return (LogEntryDetachedCheckpointV4_2) logEntry;
         }
         else
         {
@@ -316,7 +316,9 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         }
     }
 
-    private record CheckpointEntryInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint )
+    //TODO:
+    private record CheckpointEntryInfo(LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition,
+                                       LogPosition channelPositionAfterCheckpoint)
     {
     }
 }

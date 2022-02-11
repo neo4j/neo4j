@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
+package org.neo4j.kernel.impl.transaction.log.entry.v42;
 
 import java.io.IOException;
 
@@ -25,22 +25,25 @@ import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class DetachedCheckpointLogEntryParser extends LogEntryParser
+public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser
 {
     public static final int MAX_DESCRIPTION_LENGTH = 120;
 
-    DetachedCheckpointLogEntryParser()
+    public DetachedCheckpointLogEntryParserV4_2()
     {
         super( LogEntryTypeCodes.DETACHED_CHECK_POINT );
     }
 
     @Override
-    LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
+    public LogEntry parse( KernelVersion version, ReadableChecksumChannel channel, LogPositionMarker marker, CommandReaderFactory commandReaderFactory )
             throws IOException
     {
         long logVersion = channel.getLong();
@@ -54,6 +57,6 @@ class DetachedCheckpointLogEntryParser extends LogEntryParser
         channel.get( bytes, MAX_DESCRIPTION_LENGTH );
         String reason = new String( bytes, 0, reasonBytesLength, UTF_8 );
         channel.endChecksumAndValidate();
-        return new LogEntryDetachedCheckpoint( version, new LogPosition( logVersion, byteOffset ), checkpointTimeMillis, storeId, reason );
+        return new LogEntryDetachedCheckpointV4_2( version, new LogPosition( logVersion, byteOffset ), checkpointTimeMillis, storeId, reason );
     }
 }

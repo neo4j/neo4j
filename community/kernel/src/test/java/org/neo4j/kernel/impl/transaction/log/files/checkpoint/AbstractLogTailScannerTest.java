@@ -52,6 +52,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -70,6 +71,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLog
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -117,9 +119,9 @@ class DetachedLogTailScannerTest
                 .build();
     }
 
-    void writeCheckpoint( CheckpointFile separateCheckpointFile, LogPosition logPosition ) throws IOException
+    void writeCheckpoint( CheckpointFile separateCheckpointFile, TransactionId transactionId, LogPosition logPosition ) throws IOException
     {
-        separateCheckpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" );
+        separateCheckpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionId, logPosition, Instant.now(), "test" );
     }
 
     @Test
@@ -574,7 +576,7 @@ class DetachedLogTailScannerTest
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get( target ) : currentPosition;
                             assert logPosition != null : "No registered log position for " + target;
-                            writeCheckpoint( checkpointFile, logPosition );
+                            writeCheckpoint( checkpointFile, UNKNOWN_TRANSACTION_ID, logPosition );
                         }
                         else if ( entry instanceof PositionEntry )
                         {

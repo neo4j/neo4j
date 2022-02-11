@@ -152,15 +152,16 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
-        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, cursorContext );
+        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, checksum, commitTimestamp, cursorContext );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
+            CursorContext cursorContext )
     {
-        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, missingLogs, cursorContext );
+        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, missingLogs, checksum, commitTimestamp, cursorContext );
     }
 
     @Override

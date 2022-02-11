@@ -24,6 +24,7 @@ import java.time.Instant;
 
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.storageengine.api.TransactionId;
 
 public interface CheckpointAppender
 {
@@ -32,11 +33,13 @@ public interface CheckpointAppender
      * After this method have returned the check point mark must have been flushed to disk.
      *
      * @param logCheckPointEvent a trace event for the given check point operation.
+     * @param transactionId checkpoint last closed transaction id
      * @param logPosition the log position contained in the written check point
      * @param checkpointTime time when checkpoint occurred
      * @param reason reason for checkpoint to occur
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.
      */
-    void checkPoint( LogCheckPointEvent logCheckPointEvent, LogPosition logPosition, Instant checkpointTime, String reason ) throws IOException;
+    void checkPoint( LogCheckPointEvent logCheckPointEvent, TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, String reason )
+            throws IOException;
 }

@@ -327,7 +327,7 @@ class TransactionLogServiceIT
 
             var lastChannel = channels.get( channels.size() - 1 );
             var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            assertThat( lastChannel.getEndOffset() ).isEqualTo( lastClosedTransaction.getLogPosition().getByteOffset() );
+            assertThat( lastChannel.getEndOffset() ).isEqualTo( lastClosedTransaction.logPosition().getByteOffset() );
         }
     }
 
@@ -470,7 +470,7 @@ class TransactionLogServiceIT
         // so we will write data to system db and will mimic catchup by transfer in bulk logs from system db to test db
         var systemDatabase = (GraphDatabaseAPI) managementService.database( SYSTEM_DATABASE_NAME );
         var systemMetadata = systemDatabase.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        var positionBeforeTransaction = systemMetadata.getLastClosedTransaction().getLogPosition();
+        var positionBeforeTransaction = systemMetadata.getLastClosedTransaction().logPosition();
         for ( int i = 0; i < 3; i++ )
         {
             try ( var transaction = systemDatabase.beginTx() )
@@ -479,16 +479,16 @@ class TransactionLogServiceIT
                 transaction.commit();
             }
         }
-        var positionAfterTransaction = systemMetadata.getLastClosedTransaction().getLogPosition();
+        var positionAfterTransaction = systemMetadata.getLastClosedTransaction().logPosition();
         long systemLastClosedTransactionId = systemMetadata.getLastClosedTransactionId();
         var buffer = readTransactionIntoBuffer( systemDatabase, positionBeforeTransaction, positionAfterTransaction );
         LogPosition positionBeforeRecovery = null;
         try
         {
             availabilityGuard.require( new DescriptiveAvailabilityRequirement( "Database unavailable" ) );
-            long lastTransactionBeforeBufferAppend = metadataProvider.getLastClosedTransaction().getTransactionId();
+            long lastTransactionBeforeBufferAppend = metadataProvider.getLastClosedTransaction().transactionId();
 
-            positionBeforeRecovery = metadataProvider.getLastClosedTransaction().getLogPosition();
+            positionBeforeRecovery = metadataProvider.getLastClosedTransaction().logPosition();
 
             for ( int i = 0; i < 3; i++ )
             {
@@ -508,7 +508,7 @@ class TransactionLogServiceIT
 
         var restartedProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
         assertEquals( systemLastClosedTransactionId, restartedProvider.getLastClosedTransactionId() );
-        assertNotEquals( positionBeforeRecovery, restartedProvider.getLastClosedTransaction().getLogPosition() );
+        assertNotEquals( positionBeforeRecovery, restartedProvider.getLastClosedTransaction().logPosition() );
     }
 
     @Test

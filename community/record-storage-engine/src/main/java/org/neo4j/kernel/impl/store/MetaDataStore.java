@@ -174,7 +174,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
-    private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[2] );
+    private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[4] );
 
     // We use these objects and their monitors as "entity" locks on the records, because page write locks are not
     // exclusive. Therefore, these locks are only used when *writing* records, not when reading them.
@@ -321,7 +321,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursor, cursorContext );
         }
         lastCommittingTxField.set( transactionId );
-        lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
+        lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
 
@@ -731,8 +731,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
             long lastClosedTransactionLogVersion = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
             long lastClosedTransactionLogByteOffset = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-            lastClosedTx.set( lastCommittedTxId,
-                    new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset} );
+            lastClosedTx.set( lastCommittedTxId, new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset,
+                    (int) getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
+                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP )} );
             highestCommittedTransaction.set( lastCommittedTxId,
                     (int) getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
                     getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP
@@ -925,14 +926,14 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public ClosedTransactionMetadata getLastClosedTransaction()
     {
         assertNotClosed();
-        long[] longs = lastClosedTx.get();
-        return new ClosedTransactionMetadata( longs[0], new LogPosition( longs[1], longs[2] ) );
+        long[] txData = lastClosedTx.get();
+        return new ClosedTransactionMetadata( txData[0], new LogPosition( txData[1], txData[2] ), (int) txData[3], txData[4] );
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
-        if ( lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset} ) )
+        if ( lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} ) )
         {
             long pageId = pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION.id );
             assert pageId == pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET.id );
@@ -956,7 +957,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
+            CursorContext cursorContext )
     {
         assertNotClosed();
         try ( var cursor = openPageCursorForWriting( LAST_TRANSACTION_ID.id, cursorContext ) )
@@ -969,7 +971,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis(), cursor, cursorContext );
             }
         }
-        lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
+        lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     public void logRecords( final DiagnosticsLogger logger )

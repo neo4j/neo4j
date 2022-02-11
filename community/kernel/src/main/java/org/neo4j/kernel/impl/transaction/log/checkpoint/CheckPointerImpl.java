@@ -35,6 +35,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.time.Stopwatch;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -89,7 +90,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public void start()
     {
         var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        threshold.initialize( lastClosedTransaction.getTransactionId(), lastClosedTransaction.getLogPosition() );
+        threshold.initialize( lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition() );
     }
 
     @Override
@@ -146,7 +147,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     public long checkPointIfNeeded( TriggerInfo info ) throws IOException
     {
         var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-        if ( threshold.isCheckPointingNeeded( lastClosedTransaction.getTransactionId(), lastClosedTransaction.getLogPosition(), info ) )
+        if ( threshold.isCheckPointingNeeded( lastClosedTransaction.transactionId(), lastClosedTransaction.logPosition(), info ) )
         {
             try ( Resource lock = mutex.checkPoint() )
             {
@@ -163,9 +164,10 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
               LogCheckPointEvent event = databaseTracer.beginCheckPoint() )
         {
             var lastClosedTxData = metadataProvider.getLastClosedTransaction();
-            long lastClosedTransactionId = lastClosedTxData.getTransactionId();
+            var lastClosedTransaction = new TransactionId( lastClosedTxData.transactionId(), lastClosedTxData.checksum(), lastClosedTxData.commitTimestamp() );
+            long lastClosedTransactionId = lastClosedTransaction.transactionId();
             cursorContext.getVersionContext().initWrite( lastClosedTransactionId );
-            LogPosition logPosition = lastClosedTxData.getLogPosition();
+            LogPosition logPosition = lastClosedTxData.logPosition();
             String checkpointReason = triggerInfo.describe( lastClosedTransactionId );
             /*
              * Check kernel health before going into waiting for transactions to be closed, to avoid
@@ -186,7 +188,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * repair the damages.
              */
             databaseHealth.assertHealthy( IOException.class );
-            checkpointAppender.checkPoint( event, logPosition, clock.instant(), checkpointReason );
+            checkpointAppender.checkPoint( event, lastClosedTransaction, logPosition, clock.instant(), checkpointReason );
             threshold.checkPointHappened( lastClosedTransactionId, logPosition );
             long durationMillis = startTime.elapsed( MILLISECONDS );
             log.info( checkpointReason + " checkpoint completed in " + duration( durationMillis ) );

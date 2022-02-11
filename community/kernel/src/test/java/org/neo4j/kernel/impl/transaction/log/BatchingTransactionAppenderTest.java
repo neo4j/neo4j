@@ -60,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -248,7 +249,7 @@ class BatchingTransactionAppenderTest
                 logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
-        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
         verify( databaseHealth ).panic( failure );
     }
 
@@ -283,7 +284,7 @@ class BatchingTransactionAppenderTest
                 logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
-        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
     }
 
     @Test

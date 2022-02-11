@@ -27,7 +27,7 @@ public abstract class AbstractLogEntry implements LogEntry
     private final KernelVersion version;
     private final byte type;
 
-    AbstractLogEntry( KernelVersion version, byte type )
+    public AbstractLogEntry( KernelVersion version, byte type )
     {
         this.type = type;
         this.version = version;

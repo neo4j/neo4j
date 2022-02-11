@@ -20,11 +20,13 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0;
 
 public class LogEntryParserSetV5_0 extends LogEntryParserSetV4_4
 {
     LogEntryParserSetV5_0()
     {
         super( KernelVersion.V5_0 );
+        register( new DetachedCheckpointLogEntryParserV5_0() );
     }
 }

@@ -30,8 +30,8 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -122,7 +122,7 @@ class TransactionRangeDiagnosticsTest
         Database database = databaseWithLogFilesContainingLowestTxId( logs(
                 transactionLogsWithTransaction( txLogLowVersion, txLogHighVersion, 42 ),
                 checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, new CheckpointInfo(
-                        new LogEntryDetachedCheckpoint( KernelVersion.LATEST, checkpointLogPosition, 1234, storeId, "testing" ),
+                        new LogEntryDetachedCheckpointV4_2( KernelVersion.LATEST, checkpointLogPosition, 1234, storeId, "testing" ),
                         checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition ) ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog logger = logProvider.getLog( getClass() );

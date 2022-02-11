@@ -59,6 +59,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -100,7 +101,8 @@ class DetachedCheckpointAppenderTest
         databaseHealth.panic( new RuntimeException( "Panic" ) );
 
         LogPosition logPosition = new LogPosition( 0, 10 );
-        assertThrows( IOException.class, () -> checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition, Instant.now(), "test" ) );
+        assertThrows( IOException.class,
+                () -> checkpointAppender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition, Instant.now(), "test" ) );
     }
 
     @Test
@@ -109,7 +111,7 @@ class DetachedCheckpointAppenderTest
         DetachedCheckpointAppender appender =
                 new DetachedCheckpointAppender( mock( TransactionLogChannelAllocator.class ), mock( TransactionLogFilesContext.class, RETURNS_MOCKS ),
                         logFiles.getCheckpointFile(), NO_ROTATION, mock( DetachedLogTailScanner.class ) );
-        assertDoesNotThrow( () -> appender.checkPoint( LogCheckPointEvent.NULL, UNSPECIFIED, Instant.now(), "test" ) );
+        assertDoesNotThrow( () -> appender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, UNSPECIFIED, Instant.now(), "test" ) );
     }
 
     @Test
@@ -121,9 +123,9 @@ class DetachedCheckpointAppenderTest
         var logPosition2 = new LogPosition( 0, 20 );
         var logPosition3 = new LogPosition( 0, 30 );
         assertThat( checkpointFile.reachableCheckpoints() ).hasSize( 0 );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition1, Instant.now(), "first" );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition2, Instant.now(), "second" );
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, logPosition3, Instant.now(), "third" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition1, Instant.now(), "first" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition2, Instant.now(), "second" );
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, logPosition3, Instant.now(), "third" );
 
         var checkpoints = checkpointFile.reachableCheckpoints();
         assertThat( checkpoints ).hasSize( 3 );

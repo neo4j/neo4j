@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryDetachedCheckpoint;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.storageengine.api.StoreId;
 
 public class CheckpointInfo
@@ -33,7 +33,7 @@ public class CheckpointInfo
     private final KernelVersion version;
     private final StoreId storeId;
 
-    public CheckpointInfo( LogEntryDetachedCheckpoint checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
+    public CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )
     {
         this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,

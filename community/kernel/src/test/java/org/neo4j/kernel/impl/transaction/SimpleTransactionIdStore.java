@@ -40,7 +40,7 @@ import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSI
 public class SimpleTransactionIdStore implements TransactionIdStore
 {
     private final AtomicLong committingTransactionId = new AtomicLong();
-    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[1] );
+    private final OutOfOrderSequence closedTransactionId = new ArrayQueueOutOfOrderSequence( -1, 100, new long[3] );
     private final AtomicReference<TransactionId> committedTransactionId =
             new AtomicReference<>( new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP ) );
     private final long previouslyCommittedTxId;
@@ -114,7 +114,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     public ClosedTransactionMetadata getLastClosedTransaction()
     {
         long[] data = closedTransactionId.get();
-        return new ClosedTransactionMetadata( data[0], new LogPosition( data[1], data[2] ) );
+        return new ClosedTransactionMetadata( data[0], new LogPosition( data[1], data[2] ), (int) data[3], data[4] );
     }
 
     @Override
@@ -127,15 +127,16 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
     {
-        closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset} );
+        closedTransactionId.offer( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion, boolean missingLogs, CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long byteOffset, long logVersion, boolean missingLogs, int checksum, long commitTimestamp,
+            CursorContext cursorContext )
     {
-        closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset} );
+        closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     @Override

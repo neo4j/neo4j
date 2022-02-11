@@ -28,11 +28,12 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryParser.MAX_DESCRIPTION_LENGTH;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
+import static org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0.MAX_DESCRIPTION_LENGTH;
 
 public class DetachedCheckpointLogEntryWriter
 {
@@ -46,11 +47,11 @@ public class DetachedCheckpointLogEntryWriter
         this.kernelVersionProvider = kernelVersionProvider;
     }
 
-    public void writeCheckPointEntry( LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason )
+    public void writeCheckPointEntry( TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason )
             throws IOException
     {
         channel.beginChecksum();
-        writeLogEntryHeader( kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT, channel );
+        writeLogEntryHeader( kernelVersionProvider.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel );
         byte[] reasonBytes = reason.getBytes();
         short length = safeCastIntToShort( min( reasonBytes.length, MAX_DESCRIPTION_LENGTH ) );
         byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
@@ -61,8 +62,9 @@ public class DetachedCheckpointLogEntryWriter
                .putLong( storeId.getCreationTime() )
                .putLong( storeId.getRandomId() )
                .putLong( storeId.getStoreVersion() )
-               .putLong( 0 ) // legacy update time
-               .putLong( 0 ) // legacy upgrade tx id
+               .putLong( transactionId.transactionId() )
+               .putInt( transactionId.checksum() )
+               .putLong( transactionId.commitTimestamp() )
                .putShort( length )
                .put( descriptionBytes, descriptionBytes.length );
         channel.putChecksum();

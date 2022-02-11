@@ -270,7 +270,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true, NULL_CONTEXT ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true, 4, 5, NULL_CONTEXT ) );
     }
 
     @Test
@@ -278,10 +278,10 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, NULL_CONTEXT );
+            metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, 6, 7, NULL_CONTEXT );
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ) ), metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ), 6, 7 ), metaDataStore.getLastClosedTransaction() );
             try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 MetaDataRecord record =
@@ -296,10 +296,10 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, NULL_CONTEXT );
+            metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, 6, 7, NULL_CONTEXT );
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ) ), metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ), 6, 7 ), metaDataStore.getLastClosedTransaction() );
             try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
             {
                 MetaDataRecord record =
@@ -323,17 +323,19 @@ class MetaDataStoreTest
         // GIVEN
         long version = 1L;
         long byteOffset = 777L;
+        int checksum = 5252;
+        long timestamp = 1234;
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            long transactionId = metaDataStore.getLastClosedTransaction().getTransactionId() + 1;
+            long transactionId = metaDataStore.getLastClosedTransaction().transactionId() + 1;
 
             // WHEN
-            metaDataStore.transactionClosed( transactionId, version, byteOffset, NULL_CONTEXT );
+            metaDataStore.transactionClosed( transactionId, version, byteOffset, checksum, timestamp, NULL_CONTEXT );
             // long[] with the highest offered gap-free number and its meta data.
             var closedTransaction = metaDataStore.getLastClosedTransaction();
 
             //EXPECT
-            LogPosition logPosition = closedTransaction.getLogPosition();
+            LogPosition logPosition = closedTransaction.logPosition();
             assertEquals( version, logPosition.getLogVersion() );
             assertEquals( byteOffset, logPosition.getByteOffset() );
 
@@ -344,7 +346,7 @@ class MetaDataStoreTest
         {
             // EXPECT
             var lastClosedTransaction = metaDataStore.getLastClosedTransaction();
-            LogPosition logPosition = lastClosedTransaction.getLogPosition();
+            LogPosition logPosition = lastClosedTransaction.logPosition();
             assertEquals( version, logPosition.getLogVersion() );
             assertEquals( byteOffset, logPosition.getByteOffset() );
         }
@@ -498,7 +500,7 @@ class MetaDataStoreTest
         {
             PagedFile pf = store.pagedFile;
             int initialValue = 2;
-            store.transactionClosed( initialValue, initialValue, initialValue, NULL_CONTEXT );
+            store.transactionClosed( initialValue, initialValue, initialValue, initialValue, initialValue, NULL_CONTEXT );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -541,7 +543,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 var transaction = store.getLastClosedTransaction();
-                assertLogVersionEqualsByteOffset( transaction.getTransactionId(), transaction.getLogPosition().getLogVersion(), "API" );
+                assertLogVersionEqualsByteOffset( transaction.transactionId(), transaction.logPosition().getLogVersion(), "API" );
                 apiReadCount.incrementAndGet();
             } );
             race.go();

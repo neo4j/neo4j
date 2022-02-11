@@ -50,6 +50,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -147,7 +148,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     }
 
     @Override
-    public void checkPoint( LogCheckPointEvent logCheckPointEvent, LogPosition logPosition, Instant checkpointTime, String reason ) throws IOException
+    public void checkPoint( LogCheckPointEvent logCheckPointEvent, TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, String reason )
+            throws IOException
     {
         if ( checkpointWriter == null )
         {
@@ -161,7 +163,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             {
                 databaseHealth.assertHealthy( IOException.class );
                 var logPositionBeforeCheckpoint = writer.getCurrentPosition();
-                checkpointWriter.writeCheckPointEntry( logPosition, checkpointTime, storeId, reason );
+                checkpointWriter.writeCheckPointEntry( transactionId, logPosition, checkpointTime, storeId, reason );
                 var logPositionAfterCheckpoint = writer.getCurrentPosition();
                 logCheckPointEvent.appendToLogFile( logPositionBeforeCheckpoint, logPositionAfterCheckpoint );
                 forceAfterAppend( logCheckPointEvent );

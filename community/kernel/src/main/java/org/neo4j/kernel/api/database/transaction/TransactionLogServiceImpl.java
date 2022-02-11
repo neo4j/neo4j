@@ -101,8 +101,8 @@ public class TransactionLogServiceImpl implements TransactionLogService
     private ArrayList<LogChannel> collectChannels( long startingTxId, LogPosition minimalLogPosition, long minimalVersion,
                                                    ClosedTransactionMetadata lastClosedTransaction ) throws IOException
     {
-        var highestLogPosition = lastClosedTransaction.getLogPosition();
-        var highestTxId = lastClosedTransaction.getTransactionId();
+        var highestLogPosition = lastClosedTransaction.logPosition();
+        var highestTxId = lastClosedTransaction.transactionId();
         var highestLogVersion = highestLogPosition.getLogVersion();
         int exposedChannels = (int) ((highestLogVersion - minimalVersion) + 1);
         var channels = new ArrayList<LogChannel>( exposedChannels );

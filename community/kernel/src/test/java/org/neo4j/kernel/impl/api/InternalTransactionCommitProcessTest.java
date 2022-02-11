@@ -102,7 +102,7 @@ class InternalTransactionCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any(), anyLong(), any( CursorContext.class ) );
     }
 
     @Test

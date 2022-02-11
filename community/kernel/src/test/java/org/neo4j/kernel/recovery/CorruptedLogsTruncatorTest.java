@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -87,13 +88,14 @@ class CorruptedLogsTruncatorTest
     private LogFiles logFiles;
     private CorruptedLogsTruncator logPruner;
     private SimpleLogVersionRepository logVersionRepository;
+    private SimpleTransactionIdStore transactionIdStore;
 
     @BeforeEach
     void setUp() throws Exception
     {
         databaseDirectory = testDirectory.homePath();
         logVersionRepository = new SimpleLogVersionRepository();
-        SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
+        transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )
                 .withRotationThreshold( SINGLE_LOG_FILE_SIZE )
                 .withLogVersionRepository( logVersionRepository )
@@ -258,12 +260,13 @@ class CorruptedLogsTruncatorTest
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
         CheckpointFile checkpointFile = logFiles.getCheckpointFile();
-        checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL,
+        TransactionId transactionId = transactionIdStore.getLastCommittedTransaction();
+        checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionId,
                 new LogPosition( highestCorrectLogFileIndex, byteOffset - 1 ), Instant.now(), "within okay transactions");
         /* Write checkpoints that should be truncated. Write enough to get them get them in two files. */
         for ( int i = 0; i < 5; i++ )
         {
-            checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL,
+            checkpointFile.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionId,
                     new LogPosition( highestCorrectLogFileIndex, byteOffset + 1 ), Instant.now(), "in the part being truncated");
         }
 

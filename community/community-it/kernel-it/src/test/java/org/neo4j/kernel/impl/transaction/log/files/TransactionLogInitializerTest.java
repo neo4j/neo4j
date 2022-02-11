@@ -60,7 +60,8 @@ class TransactionLogInitializerTest
         var metaStore = mock( MetadataProvider.class );
         var txn = new TransactionId( 3, -1322858814, currentTimeMillis() );
         when( metaStore.getStoreId() ).thenReturn( new StoreId( versionStringToLong( defaultFormat().storeVersion() ) ) );
-        when( metaStore.getLastClosedTransaction() ).thenReturn( new ClosedTransactionMetadata( txn.transactionId(), new LogPosition( 0, 1613 ) ) );
+        when( metaStore.getLastClosedTransaction() ).thenReturn(
+                new ClosedTransactionMetadata( txn.transactionId(), new LogPosition( 0, 1613 ), txn.checksum(), txn.commitTimestamp() ) );
         when( metaStore.getLastCommittedTransaction() ).thenReturn( txn );
         when( metaStore.getLastCommittedTransactionId() ).thenReturn( txn.transactionId() );
         when( metaStore.getLastClosedTransactionId() ).thenReturn( txn.transactionId() );
@@ -73,6 +74,6 @@ class TransactionLogInitializerTest
 
         //Then
         verify( metaStore ).resetLastClosedTransaction( eq( txn.transactionId() ), eq( txn.transactionId() ), eq( (long) CURRENT_FORMAT_LOG_HEADER_SIZE ),
-                eq( true ), any() );
+                eq( true ), eq( txn.checksum() ), eq( txn.commitTimestamp() ), any() );
     }
 }

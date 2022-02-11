@@ -194,7 +194,7 @@ class LabelAndIndexUpdateBatchingIT
     private static long getLastClosedTransactionId( GraphDatabaseAPI database )
     {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        return metaDataStore.getLastClosedTransaction().getTransactionId();
+        return metaDataStore.getLastClosedTransaction().transactionId();
     }
 
     private static class CommandExtractor implements Visitor<StorageCommand,IOException>

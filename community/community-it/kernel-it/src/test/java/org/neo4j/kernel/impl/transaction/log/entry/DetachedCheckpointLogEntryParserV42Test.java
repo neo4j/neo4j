@@ -38,11 +38,13 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -55,7 +57,7 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
-class DetachedCheckpointLogEntryParserTest
+class DetachedCheckpointLogEntryParserV42Test
 {
     @Inject
     private FileSystemAbstraction fs;
@@ -75,7 +77,7 @@ class DetachedCheckpointLogEntryParserTest
         String checkpointDescription = "checkpoint";
         byte[] bytes = Arrays.copyOf( checkpointDescription.getBytes(), 120 );
         // For version confusion, please read LogEntryParserSetV4_3 comments
-        var checkpoint = new LogEntryDetachedCheckpoint( version, new LogPosition( 1, 2 ), checkpointMillis, storeId, checkpointDescription );
+        var checkpoint = new LogEntryDetachedCheckpointV4_2( version, new LogPosition( 1, 2 ), checkpointMillis, storeId, checkpointDescription );
 
         channel.putLong( checkpoint.getLogPosition().getLogVersion() )
                .putLong( checkpoint.getLogPosition().getByteOffset() )
@@ -124,18 +126,18 @@ class DetachedCheckpointLogEntryParserTest
         }
     }
 
-    private LogEntryDetachedCheckpoint readCheckpoint( VersionAwareLogEntryReader entryReader, ReadAheadLogChannel readChannel ) throws IOException
+    private LogEntryDetachedCheckpointV4_2 readCheckpoint( VersionAwareLogEntryReader entryReader, ReadAheadLogChannel readChannel ) throws IOException
     {
-        return (LogEntryDetachedCheckpoint) entryReader.readLogEntry( readChannel );
+        return (LogEntryDetachedCheckpointV4_2) entryReader.readLogEntry( readChannel );
     }
 
     private static void writeCheckpoint( DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason ) throws IOException
     {
-        var storeId = new StoreId( 3, 4, 5, 6, 7 );
+        var storeId = new StoreId( 3, 4, 5 );
+        var logPosition = new LogPosition( 1, 2 );
+        var transactionId = new TransactionId( 100, 101, 102 );
 
-        LogPosition logPosition = new LogPosition( 1, 2 );
-
-        checkpointLogEntryWriter.writeCheckPointEntry( logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
+        checkpointLogEntryWriter.writeCheckPointEntry( transactionId, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
     }
 
     private static class MutableKernelVersionRepository implements KernelVersionRepository

@@ -19,49 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Objects;
-
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public class ClosedTransactionMetadata
+public record ClosedTransactionMetadata(long transactionId, LogPosition logPosition, int checksum, long commitTimestamp)
 {
-    private final long transactionId;
-    private final LogPosition logPosition;
-
-    public ClosedTransactionMetadata( long transactionId, LogPosition logPosition )
-    {
-        this.transactionId = transactionId;
-        this.logPosition = logPosition;
-    }
-
-    public long getTransactionId()
-    {
-        return transactionId;
-    }
-
-    public LogPosition getLogPosition()
-    {
-        return logPosition;
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( this == o )
-        {
-            return true;
-        }
-        if ( o == null || getClass() != o.getClass() )
-        {
-            return false;
-        }
-        ClosedTransactionMetadata that = (ClosedTransactionMetadata) o;
-        return transactionId == that.transactionId && Objects.equals( logPosition, that.logPosition );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( transactionId, logPosition );
-    }
 }

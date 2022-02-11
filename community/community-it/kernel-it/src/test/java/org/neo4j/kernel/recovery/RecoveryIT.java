@@ -104,6 +104,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -1143,12 +1144,13 @@ class RecoveryIT
 
         var checkpointFile = db.getDependencyResolver().resolveDependency( LogFiles.class ).getCheckpointFile();
         var appender = (DetachedCheckpointAppender) checkpointFile.getCheckpointAppender();
+        var transactionId = new TransactionId( 100, 101, 102 );
         appender.rotate();
-        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test1" );
+        appender.checkPoint( LogCheckPointEvent.NULL, transactionId, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test1" );
         appender.rotate();
-        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test2" );
+        appender.checkPoint( LogCheckPointEvent.NULL, transactionId, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test2" );
         appender.rotate();
-        appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test3" );
+        appender.checkPoint( LogCheckPointEvent.NULL, transactionId, new LogPosition( 0, BASE_TX_LOG_BYTE_OFFSET ), Instant.now(), "test3" );
 
         DatabaseLayout layout = db.databaseLayout();
         managementService.shutdown();

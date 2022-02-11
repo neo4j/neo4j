@@ -52,6 +52,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -131,7 +132,7 @@ class LogVersionUpgradeCheckerIT
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
             CheckpointAppender appender = logFiles.getCheckpointFile().getCheckpointAppender();
-            appender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), Instant.now(), "test" );
+            appender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), Instant.now(), "test" );
         }
     }
 

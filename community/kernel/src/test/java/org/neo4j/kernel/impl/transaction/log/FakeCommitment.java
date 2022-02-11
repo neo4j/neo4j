@@ -54,7 +54,7 @@ public class FakeCommitment implements Commitment
     @Override
     public void publishAsClosed( CursorContext cursorContext )
     {
-        transactionIdStore.transactionClosed( id, 1, 2, cursorContext );
+        transactionIdStore.transactionClosed( id, 1, 2, CHECKSUM, TIMESTAMP, cursorContext );
     }
 
     @Override

@@ -117,6 +117,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_S
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -167,7 +168,7 @@ class RecoveryCorruptedTransactionLogIT
             logFiles = buildDefaultLogFiles( getStoreId( database ) );
 
             TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
+            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().logPosition();
             long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
             for ( int i = 0; i < 10; i++ )
             {
@@ -177,8 +178,8 @@ class RecoveryCorruptedTransactionLogIT
 
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
-            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
-                    "Fallback checkpoint." );
+            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionIdStore.getLastCommittedTransaction(),
+                    logOffsetBeforeTestTransactions, Instant.now(), "Fallback checkpoint." );
             managementService.shutdown();
 
             truncateBytesFromLastCheckpointLogFile( bytesToTrim );
@@ -204,18 +205,18 @@ class RecoveryCorruptedTransactionLogIT
             logFiles = buildDefaultLogFiles( getStoreId( database ) );
 
             TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
+            LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().logPosition();
             long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
             for ( int i = 0; i < 10; i++ )
             {
                 generateTransaction( database );
             }
-            long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
+            long numberOfClosedTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
 
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
-            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
-                    "Fallback checkpoint." );
+            databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionIdStore.getLastCommittedTransaction(),
+                    logOffsetBeforeTestTransactions, Instant.now(), "Fallback checkpoint." );
             managementService.shutdown();
 
             removeLastCheckpointRecordFromLastLogFile();
@@ -239,18 +240,18 @@ class RecoveryCorruptedTransactionLogIT
         logFiles = buildDefaultLogFiles( getStoreId( database ) );
 
         TransactionIdStore transactionIdStore = getTransactionIdStore( database );
-        LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().getLogPosition();
+        LogPosition logOffsetBeforeTestTransactions = transactionIdStore.getLastClosedTransaction().logPosition();
         long lastClosedTransactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
         for ( int i = 0; i < 10; i++ )
         {
             generateTransaction( database );
         }
-        long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
+        long numberOfClosedTransactions = transactionIdStore.getLastClosedTransactionId() - lastClosedTransactionBeforeStart;
 
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         var databaseCheckpointer = dependencyResolver.resolveDependency( TransactionLogFiles.class ).getCheckpointFile();
-        databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, logOffsetBeforeTestTransactions, Instant.now(),
-                "Fallback checkpoint." );
+        databaseCheckpointer.getCheckpointAppender().checkPoint( LogCheckPointEvent.NULL, transactionIdStore.getLastCommittedTransaction(),
+                logOffsetBeforeTestTransactions, Instant.now(), "Fallback checkpoint." );
         managementService.shutdown();
 
         removeLastCheckpointRecordFromLastLogFile();
@@ -513,7 +514,8 @@ class RecoveryCorruptedTransactionLogIT
 
             for ( int i = 0; i < rotations; i++ )
             {
-                checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new LogPosition( 0, HEADER_OFFSET ), Instant.now(), "test" + i);
+                checkpointAppender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, new LogPosition( 0, HEADER_OFFSET ), Instant.now(),
+                        "test" + i );
                 checkpointAppender.rotate();
             }
         }
@@ -1086,7 +1088,7 @@ class RecoveryCorruptedTransactionLogIT
     private static long getLastClosedTransactionOffset( GraphDatabaseAPI database )
     {
         MetadataProvider metaDataStore = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
-        return metaDataStore.getLastClosedTransaction().getLogPosition().getByteOffset();
+        return metaDataStore.getLastClosedTransaction().logPosition().getByteOffset();
     }
 
     private LogFiles buildDefaultLogFiles( StoreId storeId ) throws IOException

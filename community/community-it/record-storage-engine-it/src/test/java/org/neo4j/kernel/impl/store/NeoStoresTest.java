@@ -470,7 +470,7 @@ public class NeoStoresTest
             assertEquals( FIELD_NOT_PRESENT, metaDataStore.getLastClosedTransactionId() );
             assertEquals( recordVersion, metaDataStore.getStoreVersion() );
             assertEquals( 9, metaDataStore.getLatestConstraintIntroducingTx() );
-            assertEquals( new ClosedTransactionMetadata( FIELD_NOT_PRESENT, new LogPosition( 44, 43 ) ), metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( FIELD_NOT_PRESENT, new LogPosition( 44, 43 ), 44, 45 ), metaDataStore.getLastClosedTransaction() );
         }
     }
 
@@ -581,7 +581,7 @@ public class NeoStoresTest
             assertEquals( new TransactionId( 10, 11, BASE_TX_COMMIT_TIMESTAMP ),
                     metaDataStore.getUpgradeTransaction() );
             assertEquals( 12, metaDataStore.getUpgradeTime() );
-            assertEquals( new ClosedTransactionMetadata( 6, new LogPosition( 44, 43 ) ), metaDataStore.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 6, new LogPosition( 44, 43 ), 44, 45 ), metaDataStore.getLastClosedTransaction() );
         }
 
         MetaDataStore.setRecord( pageCache, file, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, 13, databaseLayout.getDatabaseName(), NULL_CONTEXT );
@@ -612,7 +612,8 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) ), store.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), 6666, BASE_TX_COMMIT_TIMESTAMP ),
+                    store.getLastClosedTransaction() );
         }
     }
 
@@ -626,7 +627,7 @@ public class NeoStoresTest
             MetaDataStore store = neoStore.getMetaDataStore();
             var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
             var cursorContext = contextFactory.create( "tracePageCacheAccessOnTransactionCloseCall" );
-            store.transactionClosed( store.nextCommittingTransactionId(), 6666, 15, cursorContext );
+            store.transactionClosed( store.nextCommittingTransactionId(), 6666, 15, 7, 77, cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertEquals( 1, cursorTracer.pins() );
@@ -672,7 +673,8 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 40, 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ) ), store.getLastClosedTransaction() );
+            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), 4444, BASE_TX_COMMIT_TIMESTAMP ),
+                    store.getLastClosedTransaction() );
         }
     }
 
