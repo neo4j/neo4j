@@ -71,4 +71,7 @@ public interface SchemaRule44
         EXISTS,
         UNIQUE_EXISTS
     }
+
+    IndexProviderDescriptor NATIVE_BTREE_10 = new IndexProviderDescriptor( "native-btree", "1.0" );
+    IndexProviderDescriptor LUCENE_NATIVE_30 = new IndexProviderDescriptor( "lucene+native", "3.0" );
 }

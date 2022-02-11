@@ -81,6 +81,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -232,10 +233,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
             // First migration in 5.0 - when we are ready to force migration to these formats we can instead do a check on if the
             // KernelVersion is before 5.0 (assuming we set the kernel version to 5.0 in this migration).
-            if ( ( STANDARD_V5_0.versionString().equals( newFormat.storeVersion() ) ||
-                  ALIGNED_V5_0.versionString().equals( newFormat.storeVersion() ) ||
-                  HIGH_LIMIT_V5_0.versionString().equals( newFormat.storeVersion() ) ) &&
-                 !newFormat.storeVersion().equals( oldFormat.storeVersion() ) )
+            if ( need50Migration( oldFormat, newFormat ) )
             {
                 List<DatabaseFile> databaseFiles =
                         asList( RecordDatabaseFile.SCHEMA_STORE,
@@ -711,6 +709,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         fileOperation( MOVE, fileSystem, migrationLayout, directoryLayout,
                 Iterables.iterable( RecordDatabaseFile.allValues() ), true, // allow to skip non existent source files
                 true, ExistingTargetStrategy.OVERWRITE );
+
+        RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
+        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
+        if ( need50Migration( oldFormat, newFormat ) )
+        {
+            deleteBtreeIndexFiles( fileSystem, directoryLayout );
+        }
     }
 
     /**
@@ -750,6 +755,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
+    private static void deleteBtreeIndexFiles( FileSystemAbstraction fs, RecordDatabaseLayout directoryLayout ) throws IOException
+    {
+        if ( directoryLayout.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) )
+        {
+            // Don't deal with system db right now
+            return;
+        }
+
+        fs.deleteRecursively( IndexDirectoryStructure.directoriesByProvider( directoryLayout.databaseDirectory() )
+                                                     .forProvider( SchemaRule44.NATIVE_BTREE_10 )
+                                                     .rootDirectory() );
+        fs.deleteRecursively( IndexDirectoryStructure.directoriesByProvider( directoryLayout.databaseDirectory() )
+                                                     .forProvider( SchemaRule44.LUCENE_NATIVE_30 )
+                                                     .rootDirectory() );
+    }
+
     static void migrateSchemaRules( SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
             StoreCursors storeCursors ) throws KernelException
     {
@@ -757,6 +778,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         {
             dstAccess.writeSchemaRule( rule );
         }
+    }
+
+    private static boolean need50Migration( RecordFormats oldFormat, RecordFormats newFormat )
+    {
+        return (STANDARD_V5_0.versionString().equals( newFormat.storeVersion() ) ||
+                ALIGNED_V5_0.versionString().equals( newFormat.storeVersion() ) ||
+                HIGH_LIMIT_V5_0.versionString().equals( newFormat.storeVersion() )) &&
+               !newFormat.storeVersion().equals( oldFormat.storeVersion() );
     }
 
     private static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
