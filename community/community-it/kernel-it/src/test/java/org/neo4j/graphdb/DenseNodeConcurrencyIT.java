@@ -990,27 +990,41 @@ class DenseNodeConcurrencyIT
                     public void perform( Transaction tx, Set<Long> denseNodeIds, RelationshipType type, Map<Long,Set<Relationship>> relationshipsMirror,
                             Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
-                        Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                        switch ( random.nextInt( 5 ) )
+                        for ( int attempt = 0; attempt < 10; attempt++ )
                         {
-                        case 0:
-                            onNode.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() );
-                            break;
-                        case 1:
-                            onNode.removeProperty( "KEY_" + random.nextInt( 3 ) );
-                            break;
-                        case 2:
-                            onNode.addLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
-                            break;
-                        case 3:
-                            onNode.removeLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
-                            break;
-                        case 4:
-                            modifyRandomRelationship( onNode, type, r -> r.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() ),
-                                    allRelationships, random );
-                        default:
-                            modifyRandomRelationship( onNode, type, r -> r.removeProperty( "KEY_" + random.nextInt( 3 ) ), allRelationships, random );
-                            break;
+                            try
+                            {
+                                Node onNode = randomDenseNode( tx, denseNodeIds, random );
+                                switch ( random.nextInt( 5 ) )
+                                {
+                                case 0:
+                                    onNode.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() );
+                                    break;
+                                case 1:
+                                    onNode.removeProperty( "KEY_" + random.nextInt( 3 ) );
+                                    break;
+                                case 2:
+                                    onNode.addLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
+                                    break;
+                                case 3:
+                                    onNode.removeLabel( Label.label( "LABEL_" + random.nextInt( 3 ) ) );
+                                    break;
+                                case 4:
+                                    modifyRandomRelationship( onNode, type, r -> r.setProperty( "KEY_" + random.nextInt( 3 ), random.nextInt() ),
+                                            allRelationships, random );
+                                default:
+                                    modifyRandomRelationship( onNode, type, r -> r.removeProperty( "KEY_" + random.nextInt( 3 ) ), allRelationships, random );
+                                    break;
+                                }
+
+                                return;
+                            }
+                            catch ( NotFoundException e )
+                            {
+                                // We tried to change some data label/property on a random node/relationship we just found.
+                                // It apparently got deleted before we were able to do so and this is fine and naturally occurring isolation-wise
+                                // in Neo4j, so just pick another one and try again.
+                            }
                         }
                     }
 
