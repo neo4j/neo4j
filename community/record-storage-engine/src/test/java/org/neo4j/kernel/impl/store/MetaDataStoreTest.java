@@ -864,9 +864,9 @@ class MetaDataStoreTest
             MetaDataStore.getStoreId( pageCache, metaDataStore.getStorageFile(), databaseLayout.getDatabaseName(), cursorContext );
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 5 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 3 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 3 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 3 );
         }
     }
 
