@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
-import org.neo4j.cypher.internal.compiler.phases.JavaccParsing
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.Parse
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.NameDeduplication
@@ -364,7 +364,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
-    JavaccParsing andThen
+    Parse andThen
       PreparatoryRewriting andThen
       SemanticAnalysis(warn = true) andThen
       AstRewriting() andThen

@@ -87,12 +87,12 @@ object Parser {
 private class Parser {
 
   def parseExpression(text: String): Expression = {
-    val expression = JavaccRule.fromParser(_.Expression).apply(text)
+    val expression = JavaccRule.Expression.apply(text)
     Parser.cleanup(expression)
   }
 
   def parseProcedureCall(text: String): UnresolvedCall = {
-    val clause = JavaccRule.fromParser(_.CallClause()).apply(s"CALL $text")
+    val clause = JavaccRule.CallClause.apply(s"CALL $text")
     clause match {
       case u:UnresolvedCall => Parser.cleanup(u)
       case c => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")

@@ -117,7 +117,7 @@ object CompilationPhases {
           Transformer.identity
       }
 
-    JavaccParsing andThen
+    Parse andThen
       compatibilityCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeaturesIn4_X) andThen
       PreparatoryRewriting andThen

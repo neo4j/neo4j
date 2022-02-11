@@ -106,7 +106,7 @@ object SimpleInternalExpressionEvaluator {
 
   object ExpressionParser {
 
-    def parse(text: String): Expression = JavaccRule.fromParser(_.Expression).apply(text)
+    def parse(text: String): Expression = JavaccRule.Expression.apply(text)
   }
 
 }

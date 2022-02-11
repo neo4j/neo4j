@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
-import org.neo4j.cypher.internal.compiler.phases.JavaccParsing
+import org.neo4j.cypher.internal.compiler.phases.Parse
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.config.CypherConfiguration
@@ -64,7 +64,7 @@ class CypherQueryObfuscatorFactory {
     new LFUCache[String, PreParsedQuery](new ExecutorBasedCaffeineCacheFactory((r: Runnable) => r.run()), 1))
 
   private val pipeline =
-    JavaccParsing andThen
+    Parse andThen
       RewriteProcedureCalls andThen
       ObfuscationMetadataCollection
 

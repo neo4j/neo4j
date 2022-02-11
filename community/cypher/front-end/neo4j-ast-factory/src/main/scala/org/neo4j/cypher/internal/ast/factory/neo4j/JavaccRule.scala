@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -63,6 +64,7 @@ object JavaccRule {
   def PatternComprehension: JavaccRule[Expression] = fromParser(_.PatternComprehension())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
+  def UseClause: JavaccRule[UseGraph] = fromParser(_.UseClause())
 
   // The reason for using Statements rather than Statement, is that it will wrap any ParseException in exceptionFactory.syntaxException(...),
   // just like the production code path, and thus produce correct assertable error messages.

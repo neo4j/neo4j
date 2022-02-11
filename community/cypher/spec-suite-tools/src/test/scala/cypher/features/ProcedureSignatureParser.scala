@@ -37,7 +37,7 @@ import org.neo4j.exceptions.SyntaxException
 
 /**
  * This parses procedure signatures as specified by the Cypher type system and returned
- * by dbms.procedures()
+ * by SHOW PROCEDURES
  */
 class ProcedureSignatureParser {
 

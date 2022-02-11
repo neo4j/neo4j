@@ -361,12 +361,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def getLogicalPlanForAst(initialState: BaseState): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
-      // As the test only checks ast -> planning, any valid query could be used.
-      val fakeQueryString = "RETURN 1"
-      val context = getContext(fakeQueryString)
+      // As the test only checks ast -> planning, the query string can be an empty string
+      val context = getContext("")
 
       val output = pipeLine(deduplicateNames).transform(initialState, context)
-      //val output = pipeLineAfterParsing(cypherCompilerConfig.enabledSemanticFeatures, deduplicateNames).transform(state, context)
       val logicalPlan = output.logicalPlan match {
         case p: ProduceResult => p.source
         case p => p

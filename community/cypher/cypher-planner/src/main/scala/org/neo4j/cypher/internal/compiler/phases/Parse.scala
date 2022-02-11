@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 /**
  * Parse text into an AST object.
  */
-case object JavaccParsing extends Phase[BaseContext, BaseState, BaseState] {
+case object Parse extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     in.withStatement(JavaCCParser.parse(in.queryText, context.cypherExceptionFactory, in.anonymousVariableNameGenerator))
