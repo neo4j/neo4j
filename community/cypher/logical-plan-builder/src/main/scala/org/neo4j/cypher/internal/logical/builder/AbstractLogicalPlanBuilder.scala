@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -373,6 +374,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def skip(count: Long): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => Skip(lp, literalInt(count))(_)))
+    self
+  }
+
+  def argumentTracker(): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => ArgumentTracker(lp)(_)))
     self
   }
 
