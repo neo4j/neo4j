@@ -22,7 +22,11 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
+
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 public class CheckpointInfo
 {
@@ -32,16 +36,24 @@ public class CheckpointInfo
     private final LogPosition checkpointFilePostReadPosition;
     private final KernelVersion version;
     private final StoreId storeId;
+    private final TransactionId transactionId;
 
     public CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )
     {
         this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
-                checkpoint.getVersion() );
+                checkpoint.getVersion(), UNKNOWN_TRANSACTION_ID );
+    }
+
+    public CheckpointInfo( LogEntryDetachedCheckpointV5_0 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
+            LogPosition checkpointFilePostReadPosition )
+    {
+        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
+                checkpoint.getVersion(), checkpoint.getTransactionId() );
     }
 
     public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
-            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version )
+            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version, TransactionId transactionId )
     {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
@@ -49,6 +61,7 @@ public class CheckpointInfo
         this.channelPositionAfterCheckpoint = channelPositionAfterCheckpoint;
         this.checkpointFilePostReadPosition = checkpointFilePostReadPosition;
         this.version = version;
+        this.transactionId = transactionId;
     }
 
     public LogPosition getTransactionLogPosition()
@@ -81,11 +94,16 @@ public class CheckpointInfo
         return version;
     }
 
+    public TransactionId getTransactionId()
+    {
+        return transactionId;
+    }
+
     @Override
     public String toString()
     {
         return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition +
                 ", channelPositionAfterCheckpoint=" + channelPositionAfterCheckpoint + ", checkpointFilePostReadPosition=" + checkpointFilePostReadPosition +
-                ", storeId=" + storeId + '}';
+                ", version=" + version + ", storeId=" + storeId + ", transactionId=" + transactionId + '}';
     }
 }

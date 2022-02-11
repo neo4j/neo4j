@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -89,9 +90,10 @@ class RecoveryStartInformationProviderTest
         LogPosition checkpointPosition = new LogPosition( 2, 4 );
         LogPosition afterCheckpointPosition = new LogPosition( 4, 8 );
         LogPosition readerPostPosition = new LogPosition( 5, 9 );
+        TransactionId transactionId = new TransactionId( 4L, 2, 5L );
         when( logFiles.getTailInformation() ).thenReturn(
                 new LogTailInformation( new CheckpointInfo( txPosition, StoreId.UNKNOWN, checkpointPosition, afterCheckpointPosition, readerPostPosition,
-                        LATEST ),
+                        LATEST, transactionId ),
                         true, 10L, false, currentLogVersion, LATEST.version(), StoreId.UNKNOWN ) );
 
         // when
