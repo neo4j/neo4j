@@ -22,19 +22,19 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.apache.commons.io.FileUtils
 import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverSetup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
-import org.neo4j.cypher.internal.compiler.planner.LookupRelationshipsByTypeDisabled
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -64,7 +64,9 @@ class OptionalMatchGreedyPlanningIntegrationTest extends OptionalMatchPlanningIn
 abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSolverSetup)
   extends CypherFunSuite
   with LogicalPlanningTestSupport2
-  with LogicalPlanningIntegrationTestSupport with Inside {
+  with LogicalPlanningIntegrationTestSupport
+  with LogicalPlanningAttributesTestSupport
+  with Inside {
 
   locally {
     queryGraphSolver = queryGraphSolverSetup.queryGraphSolver()
@@ -380,6 +382,27 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("Optional match in tail should have correct cardinality and therefore generate Argument leaf plan") {
+    val config =
+      plannerBuilder()
+        .setAllNodesCardinality(1120169)
+        .setLabelCardinality("A", 225598)
+        .setLabelCardinality("B", 41)
+        .setLabelCardinality("C", 101)
+        .setLabelCardinality("D", 141936)
+        .setRelationshipCardinality("()-[:R1]->()", 223600)
+        .setRelationshipCardinality("(:A)-[:R1]->()", 223600)
+        .setRelationshipCardinality("(:A)-[:R1]->(:D)", 223600)
+        .setRelationshipCardinality("()-[:R1]->(:D)", 223600)
+        .setRelationshipCardinality("()-[:R2]->()", 139911)
+        .setRelationshipCardinality("()-[:R2]->(:B)", 139911)
+        .setRelationshipCardinality("(:D)-[:R2]->()", 139911)
+        .setRelationshipCardinality("(:D)-[:R2]->(:B)", 139911)
+        .setRelationshipCardinality("()-[:R3]->()", 113740)
+        .setRelationshipCardinality("(:B)-[:R3]->()", 1477)
+        .setRelationshipCardinality("(:B)-[:R3]->(:C)", 1477)
+        .setRelationshipCardinality("()-[:R3]->(:C)", 113740)
+        .build()
+
     val query = """MATCH (a:A)
                   |WITH a
                   |LIMIT 994
@@ -387,41 +410,28 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
                   |OPTIONAL MATCH (a)-[:R1]->(:D)-[:R2]->(:B)-[:R3 {bool: false}]->(:C {some: 'prop'})
                   |RETURN count(a)""".stripMargin
 
-    val cfg = new given {
-      knownLabels = Set("A", "B", "C", "D", "E")
-      knownRelationships = Set("R1", "R2", "R3")
-      uniqueIndexOn("C", "prop")
-      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
-        override def nodesAllCardinality(): Cardinality = 1120169.0
-        override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
-          case Some(LabelId(0)) => 101.0      // C
-          case Some(LabelId(2)) => 225598.0   // A
-          case Some(LabelId(3)) => 41.0       // B
-          case Some(LabelId(4)) => 141936.0   // D
-          case _ => super.nodesWithLabelCardinality(labelId)
-        }
-        override def patternStepCardinality(fromLabel: Option[LabelId],
-                                            relTypeId: Option[RelTypeId],
-                                            toLabel: Option[LabelId]): Cardinality = (fromLabel, relTypeId, toLabel) match {
-          case(Some(LabelId(2)), Some(RelTypeId(0)), None) => 223600.0                  // A - [R1] -> *
-          case(Some(LabelId(2)), Some(RelTypeId(0)), Some((LabelId(4)))) => 223600.0    // A - [R1] -> D
-          case(None, Some(RelTypeId(1)), Some(LabelId(3))) => 139911.0                  // * - [R2] -> B
-          case(Some(LabelId(4)), Some(RelTypeId(1)), Some(LabelId(3))) => 139911.0      // D - [R2] -> B
-          case(Some(LabelId(4)), Some(RelTypeId(1)), None) => 139911.0                  // D - [R2] -> *
-          case(Some(LabelId(3)), Some(RelTypeId(2)), Some(LabelId(0))) => 1477.0        // B - [R3] -> C
-          case(Some(LabelId(3)), Some(RelTypeId(2)), None) => 1477.0                    // B - [R3] -> *
-          case(None, Some(RelTypeId(2)), Some(LabelId(0))) => 113740.0                  // * - [R3] -> C
-          case _ => 0.0
-        }
-      }
-      lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
-    }
+    val planState = config.planState(query)
 
-    val (_, plan, table,_) = cfg.getLogicalPlanFor(query)
-    inside(plan) {
-      case Aggregation(Apply(_, rhs, _), _, _) =>
-        rhs.leaves.foreach( leaf => leaf shouldBe an [Argument])
-    }
+    val expected =
+      config
+        .planBuilder()
+        .produceResults("`count(a)`")
+        .aggregation(Seq(), Seq("count(a) AS `count(a)`"))
+        .apply()
+        .|.optional("a", "anon_1", "anon_0").withCardinality(1)
+        .|.filter("anon_7:C", "anon_6.bool = false", "anon_7.some = 'prop'")
+        .|.expandAll("(anon_5)-[anon_6:R3]->(anon_7)")
+        .|.filter("anon_5:B")
+        .|.expandAll("(anon_3)-[anon_4:R2]->(anon_5)")
+        .|.filter("anon_3:D")
+        .|.expandAll("(a)-[anon_2:R1]->(anon_3)")
+        .|.argument("a").withCardinality(1)
+        .filter("anon_0:D")
+        .expandAll("(a)-[anon_1:R1]->(anon_0)")
+        .limit(994)
+        .nodeByLabelScan("a", "A", IndexOrderNone)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(expected, ComparingProvidedAttributesOnly)
   }
 
   test("should prefer OptionalExpand over hasLabel with join") {
@@ -724,7 +734,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
       .limit(0)
-      .apply(fromSubquery = false)
+      .apply()
       .|.optional("n0", "n1")
       .|.filter("n0 = anon_1")
       .|.undirectedRelationshipByIdSeek("r", "anon_1", "anon_0", Set("n0", "n1"), 0)

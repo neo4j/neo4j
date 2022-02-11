@@ -486,7 +486,7 @@ class SubqueryCallPlanningIntegrationTest
       .unwind("[1, 2] AS x").withCardinality(2)
       .argument().withCardinality(1)
 
-    actual should haveSameCardinalitiesAs(expected)
+    actual should haveSamePlanAndCardinalitiesAsBuilder(expected)
   }
 
   // Correlated subqueries

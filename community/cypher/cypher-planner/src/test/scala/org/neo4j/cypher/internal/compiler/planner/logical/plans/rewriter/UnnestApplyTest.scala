@@ -822,8 +822,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
     def shouldRewriteToPlanWithAttributes(expectedBuilder: LogicalPlanBuilder): Assertion = {
       val resultPlan = rewrite(inputBuilder.build(), inputBuilder.cardinalities, inputBuilder.providedOrders,inputBuilder.idGen)
-      (resultPlan, inputBuilder.cardinalities) should haveSameCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
-      (resultPlan, inputBuilder.providedOrders) should haveSameProvidedOrdersAs((expectedBuilder.build(), expectedBuilder.providedOrders))
+      (resultPlan, inputBuilder.cardinalities) should haveSamePlanAndCardinalitiesAs((expectedBuilder.build(), expectedBuilder.cardinalities))
+      (resultPlan, inputBuilder.providedOrders) should haveSamePlanAndProvidedOrdersAs((expectedBuilder.build(), expectedBuilder.providedOrders))
     }
   }
 
