@@ -573,13 +573,18 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should plan hinted index seek") {
-    val plan = new given {
-      indexOn("Awesome", "prop")
-    } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .addNodeIndex("Awesome", Seq("prop"), 1.0, 0.01)
+      .setLabelCardinality("Awesome", 10)
+      .build()
 
-    plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42)")
-    )
+    val plan = planner.plan("MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n")
+
+    plan shouldBe planner.planBuilder()
+      .produceResults("n")
+      .nodeIndexOperator("n:Awesome(prop = 42)")
+      .build()
   }
 
   test("should plan hinted index seek when returning *") {

@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -378,7 +379,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def pow(lhs: Expression, rhs: Expression): Pow = Pow(lhs, rhs)(pos)
 
-  def parameter(key: String, typ: CypherType): Parameter = Parameter(key, typ)(pos)
+  def parameter(key: String, typ: CypherType, position: InputPosition = pos): Parameter = Parameter(key, typ)(position)
 
   def or(lhs: Expression, rhs: Expression): Or = Or(lhs, rhs)(pos)
 
@@ -388,34 +389,43 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
 
-  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression): LabelExpression = LabelExpression.Conjunction(lhs, rhs)(pos)
+  def labelConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Conjunction(lhs, rhs)(position)
 
-  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression): LabelExpression = LabelExpression.Disjunction(lhs, rhs)(pos)
+  def labelColonConjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.ColonConjunction(lhs, rhs)(position)
 
-  def labelNegation(e: LabelExpression): LabelExpression = LabelExpression.Negation(e)(pos)
+  def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Disjunction(lhs, rhs)(position)
 
-  def labelWildcard: LabelExpression = LabelExpression.Wildcard()(pos)
+  def labelNegation(e: LabelExpression, position: InputPosition = pos): LabelExpression = LabelExpression.Negation(e)(position)
 
-  def labelAtom(name: String): LabelExpression = LabelExpression.Label(LabelOrRelTypeName(name)(pos))(pos)
+  def labelWildcard(position: InputPosition = pos): LabelExpression = LabelExpression.Wildcard()(position)
+
+  def labelAtom(name: String, position: InputPosition = pos): LabelExpression = LabelExpression.Label(LabelName(name)(position))(position)
+
+  def labelExpressionPredicate(v: String, labelExpression: LabelExpression): LabelExpressionPredicate =
+    labelExpressionPredicate(varFor(v), labelExpression)
+
+  def labelExpressionPredicate(subject: Expression, labelExpression: LabelExpression): LabelExpressionPredicate = {
+    LabelExpressionPredicate(subject, labelExpression)(pos)
+  }
 
   def ands(expressions: Expression*): Ands = Ands(expressions)(pos)
 
   def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 
-  def nodePat(): NodePattern =
-    NodePattern(None, Seq(), None, None, None)(pos)
-
-  def nodePat(name: String, position: InputPosition = pos): NodePattern =
-    NodePattern(Some(Variable(name)(increasePos(position, 1))), Seq(), None, None, None)(position)
-
-  def nodePat(name: String, labels: String*): NodePattern =
-    NodePattern(Some(Variable(name)(pos)), labels.map(LabelName(_)(pos)), None, None, None)(pos)
+  def nodePat(name: Option[String] = None,
+              labelExpression: Option[LabelExpression] = None,
+              properties: Option[Expression] = None,
+              predicates: Option[Expression] = None,
+              namePos: InputPosition = pos,
+              position: InputPosition = pos
+              ): NodePattern =
+    NodePattern(name.map(Variable(_)(namePos)), labelExpression, properties, predicates)(position)
 
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(nodeVar1), Seq.empty, None, None, None)(pos),
+      NodePattern(Some(nodeVar1), None, None, None)(pos),
       RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
-      NodePattern(Some(nodeVar2), Seq.empty, None, None, None)(pos)
+      NodePattern(Some(nodeVar2), None, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 
   def query(part: QueryPart): Query =

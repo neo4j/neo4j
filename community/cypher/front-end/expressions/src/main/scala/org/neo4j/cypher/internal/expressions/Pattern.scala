@@ -120,7 +120,7 @@ class InvalidNodePattern(
                           val id: LogicalVariable
                         )(
                           position: InputPosition
-) extends NodePattern(Some(id), Seq.empty, None, None, None)(position) {
+) extends NodePattern(Some(id), None, None, None)(position) {
 
   override def productPrefix: String = "InvalidNodePattern"
 
@@ -147,7 +147,6 @@ class InvalidNodePattern(
 }
 
 case class NodePattern(variable: Option[LogicalVariable],
-                       labels: Seq[LabelName],
                        labelExpression: Option[LabelExpression],
                        properties: Option[Expression],
                        predicate: Option[Expression])(val position: InputPosition)

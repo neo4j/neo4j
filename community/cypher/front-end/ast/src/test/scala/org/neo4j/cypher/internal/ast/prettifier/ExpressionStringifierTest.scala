@@ -18,11 +18,50 @@ package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val tests: Seq[(Expression, String)] = Seq(
+    (
+      PatternComprehension(
+        namedPath = None,
+        pattern = RelationshipsPattern(RelationshipChain(
+          nodePat(Some("u")),
+          RelationshipPattern(Some(varFor("r")), List(relTypeName("FOLLOWS")), None, None, None, OUTGOING)(pos),
+          nodePat(Some("u2"))
+        )(pos))(pos),
+        predicate = Some(hasLabels("u2", "User")),
+        projection = prop("u2", "id"))(
+        pos,
+        outerScope = Set(varFor("u.id"), varFor("u")),
+        variableToCollectName = "p",
+        collectionName = "v"
+      ),
+      "[(u)-[r:FOLLOWS]->(u2) WHERE u2:User | u2.id]"
+    ),
+    (
+      PatternComprehension(
+        namedPath = None,
+        pattern = RelationshipsPattern(RelationshipChain(
+          nodePat(Some("u")),
+          RelationshipPattern(Some(varFor("r")), List(relTypeName("FOLLOWS")), None, None, None, OUTGOING)(pos),
+          nodePat(Some("u2"), Some(labelAtom("User")))
+        )(pos))(pos),
+        predicate = None,
+        projection = prop("u2", "id"))(
+        pos,
+        outerScope = Set(varFor("u.id"), varFor("u")),
+        variableToCollectName = "p",
+        collectionName = "v"
+      ),
+      "[(u)-[r:FOLLOWS]->(u2:User) | u2.id]"
+    )
   )
 
   private val stringifier = ExpressionStringifier()

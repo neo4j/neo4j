@@ -71,9 +71,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
 
   // MATCH (a) WHERE (a)-->()
   private val relChain = RelationshipChain(
-    NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+    NodePattern(Some(varFor("a")), None, None, None)_,
     RelationshipPattern(Some(varFor("  UNNAMED1")), types, None, None, None, dir) _,
-    NodePattern(Some(varFor(nodeName)), Seq(), None, None, None)_
+    NodePattern(Some(varFor(nodeName)), None, None, None)_
   )_
 
   private val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a")), "", ""))_
@@ -298,9 +298,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
     )_)_)(Set(varFor("a")), "", ""))_
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
@@ -332,9 +332,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
     )_)_)(Set(varFor("a")), "", ""))_
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -365,9 +365,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
     )_)_)(Set(varFor("a")), "", ""))_
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -400,9 +400,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
     )_)_)(Set(varFor("a")), "", ""))_
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
@@ -437,9 +437,9 @@ trait SelectPatternPredicatesTestBase extends CypherFunSuite with LogicalPlannin
     val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2 = Exists(PatternExpression(RelationshipsPattern(RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, None, dir) _,
-      NodePattern(Some(varFor("  UNNAMED4")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED4")), None, None, None)_
     )_)_)(Set(varFor("a")), "", ""))_
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 

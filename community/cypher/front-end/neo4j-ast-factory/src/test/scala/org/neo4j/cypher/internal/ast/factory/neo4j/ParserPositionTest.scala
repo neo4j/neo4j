@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
@@ -89,7 +89,7 @@ class ParserPositionTest extends CypherFunSuite with TestName  {
   }
 
   test("MATCH (a) WHERE NOT (a:A)") {
-    validatePosition(testName, _.isInstanceOf[HasLabelsOrTypes], InputPosition(21, 1, 22))
+    validatePosition(testName, _.isInstanceOf[LabelExpressionPredicate], InputPosition(21, 1, 22))
   }
 
   test("MATCH (n) WHERE exists { (n) --> () }") {

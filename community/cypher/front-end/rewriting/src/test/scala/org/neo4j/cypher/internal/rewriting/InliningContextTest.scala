@@ -62,7 +62,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   test("should inline aliases into node patterns") {
     val ctx = InliningContext(mapAtoN)
 
-    val expr: NodePattern = NodePattern(Some(identA), Seq(), None, None, None)_
+    val expr: NodePattern = NodePattern(Some(identA), None, None, None)_
 
     expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }

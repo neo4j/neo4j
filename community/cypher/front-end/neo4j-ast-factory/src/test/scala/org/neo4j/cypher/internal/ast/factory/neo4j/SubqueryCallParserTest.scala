@@ -45,6 +45,6 @@ class SubqueryCallParserTest extends JavaccParserAstTestBase[Clause] {
   }
 
   test("CALL { CREATE (n:N) }") {
-    gives(subqueryCall(create(nodePat("n", "N"))))
+    gives(subqueryCall(create(nodePat(Some("n"), Some(labelAtom("N"))))))
   }
 }

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -128,7 +127,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
     pattern.patternParts.flatMap {patternParts =>
       val (declaredVariables, referencedVariables) = patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-        case NodePattern(maybeVariable, _, _, maybeProperties, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+        case NodePattern(maybeVariable, _, maybeProperties, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
       }
@@ -272,9 +271,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
-          checkValidLabels(x.labels, x.position) chain
           checkLabelExpressions(ctx, x.labelExpression, x.position)
-
     }
 
   def check(ctx: SemanticContext, x: RelationshipPattern): SemanticCheck = {
@@ -386,11 +383,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
 
   def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression], inputPosition: InputPosition): SemanticCheck =
-  labelExpression.foldSemanticCheck { predicate =>
-    when (ctx != SemanticContext.Match) {
-      error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", predicate.position)
+  labelExpression.foldSemanticCheck { labelExpression =>
+    when (ctx != SemanticContext.Match && !labelExpression.isNonGpm) {
+      error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", labelExpression.position)
     } chain
-    checkValidLabelOrRelTypes(labelExpression.folder.findAllByClass[LabelOrRelTypeName], inputPosition)
+      SemanticExpressionCheck.simple(labelExpression)
   }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
@@ -415,13 +412,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def checkValidRelTypes(relTypeNames: Seq[RelTypeName], pos: InputPosition): SemanticCheck = {
     val errorMessage = relTypeNames.collectFirst { case relType if checkValidTokenName(relType.name).nonEmpty =>
       checkValidTokenName(relType.name).get
-    }
-    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
-  }
-
-  def checkValidLabelOrRelTypes(names: Seq[LabelOrRelTypeName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = names.collectFirst { case name if checkValidTokenName(name.name).nonEmpty =>
-      checkValidTokenName(name.name).get
     }
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }

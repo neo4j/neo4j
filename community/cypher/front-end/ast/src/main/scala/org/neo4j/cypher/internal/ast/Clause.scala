@@ -49,12 +49,12 @@ import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -418,7 +418,7 @@ case class Match(
   private def getPropertyPredicates(variable: String): Seq[String] = {
     where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
       pattern.folder.treeFold(Seq.empty[String]) {
-        case NodePattern(Some(Variable(id)), _, _, properties, predicate) if variable == id =>
+        case NodePattern(Some(Variable(id)), _, properties, predicate) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
         case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _, _) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
@@ -485,48 +485,45 @@ case class Match(
   private[ast] def containsLabelOrRelTypePredicate(variable: String, labelOrRelType: String): Boolean =
     getLabelAndRelTypePredicates(variable).contains(labelOrRelType)
 
+  private def getLabelsFromLabelExpression(labelExpression: LabelExpression) = {
+    labelExpression.flatten.map(_.name)
+  }
+
   private def getLabelAndRelTypePredicates(variable: String): Seq[String] = {
-    val inlinedLabels = pattern.folder.fold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), nodeLabels, _, _, _) if variable == id =>
-        list => list ++ nodeLabels.map(_.name)
-    }
     val inlinedRelTypes = pattern.folder.fold(Seq.empty[String]) {
       case RelationshipPattern(Some(Variable(id)), types, _, _, _, _, _) if variable == id =>
         list => list ++ types.map(_.name)
     }
 
     val labelExpressionLabels: Seq[String] = pattern.folder.fold(Seq.empty[String]) {
-      case NodePattern(Some(Variable(id)), _, Some(labelExpression), _, _) if variable == id =>
-        list => list ++
-          labelExpression.folder.treeFold(Seq.empty[String]) {
-            case l: LabelExpression.Label =>
-              acc => SkipChildren(acc :+ l.label.name)
-            case _: LabelExpression.Conjunction | _: LabelExpression.Disjunction =>
-              acc => TraverseChildren(acc)
-            case _ =>
-              acc => SkipChildren(acc)
-          }
+      case NodePattern(Some(Variable(id)), Some(labelExpression), _, _) if variable == id =>
+        list => list ++ getLabelsFromLabelExpression(labelExpression)
     }
 
     val (predicateLabels, predicateRelTypes) = where match {
       case Some(innerWhere) => innerWhere.folder.treeFold((Seq.empty[String], Seq.empty[String])) {
+        // These are predicates from the match pattern that were rewritten
         case HasLabels(Variable(id), predicateLabels) if id == variable => {
           case (ls, rs) => SkipChildren((ls ++ predicateLabels.map(_.name), rs))
         }
-        case HasLabelsOrTypes(Variable(id), predicateLabelsOrRelTypes) if id == variable => {
-          case (ls, rs) => SkipChildren((ls ++ predicateLabelsOrRelTypes.map(_.name), rs ++ predicateLabelsOrRelTypes.map(_.name)))
-        }
         case HasTypes(Variable(id), predicateRelTypes) if id == variable => {
           case (ls, rs) => SkipChildren((ls, rs ++ predicateRelTypes.map(_.name)))
+        }
+        // These are predicates in the where clause that have not been rewritten yet.
+        case LabelExpressionPredicate(Variable(id), labelExpression) if id == variable => {
+          case (ls, rs) =>
+            val labelOrRelTypes = getLabelsFromLabelExpression(labelExpression)
+            SkipChildren((ls ++ labelOrRelTypes, rs ++ labelOrRelTypes))
         }
         case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
           acc => TraverseChildren(acc)
         case _ =>
           acc => SkipChildren(acc)
       }
-      case None => (inlinedLabels, inlinedRelTypes)
+      case None => (Seq.empty, Seq.empty)
     }
-    val allLabels = inlinedLabels ++ labelExpressionLabels ++ predicateLabels
+
+    val allLabels = labelExpressionLabels ++ predicateLabels
     val allRelTypes = inlinedRelTypes ++ predicateRelTypes
     allLabels ++ allRelTypes
   }
@@ -804,7 +801,7 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
       expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
 
   private def warnAboutDeletingLabels =
-    expressions.filter(e => e.isInstanceOf[HasLabels] || e.isInstanceOf[HasLabelsOrTypes]) map {
+    expressions.filter(e => e.isInstanceOf[LabelExpressionPredicate]) map {
       e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
 }

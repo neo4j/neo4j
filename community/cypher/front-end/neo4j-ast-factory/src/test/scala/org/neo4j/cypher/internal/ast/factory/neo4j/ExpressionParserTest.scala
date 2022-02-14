@@ -20,6 +20,13 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
+import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.RelationshipChain
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 
 class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
 
@@ -70,6 +77,24 @@ class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
   test("0-0.1") {
     gives {
       subtract(literal(0), literal(0.1))
+    }
+  }
+
+  test("[p = (n)-->() where last(nodes(p)):End | p]") {
+    gives {
+      PatternComprehension(
+        namedPath = Some(varFor("p")),
+        pattern = RelationshipsPattern(RelationshipChain(
+          NodePattern(Some(varFor("n")), None, None, None)(pos),
+          RelationshipPattern(None, Seq.empty, None, None, None, OUTGOING)(pos),
+          NodePattern(None, None, None, None)(pos)
+        )(pos))(pos),
+        predicate = Some(LabelExpressionPredicate(
+          function("last", function("nodes", varFor("p"))),
+          labelAtom("End")
+        )(pos)),
+        projection = varFor("p")
+      )(pos, Set.empty, "", "")
     }
   }
 }

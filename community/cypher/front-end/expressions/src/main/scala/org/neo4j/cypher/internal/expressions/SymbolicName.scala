@@ -37,4 +37,6 @@ case class PropertyKeyName(name: String)(val position: InputPosition) extends Sy
 
 case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicName
 
-case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends SymbolicName
+case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends SymbolicName {
+  def asLabelName: LabelName = LabelName(name)(position)
+}

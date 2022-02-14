@@ -71,6 +71,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 
 import java.time.Duration
 import java.util.Optional
+
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Failure
 import scala.util.Success
@@ -340,7 +341,7 @@ class FabricPlannerTest
       local.state.statement().shouldEqual(
         Query(
           singleQuery(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
             with_(varFor("n").as("true")),
             returnVars("true")
           ))(pos)
@@ -362,7 +363,7 @@ class FabricPlannerTest
       local.state.statement().shouldEqual(
         Query(
           singleQuery(
-            match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
+            match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
             with_(varFor("n").as("true")),
             returnLit(true -> "true")
           ))(pos)

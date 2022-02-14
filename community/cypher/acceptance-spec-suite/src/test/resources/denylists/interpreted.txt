@@ -10,13 +10,3 @@ Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type ex
 Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "11"
 Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "12"
 Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "13"
-
-// Label expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
-Feature "LabelExpressionAcceptance": Scenario "Label expression in WHERE clause"
-Feature "LabelExpressionAcceptance": Scenario "Label expression in RETURN clause"
-Feature "LabelExpressionAcceptance": Scenario "Label expression in CASE expression"
-
-// Relationship type expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
-Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"
-Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"
-Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"

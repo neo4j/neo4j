@@ -23,12 +23,15 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -58,9 +61,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.annotation.tailrec
+import scala.collection.IterableOnce
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.collection.IterableOnce
 
 case object UnnecessaryOptionalMatchesRemoved extends StepSequencer.Condition
 
@@ -177,7 +180,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
    * @param elementsToKeep                 node and relationship variables that cannot be moved into patternExpressions
    */
-  case class ExtractionResult(predicatesForPatternExpression: Map[String, Seq[LabelName]], predicatesToKeep: Set[Expression], elementsToKeep: Set[String])
+  case class ExtractionResult(predicatesForPatternExpression: Map[String, LabelExpression], predicatesToKeep: Set[Expression], elementsToKeep: Set[String])
 
   @tailrec
   private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]): ExtractionResult = {
@@ -199,7 +202,45 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    *                                       This is a map from node variable name to the label names.
    * @param predicatesToKeep               predicate expressions that cannot be moved into patternExpressions
    */
-  case class PartitionedPredicates(predicatesForPatternExpression: Map[String, Seq[LabelName]], predicatesToKeep: Set[Expression])
+  case class PartitionedPredicates(predicatesForPatternExpression: Map[String, LabelExpression], predicatesToKeep: Set[Expression])
+
+  /**
+   * This is inverting what `LabelExpressionNormalizer` does.
+   */
+  def recreateLabelExpression(expression: Expression, variable: String): Option[LabelExpression] = expression match {
+    case HasLabels(Variable(varName), labels) if variable == varName =>
+      require(labels.size == 1) // We know there is only a single label here because AST rewriting
+      val labelName = labels.head
+      Some(LabelExpression.Label(labelName)(labelName.position))
+
+    case ands@Ands(predicates) =>
+      recreateComposingLabelExpression(variable, predicates.toSeq, (le1, le2) => LabelExpression.Conjunction(le1, le2)(ands.position))
+
+    case ors@Ors(predicates) =>
+      recreateComposingLabelExpression(variable, predicates.toSeq, (le1, le2) => LabelExpression.Disjunction(le1, le2)(ors.position))
+
+    case not@Not(predicate) =>
+      recreateLabelExpression(predicate, variable).map(LabelExpression.Negation(_)(not.position))
+
+    case _ => None
+  }
+
+  private def recreateComposingLabelExpression(variable: String,
+                                               predicates: Seq[Expression],
+                                               combiner: (LabelExpression, LabelExpression) => LabelExpression,
+                                              ): Option[LabelExpression] = {
+    val labelExpressions = predicates.map(recreateLabelExpression(_, variable))
+    if (labelExpressions.exists(_.isEmpty)) {
+      None
+    } else {
+      labelExpressions.map(_.get).foldLeft[Option[LabelExpression]](None) {
+        case (maybeLhs, rhs) => maybeLhs match {
+          case None => Some(rhs)
+          case Some(lhs) => Some(combiner(lhs, rhs))
+        }
+      }
+    }
+  }
 
   /**
    * This method extracts predicates that need to be part of pattern expressions
@@ -211,18 +252,28 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    */
   private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): PartitionedPredicates = {
 
-    val predicatesForPatternExpression = mutable.Map.empty[String, Seq[LabelName]]
+    val predicatesForPatternExpression = mutable.Map.empty[String, LabelExpression]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
-    def addLabel(idName: String, labelName: LabelName) = {
-      val current = predicatesForPatternExpression.getOrElse(idName, Seq.empty)
-      predicatesForPatternExpression += idName -> (current :+ labelName)
+    def addLabel(idName: String, newLabelExpression: LabelExpression): mutable.Map[String, LabelExpression] = {
+      val current = predicatesForPatternExpression.get(idName)
+      val labelExpression = current match {
+        case None =>
+          newLabelExpression
+        case Some(labelExpression: LabelExpression) =>
+          LabelExpression.Conjunction(labelExpression, newLabelExpression)(InputPosition.NONE)
+      }
+      predicatesForPatternExpression += idName -> labelExpression
     }
 
     predicates.foreach {
-      case Predicate(deps, HasLabels(Variable(_), labels)) if deps.size == 1 && !kept(deps.head) =>
-        require(labels.size == 1) // We know there is only a single label here because AST rewriting
-        addLabel(deps.head, labels.head)
+      case Predicate(deps, predicates) if deps.size == 1 && !kept(deps.head) =>
+        val labelExpression = recreateLabelExpression(predicates, deps.head)
+        if (labelExpression.isDefined) {
+          addLabel(deps.head, labelExpression.get)
+        } else {
+          predicatesToKeep += predicates
+        }
         ()
 
       case Predicate(_, expr) =>
@@ -240,7 +291,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         case _ => false
       }
 
-  private def toAst(elementsToKeep: Set[String], predicates: Map[String, Seq[LabelName]], pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PatternExpression = {
+  private def toAst(elementsToKeep: Set[String], predicates: Map[String, LabelExpression], pattern: PatternRelationship, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PatternExpression = {
     def createVariable(name: String): Variable =
       if (!elementsToKeep(name)) {
         Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
@@ -249,8 +300,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       }
 
     def createNode(name: String): NodePattern = {
-      val labels = predicates.getOrElse(name, Seq.empty)
-      NodePattern(Some(createVariable(name)), labels = labels, None, properties = None, predicate = None)(InputPosition.NONE)
+      val labelExpression = predicates.get(name)
+      NodePattern(Some(createVariable(name)), labelExpression, properties = None, predicate = None)(InputPosition.NONE)
     }
 
     val relName = createVariable(pattern.name)

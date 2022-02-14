@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.LabelId
@@ -64,7 +65,7 @@ class ResolveTokensTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, None, None)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
           ),
@@ -87,7 +88,7 @@ class ResolveTokensTest extends CypherFunSuite {
         SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, None, None)))),
+            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
           ),
@@ -110,7 +111,7 @@ class ResolveTokensTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, None, None)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
           Seq(),
           Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
         ),
@@ -133,7 +134,7 @@ class ResolveTokensTest extends CypherFunSuite {
       SingleQuery(Seq(
         Match(
           false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None, None, None)))),
+          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
           Seq(),
           Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
         ),
@@ -157,9 +158,9 @@ class ResolveTokensTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, None, None),
+            NodePattern(None, None, None, None),
             RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
-            NodePattern(None, Seq(), None, None, None)
+            NodePattern(None, None, None, None)
           )))),
           Seq(),
           None
@@ -184,9 +185,9 @@ class ResolveTokensTest extends CypherFunSuite {
         Match(
           false,
           Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None, None, None),
+            NodePattern(None, None, None, None),
             RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
-            NodePattern(None, Seq(), None, None, None)
+            NodePattern(None, None, None, None)
           )))),
           Seq(),
           None
@@ -200,7 +201,9 @@ class ResolveTokensTest extends CypherFunSuite {
 
   def parseTest(queryText: String)(f: Query => Unit): Unit = test(queryText) {
     val parsed = JavaCCParser.parse(queryText, Neo4jCypherExceptionFactory(queryText, None), new AnonymousVariableNameGenerator)
-    normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)(parsed) match {
+    val rewriter = LabelExpressionPredicateNormalizer andThen
+      normalizeHasLabelsAndHasType(SemanticChecker.check(parsed).state)
+    rewriter(parsed) match {
       case query: Query => f(query)
     }
   }

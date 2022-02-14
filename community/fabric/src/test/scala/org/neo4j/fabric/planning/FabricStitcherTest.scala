@@ -304,7 +304,7 @@ class FabricStitcherTest
         val e = the[SyntaxException].thrownBy(
           stitching(
             init(defaultUse)
-              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat("n")))), Seq("a"))))
+              .leaf(Seq(with_(literal(1).as("a")), subqueryCallInTransactions(create(nodePat(Some("n"))))), Seq("a"))))
 
         e.getMessage.should(include("Transactional subquery is not allowed here. This feature is not supported in a Fabric database."))
       }

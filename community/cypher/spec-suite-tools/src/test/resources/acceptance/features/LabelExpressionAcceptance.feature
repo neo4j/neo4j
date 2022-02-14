@@ -281,6 +281,27 @@ Feature: LabelExpressionAcceptance
       | 'ab' |
     And no side effects
 
+  Scenario: Label expression in pattern comprehension
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:Start {id: 'shouldMatch'   })-[:R]->(:End)
+      CREATE (:Start {id: 'shouldNotMatch'})-[:R]->(:p  )
+      CREATE (:Start {id: 'shouldNotMatch'})-[:R]->(    )
+      """
+
+    When executing query:
+      """
+      MATCH (n)
+      WITH n, [p = (n)-->() WHERE last(nodes(p)):End | p] AS list
+      WHERE size(list) > 0
+      RETURN n.id AS id
+      """
+    Then the result should be, in any order:
+      | id            |
+      | 'shouldMatch' |
+    And no side effects
+
   Scenario: Relationship type expression in WHERE clause
     Given an empty graph
     And having executed:
@@ -292,7 +313,7 @@ Feature: LabelExpressionAcceptance
 
     When executing query:
       """
-      MATCH (r) WHERE r:A|B
+      MATCH ()-[r]->() WHERE r:A|B
       RETURN r.id AS id
       """
     Then the result should be, in any order:

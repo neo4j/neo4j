@@ -62,6 +62,10 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
+import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Label
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -318,7 +322,8 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foreach {
       //CREATE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labels, _, props, None)) =>
+      case EveryPath(NodePattern(Some(id), labelExpression, props, None)) =>
+        val labels = getLabelNameSeq(labelExpression)
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
@@ -354,6 +359,14 @@ object ClauseConverters {
     builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes.toSeq, relationships.toSeq)))
   }
 
+  private def getLabelNameSeq(labelExpression: Option[LabelExpression]): Seq[LabelName] = {
+    labelExpression match {
+      case Some(Label(labelName)) => Seq(labelName)
+      case Some(ColonConjunction(lhs, rhs)) => getLabelNameSeq(Some(lhs)) ++ getLabelNameSeq(Some(rhs))
+      case None => Seq.empty
+    }
+  }
+
   private def dedup(nodePatterns: Vector[CreateNodeCommand]) = {
     val seen = mutable.Set.empty[String]
     val result = mutable.ListBuffer.empty[CreateNodeCommand]
@@ -374,7 +387,7 @@ object ClauseConverters {
   private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand =  pattern match {
-    case NodePattern(Some(variable), labels, _, props, None) => CreateNodeCommand(CreateNode(variable.name, labels, props), variable)
+    case NodePattern(Some(variable), labelExpression, props, None) => CreateNodeCommand(CreateNode(variable.name, getLabelNameSeq(labelExpression), props), variable)
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
@@ -384,7 +397,7 @@ object ClauseConverters {
 
     //CREATE ()-[:R]->()
     //Semantic checking enforces types.size == 1
-    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _, _)) =>
+    case RelationshipChain(leftNode@NodePattern(Some(leftVar), _, _, _), RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       (Vector(
         createNodeCommand(leftNode),
         createNodeCommand(rightNode)
@@ -393,7 +406,7 @@ object ClauseConverters {
       ))
 
     //CREATE ()->[:R]->()-[:R]->...->()
-    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _, _)) =>
+    case RelationshipChain(left, RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _), rightNode@NodePattern(Some(rightVar), _, _, _)) =>
       val (nodes, rels) = allCreatePatterns(left)
       (nodes :+
         createNodeCommand(rightNode)
@@ -535,7 +548,8 @@ object ClauseConverters {
 
     clause.pattern match {
       //MERGE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labels, _, props, _)) =>
+      case EveryPath(NodePattern(Some(id), labelExpression, props, _)) =>
+        val labels = getLabelNameSeq(labelExpression)
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))

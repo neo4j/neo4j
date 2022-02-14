@@ -93,6 +93,10 @@ public interface ASTExpressionFactory<
 
     LABEL_EXPRESSION labelAtom( POS p, String e );
 
+    LABEL_EXPRESSION labelColonConjunction( POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs );
+
+    EXPRESSION labelExpressionPredicate( EXPRESSION subject, LABEL_EXPRESSION exp );
+
     EXPRESSION ands( List<EXPRESSION> exprs );
 
     EXPRESSION not( POS p, EXPRESSION e );

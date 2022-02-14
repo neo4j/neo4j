@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
-import org.neo4j.cypher.internal.rewriting.rewriters.LabelPredicateNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionsInPatternsNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.MatchPredicateNormalizerChain
 import org.neo4j.cypher.internal.rewriting.rewriters.PropertyPredicateNormalizer
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -48,7 +48,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
 object ExpressionConverters {
-  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelPredicateNormalizer)
+  private def normalizer(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = MatchPredicateNormalizerChain(PropertyPredicateNormalizer(anonymousVariableNameGenerator), LabelExpressionsInPatternsNormalizer)
 
   private def getQueryGraphArguments(expr: Expression, availableSymbols: Set[String]) = {
     val dependencies = expr.dependencies.map(_.name)

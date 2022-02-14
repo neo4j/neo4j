@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.insertWithBetweenOptionalMatchAndMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
@@ -409,6 +410,66 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B|C AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:B&C AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B&C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:!(B&C) AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:!(B&C)) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE b:(B&C)|D AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:(B&C)|D) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR c:B) AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR b.prop = 42) AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a)-[r:R]->(b) WHERE (a)-[`  UNNAMED0`:R2]->(`  UNNAMED1`:C) AND (b:B OR b.prop = 42)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
+    """OPTIONAL MATCH (a)-[r:R]->(b), (a)-[r2:R2]->(c) WHERE (b:B OR b:C) AND c:C
+      |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
+    assert_that(testName).is_rewritten_to(
+      """OPTIONAL MATCH (a) WHERE (a)-[`  UNNAMED0`:R]->(`  UNNAMED1`:B|C) AND (a)-[`  UNNAMED4`:R2]->(`  UNNAMED5`:C)
+        |RETURN COUNT(DISTINCT a) as count""".stripMargin
+    )
+  }
+
+  test(
     """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
       |RETURN COUNT(DISTINCT a) as count""".stripMargin) {
     assert_that(testName).is_not_rewritten()
@@ -663,6 +724,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     val astOriginal = parseForRewriting(query)
     val orgAstState = SemanticChecker.check(astOriginal).state
     val ast = astOriginal.endoRewrite(inSequence(
+      LabelExpressionPredicateNormalizer,
       normalizeHasLabelsAndHasType(orgAstState),
       AddUniquenessPredicates(anonymousVariableNameGenerator),
       flattenBooleanOperators,

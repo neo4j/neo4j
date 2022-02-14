@@ -37,8 +37,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val aNode = NodePattern(Some(varFor("a")), Seq.empty, None, None, None)_
-  private val bNode = NodePattern(Some(varFor("b")), Seq.empty, None, None, None)_
+  private val aNode = NodePattern(Some(varFor("a")), None, None, None)_
+  private val bNode = NodePattern(Some(varFor("b")), None, None, None)_
   private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING)_
   private val TYP: RelTypeName = RelTypeName("TYP")_
   private val dependencies = Set("a", "r", "b")
@@ -77,7 +77,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
 
   test("(a)-[r]->(b:Label)") {
     // Given
-    val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName("Label")))(pos))
+    val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labelExpression = Some(labelAtom("Label")))(pos))
 
     // When
     val qg = asQueryGraph(patternExpression, dependencies, new AnonymousVariableNameGenerator)

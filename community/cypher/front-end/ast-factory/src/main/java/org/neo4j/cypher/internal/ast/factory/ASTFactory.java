@@ -187,7 +187,7 @@ public interface ASTFactory<STATEMENT,
 
     PATTERN everyPathPattern( List<NODE_PATTERN> nodes, List<REL_PATTERN> relationships );
 
-    NODE_PATTERN nodePattern( POS p, VARIABLE v, List<StringPos<POS>> labels, LABEL_EXPRESSION labelExpression, EXPRESSION properties, EXPRESSION predicate );
+    NODE_PATTERN nodePattern( POS p, VARIABLE v, LABEL_EXPRESSION labelExpression, EXPRESSION properties, EXPRESSION predicate );
 
     REL_PATTERN relationshipPattern( POS p,
                                      boolean left,

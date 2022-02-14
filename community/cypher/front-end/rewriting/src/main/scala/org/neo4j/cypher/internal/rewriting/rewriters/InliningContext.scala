@@ -66,7 +66,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       usageCount.withDefaultValue(0)(i) < INLINING_THRESHOLD
 
   def patternRewriter: Rewriter = bottomUp(Rewriter.lift {
-    case node @ NodePattern(Some(ident), _, _, _, _) if okToRewrite(ident) =>
+    case node @ NodePattern(Some(ident), _, _, _) if okToRewrite(ident) =>
       alias(ident) match {
         case alias @ Some(_) => node.copy(variable = alias)(node.position)
         case _               => node

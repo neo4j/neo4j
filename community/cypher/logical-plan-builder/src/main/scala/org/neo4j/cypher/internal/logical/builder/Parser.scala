@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
+import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.inSequence
@@ -63,7 +64,8 @@ object Parser {
   def cleanup[T <: ASTNode](in: T): T = inSequence(
     injectCachedProperties,
     invalidateInputPositions,
-    flattenBooleanOperators // It is otherwise impossible to create instances of Ands / Ors
+    flattenBooleanOperators, // It is otherwise impossible to create instances of Ands / Ors
+    LabelExpressionPredicateNormalizer
   )(in).asInstanceOf[T]
 
 

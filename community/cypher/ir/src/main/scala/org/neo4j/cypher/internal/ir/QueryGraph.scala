@@ -233,7 +233,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
       .flatMap(_.labels)
     val labelOrType = selections
       .allHasLabelsOrTypesInvolving.getOrElse(node, Set.empty)
-      .flatMap(_.labelsOrTypes).map(lblOrType => LabelName(lblOrType.name)(lblOrType.position))
+      .flatMap(_.labelsOrTypes).map(_.asLabelName)
     label ++ labelOrType
   }
 

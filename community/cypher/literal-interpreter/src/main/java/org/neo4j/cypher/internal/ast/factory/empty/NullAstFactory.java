@@ -228,6 +228,18 @@ public class NullAstFactory implements ASTFactory<NULL,
     }
 
     @Override
+    public NULL labelColonConjunction( NULL p, NULL lhs, NULL rhs )
+    {
+        return null;
+    }
+
+    @Override
+    public NULL labelExpressionPredicate( NULL subject, NULL exp )
+    {
+        return null;
+    }
+
+    @Override
     public NULL ands( List<NULL> exprs )
     {
         return null;
@@ -704,7 +716,7 @@ public class NullAstFactory implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL nodePattern( NULL p, NULL v, List<StringPos<NULL>> labels, NULL aNull, NULL properties, NULL predicate )
+    public NULL nodePattern( NULL p, NULL v, NULL aNull, NULL properties, NULL predicate )
     {
         return null;
     }

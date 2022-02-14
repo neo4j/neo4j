@@ -48,6 +48,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Stack;
 import org.neo4j.cypher.internal.ast.factory.AccessType;
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory;
 import org.neo4j.cypher.internal.ast.factory.ASTFactory;
@@ -138,6 +139,8 @@ public class Cypher<STATEMENT,
                PRIVILEGE_QUALIFIER,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
                POS> astFactory;
+    // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
+    Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
     public Cypher(ASTFactory<STATEMENT,
                              QUERY,
@@ -2126,7 +2129,6 @@ NODE_PATTERN NodePattern() :
 {
     Token t;
     VARIABLE v = null;
-    List<StringPos<POS>> labels = new ArrayList<>();
     LABEL_EXPRESSION labelExpression = null;
     EXPRESSION properties = null;
     EXPRESSION predicate = null;
@@ -2134,19 +2136,13 @@ NODE_PATTERN NodePattern() :
 {
     t=<LPAREN>
     (
-        v=Variable() (LOOKAHEAD( NotLabelExpression() ) labels=NodeLabels() | labelExpression=LabelExpression())? [properties=Properties()] [<WHERE> predicate=Expression()]
-        | (LOOKAHEAD( NotLabelExpression() ) labels=NodeLabels() | labelExpression=LabelExpression())? [properties=Properties()]
+        v=Variable() (labelExpression=LabelExpression())? [properties=Properties()] [<WHERE> predicate=Expression()]
+        | (labelExpression=LabelExpression())? [properties=Properties()]
     )
     <RPAREN>
     {
-        return astFactory.nodePattern( pos( t ), v, labels, labelExpression, properties, predicate );
+        return astFactory.nodePattern( pos( t ), v, labelExpression, properties, predicate );
     }
-}
-
-void NotLabelExpression() :
-{}
-{
-    LabelOrRelType() (<WHERE> | <RPAREN> | <LCURLY>  | ":" | <DOLLAR>)
 }
 
 List<StringPos<POS>> NodeLabels() :
@@ -2161,14 +2157,14 @@ List<StringPos<POS>> NodeLabels() :
     }
 }
 
-EXPRESSION HasLabels(EXPRESSION subject) :
+EXPRESSION LabelExpressionPredicate(EXPRESSION subject) :
 {
-    List<StringPos<POS>> labels;
+    LABEL_EXPRESSION exp = null;
 }
 {
-    labels=NodeLabels()
+    exp=LabelExpression()
     {
-        return astFactory.hasLabelsOrTypes( subject, labels );
+        return astFactory.labelExpressionPredicate( subject, exp );
     }
 }
 
@@ -2298,7 +2294,13 @@ LABEL_EXPRESSION LabelExpression() :
     LABEL_EXPRESSION e;
 }
 {
-    ":" e=LabelExpression4()
+    ":" (
+            LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
+            e = LabelExpression4ExpectingBar()
+            |
+            LOOKAHEAD({ labelExpressionStack.isEmpty() || labelExpressionStack.peek() == ExpectBar.DO_NOT_EXPECT_BAR})
+            e = LabelExpression4()
+        )
     {
         return e;
     }
@@ -2311,7 +2313,30 @@ LABEL_EXPRESSION LabelExpression4() :
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression3() ( t=<BAR> temp=LabelExpression3() { e = astFactory.labelDisjunction( pos( t ), e, temp ); } )*
+    e=LabelExpression3() (
+        LOOKAHEAD(2)
+        t=<BAR> temp=LabelExpression3()
+        { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
+    )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression4ExpectingBar() :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3() (
+        LOOKAHEAD(
+            <BAR> LabelExpression3() <BAR>
+        )
+        t=<BAR> temp=LabelExpression3()
+        { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
+    )*
     {
         return e;
     }
@@ -2324,7 +2349,15 @@ LABEL_EXPRESSION LabelExpression3() :
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression2() (t=<AMPERSAND> temp=LabelExpression2() { e = astFactory.labelConjunction( pos( t ), e, temp ); } )*
+    e=LabelExpression2()
+    (
+        LOOKAHEAD(2)
+        (
+            t=<AMPERSAND> temp=LabelExpression2() { e = astFactory.labelConjunction( pos( t ), e, temp ); }
+        |
+            t=":" temp=LabelExpression2() { e = astFactory.labelColonConjunction( pos( t ), e, temp ); }
+        )
+    )*
     {
         return e;
     }
@@ -2350,6 +2383,7 @@ LABEL_EXPRESSION LabelExpression1() :
     LABEL_EXPRESSION e = null;
     String label = null;
     Token t;
+    labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
 }
 {
     (
@@ -2358,6 +2392,7 @@ LABEL_EXPRESSION LabelExpression1() :
         | t=SymbolicNameString() { e = astFactory.labelAtom( pos ( t ), t.image ); }
     )
     {
+        labelExpressionStack.pop();
         return e;
     }
 }
@@ -2574,7 +2609,7 @@ EXPRESSION PostFix1( EXPRESSION subject ) :
 {
     (
         ret=Property( subject )
-        | ret=HasLabels( subject )
+        | ret=LabelExpressionPredicate( subject )
         | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup( subject, e1 ); }
         | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice( pos( t ), subject, e1, e2 ); }
     )
@@ -2678,10 +2713,12 @@ EXPRESSION ListComprehension() :
     EXPRESSION e;
     EXPRESSION where = null;
     EXPRESSION projection = null;
+    labelExpressionStack.push(ExpectBar.EXPECT_BAR);
 }
 {
     t=<LBRACKET> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? ( <BAR> projection=Expression() )? <RBRACKET>
     {
+        labelExpressionStack.pop();
         return astFactory.listComprehension( pos( t ), v, e, where, projection );
     }
 }
@@ -2696,7 +2733,15 @@ EXPRESSION PatternComprehension() :
     EXPRESSION projection = null;
 }
 {
-    t=<LBRACKET> ( v=Variable() <EQ> )? {relationshipPatternPosition = token;} p=EveryPathPatternNonEmpty() ( <WHERE> where=Expression() )? <BAR> projection=Expression() <RBRACKET>
+    t=<LBRACKET> ( v=Variable() <EQ> )? {relationshipPatternPosition = token;} p=EveryPathPatternNonEmpty()
+    ( <WHERE> {
+        labelExpressionStack.push(ExpectBar.EXPECT_BAR);
+      }
+      where=Expression()
+      {
+        labelExpressionStack.pop();
+      }
+    )? <BAR> projection=Expression() <RBRACKET>
     {
         return astFactory.patternComprehension( pos( t ), pos( relationshipPatternPosition.next ), v, p, where, projection );
     }

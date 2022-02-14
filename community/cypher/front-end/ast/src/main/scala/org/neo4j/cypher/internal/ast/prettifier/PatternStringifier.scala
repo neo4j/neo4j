@@ -61,18 +61,13 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
   override def apply(nodePattern: NodePattern): String = {
     val variable = nodePattern.variable.map(expr(_))
 
-    val labels =
-      Some(nodePattern.labels)
-        .filter(_.nonEmpty)
-        .map(_.map(expr(_)).mkString(":", ":", ""))
-
     val labelExpression =
       nodePattern.labelExpression
-        .map(le => s":${le.toString}")
+        .map(le => s":${expr(le)}")
 
     val body =
       concatenate(" ", Seq(
-        concatenate("", Seq(variable, labels, labelExpression)),
+        concatenate("", Seq(variable, labelExpression)),
         nodePattern.properties.map(expr(_)),
         nodePattern.predicate.map(stringifyPredicate),
       )).getOrElse("")

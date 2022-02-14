@@ -84,7 +84,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM a, b, c WITH * MATCH (x) RETURN *") {
     val ast = query(input(varFor("a"), varFor("b"), varFor("c")),
-      withAll(), match_(nodePat("x")), returnAll)
+      withAll(), match_(nodePat(Some("x"))), returnAll)
 
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Apply(

@@ -29,45 +29,25 @@ import org.neo4j.cypher.internal.ast.ElementQualifier
 import org.neo4j.cypher.internal.ast.FunctionPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
-import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NamedGraphScope
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
-import org.neo4j.cypher.internal.ast.ReadAdministrationCommand
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
-import org.neo4j.cypher.internal.ast.RemovePropertyItem
-import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
-import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
-import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
-import org.neo4j.cypher.internal.ast.SetPropertyItem
-import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.UseGraph
-import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.EveryPath
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
-import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTString
-import org.scalatest.Assertions
-import org.scalatest.Matchers
 
 import java.nio.charset.StandardCharsets
+
 import scala.language.implicitConversions
 import scala.util.Failure
 import scala.util.Success
@@ -260,49 +240,4 @@ class AdministrationAndSchemaCommandParserTestBase extends JavaccParserAstTestBa
                    limit: Option[ast.Limit] = None,
                    distinct: Boolean = false): ast.Return =
     ast.Return(distinct, returnItems, orderBy, None, limit)(pos)
-}
-
-trait VerifyAstPositionTestSupport extends Assertions with Matchers {
-
-  def verifyPositions(javaCCAstNode: ASTNode, expectedAstNode: ASTNode): Unit = {
-
-    def astWithPosition(astNode: ASTNode) = {
-      {
-        lazy val containsReadAdministratorCommand = astNode.folder.treeExists {
-          case _: ReadAdministrationCommand => true
-        }
-
-        astNode.folder.treeFold(Seq.empty[(ASTNode, InputPosition)]) {
-          case _: Property |
-               _: SetPropertyItem |
-               _: RemovePropertyItem |
-               _: LoadCSV |
-               _: UseGraph |
-               _: EveryPath |
-               _: RelationshipChain |
-               _: Yield |
-               _: ContainerIndex |
-               _: ListSlice |
-               _: HasLabelsOrTypes |
-               _: SingleQuery |
-               _: ReadAdministrationCommand |
-               _: SetIncludingPropertiesFromMapItem |
-               _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)
-          case returnItems: ReturnItems if returnItems.items.isEmpty => acc => SkipChildren(acc)
-          case _: Variable if containsReadAdministratorCommand => acc => TraverseChildren(acc)
-          case astNode: ASTNode => acc => TraverseChildren(acc :+ (astNode -> astNode.position))
-          case _ => acc => TraverseChildren(acc)
-        }
-      }
-    }
-
-    astWithPosition(javaCCAstNode).zip(astWithPosition(expectedAstNode))
-      .foreach {
-        case ((astChildNode1, pos1), (_, pos2)) => withClue(
-          s"AST node $astChildNode1 was parsed with different positions (javaCC: $pos1, expected: $pos2):")(pos1 shouldBe pos2)
-        case _ => // Do nothing
-      }
-  }
-
-  implicit protected def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
 }

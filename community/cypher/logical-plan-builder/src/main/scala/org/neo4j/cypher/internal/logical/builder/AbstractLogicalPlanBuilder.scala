@@ -185,7 +185,6 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
@@ -431,7 +430,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => FindShortestPaths(lp,
       ShortestPathPattern(pathName, PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length), !all)
       (ShortestPaths(RelationshipChain(
-        NodePattern(Some(varFor(p.from)), Seq.empty, None, None, None)(pos), // labels, properties and predicates are not used at runtime
+        NodePattern(Some(varFor(p.from)), None, None, None)(pos), // labels, properties and predicates are not used at runtime
         RelationshipPattern(Some(varFor(p.relName)),
           p.relTypes,
           length,
@@ -439,7 +438,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           None,
           p.dir
         )(pos),
-        NodePattern(Some(varFor(p.to)), Seq.empty, None, None, None)(pos) // labels, properties and predicates are not used at runtime
+        NodePattern(Some(varFor(p.to)), None, None, None)(pos) // labels, properties and predicates are not used at runtime
       )(pos), !all)(pos)),
       predicates.map(parseExpression),
       withFallback,

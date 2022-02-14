@@ -22,16 +22,24 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-trait JavaccParserAstTestBase[AST] extends JavaccParserTestBase[AST, AST] with TestName with AstConstructionTestSupport {
+trait JavaccParserAstTestBase[AST <: ASTNode] extends JavaccParserTestBase[AST, AST] with TestName with AstConstructionTestSupport with VerifyAstPositionTestSupport {
 
   final override def convert(astNode: AST): AST = astNode
 
   final def yields(expr: InputPosition => AST)(implicit parser: JavaccRule[AST]): Unit = parsing(testName) shouldGive expr
 
   final def gives(ast: AST)(implicit parser: JavaccRule[AST]): Unit = parsing(testName) shouldGive ast
+
+  final def givesIncludingPositions(expected: AST)(implicit parser: JavaccRule[AST]): Unit = {
+    parsing(testName) shouldVerify { actual =>
+      actual shouldBe expected
+      verifyPositions(actual, expected)
+    }
+  }
 
   final def failsToParse(implicit parser: JavaccRule[AST]): Unit = assertFails(testName)
 

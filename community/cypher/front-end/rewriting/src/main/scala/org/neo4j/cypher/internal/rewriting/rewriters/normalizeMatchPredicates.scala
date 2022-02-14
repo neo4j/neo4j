@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -41,7 +42,11 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoPredicatesInNamedPartsOfMatchPattern)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    HasLabelsOrTypesReplacedIfPossible,
+    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    PatternExpressionsHaveSemanticInfo, // It can invalidate this condition by rewriting things inside PatternExpressions.
+  )
 
   override def getRewriter(semanticState: SemanticState,
                            parameterTypeMapping: Map[String, CypherType],
@@ -50,7 +55,7 @@ object normalizeMatchPredicates extends StepSequencer.Step with ASTRewriterFacto
     normalizeMatchPredicates(
       MatchPredicateNormalizerChain(
         PropertyPredicateNormalizer(anonymousVariableNameGenerator),
-        LabelPredicateNormalizer,
+        LabelExpressionsInPatternsNormalizer,
         NodePatternPredicateNormalizer,
         RelationshipPatternPredicateNormalizer,
       )

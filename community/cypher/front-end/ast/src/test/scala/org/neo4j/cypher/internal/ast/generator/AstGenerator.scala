@@ -306,12 +306,12 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
-import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -616,11 +616,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   } yield res
 
-  def _hasLabelsOrTypes: Gen[HasLabelsOrTypes] = for {
-    expression <- _expression
-    labels <- oneOrMore(_labelOrTypeName)
-  } yield HasLabelsOrTypes(expression, labels)(pos)
-
   // Collections
   // ----------------------------------
 
@@ -820,7 +815,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_predicateBinary),
         lzy(_predicateComparisonChain),
         lzy(_iterablePredicate),
-        lzy(_hasLabelsOrTypes),
         lzy(_arithmeticUnary),
         lzy(_arithmeticBinary),
         lzy(_case),
@@ -841,18 +835,43 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       )
     )
 
+  def _labelExpression: Gen[LabelExpression] = {
+
+    def _labelExpressionConjunction: Gen[LabelExpression.Conjunction] = for {
+      lhs <- _labelExpression
+      rhs <- _labelExpression
+    } yield LabelExpression.Conjunction(lhs, rhs)(pos)
+
+    def _labelExpressionDisjunction: Gen[LabelExpression.Disjunction] = for {
+      lhs <- _labelExpression
+      rhs <- _labelExpression
+    } yield LabelExpression.Disjunction(lhs, rhs)(pos)
+
+    frequency(
+      5 -> oneOf[LabelExpression](
+        lzy(LabelExpression.Wildcard()(pos)),
+        lzy(_labelName.map(LabelExpression.Label(_)(pos))),
+      ),
+      1 -> oneOf[LabelExpression](
+        lzy(_labelExpressionConjunction),
+        lzy(_labelExpressionDisjunction),
+        lzy(_labelExpression.map(LabelExpression.Negation(_)(pos)))
+      )
+    )
+  }
+
   // PATTERNS
   // ==========================================================================
 
   def _nodePattern: Gen[NodePattern] = for {
     variable <- option(_variable)
-    labels <- zeroOrMore(_labelName)
+    labelExpression <- option(_labelExpression)
     properties <- option(oneOf(_map, _parameter))
     predicate <- variable match {
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
       case None => const(None)
     }
-  } yield NodePattern(variable, labels, None, properties, predicate)(pos)
+  } yield NodePattern(variable, None, properties, predicate)(pos)
 
   def _range: Gen[Range] = for {
     lower <- option(_unsignedDecIntLit)

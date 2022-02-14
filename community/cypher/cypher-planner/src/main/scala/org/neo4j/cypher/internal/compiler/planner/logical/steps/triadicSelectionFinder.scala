@@ -159,9 +159,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
     case PatternExpression(
     RelationshipsPattern(
     RelationshipChain(
-    NodePattern(Some(Variable(predicateFrom)), List(), None, None, None),
+    NodePattern(Some(Variable(predicateFrom)), None, None, None),
     RelationshipPattern(Some(rel), predicateTypes, None, None, None, predicateDir, _),
-    NodePattern(Some(Variable(predicateTo)), List(), None, None, None))))
+    NodePattern(Some(Variable(predicateTo)), None, None, None))))
       if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir && !pattern.dependencies.contains(rel) => true
     case _ => false
   }

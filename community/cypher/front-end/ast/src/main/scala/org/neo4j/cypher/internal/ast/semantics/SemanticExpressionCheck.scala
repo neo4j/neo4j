@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.checkValidLabels
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.And
@@ -57,6 +58,8 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -122,7 +125,6 @@ import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 import scala.annotation.tailrec
 import scala.util.Try
-import scala.Iterable
 
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
@@ -339,6 +341,19 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:HasLabelsOrTypes =>
         check(ctx, x.expression, x +: parents) chain
           expectType(CTNode.covariant | CTRelationship.covariant, x.expression) chain
+          specifyType(CTBoolean, x)
+
+      case x:LabelExpression =>
+        lazy val legacySymbols = x.folder.findAllByClass[LabelExpression.ColonConjunction]
+        when (!x.isNonGpm && legacySymbols.nonEmpty) {
+          error(s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols.", legacySymbols.head.position)
+        } chain
+        checkValidLabels(x.flatten, x.position)
+
+      case x:LabelExpressionPredicate =>
+        check(ctx, x.entity, x +: parents) chain
+          expectType(CTNode.covariant | CTRelationship.covariant, x.entity) chain
+          check(ctx, x.labelExpression, x +: parents) chain
           specifyType(CTBoolean, x)
 
       case x:HasLabels =>

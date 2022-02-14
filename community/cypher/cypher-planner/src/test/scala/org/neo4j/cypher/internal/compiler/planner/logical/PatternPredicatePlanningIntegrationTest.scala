@@ -141,7 +141,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         .produceResults("`u.id`")
         .projection("u.id AS `u.id`")
         .sort(Seq(Ascending("size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])")))
-        .projection(s"size(`  UNNAMED1`) AS `size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])`")
+        .projection("size(`  UNNAMED1`) AS `size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])`")
         .rollUpApply("  UNNAMED1", "  UNNAMED0")
         .|.projection("u2.id AS `  UNNAMED0`")
         .|.filter("u2:User")

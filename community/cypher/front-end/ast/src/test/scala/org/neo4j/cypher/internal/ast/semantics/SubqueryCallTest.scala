@@ -178,7 +178,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN a
     singleQuery(
       subqueryCall(
-        create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos)),
+        create(NodePattern(Some(varFor("a")), None, None, None)(pos)),
       ),
       return_(varFor("a").as("a"))
     )
@@ -197,8 +197,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       subqueryCall(
         union(
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos))),
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos)))
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos))),
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)))
         )
       ),
       return_(varFor("a").as("a"))
@@ -258,8 +258,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       subqueryCall(
         union(
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos))),
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos)))
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos))),
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)))
         )
       ),
       return_(countStar().as("count"))
@@ -278,8 +278,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       subqueryCall(
         union(
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos)), return_(varFor("a").as("a"))),
-          singleQuery(create(NodePattern(Some(varFor("a")), Seq.empty, None, None, None)(pos)), return_(varFor("a").as("a")))
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)), return_(varFor("a").as("a"))),
+          singleQuery(create(NodePattern(Some(varFor("a")), None, None, None)(pos)), return_(varFor("a").as("a")))
         )
       ),
       return_(countStar().as("count"))
@@ -295,7 +295,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN count(*) AS count
     singleQuery(
       subqueryCall(
-        singleQuery(merge(nodePat("a")))
+        singleQuery(merge(nodePat(Some("a"))))
       ),
       return_(countStar().as("count"))
     )
@@ -311,7 +311,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literalInt(1).as("x")),
       subqueryCall(
-        singleQuery(merge(nodePat("a")))
+        singleQuery(merge(nodePat(Some("a"))))
       ),
     )
       .semanticCheck(clean)
@@ -329,7 +329,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       with_(literalInt(1).as("x")),
       subqueryCall(
         singleQuery(subqueryCall(
-          singleQuery(merge(nodePat("a")))
+          singleQuery(merge(nodePat(Some("a"))))
         ))
       ),
     )
@@ -351,8 +351,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       subqueryCall(
         singleQuery(subqueryCall(
           union(
-            singleQuery(merge(nodePat("a"))),
-            singleQuery(merge(nodePat("a"))))
+            singleQuery(merge(nodePat(Some("a")))),
+            singleQuery(merge(nodePat(Some("a")))))
         ))
       ),
     )
@@ -372,7 +372,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       subqueryCall(
         singleQuery(
           merge(
-            nodePat("a")),
+            nodePat(Some("a"))),
             with_(varFor("a").aliased),
             unwind(listOfInt(1), varFor("x")).copy()(unwindPos))
       ),
@@ -391,7 +391,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN count(*) AS count
     singleQuery(
       subqueryCall(
-        singleQuery(merge(nodePat("a")), return_(varFor("a").as("a")))
+        singleQuery(merge(nodePat(Some("a"))), return_(varFor("a").as("a")))
       ),
       return_(countStar().as("count"))
     )
@@ -861,12 +861,12 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // RETURN n
 
     val x = singleQuery(
-      match_(NodePattern(Some(varFor("x")), Seq.empty, None, None, None)(pos)),
+      match_(nodePat(Some("x"))),
       subqueryCall(
         with_(varFor("x").aliased),
-        create(NodePattern(None, Seq.empty, None, None, None)(pos)),
+        create(nodePat()),
         with_(varFor("x").aliased),
-        match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
+        match_(nodePat(Some("n"))),
         return_(varFor("n").aliased)
       ),
       return_(varFor("n").aliased)

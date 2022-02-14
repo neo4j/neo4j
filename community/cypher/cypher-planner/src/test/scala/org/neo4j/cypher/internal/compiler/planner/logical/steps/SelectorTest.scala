@@ -183,9 +183,9 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // MATCH (a) WHERE (a)-->()
     val relChain = RelationshipChain(
-      NodePattern(Some(varFor("a")), Seq(), None, None, None)_,
+      NodePattern(Some(varFor("a")), None, None, None)_,
       RelationshipPattern(Some(varFor("  UNNAMED1")), Seq.empty[RelTypeName], None, None, None, SemanticDirection.OUTGOING) _,
-      NodePattern(Some(varFor("  UNNAMED2")), Seq(), None, None, None)_
+      NodePattern(Some(varFor("  UNNAMED2")), None, None, None)_
     )_
 
     val patternExp = Exists(PatternExpression(RelationshipsPattern(relChain)_)(Set(varFor("a")), "", ""))_

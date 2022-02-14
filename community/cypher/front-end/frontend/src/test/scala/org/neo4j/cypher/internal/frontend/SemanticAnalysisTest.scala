@@ -352,6 +352,30 @@ class SemanticAnalysisTest extends CypherFunSuite {
     ))
   }
 
+  test("should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression") {
+    val query = "MATCH (n:A&B:C) RETURN n"
+    expectErrorMessagesFrom(query, Set(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols."
+    ))
+  }
+
+  test("should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression predicate") {
+    val query = "MATCH (n) WHERE n:A&B:C RETURN n"
+    expectErrorMessagesFrom(query, Set(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols."
+    ))
+  }
+
+  test("should allow mixing colon as label conjunction symbols on node pattern with GPM label expression predicate") {
+    val query = "MATCH (n:A:B) WHERE n:C&D|E RETURN n"
+    expectNoErrorsFrom(query)
+  }
+
+  test("should allow mixing GPM label expression predicate with colon as label conjunction symbols on node pattern") {
+    val query = "MATCH (n:C&D|E) WHERE n:A:B RETURN n"
+    expectNoErrorsFrom(query)
+  }
+
   test("should allow node pattern predicates in pattern comprehension") {
     val query = "WITH 123 AS minValue RETURN [(n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) | n] AS result"
     expectNoErrorsFrom(query)
@@ -958,6 +982,16 @@ class SemanticAnalysisTest extends CypherFunSuite {
 
   test("Should not allow empty label in label expression") {
     val query = "MATCH (n:``&Valid) RETURN n AS invalid"
+    expectErrorMessagesFrom(query, Set(emptyTokenErrorMessage))
+  }
+
+  test("should not allow empty label name in label expression predicate") {
+    val query = "MATCH (n) WHERE n:A&`` RETURN *"
+    expectErrorMessagesFrom(query, Set(emptyTokenErrorMessage))
+  }
+
+  test("should not allow empty label name in label expression with legacy symbols") {
+    val query = "MATCH (n) WHERE n:A:`` RETURN *"
     expectErrorMessagesFrom(query, Set(emptyTokenErrorMessage))
   }
 

@@ -35,7 +35,7 @@ object PatternConverters {
       val (leftName, rel, rightName) = part.element match {
         case internal.expressions.RelationshipChain(leftNode: internal.expressions.NodePattern, relationshipPattern, rightNode) =>
           (leftNode.asLegacyNode(id, converter, anonymousVariableNameGenerator), relationshipPattern, rightNode.asLegacyNode(id, converter, anonymousVariableNameGenerator))
-        case _                                                                        =>
+        case _ =>
           throw new IllegalStateException("This should be caught during semantic checking")
       }
       val reltypes = rel.types.map(_.name)
@@ -59,7 +59,12 @@ object PatternConverters {
 
     def legacyName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): String = node.variable.fold(anonymousVariableNameGenerator.nextName)(_.name)
 
-    private def labels = node.labels.map(t => commands.values.KeyToken.Unresolved(t.name, commands.values.TokenType.Label))
+    private def labels: Seq[KeyToken.Unresolved] =
+      for {
+        expression <- node.labelExpression.toSeq
+        _ = require(expression.isNonGpm)
+        label <- expression.flatten
+      } yield commands.values.KeyToken.Unresolved(label.name, commands.values.TokenType.Label)
 
     def legacyProperties(id:Id, converter: ExpressionConverters): Map[String, commands.expressions.Expression] = node.properties match {
       case Some(m: internal.expressions.MapExpression) => m.items.map(p => (p._1.name, converter.toCommandExpression(id, p._2))).toMap

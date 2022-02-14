@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.util.ASTNode
 
-class EscapedSymbolicNameParserTest extends JavaccParserAstTestBase[Any] {
+class EscapedSymbolicNameParserTest extends JavaccParserAstTestBase[ASTNode] {
 
   test("escaped variable name") {
     implicit val parser: JavaccRule[Variable] = JavaccRule.Variable
@@ -34,9 +35,9 @@ class EscapedSymbolicNameParserTest extends JavaccParserAstTestBase[Any] {
   test("escaped label name") {
     implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
-    parsing("(n:`Label`)") shouldGive nodePat("n", "Label")
-    parsing("(n:`Label``123`)") shouldGive nodePat("n", "Label`123")
-    parsing("(n:`````Label```)") shouldGive nodePat("n", "``Label`")
+    parsing("(n:`Label`)") shouldGive nodePat(Some("n"), Some(labelAtom("Label")))
+    parsing("(n:`Label``123`)") shouldGive nodePat(Some("n"), Some(labelAtom("Label`123")))
+    parsing("(n:`````Label```)") shouldGive nodePat(Some("n"), Some(labelAtom("``Label`")))
 
     assertFails("(n:`L`abel`)")
   }

@@ -731,25 +731,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("SemiApplyInHorizon should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty), ctx.context)
     )
   }
 
   test("SemiApplyInHorizon should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+      ctx.producer.planSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty), ctx.context)
     )
   }
 
   test("AntiSemiApplyInHorizon should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty), ctx.context)
     )
   }
 
   test("AntiSemiApplyInHorizon should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat("x"))))(pos), None)(pos, Set.empty), ctx.context)
+      ctx.producer.planAntiSemiApplyInHorizon(ctx.lhs, ctx.rhsWithoutUpdate, ExistsSubClause(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None)(pos, Set.empty), ctx.context)
     )
   }
 

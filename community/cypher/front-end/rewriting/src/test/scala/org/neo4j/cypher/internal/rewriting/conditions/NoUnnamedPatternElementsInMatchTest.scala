@@ -99,6 +99,6 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   }
 
   private def node(id: Option[Variable]): NodePattern = {
-    NodePattern(id, Seq.empty, None, None, None)_
+    NodePattern(id, None, None, None)_
   }
 }

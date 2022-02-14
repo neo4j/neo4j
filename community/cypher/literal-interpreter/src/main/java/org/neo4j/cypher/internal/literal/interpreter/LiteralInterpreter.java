@@ -325,7 +325,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL nodePattern( NULL p, Object v, List<StringPos<NULL>> labels, NULL aNull, Object properties, Object predicate )
+    public NULL nodePattern( NULL p, Object v, NULL aNull, Object properties, Object predicate )
     {
         throw new UnsupportedOperationException( "nodePattern is not a literal" );
     }
@@ -1047,6 +1047,18 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     public NULL labelAtom( NULL p, String e )
     {
         throw new UnsupportedOperationException( "labelAtom is not a literal" );
+    }
+
+    @Override
+    public NULL labelColonConjunction( NULL p, NULL lhs, NULL rhs )
+    {
+        throw new UnsupportedOperationException( "labelLegacyConjunction is not a literal" );
+    }
+
+    @Override
+    public Object labelExpressionPredicate( Object subject, NULL exp )
+    {
+        throw new UnsupportedOperationException( "labelExpressionPredicate is not a literal" );
     }
 
     @Override

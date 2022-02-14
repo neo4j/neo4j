@@ -63,6 +63,16 @@ class PrettifierIT extends CypherFunSuite {
 
     "MATCH (n WHERE n:N)" -> "MATCH (n WHERE n:N)",
 
+    "MATCH (n:(A| (B)))" -> "MATCH (n:A|B)",
+
+    "MATCH (n:(A| ( B & %)))" -> "MATCH (n:A|B&%)",
+
+    "MATCH (n:((A|  B ) & %))" -> "MATCH (n:(A|B)&%)",
+
+    "MATCH (n) WHERE n:(A| (B))" ->
+      """MATCH (n)
+        |  WHERE n:A|B""".stripMargin,
+
     "MATCH (n:N WHERE n.prop > 0)" -> "MATCH (n:N WHERE n.prop > 0)",
 
     "MATCH (n:N {foo: 5} WHERE n.prop > 0)" -> "MATCH (n:N {foo: 5} WHERE n.prop > 0)",
