@@ -918,10 +918,10 @@ class MainIntegrationTest
         var expected = serverVersion.major() >= 5 ?
                                 """
                                 +-----------------+---------+----------------+---------------------+
-                                | Operator        | Details | Estimated Rows | Other               |
+                                | Operator        | Details | Estimated Rows | Pipeline            |
                                 +-----------------+---------+----------------+---------------------+
-                                | +ProduceResults | n       |             10 | Fused in Pipeline 0 |
-                                | |               +---------+----------------+---------------------+
+                                | +ProduceResults | n       |             10 |                     |
+                                | |               +---------+----------------+                     |
                                 | +AllNodesScan   | n       |             10 | Fused in Pipeline 0 |
                                 +-----------------+---------+----------------+---------------------+
                                 """ :

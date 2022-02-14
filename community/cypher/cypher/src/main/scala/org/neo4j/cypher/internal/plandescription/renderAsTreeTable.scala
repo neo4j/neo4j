@@ -71,7 +71,7 @@ object renderAsTreeTable {
           pad(width(header), '-')
         }
       }
-      result.append("+").append(newLine)
+      result.append(columnSeparator()).append(newLine)
     }
 
     divider()
@@ -162,8 +162,8 @@ private object Header {
   val PAGE_CACHE = "Page Cache Hits/Misses"
   val TIME = "Time (ms)"
   val ORDER = "Ordered by"
-  val OTHER = "Other"
-  val ALL = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, OTHER)
+  val PIPELINE = "Pipeline"
+  val ALL = Seq(OPERATOR, DETAILS, ESTIMATED_ROWS, ROWS, HITS, MEMORY, PAGE_CACHE, TIME, ORDER, PIPELINE)
 }
 
 /**
@@ -236,7 +236,9 @@ object LevelledPlan {
 
 private object TreeTableBuilder {
   private val mergers = Seq[RowMerger](
-    new MergeFused(Header.TIME, Header.PAGE_CACHE)
+    new MergeIfEqualFusedPipeline(Header.TIME, Header.PAGE_CACHE),
+    new MergeAndEraseIfEqualPipeline(Header.PIPELINE),
+    new MergeEqualValues(Header.ORDER)
   )
 
   def buildTable(rootPlan: InternalPlanDescription, withRawCardinalities: Boolean): Table = {
@@ -350,7 +352,7 @@ private class TreeTableBuilder private(private val withRawCardinalities: Boolean
       case Time(nanos) => Header.TIME -> Cell.right("%.3f".format(nanos/1000000.0))
       case Order(providedOrder) => Header.ORDER -> Cell.left(providedOrder.prettifiedString)
       case Details(detailsList) => Header.DETAILS -> Cell.left(splitDetails(detailsList.map(_.prettifiedString).toList):_*)
-      case pipeline: PipelineInfo => Header.OTHER -> Cell.left(serialize(pipeline).toString)
+      case pipeline: PipelineInfo => Header.PIPELINE -> Cell.left(serialize(pipeline).toString)
     }
 
     val operatorColumn = Header.OPERATOR -> Cell.left(levelledPlan.level.line + "+" + levelledPlan.plan.name)
@@ -372,14 +374,30 @@ trait RowMerger {
   def merge(row: BuildingRow, next: BuildingRow): BuildingRow
 }
 
-class MergeFused(keys: String*) extends RowMerger {
+abstract class PipelineRowMerger(keys: Seq[String]) extends RowMerger {
+  override final def merge(row: BuildingRow, next: BuildingRow): BuildingRow = if (shouldMerge(row, next)) doMerge(row) else row
+  def shouldMerge(row: BuildingRow, next: BuildingRow): Boolean = shouldMerge(row.levelledPlan.info, next.levelledPlan.info)
+  def doMerge(row: BuildingRow): BuildingRow = row.add(keys.map(key => key -> doMerge(row.values.getOrElse(key, Cell.left("")))):_*)
+  def doMerge(cell: Cell): Cell = cell.copy(isMerged = true)
+  def shouldMerge(pipeline: Option[PipelineInfo], next: Option[PipelineInfo]): Boolean
+}
+
+class MergeIfEqualFusedPipeline(keys: String*) extends PipelineRowMerger(keys) {
+  override def shouldMerge(pipeline: Option[PipelineInfo], next: Option[PipelineInfo]): Boolean = pipeline.exists(p => p.fused && next.contains(p))
+}
+
+class MergeAndEraseIfEqualPipeline(keys: String*) extends PipelineRowMerger(keys) {
+  override def shouldMerge(pipeline: Option[PipelineInfo], next: Option[PipelineInfo]): Boolean = pipeline == next && pipeline.isDefined
+  override def doMerge(cell: Cell): Cell = cell.copy(lines = Seq(""), isMerged = true)
+}
+
+class MergeEqualValues(key: String) extends RowMerger {
   override def merge(row: BuildingRow, next: BuildingRow): BuildingRow = {
-    if (row.levelledPlan.info.exists(_.fused == true) && row.levelledPlan.info == next.levelledPlan.info) {
-      row.add(keys.map(key => key -> doMerge(row.values.getOrElse(key, Cell.left("")))):_*)
-    } else {
-      row
+    (row.values.get(key), next.values.get(key)) match {
+      case (Some(cell), Some(nextCell)) if cell == nextCell && cell.lines.nonEmpty => doMerge(row, cell)
+      case _ => row
     }
   }
 
-  private[plandescription] def doMerge(cell: Cell): Cell = cell.copy(isMerged = true)
+  private def doMerge(row: BuildingRow, cell: Cell): BuildingRow = row.add(key -> cell.copy(lines = Seq(""), isMerged = true))
 }

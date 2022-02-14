@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
 import org.neo4j.cypher.internal.plandescription.Arguments.Memory
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheHits
 import org.neo4j.cypher.internal.plandescription.Arguments.PageCacheMisses
 import org.neo4j.cypher.internal.plandescription.Arguments.PipelineInfo
@@ -81,7 +82,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator |
         |+----------+
         || +ROOT    |
-        || |        +
+        || |        |
         || +LEAF    |
         |+----------+
         |""".stripMargin)
@@ -97,9 +98,9 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator |
         |+----------+
         || +ROOT    |
-        || |\       +
+        || |\       |
         || | +LEAF2 |
-        || |        +
+        || |        |
         || +LEAF1   |
         |+----------+
         |""".stripMargin)
@@ -115,9 +116,9 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator      |
         |+---------------+
         || +ROOT         |
-        || |             +
+        || |             |
         || +INTERMEDIATE |
-        || |             +
+        || |             |
         || +LEAF         |
         |+---------------+
         |""".stripMargin)
@@ -135,13 +136,13 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator        |
         |+-----------------+
         || +ROOT           |
-        || |\              +
+        || |\              |
         || | +INTERMEDIATE |
-        || | |\            +
+        || | |\            |
         || | | +LEAF2      |
-        || | |             +
+        || | |             |
         || | +LEAF1        |
-        || |               +
+        || |               |
         || +LEAF3          |
         |+-----------------+
         |""".stripMargin)
@@ -161,17 +162,17 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator        |
         |+-----------------+
         || +ROOT           |
-        || |\              +
+        || |\              |
         || | +INTERMEDIATE |
-        || | |\            +
+        || | |\            |
         || | | +LEAF       |
-        || | |             +
+        || | |             |
         || | +LEAF         |
-        || |               +
+        || |               |
         || +INTERMEDIATE   |
-        || |\              +
+        || |\              |
         || | +LEAF         |
-        || |               +
+        || |               |
         || +LEAF           |
         |+-----------------+
         |""".stripMargin)
@@ -316,7 +317,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(plan2) should equal(
       """+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Other                |
+        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
         |+----------+-------------+----------------+------+---------+----------------+----------------------+
         || +NAME    | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
         || |        +-------------+----------------+------+---------+----------------+----------------------+
@@ -336,7 +337,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     println(renderAsTreeTable(plan3))
     renderAsTreeTable(plan3) should equal(
       """+----------+-------------+----------------+------+---------+----------------+----------------------+
-        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Other                |
+        || Operator | Details     | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Pipeline             |
         |+----------+-------------+----------------+------+---------+----------------+----------------------+
         || +NAME3   | Index stuff |              1 |    2 |     633 |                | Fused in Pipeline 52 |
         || |        +-------------+----------------+------+---------+----------------+----------------------+
@@ -560,7 +561,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator     |
         |+--------------+
         || +OPERATOR(2) |
-        || |            +
+        || |            |
         || +NODE(2)     |
         |+--------------+
         |""".stripMargin)
@@ -577,7 +578,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator     |
         |+--------------+
         || +OPERATOR(2) |
-        || |            +
+        || |            |
         || +NODE(2)     |
         |+--------------+
         |""".stripMargin)
@@ -594,7 +595,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator     |
         |+--------------+
         || +OPERATOR(2) |
-        || |            +
+        || |            |
         || +NODE(2)     |
         |+--------------+
         |""".stripMargin)
@@ -613,7 +614,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator     |
         |+--------------+
         || +OPERATOR(2) |
-        || |            +
+        || |            |
         || +NODE(2)     |
         |+--------------+
         |""".stripMargin)
@@ -711,25 +712,25 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator        |
         |+-----------------+
         || +ROOT           |
-        || |\              +
+        || |\              |
         || | +INTERMEDIATE |
-        || | |\            +
+        || | |\            |
         || | | +BRANCH     |
-        || | | |           +
+        || | | |           |
         || | | +LEAF       |
-        || | |             +
+        || | |             |
         || | +BRANCH       |
-        || | |             +
+        || | |             |
         || | +LEAF         |
-        || |               +
+        || |               |
         || +INTERMEDIATE   |
-        || |\              +
+        || |\              |
         || | +BRANCH       |
-        || | |             +
+        || | |             |
         || | +LEAF         |
-        || |               +
+        || |               |
         || +BRANCH         |
-        || |               +
+        || |               |
         || +LEAF           |
         |+-----------------+
         |""".stripMargin)
@@ -753,17 +754,17 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
         || Operator     |
         |+--------------+
         || +NODE        |
-        || |\           +
+        || |\           |
         || | +NODE      |
-        || | |\         +
+        || | |\         |
         || | | +NODE(2) |
-        || | |          +
+        || | |          |
         || | +NODE(2)   |
-        || |            +
+        || |            |
         || +NODE        |
-        || |\           +
+        || |\           |
         || | +NODE(2)   |
-        || |            +
+        || |            |
         || +NODE(2)     |
         |+--------------+
         |""".stripMargin)
@@ -928,16 +929,16 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(plan5) should equal(
       """+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || Operator | Details         | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Page Cache Hits/Misses | Time (ms) | Other                |
+        || Operator | Details         | Estimated Rows | Rows | DB Hits | Memory (Bytes) | Page Cache Hits/Misses | Time (ms) | Pipeline             |
         |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || +NAME1   | Final stuff     |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 60 |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
+        || +NAME1   | Final stuff     |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
         || +NAME2   | Even more stuff |              1 |    2 |     633 |                |                    1/2 |     1.000 | Fused in Pipeline 60 |
         || |        +-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
-        || +NAME3   | Do other stuff  |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 52 |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
-        || +NAME4   | Index stuff     |              1 |    2 |     633 |                |                        |           | Fused in Pipeline 52 |
-        || |        +-----------------+----------------+------+---------+----------------+                        |           +----------------------+
+        || +NAME3   | Do other stuff  |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
+        || +NAME4   | Index stuff     |              1 |    2 |     633 |                |                        |           |                      |
+        || |        +-----------------+----------------+------+---------+----------------+                        |           |                      |
         || +NAME5   |                 |              1 |   42 |      33 |              5 |                    5/1 |     0.200 | Fused in Pipeline 52 |
         |+----------+-----------------+----------------+------+---------+----------------+------------------------+-----------+----------------------+
         |""".stripMargin)
@@ -954,7 +955,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(produceResults) should equal(
       """+-----------------+------------------------+-----------+---------------------+
-        || Operator        | Page Cache Hits/Misses | Time (ms) | Other               |
+        || Operator        | Page Cache Hits/Misses | Time (ms) | Pipeline            |
         |+-----------------+------------------------+-----------+---------------------+
         || +PRODUCERESULTS |                    5/1 |     0.200 | In Pipeline 1       |
         || |               +------------------------+-----------+---------------------+
@@ -976,12 +977,12 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(plan) should equal(
       """+----------+----------------+------+---------+------------------------+-----------+---------------------+
-        || Operator | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Other               |
+        || Operator | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
         |+----------+----------------+------+---------+------------------------+-----------+---------------------+
-        || +ROOT    |              9 |   10 |       0 |                        |           | Fused in Pipeline 1 |
-        || |\       +----------------+------+---------+                        |           +---------------------+
-        || | +LEAF2 |              2 |    2 |       2 |                        |           | Fused in Pipeline 1 |
-        || |        +----------------+------+---------+                        |           +---------------------+
+        || +ROOT    |              9 |   10 |       0 |                        |           |                     |
+        || |\       +----------------+------+---------+                        |           |                     |
+        || | +LEAF2 |              2 |    2 |       2 |                        |           |                     |
+        || |        +----------------+------+---------+                        |           |                     |
         || +LEAF1   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
         |+----------+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin)
@@ -1006,20 +1007,20 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(produceResults) should equal(
       """+----------------+----------------+------+---------+------------------------+-----------+---------------------+
-        || Operator       | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Other               |
+        || Operator       | Estimated Rows | Rows | DB Hits | Page Cache Hits/Misses | Time (ms) | Pipeline            |
         |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
         || +PRODUCERESULT |              4 |    5 |       1 |                   5/10 |     0.200 | In Pipeline 2       |
         || |              +----------------+------+---------+------------------------+-----------+---------------------+
-        || +AGGREGATION   |              4 |    5 |       1 |                        |           | Fused in Pipeline 1 |
-        || |              +----------------+------+---------+                        |           +---------------------+
+        || +AGGREGATION   |              4 |    5 |       1 |                        |           |                     |
+        || |              +----------------+------+---------+                        |           |                     |
         || +APPLY         |              4 |    5 |       1 |                        |           |                     |
-        || |\             +----------------+------+---------+                        |           +---------------------+
-        || | +FILTER      |              4 |    5 |       1 |                        |           | Fused in Pipeline 1 |
-        || | |            +----------------+------+---------+                        |           +---------------------+
+        || |\             +----------------+------+---------+                        |           |                     |
+        || | +FILTER      |              4 |    5 |       1 |                        |           |                     |
+        || | |            +----------------+------+---------+                        |           |                     |
         || | +INDEXSEEK   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 1 |
         || |              +----------------+------+---------+------------------------+-----------+---------------------+
-        || +PROJECT       |              4 |    5 |       1 |                        |           | Fused in Pipeline 0 |
-        || |              +----------------+------+---------+                        |           +---------------------+
+        || +PROJECT       |              4 |    5 |       1 |                        |           |                     |
+        || |              +----------------+------+---------+                        |           |                     |
         || +ALLNODESCAN   |              4 |    5 |       1 |                   5/10 |     0.200 | Fused in Pipeline 0 |
         |+----------------+----------------+------+---------+------------------------+-----------+---------------------+
         |""".stripMargin)
@@ -1034,7 +1035,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(node5) should equal(
       """+----------+-----------+---------------------+
-        || Operator | Time (ms) | Other               |
+        || Operator | Time (ms) | Pipeline            |
         |+----------+-----------+---------------------+
         || +Node5   |     1.000 | Fused in Pipeline 4 |
         || |        +-----------+---------------------+
@@ -1060,7 +1061,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
 
     renderAsTreeTable(plan) should equal(
       """+------------------+------------------------+---------------+
-        || Operator         | Page Cache Hits/Misses | Other         |
+        || Operator         | Page Cache Hits/Misses | Pipeline      |
         |+------------------+------------------------+---------------+
         || +Root            |                    1/0 | In Pipeline 1 |
         || |\               +------------------------+---------------+
@@ -1108,49 +1109,118 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val top = planDescription(id, "Top", SingleChild(projection), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1726000)))
     val produceResult = planDescription(id, "ProduceResults", SingleChild(top), Seq(PipelineInfo(6, fused = false), PageCacheHits(0), PageCacheMisses(0), Time(1143000)))
 
+    println(renderAsTreeTable(produceResult))
     renderAsTreeTable(produceResult) should equal(
       """+-------------------------+------------------------+-----------+---------------------+
-        || Operator                | Page Cache Hits/Misses | Time (ms) | Other               |
+        || Operator                | Page Cache Hits/Misses | Time (ms) | Pipeline            |
         |+-------------------------+------------------------+-----------+---------------------+
-        || +ProduceResults         |                    0/0 |     1.143 | In Pipeline 6       |
-        || |                       +------------------------+-----------+---------------------+
+        || +ProduceResults         |                    0/0 |     1.143 |                     |
+        || |                       +------------------------+-----------+                     |
         || +Top                    |                    0/0 |     1.726 | In Pipeline 6       |
         || |                       +------------------------+-----------+---------------------+
         || +Projection             |                   29/0 |     1.492 | In Pipeline 5       |
         || |                       +------------------------+-----------+---------------------+
-        || +EagerAggregation       |                        |           | Fused in Pipeline 4 |
-        || |                       |                        |           +---------------------+
-        || +Filter                 |                        |           | Fused in Pipeline 4 |
-        || |                       |                        |           +---------------------+
-        || +Expand(All)            |                        |           | Fused in Pipeline 4 |
-        || |                       |                        |           +---------------------+
+        || +EagerAggregation       |                        |           |                     |
+        || |                       |                        |           |                     |
+        || +Filter                 |                        |           |                     |
+        || |                       |                        |           |                     |
+        || +Expand(All)            |                        |           |                     |
+        || |                       |                        |           |                     |
         || +Apply                  |                        |           |                     |
-        || |\                      |                        |           +---------------------+
+        || |\                      |                        |           |                     |
         || | +Apply                |                        |           |                     |
-        || | |\                    |                        |           +---------------------+
-        || | | +Limit              |                        |           | Fused in Pipeline 4 |
-        || | | |                   |                        |           +---------------------+
-        || | | +Expand(Into)       |                        |           | Fused in Pipeline 4 |
-        || | | |                   |                        |           +---------------------+
+        || | |\                    |                        |           |                     |
+        || | | +Limit              |                        |           |                     |
+        || | | |                   |                        |           |                     |
+        || | | +Expand(Into)       |                        |           |                     |
+        || | | |                   |                        |           |                     |
         || | | +Argument           |              1211031/0 |   577.688 | Fused in Pipeline 4 |
         || | |                     +------------------------+-----------+---------------------+
-        || | +Expand(All)          |                        |           | Fused in Pipeline 3 |
-        || | |                     |                        |           +---------------------+
+        || | +Expand(All)          |                        |           |                     |
+        || | |                     |                        |           |                     |
         || | +Argument             |                10957/0 |    65.466 | Fused in Pipeline 3 |
         || |                       +------------------------+-----------+---------------------+
-        || +Distinct               |                    0/0 |    15.565 | In Pipeline 2       |
-        || |                       +------------------------+-----------+---------------------+
+        || +Distinct               |                    0/0 |    15.565 |                     |
+        || |                       +------------------------+-----------+                     |
         || +CartesianProduct       |                        |     5.483 | In Pipeline 2       |
         || |\                      +------------------------+-----------+---------------------+
-        || | +Filter               |                        |           | Fused in Pipeline 1 |
-        || | |                     |                        |           +---------------------+
-        || | +VarLengthExpand(All) |                        |           | Fused in Pipeline 1 |
-        || | |                     |                        |           +---------------------+
+        || | +Filter               |                        |           |                     |
+        || | |                     |                        |           |                     |
+        || | +VarLengthExpand(All) |                        |           |                     |
+        || | |                     |                        |           |                     |
         || | +NodeUniqueIndexSeek  |                 1537/0 |    21.756 | Fused in Pipeline 1 |
         || |                       +------------------------+-----------+---------------------+
         || +NodeUniqueIndexSeek    |                    2/0 |     8.850 | In Pipeline 0       |
         |+-------------------------+------------------------+-----------+---------------------+
         |""".stripMargin
     )
+  }
+
+  test("merge order by and pipeline 1") {
+
+    val p1 = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details("..."), Order(PrettyString("a")), PipelineInfo(1, false)), Set())
+    val p2 = PlanDescriptionImpl(id, "NODE", SingleChild(p1), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(1, false)), Set())
+    val p3 = PlanDescriptionImpl(id, "NODE", SingleChild(p2), Seq(details("..."), PipelineInfo(1, false)), Set())
+    val p4 = PlanDescriptionImpl(id, "NODE", SingleChild(p3), Seq(details("..."), Order(PrettyString("A")), PipelineInfo(1, false)), Set())
+    val p5 = PlanDescriptionImpl(id, "NODE", SingleChild(p4), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(1, false)), Set())
+    val p6 = PlanDescriptionImpl(id, "NODE", SingleChild(p5), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(2, false)), Set())
+    val p7 = PlanDescriptionImpl(id, "NODE", SingleChild(p6), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(2, false)), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(p7), Seq(details("..."), Order(PrettyString("b")), PipelineInfo(2, false)), Set())
+
+    renderAsTreeTable(root) should equal(
+      """+----------+---------+------------+---------------+
+        || Operator | Details | Ordered by | Pipeline      |
+        |+----------+---------+------------+---------------+
+        || +NODE    | ...     | b          |               |
+        || |        +---------+------------+               |
+        || +NODE    | ...     |            |               |
+        || |        +---------+            |               |
+        || +NODE    | ...     |            | In Pipeline 2 |
+        || |        +---------+            +---------------+
+        || +NODE    | ...     | a          |               |
+        || |        +---------+------------+               |
+        || +NODE    | ...     | A          |               |
+        || |        +---------+------------+               |
+        || +NODE    | ...     |            |               |
+        || |        +---------+------------+               |
+        || +NODE    | ...     |            |               |
+        || |        +---------+            |               |
+        || +NODE    | ...     | a          | In Pipeline 1 |
+        |+----------+---------+------------+---------------+
+        |""".stripMargin)
+  }
+
+  test("merge order by and pipeline 2") {
+
+    val p1 = PlanDescriptionImpl(id, "NODE", NoChildren, Seq(details("..."), Order(PrettyString("a")), PipelineInfo(1, false)), Set())
+    val p2 = PlanDescriptionImpl(id, "NODE", SingleChild(p1), Seq(details("..."), Order(PrettyString("b"))), Set())
+    val p3 = PlanDescriptionImpl(id, "NODE", SingleChild(p2), Seq(details("..."), PipelineInfo(1, false)), Set())
+    val p4 = PlanDescriptionImpl(id, "NODE", SingleChild(p3), Seq(details("..."), Order(PrettyString("b")), PipelineInfo(2, true)), Set())
+    val p5 = PlanDescriptionImpl(id, "NODE", SingleChild(p4), Seq(details("..."), Order(PrettyString("b"))), Set())
+    val p6 = PlanDescriptionImpl(id, "NODE", SingleChild(p5), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(2, true)), Set())
+    val p7 = PlanDescriptionImpl(id, "NODE", SingleChild(p6), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(3, false)), Set())
+    val root = PlanDescriptionImpl(id, "NODE", SingleChild(p7), Seq(details("..."), Order(PrettyString("a")), PipelineInfo(3, false)), Set())
+
+    renderAsTreeTable(root) should equal(
+      """+----------+---------+------------+---------------------+
+        || Operator | Details | Ordered by | Pipeline            |
+        |+----------+---------+------------+---------------------+
+        || +NODE    | ...     |            |                     |
+        || |        +---------+            |                     |
+        || +NODE    | ...     |            | In Pipeline 3       |
+        || |        +---------+            +---------------------+
+        || +NODE    | ...     | a          |                     |
+        || |        +---------+------------+                     |
+        || +NODE    | ...     |            |                     |
+        || |        +---------+            |                     |
+        || +NODE    | ...     | b          | Fused in Pipeline 2 |
+        || |        +---------+------------+---------------------+
+        || +NODE    | ...     |            | In Pipeline 1       |
+        || |        +---------+------------+---------------------+
+        || +NODE    | ...     | b          |                     |
+        || |        +---------+------------+---------------------+
+        || +NODE    | ...     | a          | In Pipeline 1       |
+        |+----------+---------+------------+---------------------+
+        |""".stripMargin)
   }
 }
