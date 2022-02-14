@@ -70,6 +70,26 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
+    val expected = Array(Array(n2))
+
+    runtimeResult should beColumns("y").withRows(expected)
+  }
+
+  test("var-length-expand with max length including start node") {
+    // given
+    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*0..1]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
     val expected =
       Array(
         Array(n1),
@@ -615,6 +635,34 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       for {
         path <- paths
+        length <- 1 to 5
+      } yield Array(path.take(length).endNode())
+    runtimeResult should beColumns("y").withRows(expected)
+  }
+
+  test("should handle predicate accessing start node including start node") {
+    //TODO: flaky due to pruningVarExpand
+    assume(!(isParallel && runOnlySafeScenarios))
+
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*0..5]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
         length <- 0 to 5
       } yield Array(path.take(length).endNode())
     runtimeResult should beColumns("y").withRows(expected)
@@ -641,6 +689,32 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       for {
         path <- paths
+        length <- 1 to 5
+      } yield Array(path.take(length).endNode())
+    runtimeResult should beColumns("y").withRows(expected)
+  }
+
+  test("should handle predicate accessing reference in context and including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*0..5]->(y)", nodePredicate = Predicate("n", "id(n) >= zero"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
         length <- 0 to 5
       } yield Array(path.take(length).endNode())
     runtimeResult should beColumns("y").withRows(expected)
@@ -656,6 +730,32 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       .produceResults("y")
       .distinct("y AS y")
       .pruningVarExpand("(x)-[*..5]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x", "other"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 5
+      } yield Array(path.take(length).endNode())
+    runtimeResult should beColumns("y").withRows(expected)
+  }
+
+  test("should handle predicate accessing node in context and including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .pruningVarExpand("(x)-[*0..5]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()

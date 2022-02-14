@@ -54,10 +54,10 @@ class PatternParser
         val length =
           (star, min, dots, max) match {
             case ("", "", "", "")  => SimplePatternLength
-            case ("*", "", "", "") => VarPatternLength(0, None)
+            case ("*", "", "", "") => VarPatternLength(1, None)
             case ("*", x, "..", "")  => VarPatternLength(x.toInt, None)
             case ("*", x, "", "")  => VarPatternLength(x.toInt, Some(x.toInt))
-            case ("*", "", "..", _)  => VarPatternLength(0, Some(max.toInt))
+            case ("*", "", "..", _)  => VarPatternLength(1, Some(max.toInt))
             case ("*", _, "..", _)   => VarPatternLength(min.toInt, Some(max.toInt))
             case _ => throw new UnsupportedOperationException(s"$star, $min, $max is not a supported variable length identifier")
           }

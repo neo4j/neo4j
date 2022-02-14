@@ -65,6 +65,30 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       for {
         path <- paths
+        length <- 1 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("simple var-length-expand, including start node") {
+    // given
+    val n = sizeHint / 6
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*0..]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
         length <- 0 to 5
       } yield Array(path.startNode, path.take(length).endNode())
 
@@ -79,6 +103,32 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .expand("(x)-[r*]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 5
+      } yield {
+        val pathPrefix = path.take(length)
+        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+      }
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand with bound relationships, including start node") {
+    // given
+    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*0..]->(y)")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -113,6 +163,30 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // then
     val expected =
       Array(
+        Array(n1, Array(r1), n2),
+        Array(n1, Array(r1, r3), n3),
+        Array(n1, Array(r2), n2),
+        Array(n1, Array(r2, r3), n3))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand on lollipop graph, including start node") {
+    // given
+    val (Seq(n1, n2, n3), Seq(r1, r2, r3)) = given { lollipopGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*0..]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      Array(
         Array(n1, Array.empty, n1),
         Array(n1, Array(r1), n2),
         Array(n1, Array(r1, r3), n3),
@@ -130,6 +204,28 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .expand("(x)-[r*..1]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      Array(
+        Array(n1, Array(r1), n2),
+        Array(n1, Array(r2), n2))
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
+
+  test("var-length-expand with max length, including start node") {
+    // given
+    val (Seq(n1, n2, _), Seq(r1, r2, _)) = given { lollipopGraph() }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .expand("(x)-[r*0..1]->(y)")
       .nodeByLabelScan("x", "START", IndexOrderNone)
       .build()
 
@@ -759,6 +855,30 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       for {
         path <- paths
+        length <- 1 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing start node, including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
         length <- 0 to 5
       } yield Array(path.startNode, path.take(length).endNode())
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -793,6 +913,30 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
+      .input(variables = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing start node when reference and including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "'START' IN labels(x)"))
       .input(variables = Seq("x"))
       .build()
 
@@ -848,6 +992,31 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected =
       for {
         path <- paths
+        length <- 1 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing reference in context and including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "id(n) >= zero"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
         length <- 0 to 5
       } yield Array(path.startNode, path.take(length).endNode())
     runtimeResult should beColumns("x", "y").withRows(expected)
@@ -862,6 +1031,31 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .expand("(x)-[*]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
+      .projection("0 AS zero")
+      .input(nodes = Seq("x", "other"))
+      .build()
+
+    val input = inputColumns(4, n/4, i => paths(i).startNode, i => paths(i).endNode())
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 5
+      } yield Array(path.startNode, path.take(length).endNode())
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should handle predicate accessing node in context including start node") {
+    // given
+    val n = closestMultipleOf(10, 4)
+    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .expand("(x)-[*0..]->(y)", nodePredicate = Predicate("n", "id(other) >= 0"))
       .projection("0 AS zero")
       .input(nodes = Seq("x", "other"))
       .build()
@@ -901,6 +1095,46 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("b", "c")
       .expand("(b)-[*]->(c)", nodePredicate = Predicate("n", "n.prop > cache[a.prop]"))
+      .expandAll("(a)-[:TO]->(b)")
+      .nodeByLabelScan("a", "START", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected =
+      for {
+        path <- paths
+        length <- 1 to 3
+        p = path.slice(1, 1 + length)
+      } yield Array(p.startNode, p.endNode())
+
+    runtimeResult should beColumns("b", "c").withRows(expected)
+  }
+
+  test("should handle var expand + predicate on cached property + including start node") {
+    // given
+    val n = sizeHint / 6
+    val paths = given {
+      val ps = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
+      // set incrementing node property values along chain
+      for {
+        p <- ps
+        i <- 0 until p.length()
+        n = p.nodeAt(i)
+      } n.setProperty("prop", i)
+      // set property of last node to lowest value, so VarLength predicate fails
+      for {
+        p <- ps
+        n = p.nodeAt(p.length())
+      } n.setProperty("prop", -1)
+      ps
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("b", "c")
+      .expand("(b)-[*0..]->(c)", nodePredicate = Predicate("n", "n.prop > cache[a.prop]"))
       .expandAll("(a)-[:TO]->(b)")
       .nodeByLabelScan("a", "START", IndexOrderNone)
       .build()

@@ -96,7 +96,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *
    * There is no need to call this method if the setup does not create any graph entities, e.g. if you use input.
    *
-   * @param f the graph creation
+   * @param unitF the graph creation
    * @param transactionType the requested type of the restarted transaction, IMPLICIT or EXPLICIT
    */
   def givenWithTransactionType(unitF: => Unit, transactionType: KernelTransaction.Type): Unit = {
@@ -187,11 +187,13 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Create one directed connected graph, by cross-linking multiple chain graphs.
    * E.g., for `chainCount=3` & `chainDepth=4`, the following graph would be created:
    *
+   * {{{
    *      *-->*-->*-->*
    *    /   X   X   X   \
    *  *-->*-->*-->*-->*-->*
    *    \   X   X   X   /
    *      *-->*-->*-->*
+   *}}}
    *
    * @return start & end nodes
    */
@@ -230,11 +232,13 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Create one directed connected graph, by linking multiple chain graphs.
    * E.g., for `chainCount=3` & `chainDepth=4`, the following graph would be created:
    *
+   * {{{
    *      *-->*-->*-->*
    *    /               \
    *  *-->*-->*-->*-->*-->*
    *    \               /
    *      *-->*-->*-->*
+   *}}}
    *
    * @return start & end nodes
    */
@@ -259,9 +263,11 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   /**
    * Create a lollipop graph:
    *
+   * {{{
    *             -[r1:R]->
    *   (n1:START)         (n2)-[r3:R]->(n3)
    *             -[r2:R]->
+   *}}}
    */
   def lollipopGraph(): (Seq[Node], Seq[Relationship]) = {
     val n1 = runtimeTestSupport.tx.createNode(Label.label("START"))
@@ -277,6 +283,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   /**
    * Create a sine graph:
    *
+   *{{{
    *       <- sc1 <- sc2 <- sc3 <-
    *       +>    sb1 +> sb2     +>
    *       ->        sa1        ->
@@ -291,6 +298,8 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *   end has label :END
    *   -> has type :A
    *   +> has type :B
+   *}}}
+   *
    */
   def sineGraph(): SineGraph = {
     val start = runtimeTestSupport.tx.createNode(Label.label("START"))
