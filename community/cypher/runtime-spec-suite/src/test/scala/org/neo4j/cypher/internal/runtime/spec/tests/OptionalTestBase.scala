@@ -341,7 +341,7 @@ trait OptionalFailureTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .filter("x / 0 == 0")
+      .filter("x / 0 = 0")
       .optional()
       .input(variables = Seq("x"))
       .build()

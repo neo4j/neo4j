@@ -43,7 +43,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .filter("cache[n.p] < 20 == 0")
+      .filter("cache[n.p] < 20")
       .cacheProperties("cache[n.p]")
       .allNodeScan("n")
       .build()

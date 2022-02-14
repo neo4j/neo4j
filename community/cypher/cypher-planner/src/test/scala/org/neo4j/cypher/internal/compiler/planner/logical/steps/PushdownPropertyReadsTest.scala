@@ -1017,7 +1017,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown read if property is available from node index") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
@@ -1029,7 +1029,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown read if property is available from relationship index") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "o")
-      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("r.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(o)").withEffectiveCardinality(235)
       .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
 
@@ -1041,7 +1041,7 @@ class PushdownPropertyReadsTest
   test("should pushdown read through renaming projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("mysteryNode.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .allNodeScan("n").withEffectiveCardinality(90)
@@ -1050,7 +1050,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
-        .filter("mysteryNode.prop == 'NOT-IMPORTANT'")
+        .filter("mysteryNode.prop = 'NOT-IMPORTANT'")
         .projection("n AS mysteryNode")
         .expand("(n)-->(m)")
         .cacheProperties("n.prop")
@@ -1061,7 +1061,7 @@ class PushdownPropertyReadsTest
   test("should pushdown read through 2 renaming projections") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("unknownNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("unknownNode.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("mysteryNode AS unknownNode").withEffectiveCardinality(235)
       .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
@@ -1071,7 +1071,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
-        .filter("unknownNode.prop == 'NOT-IMPORTANT'")
+        .filter("unknownNode.prop = 'NOT-IMPORTANT'")
         .projection("mysteryNode AS unknownNode")
         .projection("n AS mysteryNode")
         .expand("(n)-->(m)")
@@ -1083,7 +1083,7 @@ class PushdownPropertyReadsTest
   test("should pushdown read through unrelated renaming projection") {
     val plan = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("m AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .allNodeScan("n").withEffectiveCardinality(90)
@@ -1092,7 +1092,7 @@ class PushdownPropertyReadsTest
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("n", "m")
-        .filter("n.prop == 'NOT-IMPORTANT'")
+        .filter("n.prop = 'NOT-IMPORTANT'")
         .projection("m AS mysteryNode")
         .expand("(n)-->(m)")
         .cacheProperties("n.prop")
@@ -1103,7 +1103,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown read if property is available, but renamed") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("mysteryNode.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("mysteryNode.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
       .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
@@ -1116,7 +1116,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown read if property is available from relationship index, but renamed") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("mysteryRel.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("mysteryRel.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("r AS mysteryRel").withEffectiveCardinality(235)
       .expand("(n)-->(0)").withEffectiveCardinality(235)
       .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
@@ -1141,7 +1141,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setProperty("n", "prop", "42").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1154,7 +1154,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setNodeProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setNodeProperty("n", "prop", "42").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1167,7 +1167,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setRelationshipProperty") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setRelationshipProperty("n", "prop", "42").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1180,7 +1180,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setProperties") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.p1 = 'NOT-IMPORTANT' AND n.p2 = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1193,7 +1193,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setNodeProperties") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.p1 = 'NOT-IMPORTANT' AND n.p2 = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setNodeProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1206,7 +1206,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setRelationshipProperties") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.p1 == 'NOT-IMPORTANT' && n.p2 == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.p1 = 'NOT-IMPORTANT' AND n.p2 = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setProperties("n", ("p1", "42"), ("p2", "42")).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1219,7 +1219,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setNodePropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setNodePropertiesFromMap("n", "{prop: 42}", removeOtherProps = false).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1232,7 +1232,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if setRelationshipPropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("r.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setRelationshipPropertiesFromMap("r", "{prop: 42}", removeOtherProps = false).withEffectiveCardinality(100)
       .expand("(m)-->(k)").withEffectiveCardinality(100)
       .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
@@ -1246,7 +1246,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if property removed by setNodePropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setNodePropertiesFromMap("n", "{otherProp: 42}", removeOtherProps = true).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1259,7 +1259,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if property removed by setRelationshipPropertiesFromMap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("r.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setRelationshipPropertiesFromMap("r", "{otherProp: 42}", removeOtherProps = true).withEffectiveCardinality(100)
       .expand("(m)-->(k)").withEffectiveCardinality(100)
       .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
@@ -1273,7 +1273,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if property setNodePropertiesFromMap with dynamic map") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m")
-      .filter("n.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setNodePropertiesFromMap("n", "m", removeOtherProps = false).withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(100)
       .allNodeScan("n").withEffectiveCardinality(10)
@@ -1286,7 +1286,7 @@ class PushdownPropertyReadsTest
   test("should not pushdown if property setRelationshipPropertiesFromMap with dynamic map") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .filter("r.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(100)
+      .filter("r.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .setRelationshipPropertiesFromMap("r", "r2", removeOtherProps = false).withEffectiveCardinality(100)
       .expand("(m)-[r2]->(k)").withEffectiveCardinality(100)
       .expand("(n)-[r]->(m)").withEffectiveCardinality(20)
@@ -1476,7 +1476,7 @@ class PushdownPropertyReadsTest
       .produceResults("p1", "p2")
       .projection("a.prop1 AS p1", "a.prop2 AS p2").withEffectiveCardinality(10)
       .expandAll("(a)-->(b)").withEffectiveCardinality(50)
-      .filter("a.prop == 'NOT-IMPORTANT'").withEffectiveCardinality(9)
+      .filter("a.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(9)
       .allNodeScan("a").withEffectiveCardinality(10)
 
     val rewritten = PushdownPropertyReads.pushdown(planBuilder.build(), planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -1486,7 +1486,7 @@ class PushdownPropertyReadsTest
         .projection("a.prop1 AS p1", "a.prop2 AS p2")
         .expandAll("(a)-->(b)")
         .cacheProperties("a.prop1", "a.prop2")
-        .filter("a.prop == 'NOT-IMPORTANT'")
+        .filter("a.prop = 'NOT-IMPORTANT'")
         .allNodeScan("a")
         .build()
   }
