@@ -189,7 +189,7 @@ public class Location
          * When a location is {@link ExternalWithCredentials} we will look up specific credentials for that remote instance and use those, rather
          * than the credentials of the current authenticated user.
          */
-        public static class ExternalWithCredentials extends Remote
+        public static class ExternalWithCredentials extends External
         {
             private final String locationName;
 
