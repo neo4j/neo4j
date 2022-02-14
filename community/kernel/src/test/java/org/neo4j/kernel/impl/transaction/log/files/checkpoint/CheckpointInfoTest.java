@@ -24,26 +24,53 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 class CheckpointInfoTest
 {
     @Test
-    void checkpointInfoOfDetachedCheckpointEntry()
+    void checkpointInfoOfDetachedCheckpoint42Entry()
     {
         var logPosition = new LogPosition( 0, 1 );
         var storeId = new StoreId( 3, 4, 5 );
         LogPosition position = new LogPosition( 1, 2 );
         LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
         LogPosition postReaderPosition = new LogPosition( 5, 6 );
-        var checkpointInfo = new CheckpointInfo( new LogEntryDetachedCheckpointV4_2( KernelVersion.LATEST, logPosition, 2, storeId, "checkpoint" ), position,
-                positionAfterCheckpoint, postReaderPosition );
+        var checkpointInfo =
+                CheckpointInfo.ofLogEntry( new LogEntryDetachedCheckpointV4_2( KernelVersion.LATEST, logPosition, 2, storeId, "checkpoint" ), position,
+                        positionAfterCheckpoint, postReaderPosition );
 
         assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
         assertSame( storeId, checkpointInfo.storeId() );
         assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
+        assertSame( positionAfterCheckpoint, checkpointInfo.getChannelPositionAfterCheckpoint() );
+        assertSame( postReaderPosition, checkpointInfo.getCheckpointFilePostReadPosition() );
+        assertEquals( UNKNOWN_TRANSACTION_ID, checkpointInfo.getTransactionId() );
+    }
+
+    @Test
+    void checkpointInfoOfDetachedCheckpoint50Entry()
+    {
+        var logPosition = new LogPosition( 0, 1 );
+        var storeId = new StoreId( 3, 4, 5 );
+        LogPosition position = new LogPosition( 1, 2 );
+        LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
+        LogPosition postReaderPosition = new LogPosition( 5, 6 );
+        TransactionId transactionId = new TransactionId( 6, 7, 8 );
+        var checkpointInfo =
+                CheckpointInfo.ofLogEntry( new LogEntryDetachedCheckpointV5_0( KernelVersion.LATEST, transactionId, logPosition, 2, storeId, "checkpoint" ),
+                        position, positionAfterCheckpoint, postReaderPosition );
+
+        assertSame( logPosition, checkpointInfo.getTransactionLogPosition() );
+        assertSame( storeId, checkpointInfo.storeId() );
+        assertSame( position, checkpointInfo.getCheckpointEntryPosition() );
+        assertSame( transactionId, checkpointInfo.getTransactionId() );
         assertSame( positionAfterCheckpoint, checkpointInfo.getChannelPositionAfterCheckpoint() );
         assertSame( postReaderPosition, checkpointInfo.getCheckpointFilePostReadPosition() );
     }

@@ -30,6 +30,8 @@ import java.util.Arrays;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
@@ -41,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -49,10 +50,13 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static java.lang.Math.min;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
+import static org.neo4j.kernel.impl.transaction.log.entry.v42.DetachedCheckpointLogEntryParserV4_2.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -105,14 +109,8 @@ class DetachedCheckpointLogEntryParserV42Test
             StoreChannel storeChannel = fs.write( path );
             try ( PhysicalFlushableChecksumChannel writeChannel = new PhysicalFlushableChecksumChannel( storeChannel, buffer ) )
             {
-                MutableKernelVersionRepository kernelVersionProvider = new MutableKernelVersionRepository();
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriter( writeChannel, kernelVersionProvider );
-
-                kernelVersionProvider.setKernelVersion( KernelVersion.V4_4 );
-                writeCheckpoint( checkpointLogEntryWriter, StringUtils.repeat( "b", 1024 ) );
-
-                kernelVersionProvider.setKernelVersion( KernelVersion.V5_0 );
-                writeCheckpoint( checkpointLogEntryWriter, StringUtils.repeat( "c", 1024 ) );
+                writeCheckpoint( writeChannel, KernelVersion.V4_4, StringUtils.repeat( "b", 1024 ) );
+                writeCheckpoint( writeChannel, KernelVersion.V5_0, StringUtils.repeat( "c", 1024 ) );
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() );
@@ -131,28 +129,40 @@ class DetachedCheckpointLogEntryParserV42Test
         return (LogEntryDetachedCheckpointV4_2) entryReader.readLogEntry( readChannel );
     }
 
-    private static void writeCheckpoint( DetachedCheckpointLogEntryWriter checkpointLogEntryWriter, String reason ) throws IOException
+    private static void writeCheckpoint( WritableChecksumChannel channel, KernelVersion kernelVersion, String reason ) throws IOException
     {
         var storeId = new StoreId( 3, 4, 5 );
         var logPosition = new LogPosition( 1, 2 );
         var transactionId = new TransactionId( 100, 101, 102 );
 
-        checkpointLogEntryWriter.writeCheckPointEntry( transactionId, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
+        writeCheckPointEntry(channel, kernelVersion, transactionId, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
     }
 
-    private static class MutableKernelVersionRepository implements KernelVersionRepository
+    private static void writeCheckPointEntry( WritableChecksumChannel channel, KernelVersion kernelVersion, TransactionId transactionId,
+            LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason ) throws IOException
     {
-        private KernelVersion kernelVersion;
+        channel.beginChecksum();
+        writeLogEntryHeader( kernelVersion, DETACHED_CHECK_POINT, channel );
+        byte[] reasonBytes = reason.getBytes();
+        short length = safeCastIntToShort( min( reasonBytes.length, MAX_DESCRIPTION_LENGTH ) );
+        byte[] descriptionBytes = new byte[MAX_DESCRIPTION_LENGTH];
+        System.arraycopy( reasonBytes, 0, descriptionBytes, 0, length );
+        channel.putLong( logPosition.getLogVersion() )
+                .putLong( logPosition.getByteOffset() )
+                .putLong( checkpointTime.toEpochMilli() )
+                .putLong( storeId.getCreationTime() )
+                .putLong( storeId.getRandomId() )
+                .putLong( storeId.getStoreVersion() )
+                .putLong( transactionId.transactionId() )
+                .putInt( transactionId.checksum() )
+                .putLong( transactionId.commitTimestamp() )
+                .putShort( length )
+                .put( descriptionBytes, descriptionBytes.length );
+        channel.putChecksum();
+    }
 
-        @Override
-        public KernelVersion kernelVersion()
-        {
-            return kernelVersion;
-        }
-
-        public void setKernelVersion( KernelVersion kernelVersion )
-        {
-            this.kernelVersion = kernelVersion;
-        }
+    private static void writeLogEntryHeader( KernelVersion kernelVersion, byte type, WritableChannel channel ) throws IOException
+    {
+        channel.put( kernelVersion.version() ).put( type );
     }
 }

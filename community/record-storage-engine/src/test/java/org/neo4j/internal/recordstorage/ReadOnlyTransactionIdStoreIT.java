@@ -65,8 +65,8 @@ class ReadOnlyTransactionIdStoreIT
 
         // then
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-        assertThat( cursorTracer.pins() ).isEqualTo( 4 );
-        assertThat( cursorTracer.unpins() ).isEqualTo( 4 );
+        assertThat( cursorTracer.pins() ).isEqualTo( 5 );
+        assertThat( cursorTracer.unpins() ).isEqualTo( 5 );
         assertThat( cursorTracer.hits() ).isEqualTo( 0 );
     }
 }

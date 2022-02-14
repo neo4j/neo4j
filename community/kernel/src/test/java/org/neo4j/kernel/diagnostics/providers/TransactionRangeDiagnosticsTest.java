@@ -31,7 +31,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -119,10 +120,11 @@ class TransactionRangeDiagnosticsTest
         LogPosition checkpointLogPosition = new LogPosition( checkpointLogHighVersion, 34 );
         LogPosition afterCheckpointLogPosition = new LogPosition( checkpointLogHighVersion, 36 );
         LogPosition readerPostPosition = new LogPosition( checkpointLogHighVersion, 36 );
+        TransactionId transactionId = new TransactionId( 37, 38, 39 );
         Database database = databaseWithLogFilesContainingLowestTxId( logs(
                 transactionLogsWithTransaction( txLogLowVersion, txLogHighVersion, 42 ),
-                checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, new CheckpointInfo(
-                        new LogEntryDetachedCheckpointV4_2( KernelVersion.LATEST, checkpointLogPosition, 1234, storeId, "testing" ),
+                checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, CheckpointInfo.ofLogEntry(
+                        new LogEntryDetachedCheckpointV5_0( KernelVersion.LATEST, transactionId, checkpointLogPosition, 1234, storeId, "testing" ),
                         checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition ) ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog logger = logProvider.getLog( getClass() );

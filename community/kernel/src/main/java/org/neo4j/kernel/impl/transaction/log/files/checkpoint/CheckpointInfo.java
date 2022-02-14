@@ -56,14 +56,14 @@ public class CheckpointInfo
         }
     }
 
-    public CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
+    private CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )
     {
         this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
                 checkpoint.getVersion(), UNKNOWN_TRANSACTION_ID );
     }
 
-    public CheckpointInfo( LogEntryDetachedCheckpointV5_0 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
+    private CheckpointInfo( LogEntryDetachedCheckpointV5_0 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )
     {
         this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,

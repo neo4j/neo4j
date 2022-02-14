@@ -445,7 +445,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3, NULL_CONTEXT );
             metaDataStore.setRandomNumber( 4, NULL_CONTEXT );
             metaDataStore.setCurrentLogVersion( 5, NULL_CONTEXT );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 0, 0, 43, 44, NULL_CONTEXT );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 44, 45, 43, 44, NULL_CONTEXT );
             metaDataStore.setStoreVersion( recordVersion, NULL_CONTEXT );
 
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL_CONTEXT );
@@ -553,7 +553,7 @@ public class NeoStoresTest
             metaDataStore.setCreationTime( 3, NULL_CONTEXT );
             metaDataStore.setRandomNumber( 4, NULL_CONTEXT );
             metaDataStore.setCurrentLogVersion( 5, NULL_CONTEXT );
-            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 42, BASE_TX_COMMIT_TIMESTAMP, 43, 44, NULL_CONTEXT );
+            metaDataStore.setLastCommittedAndClosedTransactionId( 6, 44, 45, 43, 44, NULL_CONTEXT );
             metaDataStore.setStoreVersion( recordVersion, NULL_CONTEXT );
 
             metaDataStore.setLatestConstraintIntroducingTx( 9, NULL_CONTEXT );
@@ -612,7 +612,7 @@ public class NeoStoresTest
             // THEN
             assertEquals( new TransactionId( 42, 6666, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastCommittedTransaction() );
-            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), 6666, BASE_TX_COMMIT_TIMESTAMP ),
+            assertEquals( new ClosedTransactionMetadata( 40, new LogPosition( 0, CURRENT_FORMAT_LOG_HEADER_SIZE ), 4444, BASE_TX_COMMIT_TIMESTAMP ),
                     store.getLastClosedTransaction() );
         }
     }

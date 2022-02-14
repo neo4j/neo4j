@@ -38,6 +38,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -111,7 +113,7 @@ class CheckPointerIntegrationTest
         // The scheduled job checking whether or not checkpoints are needed runs more frequently
         // now that we've set the time interval so low, so we can simply wait for it here
         long endTime = currentTimeMillis() + SECONDS.toMillis( 30 );
-        while ( checkPointInTxLog( db ).isEmpty() )
+        while ( checkPointsInTxLog( db ).isEmpty() )
         {
             Thread.sleep( millis );
             assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
@@ -199,13 +201,13 @@ class CheckPointerIntegrationTest
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
         getCheckPointer( databaseAPI ).forceCheckPoint( new SimpleTriggerInfo( "given" ) );
 
-        var checkPointsBefore = checkPointInTxLog( db ).size();
+        var checkPointsBefore = checkPointsInTxLog( db ).size();
         // when
 
         // nothing happens
 
         triggerCheckPointAttempt( db );
-        assertThat( checkPointInTxLog( db ) ).hasSize( checkPointsBefore );
+        assertThat( checkPointsInTxLog( db ) ).hasSize( checkPointsBefore );
         managementService.shutdown();
 
         managementService = builder.build();
@@ -250,6 +252,38 @@ class CheckPointerIntegrationTest
     }
 
     @Test
+    void readTransactionInfoFromCheckpointRecord() throws IOException
+    {
+        var managementService = builder
+                .setConfig( check_point_interval_time, ofMillis( 0 ) )
+                .setConfig( check_point_interval_tx, 1 )
+                .setConfig( logical_log_rotation_threshold, gibiBytes( 1 ) ).build();
+        try
+        {
+            var databaseAPI = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            for ( int i = 0; i < 10; i++ )
+            {
+                try ( Transaction transaction = databaseAPI.beginTx() )
+                {
+                    transaction.createNode();
+                    transaction.commit();
+                }
+            }
+            var closedTxMetadata = getMetadataProvider( databaseAPI ).getLastClosedTransaction();
+            var lastClosedTxId = new TransactionId( closedTxMetadata.transactionId(), closedTxMetadata.checksum(), closedTxMetadata.commitTimestamp() );
+
+            getCheckPointer( databaseAPI ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
+            var checkpointInfos = checkPointsInTxLog( databaseAPI );
+            TransactionId lastCheckpointTxId = checkpointInfos.get( checkpointInfos.size() - 1 ).getTransactionId();
+            assertEquals( lastClosedTxId, lastCheckpointTxId );
+        }
+        finally
+        {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     void tracePageCacheAccessOnCheckpoint() throws Exception
     {
         var managementService = builder
@@ -284,16 +318,14 @@ class CheckPointerIntegrationTest
         getCheckPointer( (GraphDatabaseAPI) db ).checkPointIfNeeded( new SimpleTriggerInfo( "Test" ) );
     }
 
+    private MetadataProvider getMetadataProvider( GraphDatabaseAPI databaseAPI )
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( MetadataProvider.class );
+    }
+
     private static CheckPointer getCheckPointer( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( CheckPointer.class );
-    }
-
-    private static List<CheckpointInfo> checkPointInTxLog( GraphDatabaseService db ) throws IOException
-    {
-        DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-        LogFiles logFiles = dependencyResolver.resolveDependency( LogFiles.class );
-        return logFiles.getCheckpointFile().reachableCheckpoints();
     }
 
     private static List<CheckpointInfo> checkPointsInTxLog( GraphDatabaseService db ) throws IOException
