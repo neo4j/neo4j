@@ -123,7 +123,7 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     {
         committingTransactionId.set( transactionId );
         committedTransactionId.set( new TransactionId( transactionId, checksum, commitTimestamp ) );
-        closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset} );
+        closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     @Override

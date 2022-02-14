@@ -42,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -102,7 +103,7 @@ class InternalTransactionCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), any(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
     }
 
     @Test

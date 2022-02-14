@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.StoreId;
@@ -37,6 +38,23 @@ public class CheckpointInfo
     private final KernelVersion version;
     private final StoreId storeId;
     private final TransactionId transactionId;
+
+    public static CheckpointInfo ofLogEntry( LogEntry entry, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
+            LogPosition checkpointFilePostReadPosition )
+    {
+        if ( entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42 )
+        {
+            return new CheckpointInfo( checkpoint42, checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition );
+        }
+        else if ( entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50 )
+        {
+            return new CheckpointInfo( checkpoint50, checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "Expected to observe only checkpoint entries, but: `" + entry + "` was found." );
+        }
+    }
 
     public CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition )

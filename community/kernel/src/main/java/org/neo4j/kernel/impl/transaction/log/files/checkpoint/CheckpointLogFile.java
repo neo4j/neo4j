@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
@@ -130,8 +129,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     var lastCheckpointLocation = reader.getCurrentPosition();
                     while ( logEntryCursor.next() )
                     {
-                        LogEntry logEntry = logEntryCursor.get();
-                        var checkpoint = verify( logEntry );
+                        var checkpoint = logEntryCursor.get();
                         checkpointEntry = new CheckpointEntryInfo( checkpoint, lastCheckpointLocation, reader.getCurrentPosition() );
                         lastCheckpointLocation = reader.getCurrentPosition();
                     }
@@ -160,7 +158,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
     private CheckpointInfo createCheckpointInfo( CheckpointEntryInfo checkpointEntry, ReadAheadLogChannel reader ) throws IOException
     {
-        return new CheckpointInfo( checkpointEntry.checkpoint, checkpointEntry.checkpointEntryPosition, checkpointEntry.channelPositionAfterCheckpoint,
+        return CheckpointInfo.ofLogEntry( checkpointEntry.checkpoint, checkpointEntry.checkpointEntryPosition, checkpointEntry.channelPositionAfterCheckpoint,
                 reader.getCurrentPosition() );
     }
 
@@ -186,16 +184,15 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     var logEntryCursor = new LogEntryCursor( checkpointReader, reader ) )
             {
                 log.info( "Scanning log file with version %d for checkpoint entries", currentVersion );
-                LogEntryDetachedCheckpointV4_2 checkpoint;
+                LogEntry checkpoint;
                 var lastCheckpointLocation = reader.getCurrentPosition();
                 var lastLocation = lastCheckpointLocation;
                 while ( logEntryCursor.next() )
                 {
                     lastCheckpointLocation = lastLocation;
-                    LogEntry logEntry = logEntryCursor.get();
-                    checkpoint = verify( logEntry );
+                    checkpoint = logEntryCursor.get();
                     lastLocation = reader.getCurrentPosition();
-                    checkpoints.add( new CheckpointInfo( checkpoint, lastCheckpointLocation, lastLocation, lastLocation ) );
+                    checkpoints.add( CheckpointInfo.ofLogEntry( checkpoint, lastCheckpointLocation, lastLocation, lastLocation ) );
                 }
                 currentVersion++;
             }
@@ -257,18 +254,6 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         return TransactionLogFilesHelper.getLogVersion( checkpointLogFile );
     }
 
-    private static LogEntryDetachedCheckpointV4_2 verify( LogEntry logEntry )
-    {
-        if ( logEntry instanceof LogEntryDetachedCheckpointV4_2 )
-        {
-            return (LogEntryDetachedCheckpointV4_2) logEntry;
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Expected to observe only checkpoint entries, but: `" + logEntry + "` was found." );
-        }
-    }
-
     @Override
     public boolean rotationNeeded()
     {
@@ -316,9 +301,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         }
     }
 
-    //TODO:
-    private record CheckpointEntryInfo(LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition,
-                                       LogPosition channelPositionAfterCheckpoint)
+    private record CheckpointEntryInfo(LogEntry checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint)
     {
     }
 }
