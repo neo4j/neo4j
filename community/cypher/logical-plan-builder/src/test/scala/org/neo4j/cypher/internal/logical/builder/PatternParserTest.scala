@@ -70,11 +70,11 @@ class PatternParserTest extends CypherFunSuite with TestName {
   }
 
   test("(a)-[*]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "UNNAMED1", "b", VarPatternLength(0, None)))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq.empty, "UNNAMED1", "b", VarPatternLength(1, None)))
   }
 
   test("(a)-[:R*]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(0, None)))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(1, None)))
   }
 
   test("(a)-[:R*2]-(b)") {
@@ -86,7 +86,7 @@ class PatternParserTest extends CypherFunSuite with TestName {
   }
 
   test("(a)-[:R*..2]-(b)") {
-    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(0, Some(2))))
+    patternParser.parse(testName) should be(Pattern("a", BOTH, Seq(RelTypeName("R")(NONE)), "UNNAMED1", "b", VarPatternLength(1, Some(2))))
   }
 
   test("(a)-[:R*2..]-(b)") {

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 /**
  * Like SemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
  * executing right.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
  *     produce leftRow
@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *     }
  *   }
  * }
+ * }}}
  */
 case class SelectOrSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
   extends AbstractSelectOrSemiApply(left)(idGen) {
@@ -46,7 +47,7 @@ case class SelectOrSemiApply(override val left: LogicalPlan, override val right:
 /**
  * Like AntiSemiApply, but with a precondition 'expr'. If 'expr' is true, left row will be produced without
  * executing right.
- *
+ *{{{
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
  *     produce leftRow
@@ -57,6 +58,7 @@ case class SelectOrSemiApply(override val left: LogicalPlan, override val right:
  *     }
  *   }
  * }
+ *}}}
  */
 case class SelectOrAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, expression: Expression)(implicit idGen: IdGen)
   extends AbstractSelectOrSemiApply(left)(idGen) {
