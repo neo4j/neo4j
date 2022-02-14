@@ -116,6 +116,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.ProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectEndpointsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProjectionTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ProvidedOrderTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandFuzzTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ReactiveResultTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipCountFromCountStoreTestBase
@@ -192,6 +193,7 @@ class InterpretedOptionalExpandAllTest extends OptionalExpandAllTestBase(COMMUNI
 class InterpretedOptionalExpandIntoTest extends OptionalExpandIntoTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedPruningVarExpandTest extends PruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedPruningVarExpandFuzzTest extends PruningVarLengthExpandFuzzTestBase(COMMUNITY.EDITION, InterpretedRuntime)
 class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
