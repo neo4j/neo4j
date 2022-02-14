@@ -53,7 +53,6 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -73,6 +72,7 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -182,7 +182,7 @@ abstract class OperationsTest
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext, storageLocks,
                 transaction, new KernelToken( storageReader, creationContext, transaction, tokenHolders ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE,
-                () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ) );
+                KernelVersionRepository.LATEST, mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL_CONTEXT );
 
         this.order = inOrder( locks, txState, storageReader, storageReaderSnapshot, creationContext, storageLocks );

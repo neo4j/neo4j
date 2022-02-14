@@ -42,8 +42,6 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -57,6 +55,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -65,7 +64,6 @@ import org.neo4j.test.utils.TestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -230,7 +228,7 @@ class TransactionLogChannelAllocatorIT
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 nativeAccess, INSTANCE, new Monitors(), true,
-                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST,
+                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), KernelVersionRepository.LATEST,
                 Clock.systemUTC(), DEFAULT_DATABASE_NAME, config, null );
     }
 

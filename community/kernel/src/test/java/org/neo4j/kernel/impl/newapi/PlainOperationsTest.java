@@ -56,7 +56,6 @@ import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -71,6 +70,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
@@ -913,7 +913,7 @@ public class PlainOperationsTest extends OperationsTest
         Operations operations =
                 new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
                         mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, KernelVersionRepository.LATEST,
                         mock( DbmsRuntimeRepository.class ) );
 
         // when
@@ -945,7 +945,7 @@ public class PlainOperationsTest extends OperationsTest
         Operations operations =
                 new Operations( mock( AllStoreHolder.class ), mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
                         mock( StorageLocks.class ), ktx, mock( KernelToken.class ), cursors, mock( ConstraintIndexCreator.class ),
-                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                        mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, KernelVersionRepository.LATEST,
                         mock( DbmsRuntimeRepository.class ) );
         operations.initialize( NULL_CONTEXT );
 
@@ -975,7 +975,7 @@ public class PlainOperationsTest extends OperationsTest
         when( allStoreHolder.nodeExists( anyLong() ) ).thenReturn( true );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
                 mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults(), INSTANCE, KernelVersionRepository.LATEST,
                 mock( DbmsRuntimeRepository.class ) );
 
         // when
@@ -1007,7 +1007,7 @@ public class PlainOperationsTest extends OperationsTest
         when( allStoreHolder.constraintsGetForSchema( any() ) ).thenReturn( Iterators.emptyResourceIterator() );
         Operations operations = new Operations( allStoreHolder, mock( StorageReader.class ), mock( IndexTxStateUpdater.class ), commandCreationContext,
                 mock( StorageLocks.class ), ktx, mock( KernelToken.class ), mock( DefaultPooledCursors.class ), mock( ConstraintIndexCreator.class ),
-                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, () -> KernelVersion.LATEST,
+                mock( ConstraintSemantics.class ), indexingProvidersService, Config.defaults(), INSTANCE, KernelVersionRepository.LATEST,
                 mock( DbmsRuntimeRepository.class ) );
 
         // when

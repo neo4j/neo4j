@@ -39,11 +39,11 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -86,7 +86,8 @@ class SchemaStorageTest
                         pageCache, fs, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
         neoStores = storeFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN,
             StoreType.RELATIONSHIP_TYPE_TOKEN );
-        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, StoreCursors.NULL ), () -> KernelVersion.LATEST );
+        storage = new SchemaStorage( neoStores.getSchemaStore(), StoreTokens.readOnlyTokenHolders( neoStores, StoreCursors.NULL ),
+                KernelVersionRepository.LATEST );
     }
 
     @AfterEach

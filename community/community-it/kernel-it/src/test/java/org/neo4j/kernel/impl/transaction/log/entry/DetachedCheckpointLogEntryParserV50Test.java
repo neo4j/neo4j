@@ -45,8 +45,8 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
@@ -105,7 +105,9 @@ class DetachedCheckpointLogEntryParserV50Test
                     new PhysicalLogVersionedStoreChannel( fs.read( path ), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL ),
                     NO_MORE_CHANNELS, INSTANCE ) )
             {
-                assertThrows( IOException.class, () -> readCheckpoint( entryReader, readChannel ) );
+                // TODO: misha+upgrade-cleanup now we moved version parser to older version so we do not fail temporary
+//                assertThrows( IOException.class, () -> readCheckpoint( entryReader, readChannel ) );
+                assertDoesNotThrow( () -> readCheckpoint( entryReader, readChannel ) );
             }
         }
     }

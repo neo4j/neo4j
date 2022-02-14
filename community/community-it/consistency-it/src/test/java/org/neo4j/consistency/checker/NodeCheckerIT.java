@@ -41,12 +41,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
@@ -132,8 +132,8 @@ class NodeCheckerIT
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             Iterable<IndexDescriptor> indexDescriptors =
-                    () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAll(
-                            storeCursors );
+                    () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST )
+                            .indexesGetAll( storeCursors );
             var indexAccessors =
                     new IndexAccessors( providerMap, cursorContext -> asResourceIterator( indexDescriptors.iterator() ), new IndexSamplingConfig( config ),
                             tokenHolders, contextFactory );

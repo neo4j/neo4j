@@ -77,7 +77,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -379,7 +378,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
             stores.start( cursorContext );
             TokenHolders tokenHolders = loadReadOnlyTokens( stores, lenient, contextFactory );
             List<SchemaRule> rules = new ArrayList<>();
-            SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST );
+            SchemaStorage storage = new SchemaStorage( stores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST );
             if ( lenient )
             {
                 storage.getAllIgnoreMalformed( storeCursors ).forEach( rules::add );
@@ -558,7 +557,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContextFactory contextFactory,
             MemoryTracker memoryTracker )
     {
-        return createMigrationTargetSchemaRuleAccess( stores, contextFactory, memoryTracker, () -> KernelVersion.LATEST );
+        return createMigrationTargetSchemaRuleAccess( stores, contextFactory, memoryTracker, KernelVersionRepository.LATEST );
     }
 
     @Override

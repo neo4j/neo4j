@@ -65,7 +65,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -91,6 +90,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -272,8 +272,8 @@ class CheckerTestBase
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )
         {
             return Iterators.asCollection(
-                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, () -> KernelVersion.LATEST ).indexesGetAllIgnoreMalformed(
-                            storeCursors ) );
+                    SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST )
+                            .indexesGetAllIgnoreMalformed( storeCursors ) );
         }
     }
 

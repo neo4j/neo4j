@@ -48,7 +48,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
@@ -76,6 +75,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -195,7 +195,7 @@ class KernelTransactionTestBase
                                                     new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                                                     mock( IndexingService.class ), mock( IndexStatisticsStore.class ), dependencies, databaseId,
                                                     leaseService, memoryPool, readOnlyChecker.forDatabase( databaseId ),
-                                                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
+                                                    TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, KernelVersionRepository.LATEST,
                                                     mock( DbmsRuntimeRepository.class ), locksClient, mock( KernelTransactions.class )
         );
     }

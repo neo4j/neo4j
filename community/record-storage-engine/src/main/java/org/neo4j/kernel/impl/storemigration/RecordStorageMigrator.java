@@ -95,6 +95,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -788,7 +789,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
             {
                 schemaStore = store.getSchemaStore();
-                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
+                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders, KernelVersionRepository.LATEST );
             }
 
             @Override

@@ -46,12 +46,12 @@ import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -104,7 +104,7 @@ class SchemaStorageIT
         }
         storageCursors = storageEngine.createStorageCursors( NULL_CONTEXT );
         schemaStore = storageEngine.testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
+        storage = new SchemaStorage( schemaStore, tokenHolders, KernelVersionRepository.LATEST );
     }
 
     @Test

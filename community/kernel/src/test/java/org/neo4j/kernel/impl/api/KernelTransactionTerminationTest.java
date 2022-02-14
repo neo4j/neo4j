@@ -42,7 +42,6 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -311,7 +311,7 @@ class KernelTransactionTerminationTest
                    mockedTokenHolders(), mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), dependencies, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                    LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
-                   TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST, mock( DbmsRuntimeRepository.class ),
+                   TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, KernelVersionRepository.LATEST, mock( DbmsRuntimeRepository.class ),
                    new NoOpClient(), mock( KernelTransactions.class ) );
 
             this.monitor = monitor;

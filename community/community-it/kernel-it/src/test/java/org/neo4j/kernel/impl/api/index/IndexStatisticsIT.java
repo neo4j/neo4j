@@ -38,7 +38,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -97,7 +97,7 @@ class IndexStatisticsIT
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ),
-                        () -> KernelVersion.LATEST );
+                        KernelVersionRepository.LATEST );
         long indexId = single( loadIndexes( index, schemaRuleAccess ) ).getId();
 
         // for which we don't have index counts

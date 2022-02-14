@@ -83,7 +83,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -127,6 +126,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.EntityTokenUpdate;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.string.UTF8;
@@ -3237,7 +3237,7 @@ public class FullCheckIntegrationTest
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders(),
-                () -> KernelVersion.LATEST );
+                KernelVersionRepository.LATEST );
         schemaRuleAccess.writeSchemaRule( rule, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors() );
     }
 

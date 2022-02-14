@@ -55,7 +55,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -91,6 +90,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -727,7 +727,7 @@ class KernelTransactionsTest
         return new KernelTransactions( config, locks, null,
                 commitProcess, mock( DatabaseTransactionEventListeners.class ),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, storageEngine, mock( GlobalProcedures.class ), transactionIdStore,
-                mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
+                mock( DbmsRuntimeRepository.class ), KernelVersionRepository.LATEST, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 any -> CanWrite.INSTANCE, new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ), ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
@@ -799,7 +799,7 @@ class KernelTransactionsTest
         {
             super( Config.defaults(), locks, constraintIndexCreator,
                    transactionCommitProcess, eventListeners, transactionMonitor, databaseAvailabilityGuard,
-                   storageEngine, globalProcedures, transactionIdStore, mock( DbmsRuntimeRepository.class ), () -> KernelVersion.LATEST, clock,
+                   storageEngine, globalProcedures, transactionIdStore, mock( DbmsRuntimeRepository.class ), KernelVersionRepository.LATEST, clock,
                    new AtomicReference<>( CpuClock.NOT_AVAILABLE ), accessCapabilityFactory,
                    contextFactory, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),

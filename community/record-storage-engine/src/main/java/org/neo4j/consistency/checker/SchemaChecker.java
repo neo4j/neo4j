@@ -49,7 +49,6 @@ import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.storable.Value;
@@ -117,7 +117,7 @@ class SchemaChecker
             // not be found when going through the file in performSchemaCheck anyway so we can use latest KernelVersion here.
             // If an injected NLI exist but is not online that will not be reported, but this is an unlikely corner case that we
             // ignore. The index itself will be checked as long as it is online (it is found by IndexAccessors).
-            SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders, () -> KernelVersion.LATEST );
+            SchemaStorage schemaStorage = new SchemaStorage( schemaStore, tokenHolders, KernelVersionRepository.LATEST );
             // Build map of obligations and such
             buildObligationsMap( highId, schemaReader, schemaStorage, indexObligations, constraintObligations, verifiedRulesWithRecords, storeCursors );
 

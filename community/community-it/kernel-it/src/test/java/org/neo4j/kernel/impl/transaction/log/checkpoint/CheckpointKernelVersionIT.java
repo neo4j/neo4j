@@ -48,17 +48,12 @@ public class CheckpointKernelVersionIT
     @Test
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException
     {
-        ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V4_2, NULL_CONTEXT );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Forced 4.2" ) );
-        ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V4_4, NULL_CONTEXT );
-        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Forced 4.4" ) );
+        // we can't test any earlier version since those version do not support new format of checkpoint commands so its impossible to read them back
         ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V5_0, NULL_CONTEXT );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Forced 5.0" ) );
 
         List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();
-        assertThat( checkpointInfos ).hasSize( 3 );
-        assertThat( checkpointInfos.get( 0 ).getVersion() ).isEqualTo( KernelVersion.V4_2 );
-        assertThat( checkpointInfos.get( 1 ).getVersion() ).isEqualTo( KernelVersion.V4_4 );
-        assertThat( checkpointInfos.get( 2 ).getVersion() ).isEqualTo( KernelVersion.V5_0 );
+        assertThat( checkpointInfos ).hasSize( 1 );
+        assertThat( checkpointInfos.get( 0 ).getVersion() ).isEqualTo( KernelVersion.V5_0 );
     }
 }

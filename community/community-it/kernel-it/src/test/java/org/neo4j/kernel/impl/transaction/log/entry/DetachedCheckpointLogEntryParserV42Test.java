@@ -45,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -133,12 +132,11 @@ class DetachedCheckpointLogEntryParserV42Test
     {
         var storeId = new StoreId( 3, 4, 5 );
         var logPosition = new LogPosition( 1, 2 );
-        var transactionId = new TransactionId( 100, 101, 102 );
 
-        writeCheckPointEntry(channel, kernelVersion, transactionId, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
+        writeCheckPointEntry(channel, kernelVersion, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
     }
 
-    private static void writeCheckPointEntry( WritableChecksumChannel channel, KernelVersion kernelVersion, TransactionId transactionId,
+    private static void writeCheckPointEntry( WritableChecksumChannel channel, KernelVersion kernelVersion,
             LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason ) throws IOException
     {
         channel.beginChecksum();
@@ -153,11 +151,9 @@ class DetachedCheckpointLogEntryParserV42Test
                 .putLong( storeId.getCreationTime() )
                 .putLong( storeId.getRandomId() )
                 .putLong( storeId.getStoreVersion() )
-                .putLong( transactionId.transactionId() )
-                .putInt( transactionId.checksum() )
-                .putLong( transactionId.commitTimestamp() )
-                .putShort( length )
-                .put( descriptionBytes, descriptionBytes.length );
+                .putLong( 0 )
+                .putLong( 0 );
+        channel.putShort( length ).put( descriptionBytes, descriptionBytes.length );
         channel.putChecksum();
     }
 
