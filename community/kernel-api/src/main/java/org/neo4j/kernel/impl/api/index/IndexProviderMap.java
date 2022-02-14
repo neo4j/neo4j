@@ -79,9 +79,9 @@ public interface IndexProviderMap extends IndexConfigCompleter
     IndexProvider getTextIndexProvider();
 
     /**
-     * The preferred {@link IndexProvider} for handling range indexes.
+     * The preferred {@link IndexProvider} for handling btree indexes.
      */
-    IndexProvider getRangeIndexProvider();
+    IndexProvider getBtreeIndexProvider();
 
     /**
      * The preferred {@link IndexProvider} for handling point indexes.
@@ -140,7 +140,7 @@ public interface IndexProviderMap extends IndexConfigCompleter
         }
 
         @Override
-        public IndexProvider getRangeIndexProvider()
+        public IndexProvider getBtreeIndexProvider()
         {
             return IndexProvider.EMPTY;
         }

@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.io.pagecache.PageCache;
@@ -54,7 +54,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @DbmsExtension( configurationCallback = "configure" )
@@ -66,7 +65,6 @@ public abstract class StringLengthIndexValidationIT
     private final AtomicBoolean trapPopulation = new AtomicBoolean();
     private final Barrier.Control populationScanFinished = new Barrier.Control();
     private int singleKeySizeLimit;
-    private final GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
 
     @Inject
     private GraphDatabaseAPI db;
@@ -80,7 +78,9 @@ public abstract class StringLengthIndexValidationIT
     // Each char in string need to fit in one byte
     protected abstract String getString( RandomSupport random, int keySize );
 
-    protected abstract GraphDatabaseSettings.SchemaIndex getSchemaIndex();
+    protected abstract IndexType getIndexType();
+
+    protected abstract String getIndexProviderString();
 
     protected abstract String expectedPopulationFailureCauseMessage( long indexId, long entityId );
 
@@ -107,13 +107,12 @@ public abstract class StringLengthIndexValidationIT
         };
         monitors.addMonitorListener( trappingMonitor );
         builder.setMonitors( monitors );
-        builder.setConfig( default_schema_provider, schemaIndex.providerName() );
     }
 
     @Test
     void shouldSuccessfullyWriteAndReadWithinIndexKeySizeLimit()
     {
-        createIndex( propKey );
+        createAndAwaitIndex();
         String propValue = getString( random, singleKeySizeLimit );
         long expectedNodeId;
 
@@ -134,7 +133,7 @@ public abstract class StringLengthIndexValidationIT
         expectedNodeId = createNode( propValue );
 
         // Populate
-        createIndex( propKey );
+        createAndAwaitIndex();
 
         // Read
         assertReadNode( propValue, expectedNodeId );
@@ -143,7 +142,7 @@ public abstract class StringLengthIndexValidationIT
     @Test
     void txMustFailIfExceedingIndexKeySizeLimit()
     {
-        long indexId = createIndex( propKey );
+        long indexId = createAndAwaitIndex();
         long nodeId;
 
         // Write
@@ -156,8 +155,8 @@ public abstract class StringLengthIndexValidationIT
             IllegalArgumentException e = assertThrows( IllegalArgumentException.class, () -> node.setProperty( propKey, propValue ) );
             assertThat( e.getMessage() ).contains( String.format(
                     "Property value is too large to index, please see index documentation for limitations. " +
-                    "Index: Index( id=%d, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
-                    indexId, schemaIndex.providerName(), nodeId ) );
+                    "Index: Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' ), entity id: %d",
+                    indexId, getIndexType(), getIndexProviderString(), nodeId ) );
         }
     }
 
@@ -169,13 +168,7 @@ public abstract class StringLengthIndexValidationIT
         long nodeId = createNode( propValue );
 
         // Create index should be fine
-        long indexId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            var index = tx.schema().indexFor( LABEL_ONE ).on( propKey ).create();
-            indexId = getIndexIdFrom( index );
-            tx.commit();
-        }
+        long indexId = createIndex();
         assertIndexFailToComeOnline( indexId, nodeId );
         assertIndexInFailedState( indexId, nodeId );
     }
@@ -191,11 +184,7 @@ public abstract class StringLengthIndexValidationIT
         }
 
         // Create index should be fine
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL_ONE ).on( propKey ).create();
-            tx.commit();
-        }
+        createIndex();
 
         // Wait for index population to start
         populationScanFinished.await();
@@ -228,13 +217,7 @@ public abstract class StringLengthIndexValidationIT
         }
 
         // Create index should be fine
-        long indexId;
-        try ( Transaction tx = db.beginTx() )
-        {
-            var index = tx.schema().indexFor( LABEL_ONE ).on( propKey ).create();
-            indexId = getIndexIdFrom( index );
-            tx.commit();
-        }
+        long indexId = createIndex();
 
         // Wait for index population to start
         populationScanFinished.await();
@@ -262,12 +245,11 @@ public abstract class StringLengthIndexValidationIT
             }
         } );
 
-        GraphDatabaseSettings.SchemaIndex schemaIndex = getSchemaIndex();
         assertThat( e.getMessage() ).contains(
                 String.format( "Index IndexDefinition[label:LABEL_ONE on:largeString] " +
-                               "(Index( id=%d, name='index_71616483', type='GENERAL BTREE', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
+                               "(Index( id=%d, name='coolName', type='GENERAL %s', schema=(:LABEL_ONE {largeString}), indexProvider='%s' )) " +
                                "entered a FAILED state.",
-                        indexId, schemaIndex.providerName() ),
+                        indexId, getIndexType(), getIndexProviderString() ),
                 expectedPopulationFailureCauseMessage( indexId, entityId ) );
     }
 
@@ -289,7 +271,7 @@ public abstract class StringLengthIndexValidationIT
     void shouldHandleSizesCloseToTheLimit()
     {
         // given
-        createIndex( propKey );
+        createAndAwaitIndex();
 
         // when
         Map<String,Long> strings = new HashMap<>();
@@ -323,23 +305,25 @@ public abstract class StringLengthIndexValidationIT
         }
     }
 
-    private long createIndex( String... keys )
+    private long createAndAwaitIndex()
+    {
+        long indexId;
+        indexId = createIndex();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, MINUTES );
+            tx.commit();
+        }
+        return indexId;
+    }
+
+    private long createIndex()
     {
         long indexId;
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE );
-            for ( String key : keys )
-            {
-                indexCreator = indexCreator.on( key );
-            }
-            var index = indexCreator.create();
+            var index = tx.schema().indexFor( LABEL_ONE ).on( propKey ).withIndexType( getIndexType() ).withName( "coolName" ).create();
             indexId = getIndexIdFrom( index );
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().awaitIndexesOnline( 2, MINUTES );
             tx.commit();
         }
         return indexId;

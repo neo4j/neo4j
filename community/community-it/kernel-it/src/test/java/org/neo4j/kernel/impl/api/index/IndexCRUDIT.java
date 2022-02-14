@@ -33,6 +33,8 @@ import java.util.Set;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -66,7 +69,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -180,7 +182,6 @@ class IndexCRUDIT
                 .addExtension( mockedIndexProviderFactory )
                 .noOpSystemGraphInitializer()
                 .impermanent()
-                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
                 .build();
 
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -269,11 +270,11 @@ class IndexCRUDIT
         }
     }
 
-    private static void createIndex( GraphDatabaseAPI db, Label label, String property )
+    private static void createIndex( GraphDatabaseAPI db, Label label, String property ) throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            tx.schema().indexFor( label ).on( property ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, PROVIDER_DESCRIPTOR, label, property );
             tx.commit();
         }
 

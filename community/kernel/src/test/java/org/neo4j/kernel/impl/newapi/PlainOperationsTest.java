@@ -894,9 +894,9 @@ public class PlainOperationsTest extends OperationsTest
         assertThat( indexDescriptors[0].getId() ).as( indexDescriptors[0].toString() ).isEqualTo( 1L );
         assertThat( indexDescriptors[1].getId() ).as( indexDescriptors[1].toString() ).isEqualTo( 2L );
         assertThat( indexDescriptors[2].getId() ).as( indexDescriptors[2].toString() ).isEqualTo( 3L );
-        assertThat( indexDescriptors[0].getName() ).as( indexDescriptors[0].toString() ).isEqualTo( "index_5c81a58e" );
+        assertThat( indexDescriptors[0].getName() ).as( indexDescriptors[0].toString() ).isEqualTo( "index_b5ad8e5c" );
         assertThat( indexDescriptors[1].getName() ).as( indexDescriptors[1].toString() ).isEqualTo( "index_2813986a" );
-        assertThat( indexDescriptors[2].getName() ).as( indexDescriptors[2].toString() ).isEqualTo( "index_edb2dfd3" );
+        assertThat( indexDescriptors[2].getName() ).as( indexDescriptors[2].toString() ).isEqualTo( "index_b6cde845" );
     }
 
     @Test

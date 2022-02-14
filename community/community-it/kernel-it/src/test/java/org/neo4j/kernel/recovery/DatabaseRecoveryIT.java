@@ -56,8 +56,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -70,6 +73,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -80,6 +84,7 @@ import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -124,7 +129,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -339,10 +343,17 @@ class DatabaseRecoveryIT
         Label label = TestLabels.LABEL_ONE;
         String key1 = "key1";
         String key2 = "key2";
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            tx.schema().indexFor( label ).on( key1 ).create();
-            tx.schema().indexFor( label ).on( key1 ).on( key2 ).create();
+            KernelTransaction kernelTransaction = tx.kernelTransaction();
+            TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+            int labelId = tokenWrite.labelGetOrCreateForName( TestLabels.LABEL_ONE.name() );
+            int key1Id = tokenWrite.propertyKeyGetOrCreateForName( key1 );
+            int key2Id = tokenWrite.propertyKeyGetOrCreateForName( key2 );
+            kernelTransaction.schemaWrite().indexCreate(
+                    IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, key1Id ), updateCapturingIndexProvider.getProviderDescriptor() ) );
+            kernelTransaction.schemaWrite().indexCreate(
+                    IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, key1Id, key2Id ), updateCapturingIndexProvider.getProviderDescriptor() ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -886,7 +897,6 @@ class DatabaseRecoveryIT
                 .addExtension( new IndexExtensionFactory( indexProvider ) )
                 .impermanent()
                 .noOpSystemGraphInitializer()
-                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
                 .build();
 
         return (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );

@@ -34,10 +34,11 @@ import java.util.concurrent.Semaphore;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -55,6 +56,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -85,7 +87,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
@@ -144,7 +145,7 @@ class IndexRecoveryIT
                     .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createSomeData();
-            createIndex( myLabel );
+            createIndex();
 
             // And Given
             killFuture = killDbInSeparateThread();
@@ -194,7 +195,7 @@ class IndexRecoveryIT
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws IOException, ExecutionException, InterruptedException
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndex() throws IOException, ExecutionException, InterruptedException, KernelException
     {
         // Given
         Semaphore populationSemaphore = new Semaphore( 1 );
@@ -206,7 +207,7 @@ class IndexRecoveryIT
                     .getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createSomeData();
-            createIndex( myLabel );
+            createIndex();
 
             // And Given
             Future<Void> killFuture = killDbInSeparateThread();
@@ -261,7 +262,7 @@ class IndexRecoveryIT
                 .thenReturn( SwallowingIndexUpdater.INSTANCE );
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( mockedAccessor );
-        createIndexAndAwaitPopulation( myLabel );
+        createIndexAndAwaitPopulation();
         // rotate logs
         rotateLogsAndCheckPoint();
         // make updates
@@ -303,7 +304,7 @@ class IndexRecoveryIT
         when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
                 .thenReturn( indexAccessor );
         startDb();
-        createIndex( myLabel );
+        createIndex();
         rotateLogsAndCheckPoint();
 
         // And Given
@@ -337,7 +338,6 @@ class IndexRecoveryIT
                 .addExtension( mockedIndexProviderFactory )
                 .noOpSystemGraphInitializer()
                 .setMonitors( monitors )
-                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() )
                 .build();
 
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
@@ -406,21 +406,21 @@ class IndexRecoveryIT
         }
     }
 
-    private void createIndexAndAwaitPopulation( Label label )
+    private void createIndexAndAwaitPopulation() throws KernelException
     {
-        IndexDefinition index = createIndex( label );
+        IndexDescriptor index = createIndex();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexOnline( index, 1, MINUTES );
+            tx.schema().awaitIndexOnline( index.getName(), 1, MINUTES );
             tx.commit();
         }
     }
 
-    private IndexDefinition createIndex( Label label )
+    private IndexDescriptor createIndex() throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( label ).on( key ).create();
+            IndexDescriptor index = IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, PROVIDER_DESCRIPTOR, myLabel, key );
             tx.commit();
             return index;
         }

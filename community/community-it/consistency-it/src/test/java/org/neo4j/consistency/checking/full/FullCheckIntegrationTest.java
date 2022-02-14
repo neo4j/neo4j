@@ -151,6 +151,7 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistence
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -2881,17 +2882,17 @@ public class FullCheckIntegrationTest
                 // Create indexes
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).withIndexType( RANGE ).create();
-                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).create();
+                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
 
-                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
+                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).withIndexType( RANGE ).create();
 
-                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).create();
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( RANGE ).create();
-                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).create();
+                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
                     tx.commit();
                 }

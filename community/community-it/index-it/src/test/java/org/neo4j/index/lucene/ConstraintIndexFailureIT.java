@@ -20,25 +20,23 @@
 package org.neo4j.index.lucene;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.nio.file.Path;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.BuiltInDelegatingIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -51,11 +49,8 @@ import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProvid
 import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.INITIAL_STATE_FAILURE_MESSAGE;
 
 @TestDirectoryExtension
-@ExtendWith( RandomExtension.class )
 class ConstraintIndexFailureIT
 {
-    @Inject
-    private RandomSupport random;
     @Inject
     private TestDirectory directory;
 
@@ -66,14 +61,13 @@ class ConstraintIndexFailureIT
         Path dir = directory.homePath();
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( dir )
                 // use delegating index provider with custom descriptor, so it can be replaced with failing provider
-                .addExtension( new BuiltInDelegatingIndexProviderFactory( new GenericNativeIndexProviderFactory(), DESCRIPTOR ) )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, DESCRIPTOR.name() )
+                .addExtension( new BuiltInDelegatingIndexProviderFactory( new RangeIndexProviderFactory(), DESCRIPTOR ) )
                 .noOpSystemGraphInitializer()
                 .build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            tx.schema().constraintFor( label( "Label1" ) ).assertPropertyIsUnique( "key1" ).create();
+            IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider( tx, DESCRIPTOR, label( "Label1" ), "key1" );
             tx.commit();
         }
         finally
@@ -84,8 +78,7 @@ class ConstraintIndexFailureIT
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
         FileUtils.deleteDirectory( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
         managementService = new TestDatabaseManagementServiceBuilder( dir )
-                .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, DESCRIPTOR.name() )
+                .addExtension( new FailingGenericNativeIndexProviderFactory( new RangeIndexProviderFactory(), INITIAL_STATE ) )
                 .noOpSystemGraphInitializer()
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );

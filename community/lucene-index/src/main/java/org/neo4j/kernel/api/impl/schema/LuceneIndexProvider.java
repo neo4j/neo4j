@@ -56,6 +56,12 @@ public class LuceneIndexProvider extends AbstractLuceneIndexProvider
         return index.getCapability().equals( NO_CAPABILITY ) ? index.withIndexCapability( CAPABILITY ) : index;
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.BTREE;
+    }
+
     public static class LuceneIndexCapability implements IndexCapability
     {
 

@@ -25,6 +25,7 @@ import java.util.Optional;
 import org.neo4j.common.TokenNameLookup;
 
 import static org.neo4j.internal.schema.IndexType.BTREE;
+import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 /**
@@ -41,22 +42,22 @@ public class IndexPrototype implements IndexRef<IndexPrototype>
 
     public static IndexPrototype forSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null, BTREE, IndexConfig.empty() );
+        return new IndexPrototype( schema, false, IndexProviderDescriptor.UNDECIDED, null, RANGE, IndexConfig.empty() );
     }
 
     public static IndexPrototype forSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, false, indexProvider, null, BTREE, IndexConfig.empty() );
+        return new IndexPrototype( schema, false, indexProvider, null, RANGE, IndexConfig.empty() );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema )
     {
-        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null, BTREE, IndexConfig.empty() );
+        return new IndexPrototype( schema, true, IndexProviderDescriptor.UNDECIDED, null, RANGE, IndexConfig.empty() );
     }
 
     public static IndexPrototype uniqueForSchema( SchemaDescriptor schema, IndexProviderDescriptor indexProvider )
     {
-        return new IndexPrototype( schema, true, indexProvider, null, BTREE, IndexConfig.empty() );
+        return new IndexPrototype( schema, true, indexProvider, null, RANGE, IndexConfig.empty() );
     }
 
     private IndexPrototype( SchemaDescriptor schema, boolean isUnique, IndexProviderDescriptor indexProvider, String name, IndexType indexType,

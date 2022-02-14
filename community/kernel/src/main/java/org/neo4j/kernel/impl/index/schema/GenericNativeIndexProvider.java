@@ -219,6 +219,12 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         }
     }
 
+    @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.BTREE;
+    }
+
     private static class GenericIndexCapability implements IndexCapability
     {
         private final IndexBehaviour[] behaviours = {IndexBehaviour.SLOW_CONTAINS};

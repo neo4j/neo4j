@@ -182,8 +182,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       })
 
     // CREATE INDEX ON :LABEL(prop)
-    // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-    // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
+    // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+    // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateBtreeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
@@ -200,8 +200,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
 
-    // CREATE RANGE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-    // CREATE RANGE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
+    // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
+    // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateRangeIndex(source, entityName, props, name, options) => context =>
       SchemaExecutionPlan("CreateIndex", (ctx, params) => {
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
@@ -330,6 +330,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         def assertIndexBackedOptionsAndCheckIfRangeBacked(constraintType: String) =
           IndexBackedConstraintsOptionsConverter(constraintType).convert(options, params) match {
             case Some(CreateIndexWithStringProviderOptions(Some(provider), _)) => provider.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name())
+            case None => true // range index-backed by default
             case _ => false
           }
 

@@ -56,7 +56,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final IndexProvider pointIndexProvider;
     private final Config config;
     private final DependencyResolver dependencies;
-    private volatile IndexProvider defaultIndexProvider;
+    private volatile IndexProvider btreeDefaultIndexProvider;
 
     public StaticIndexProviderMap( TokenIndexProvider tokenIndexProvider, GenericNativeIndexProvider btreeIndexProvider,
                                    FusionIndexProvider fusionIndexProvider, TextIndexProvider textIndexProvider,
@@ -85,13 +85,13 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         add( rangeIndexProvider );
         add( pointIndexProvider );
         dependencies.resolveTypeDependencies( IndexProvider.class ).forEach( this::add );
-        this.defaultIndexProvider = selectDefaultProvider( config );
+        this.btreeDefaultIndexProvider = selectBtreeDefaultProvider( config );
     }
 
     @Override
     public IndexProvider getDefaultProvider()
     {
-        return defaultIndexProvider;
+        return rangeIndexProvider;
     }
 
     @Override
@@ -113,9 +113,9 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     @Override
-    public IndexProvider getRangeIndexProvider()
+    public IndexProvider getBtreeIndexProvider()
     {
-        return rangeIndexProvider;
+        return btreeDefaultIndexProvider;
     }
 
     @Override
@@ -153,7 +153,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
             throw new IndexProviderNotFoundException( "Tried to get index provider with name " + providerDescriptorName +
                                                       " whereas available providers in this session being " + indexProvidersByName.keySet() +
                                                       ", and default being " +
-                                                      defaultIndexProvider.getProviderDescriptor().name() );
+                                                      rangeIndexProvider.getProviderDescriptor().name() );
         }
     }
 
@@ -177,7 +177,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
     }
 
-    private IndexProvider selectDefaultProvider( Config config )
+    private IndexProvider selectBtreeDefaultProvider( Config config )
     {
         if ( config.isExplicitlySet( GraphDatabaseSettings.default_schema_provider ) )
         {

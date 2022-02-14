@@ -306,7 +306,8 @@ case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends In
     val (maybeIndexProvider, indexConfig) = getOptionsParts(options, schemaType)
     val indexProvider = maybeIndexProvider.map(assertValidIndexProvider)
     assertOnlyOneIndexTypeOptions(indexProvider, indexConfig)
-    CreateIndexWithStringProviderOptions(indexProvider, indexConfig)
+    val (checkedProvider, checkedConfig) = updateProviderWhenOnlyConfig(indexProvider, indexConfig)
+    CreateIndexWithStringProviderOptions(checkedProvider, checkedConfig)
   }
 
   private def assertValidIndexProvider(indexProvider: AnyValue): String = indexProvider match {
@@ -333,6 +334,12 @@ case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends In
     case Some(provider) if provider.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()) && !indexConfig.asMap().isEmpty =>
       throw new InvalidArgumentsException(s"Could not create $schemaType with specified options: range indexes have no available configuration settings.")
     case _ =>
+  }
+
+  private def updateProviderWhenOnlyConfig(indexProvider: Option[String], indexConfig: IndexConfig): (Option[String], IndexConfig) = indexProvider match {
+    // Set btree provider if only config is given, range has no available config settings
+    case None if !indexConfig.asMap().isEmpty => (Some(GenericNativeIndexProvider.DESCRIPTOR.name()), indexConfig)
+    case _ => (indexProvider, indexConfig)
   }
 
   // RANGE indexes has no available config settings, check conforms to BTREE config (point settings)

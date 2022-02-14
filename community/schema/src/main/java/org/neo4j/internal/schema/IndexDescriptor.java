@@ -101,7 +101,7 @@ public final class IndexDescriptor implements IndexRef<IndexDescriptor>, SchemaR
         this.indexProvider = IndexProviderDescriptor.UNDECIDED;
         this.owningConstraintId = null;
         this.capability = IndexCapability.NO_CAPABILITY;
-        this.indexType = IndexType.BTREE;
+        this.indexType = IndexType.RANGE;
         this.indexConfig = IndexConfig.empty();
     }
 

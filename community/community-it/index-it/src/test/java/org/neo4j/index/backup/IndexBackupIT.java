@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -73,15 +74,9 @@ public class IndexBackupIT
     private FileSystemAbstraction fileSystem;
 
     @Nested
-    @DbmsExtension( configurationCallback = "configure" )
+    @DbmsExtension
     class LuceneIndexSnapshots
     {
-        @ExtensionCallback
-        void configure( TestDatabaseManagementServiceBuilder builder )
-        {
-            builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE30.providerName() );
-        }
-
         @Test
         void concurrentLuceneIndexSnapshotUseDifferentSnapshots() throws Exception
         {
@@ -189,7 +184,7 @@ public class IndexBackupIT
             for ( int i = 0; i < NUMBER_OF_INDEXES; i++ )
             {
                 String propertyName = PROPERTY_PREFIX + i;
-                nodes.forEach( node -> node.setProperty( propertyName, random.nextLong() ) );
+                nodes.forEach( node -> node.setProperty( propertyName, random.nextString() ) );
             }
             transaction.commit();
         }
@@ -222,7 +217,7 @@ public class IndexBackupIT
         {
             for ( int i = 0; i < 10; i++ )
             {
-                transaction.schema().indexFor( label ).on( PROPERTY_PREFIX + i ).create();
+                transaction.schema().indexFor( label ).on( PROPERTY_PREFIX + i ).withIndexType( IndexType.TEXT ).create();
             }
             transaction.commit();
         }
@@ -250,7 +245,7 @@ public class IndexBackupIT
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = transaction.createNode( label );
-            node.setProperty( "property" + i, i );
+            node.setProperty( "property" + i, "" + i );
             transaction.commit();
         }
     }

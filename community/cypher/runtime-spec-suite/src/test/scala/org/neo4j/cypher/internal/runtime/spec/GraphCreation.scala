@@ -526,11 +526,11 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates an index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a b-tree index and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeIndexWithProvider(indexProvider: String, label: String, properties: String*): Unit = {
     runtimeTestSupport.restartTx()
-    val query = s"CREATE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
+    val query = s"CREATE BTREE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
     runtimeTestSupport.tx.execute(query)
     runtimeTestSupport.restartTx()
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
@@ -557,21 +557,21 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates an index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a  b-tree index and restarts the transaction. This should be called before any data creation operation.
    */
   def relationshipIndexWithProvider(indexProvider: String, relationshipType: String, properties: String*): Unit = {
-    val query = s"CREATE INDEX FOR ()-[r:$relationshipType]-() ON (${properties.map(p => s"r.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
+    val query = s"CREATE BTREE INDEX FOR ()-[r:$relationshipType]-() ON (${properties.map(p => s"r.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
     runtimeTestSupport.tx.execute(query)
     runtimeTestSupport.restartTx()
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
   /**
-   * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a (b-tree backed) unique index and restarts the transaction. This should be called before any data creation operation.
    */
   def uniqueIndex(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label))) {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.BTREE)) {
         case (acc, prop) => acc.assertPropertyIsUnique(prop)
       }
       creator.create()
@@ -582,11 +582,11 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates a node key constraint and restarts the transaction. This should be called before any data creation operation.
+   * Creates a (b-tree backed) node key constraint and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeKey(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label))) {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.BTREE)) {
         case (acc, prop) => acc.assertPropertyIsNodeKey(prop)
       }
       creator.create()

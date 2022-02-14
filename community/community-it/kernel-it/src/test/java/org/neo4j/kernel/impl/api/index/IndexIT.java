@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -215,7 +215,7 @@ class IndexIT extends KernelIntegrationTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
-        IndexProviderDescriptor provider = GenericNativeIndexProvider.DESCRIPTOR;
+        IndexProviderDescriptor provider = RangeIndexProvider.DESCRIPTOR;
         IndexPrototype prototype = uniqueForSchema( schema ).withName( "constraint name" ).withIndexProvider( provider );
         IndexDescriptor constraintIndex = creator.createConstraintIndex( prototype );
         // then
@@ -256,8 +256,8 @@ class IndexIT extends KernelIntegrationTest
             statement.indexDrop( index );
         } );
         assertThat( e.getMessage() ).containsSubsequence( "Unable to drop index", "Index does not exist" )
-                                    .contains( "Index(", "id=", "name='my index'", "type='GENERAL BTREE'",
-                                               "schema=(:Label {prop})", "indexProvider='native-btree-1.0'" );
+                                    .contains( "Index(", "id=", "name='my index'", "type='GENERAL RANGE'",
+                                               "schema=(:Label {prop})", "indexProvider='range-1.0'" );
         commit();
     }
 
@@ -268,7 +268,7 @@ class IndexIT extends KernelIntegrationTest
         IndexDescriptor index;
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
-            index = statement.indexCreate( IndexPrototype.forSchema( schema ).withName( "my index" ) );
+            index = statement.indexCreate( IndexPrototype.forSchema( schema ).withIndexType( IndexType.BTREE ).withName( "my index" ) );
             commit();
         }
         {

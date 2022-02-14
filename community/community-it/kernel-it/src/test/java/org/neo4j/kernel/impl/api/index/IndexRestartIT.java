@@ -24,14 +24,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -41,7 +45,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -80,7 +83,7 @@ class IndexRestartIT
      * as possible. If this proves to be flaky, remove it right away.
      */
     @Test
-    void shouldBeAbleToDropIndexWhileItIsPopulating() throws InterruptedException
+    void shouldBeAbleToDropIndexWhileItIsPopulating() throws InterruptedException, KernelException
     {
         // GIVEN
         startDb();
@@ -108,7 +111,7 @@ class IndexRestartIT
     }
 
     @Test
-    void shouldHandleRestartOfOnlineIndex()
+    void shouldHandleRestartOfOnlineIndex() throws KernelException
     {
         // Given
         startDb();
@@ -136,7 +139,7 @@ class IndexRestartIT
     }
 
     @Test
-    void shouldHandleRestartIndexThatHasNotComeOnlineYet()
+    void shouldHandleRestartIndexThatHasNotComeOnlineYet() throws KernelException
     {
         // Given
         startDb();
@@ -160,13 +163,18 @@ class IndexRestartIT
         assertEquals( 2, provider.populatorCallCount.get() );
     }
 
-    private IndexDefinition createIndex()
+    private IndexDefinition createIndex() throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( myLabel ).on( myKey ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), myLabel, myKey );
             tx.commit();
-            return index;
+        }
+
+        // Return the IndexDefinition for the index instead since that is what we want later
+        try ( Transaction transaction = db.beginTx() )
+        {
+            return Iterables.first( getIndexes( transaction, myLabel ) );
         }
     }
 
@@ -190,7 +198,6 @@ class IndexRestartIT
         managementService = factory
                 .impermanent()
                 .noOpSystemGraphInitializer()
-                .setConfig( default_schema_provider, provider.getProviderDescriptor().name() )
                 .build();
         db = managementService.database( DEFAULT_DATABASE_NAME );
     }

@@ -124,7 +124,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -396,14 +395,13 @@ class IndexingServiceTest
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
-        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         IndexProviderMap providerMap = life.add( new MockIndexProviderMap( provider ) );
 
         IndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         IndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreViewFactory.class ), nameLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "",
                 writable() ) );
@@ -432,7 +430,6 @@ class IndexingServiceTest
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
-        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         MockIndexProviderMap providerMap = new MockIndexProviderMap( provider );
         providerMap.init();
 
@@ -440,7 +437,7 @@ class IndexingServiceTest
         IndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeViewFactory, nameLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, IndexMonitor.NO_MONITOR,
                 schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "", writable() );
@@ -892,12 +889,12 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure() ).contains( format( "java.io.IOException: Expected failure%n\tat " ) );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR ).assertExceptionForLogMessage(
-                "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), " +
+                "Failed to populate index: [Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), " +
                         "indexProvider='quantum-dex-25.0' )]" )
                 .hasRootCause( exception );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO )
                 .doesNotContainMessageWithArguments( "Index population completed. Index is now online: [%s]",
-                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
+                "Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
     }
 
     @Test
@@ -926,12 +923,12 @@ class IndexingServiceTest
         assertEquals( asList( true, false ), closeArgs.getAllValues() );
         assertThat( storedFailure() ).contains( format( "java.io.IOException: Expected failure%n\tat " ) );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( ERROR )
-                .assertExceptionForLogMessage( "Failed to populate index: [Index( id=0, name='index', type='GENERAL BTREE', " +
+                .assertExceptionForLogMessage( "Failed to populate index: [Index( id=0, name='index', type='GENERAL RANGE', " +
                                 "schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )]" )
                 .hasRootCause( exception );
         assertThat( internalLogProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO )
                 .doesNotContainMessageWithArguments( "Index population completed. Index is now online: [%s]",
-                "Index( id=0, name='index', type='GENERAL BTREE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
+                "Index( id=0, name='index', type='GENERAL RANGE', schema=(:TheLabel {propertyKey}), indexProvider='quantum-dex-25.0' )" );
     }
 
     @Test
@@ -1030,7 +1027,6 @@ class IndexingServiceTest
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
-        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         IndexProviderMap providerMap = life.add( new MockIndexProviderMap( provider ) );
 
         List<IndexDescriptor> indexes = new ArrayList<>();
@@ -1052,7 +1048,7 @@ class IndexingServiceTest
             nameLookup.label( i, "Label" + i );
         }
 
-        life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreViewFactory.class ), nameLookup, indexes, internalLogProvider, IndexMonitor.NO_MONITOR,
                 schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "", writable() ) );
 
@@ -1075,7 +1071,6 @@ class IndexingServiceTest
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
-        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
         MockIndexProviderMap providerMap = new MockIndexProviderMap( provider );
         providerMap.init();
 
@@ -1098,7 +1093,7 @@ class IndexingServiceTest
             nameLookup.label( i, "Label" + i );
         }
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeViewFactory, nameLookup, indexes,
                 internalLogProvider, IndexMonitor.NO_MONITOR, schemaState, indexStatisticsStore, CONTEXT_FACTORY, INSTANCE, "",
                 writable() );
@@ -1395,11 +1390,8 @@ class IndexingServiceTest
         when( indexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any(), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
-        Config config = Config.newBuilder()
-                .set( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).build();
-
         MockIndexProviderMap providerMap = life.add( new MockIndexProviderMap( indexProvider ) );
-        return life.add( IndexingServiceFactory.createIndexingService( config,
+        return life.add( IndexingServiceFactory.createIndexingService( Config.defaults(),
                 life.add( scheduler ), providerMap,
                 storeViewFactory,
                 nameLookup,

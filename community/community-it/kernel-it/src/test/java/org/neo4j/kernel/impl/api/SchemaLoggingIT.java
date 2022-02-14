@@ -62,27 +62,28 @@ class SchemaLoggingIT
     {
         String labelName = "User";
         String property = "name";
+        String indexName = "usernameIndex";
 
         // when
-        long indexId = createIndex( db, labelName, property );
+        long indexId = createIndex( db, labelName, property, indexName );
 
         // then
         IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
         IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
-        String indexName = "Index( id=" + indexId + ", name='index_a908f819', type='GENERAL BTREE', " +
+        String indexDescription = "Index( id=" + indexId + ", name='" + indexName + "', type='GENERAL RANGE', " +
                            "schema=(:User {name}), indexProvider='" + providerDescriptor.name() + "' )";
 
         assertThat( logProvider ).forLevel( INFO )
-                .containsMessageWithArguments( "Index population started: [%s]", indexName )
-                .containsMessageWithArguments( CREATION_FINISHED, indexName );
+                .containsMessageWithArguments( "Index population started: [%s]", indexDescription )
+                .containsMessageWithArguments( CREATION_FINISHED, indexDescription );
     }
 
-    private static long createIndex( GraphDatabaseAPI db, String labelName, String property )
+    private static long createIndex( GraphDatabaseAPI db, String labelName, String property, String name )
     {
         long indexId;
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition indexDefinition = tx.schema().indexFor( label( labelName ) ).on( property ).create();
+            IndexDefinition indexDefinition = tx.schema().indexFor( label( labelName ) ).on( property ).withName( name ).create();
             indexId = ((IndexDefinitionImpl) indexDefinition).getIndexReference().getId();
             tx.commit();
         }

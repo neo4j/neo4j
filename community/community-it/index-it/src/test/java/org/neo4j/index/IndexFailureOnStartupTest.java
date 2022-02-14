@@ -37,14 +37,15 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
 
@@ -159,7 +160,7 @@ public class IndexFailureOnStartupTest
         {
             try
             {
-                new SabotageNativeIndex( random.random() ).run( fs, db.databaseLayout() );
+                new SabotageNativeIndex( random.random(), RangeIndexProvider.DESCRIPTOR ).run( fs, db.databaseLayout() );
             }
             catch ( IOException e )
             {
@@ -171,7 +172,7 @@ public class IndexFailureOnStartupTest
 
     private Path archiveFile() throws IOException
     {
-        Path indexDir = nativeIndexDirectoryStructure( db.databaseLayout() ).rootDirectory();
+        Path indexDir = nativeIndexDirectoryStructure( db.databaseLayout(), RangeIndexProvider.DESCRIPTOR ).rootDirectory();
         Path[] files;
         try ( Stream<Path> list = Files.list( indexDir ) )
         {

@@ -144,18 +144,18 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("trying to drop constraint index should return sensible error") {
-    graph.createUniqueConstraint("LabelName", "Prop")
+    graph.createUniqueConstraintWithName("my_index", "LabelName", "Prop")
 
     expectError(
-      "DROP INDEX ON :LabelName(Prop)",
-      "Unable to drop index: Index belongs to constraint: (:LabelName {Prop})"
+      "DROP INDEX my_index",
+      "Unable to drop index: Index belongs to constraint: `my_index`"
     )
   }
 
   test("trying to drop non existent index") {
     expectError(
-      "DROP INDEX ON :Person(name)",
-      "Unable to drop index on (:Person {name}). There is no such index."
+      "DROP INDEX my_index",
+      "Unable to drop index called `my_index`. There is no such index."
     )
   }
 
@@ -164,15 +164,15 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     val node2 = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     expectError(
-      "CREATE CONSTRAINT FOR (person:Person) REQUIRE person.name IS UNIQUE",
-      String.format("Unable to create Constraint( name='constraint_550b2518', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
+      "CREATE CONSTRAINT my_constraint FOR (person:Person) REQUIRE person.name IS UNIQUE",
+      String.format("Unable to create Constraint( name='my_constraint', type='UNIQUENESS', schema=(:Person {name}) ):%n" +
         "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
   }
 
   test("drop a non existent constraint") {
     expectError(
-      "DROP CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
+      "DROP CONSTRAINT my_constraint",
       "No such constraint"
     )
   }

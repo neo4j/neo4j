@@ -93,6 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -232,7 +233,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         Class<EquivalentSchemaRuleAlreadyExistsException> expectedCause = EquivalentSchemaRuleAlreadyExistsException.class;
         assertExpectedException( exception, expectedCause,
                                  "An equivalent index already exists", "Index(", "id=", "name='name'",
-                                 "type='GENERAL BTREE'", "schema=(:MY_LABEL {my_property_key})", "indexProvider='native-btree-1.0'" );
+                                 "type='GENERAL RANGE'", "schema=(:MY_LABEL {my_property_key})", "indexProvider='range-1.0'" );
     }
 
     @ParameterizedTest
@@ -452,8 +453,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             index.drop();
             ConstraintViolationException e = assertThrows( ConstraintViolationException.class, index::drop );
             assertThat( e ).hasMessageContaining( "Unable to drop index: Index does not exist: Index( id=" )
-                           .hasMessageContaining( "name='index_a0d2924', type='GENERAL BTREE', schema=(:MY_LABEL {my_property_key})," +
-                                                  " indexProvider='native-btree-1.0' )" );
+                           .hasMessageContaining( "name='index_1efc11af', type='GENERAL RANGE', schema=(:MY_LABEL {my_property_key})," +
+                                                  " indexProvider='range-1.0' )" );
             tx.commit();
         }
 
@@ -496,7 +497,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // WHEN
 
         Exception e = assertThrows( Exception.class, () -> dropIndex( index ) );
-        assertThat( e ).hasMessageContaining( "No index found with the name 'index_a0d2924'." );
+        assertThat( e ).hasMessageContaining( "No index found with the name 'index_1efc11af'." );
 
         // THEN
         try ( Transaction tx = db.beginTx() )
@@ -681,7 +682,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
-            assertEquals( "constraint_99f3e727", constraint.getName() );
+            assertEquals( "constraint_d3208c60", constraint.getName() );
             tx.commit();
         }
     }
@@ -717,7 +718,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertEquals( ConstraintType.UNIQUENESS, constraint.getConstraintType() );
             assertEquals( label.name(), constraint.getLabel().name() );
             assertEquals( asSet( propertyKey, secondPropertyKey ), Iterables.asSet( constraint.getPropertyKeys() ) );
-            assertEquals( "constraint_d9a841bd", constraint.getName() );
+            assertEquals( "constraint_860007cd", constraint.getName() );
             tx.commit();
         }
     }
@@ -828,7 +829,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         // WHEN
         ConstraintViolationException e = assertThrows( ConstraintViolationException.class, () -> createUniquenessConstraint( label, propertyKey ) );
         assertThat( e ).hasMessageContaining(
-                "Unable to create Constraint( name='constraint_99f3e727', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" );
+                "Unable to create Constraint( name='constraint_d3208c60', type='UNIQUENESS', schema=(:MY_LABEL {my_property_key}) )" );
     }
 
     @Test
@@ -873,7 +874,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     @Test
     void indexNamesMustBeUniqueEvenWhenGenerated2()
     {
-        IndexDefinition index = createIndex( db, "index_a0d2924", otherLabel, secondPropertyKey );
+        IndexDefinition index = createIndex( db, "index_1efc11af", otherLabel, secondPropertyKey );
         ConstraintViolationException exception =
                 assertThrows( ConstraintViolationException.class, () -> createIndex( db, label, propertyKey ) );
         assertThat( exception ).hasMessageContaining( index.getName() );
@@ -980,7 +981,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( otherLabel ).on( secondPropertyKey )
-                    .withName( "index_a0d2924" ).create();
+                    .withName( "index_1efc11af" ).create();
             IndexCreator creator = tx.schema().indexFor( label ).on( propertyKey );
             ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
             assertThat( exception ).hasMessageContaining( alreadyExistsIndexMessage( index.getName() ) );
@@ -1020,7 +1021,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         try ( Transaction tx = db.beginTx() )
         {
             ConstraintDefinition constraint = tx.schema().constraintFor( otherLabel ).assertPropertyIsUnique( secondPropertyKey )
-                    .withName( "constraint_99f3e727" ).create();
+                    .withName( "constraint_d3208c60" ).create();
             ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey );
             ConstraintViolationException exception = assertThrows( ConstraintViolationException.class, creator::create );
             assertThat( exception ).hasMessageContaining( thereAlreadyExistsConstraintMessage( constraint.getName() ) );
@@ -1206,7 +1207,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withName( "my_index" ).create();
+            IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withIndexType( BTREE ).withName( "my_index" ).create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
             assertTrue( config.containsKey( IndexSettingImpl.SPATIAL_CARTESIAN_MIN ) );
@@ -1407,6 +1408,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertThat( e ).hasMessageContaining( "'analyzer that does not exist'" );
 
             e = assertThrows( IllegalArgumentException.class, () -> creator
+                    .withIndexType( BTREE )
                     .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0} ) )
                     .create() );
             assertThat( e ).hasMessageContaining( "Invalid spatial index settings" );
@@ -1523,31 +1525,31 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void mustThrowWhenCreatingBtreeIndexOnZeroRelationshipTypes()
+    void mustThrowWhenCreatingRangeIndexOnZeroRelationshipTypes()
     {
         try ( Transaction tx = db.beginTx() )
         {
             IllegalArgumentException e =
                     assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( new RelationshipType[0] ).on( propertyKey ).create() );
-            assertThat( e ).hasMessageContaining( "BTREE indexes can only be created with exactly one relationship type, but got no relationship types." );
+            assertThat( e ).hasMessageContaining( "RANGE indexes can only be created with exactly one relationship type, but got no relationship types." );
             tx.commit();
         }
     }
 
     @Test
-    void mustThrowWhenCreatingBtreeIndexOnMultipleRelationshipTypes()
+    void mustThrowWhenCreatingRangeIndexOnMultipleRelationshipTypes()
     {
         try ( Transaction tx = db.beginTx() )
         {
             IllegalArgumentException e =
                     assertThrows( IllegalArgumentException.class, () -> tx.schema().indexFor( relType, otherRelType ).on( propertyKey ).create() );
-            assertThat( e ).hasMessageContaining( "BTREE indexes can only be created with exactly one relationship type, but got 2 relationship types." );
+            assertThat( e ).hasMessageContaining( "RANGE indexes can only be created with exactly one relationship type, but got 2 relationship types." );
             tx.commit();
         }
     }
 
     @Test
-    void uniquenessConstraintIndexesAreBtreeIndexTypeByDefault()
+    void uniquenessConstraintIndexesAreRangeIndexTypeByDefault()
     {
         String name;
         try ( Transaction tx = db.beginTx() )
@@ -1555,13 +1557,13 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             ConstraintDefinition constraint = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
             name = constraint.getName();
             IndexDefinition index = getIndex( tx, name );
-            assertThat( index.getIndexType() ).isEqualTo( BTREE );
+            assertThat( index.getIndexType() ).isEqualTo( RANGE );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = getIndex( tx, name );
-            assertThat( index.getIndexType() ).isEqualTo( BTREE );
+            assertThat( index.getIndexType() ).isEqualTo( RANGE );
         }
     }
 
@@ -2693,12 +2695,12 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
     public static IndexDefinition createIndex( GraphDatabaseService db, Label label, String... properties )
     {
-        return createIndex( db, BTREE, null, label, properties );
+        return createIndex( db, RANGE, null, label, properties );
     }
 
     public static IndexDefinition createIndex( GraphDatabaseService db, String name, Label label, String... properties )
     {
-        return createIndex( db, BTREE, name, label, properties );
+        return createIndex( db, RANGE, name, label, properties );
     }
 
     public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, String name, Label label, String... properties )

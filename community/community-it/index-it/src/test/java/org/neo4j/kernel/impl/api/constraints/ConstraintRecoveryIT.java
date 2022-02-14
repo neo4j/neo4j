@@ -30,6 +30,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -108,7 +109,7 @@ class ConstraintRecoveryIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
+                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).withIndexType( IndexType.BTREE ).create();
             }
         } );
         managementService.shutdown();

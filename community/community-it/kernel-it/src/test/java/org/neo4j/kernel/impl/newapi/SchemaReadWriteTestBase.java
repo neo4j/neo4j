@@ -205,7 +205,8 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexDescriptor index;
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
+            index = transaction.schemaWrite()
+                    .indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( IndexType.BTREE ).withName( "my index" ) );
             transaction.commit();
         }
 
@@ -369,7 +370,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor index = single( schemaRead.index( schema ) );
             assertThat( index ).isEqualTo( otherIndex );
 
-            var indexByType = schemaRead.index( schema, IndexType.BTREE );
+            var indexByType = schemaRead.index( schema, IndexType.RANGE );
             assertThat( indexByType ).isEqualTo( otherIndex );
 
             assertThat( 2 ).isEqualTo( Iterators.asList( schemaRead.indexesGetAll() ).size() );
@@ -396,7 +397,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             var index = single( schemaReadBefore.index( schema ) );
             assertThat( index ).isEqualTo( createdIndex );
-            var indexByType = schemaReadBefore.index( schema, IndexType.BTREE );
+            var indexByType = schemaReadBefore.index( schema, IndexType.RANGE );
             assertThat( indexByType ).isEqualTo( createdIndex );
 
             assertThat( schemaReadBefore.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
@@ -404,7 +405,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
 
             index = single( schemaReadAfter.index( schema ) );
             assertThat( index ).isEqualTo( createdIndex );
-            indexByType = schemaReadAfter.index( schema, IndexType.BTREE );
+            indexByType = schemaReadAfter.index( schema, IndexType.RANGE );
             assertThat( indexByType ).isEqualTo( createdIndex );
 
             assertThat( schemaReadAfter.indexGetForName( "my index 2" ) ).isEqualTo( createdIndex );
@@ -738,7 +739,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         IndexPrototype prototype = uniqueForSchema( schema );
         try ( KernelTransaction transaction = beginTransaction() )
         {
-            constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype );
+            constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype.withIndexType( IndexType.BTREE ) );
             constraint2 = transaction.schemaWrite().nodeKeyConstraintCreate( prototype.withIndexType( IndexType.RANGE ) );
             transaction.commit();
         }

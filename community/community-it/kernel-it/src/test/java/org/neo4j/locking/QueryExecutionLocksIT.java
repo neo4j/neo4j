@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.Locks;
@@ -173,7 +174,7 @@ class QueryExecutionLocksIT
     {
         RelationshipType relType = RelationshipType.withName( "REL" );
         String propertyKey = "name";
-        createRelationshipIndex( relType, propertyKey );
+        createRelationshipIndexWithType( relType, propertyKey, IndexType.TEXT );
         Relationship rel;
         try ( Transaction transaction = db.beginTx() )
         {
@@ -199,7 +200,7 @@ class QueryExecutionLocksIT
     {
         RelationshipType relType = RelationshipType.withName( "REL" );
         String propertyKey = "name";
-        createRelationshipIndex( relType, propertyKey );
+        createRelationshipIndexWithType( relType, propertyKey, IndexType.TEXT );
         Relationship rel;
         try ( Transaction transaction = db.beginTx() )
         {
@@ -334,9 +335,14 @@ class QueryExecutionLocksIT
 
     private void createRelationshipIndex( RelationshipType relType, String propertyKey )
     {
+        createRelationshipIndexWithType( relType, propertyKey, IndexType.RANGE );
+    }
+
+    private void createRelationshipIndexWithType( RelationshipType relType, String propertyKey, IndexType indexType )
+    {
         try ( Transaction transaction = db.beginTx() )
         {
-            transaction.schema().indexFor( relType ).on( propertyKey ).create();
+            transaction.schema().indexFor( relType ).on( propertyKey ).withIndexType( indexType ).create();
             transaction.commit();
         }
         try ( Transaction tx = db.beginTx() )

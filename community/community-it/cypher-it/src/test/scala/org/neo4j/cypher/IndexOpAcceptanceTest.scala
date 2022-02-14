@@ -60,7 +60,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // THEN
     val message = e.getCause.getMessage
     message should startWith("An equivalent index already exists")
-    message should include("name='index_5c0607ad', type='GENERAL BTREE', schema=(:Person {name}), indexProvider='native-btree-1.0'")
+    message should include("name='index_4b2e9408', type='GENERAL RANGE', schema=(:Person {name}), indexProvider='range-1.0'")
   }
 
   test("secondIndexCreationShouldFailIfIndexesHasFailed") {
@@ -68,7 +68,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     createDbWithFailedIndex()
     try {
       // WHEN THEN
-      val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
+      val e = intercept[FailedIndexException](execute("CREATE BTREE INDEX FOR (n:Person) ON (n.name)"))
       e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
       managementService.shutdown()
@@ -77,10 +77,10 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("dropIndex") {
     // GIVEN
-    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
+    execute("CREATE INDEX my_index FOR (n:Person) ON (n.name)")
 
     // WHEN
-    execute("DROP INDEX ON :Person(name)")
+    execute("DROP INDEX my_index")
 
     // THEN
     graph.withTx( tx  => {
@@ -90,7 +90,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("drop_index_that_does_not_exist") {
     // WHEN
-    val e = intercept[CypherExecutionException](execute("DROP INDEX ON :Person(name)"))
+    val e = intercept[CypherExecutionException](execute("DROP INDEX my_index"))
     assert(e.getCause.isInstanceOf[DropIndexFailureException])
   }
 
@@ -128,7 +128,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     graph = new GraphDatabaseCypherService(graphOps)
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")
-    execute("CREATE INDEX FOR (n:Person) ON (n.name)")
+    execute("CREATE BTREE INDEX FOR (n:Person) ON (n.name)")
     val tx = graph.beginTx()
     try {
       tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)

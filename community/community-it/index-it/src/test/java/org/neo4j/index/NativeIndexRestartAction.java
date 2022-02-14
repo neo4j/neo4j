@@ -29,13 +29,7 @@ import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 
 abstract class NativeIndexRestartAction
 {
-    private static final IndexProviderDescriptor DEFAULT_PROVIDER_DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
     final IndexProviderDescriptor providerDescriptor;
-
-    NativeIndexRestartAction()
-    {
-        this( DEFAULT_PROVIDER_DESCRIPTOR );
-    }
 
     NativeIndexRestartAction( IndexProviderDescriptor providerDescriptor )
     {
@@ -49,11 +43,6 @@ abstract class NativeIndexRestartAction
     }
 
     protected abstract void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException;
-
-    static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout )
-    {
-        return IndexDirectoryStructure.directoriesByProvider( databaseLayout.databaseDirectory() ).forProvider( DEFAULT_PROVIDER_DESCRIPTOR );
-    }
 
     static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout, IndexProviderDescriptor providerDescriptor )
     {

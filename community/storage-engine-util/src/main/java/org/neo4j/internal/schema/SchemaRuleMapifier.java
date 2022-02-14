@@ -317,7 +317,7 @@ public class SchemaRuleMapifier
         {
         case "UNIQUE":
             constraint = indexTypeString.isPresent() ? ConstraintDescriptorFactory.uniqueForSchema( schema, getIndexType( indexTypeString.get() ) ) :
-                         ConstraintDescriptorFactory.uniqueForSchema( schema );
+                         ConstraintDescriptorFactory.uniqueForSchema( schema, IndexType.BTREE );
 
             if ( ownedIndex.isPresent() )
             {
@@ -329,7 +329,7 @@ public class SchemaRuleMapifier
             return constraint.withId( id ).withName( name );
         case "UNIQUE_EXISTS":
             constraint = indexTypeString.isPresent() ? ConstraintDescriptorFactory.nodeKeyForSchema( schema, getIndexType( indexTypeString.get() ) ) :
-                         ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+                         ConstraintDescriptorFactory.nodeKeyForSchema( schema, IndexType.BTREE );
 
             if ( ownedIndex.isPresent() )
             {

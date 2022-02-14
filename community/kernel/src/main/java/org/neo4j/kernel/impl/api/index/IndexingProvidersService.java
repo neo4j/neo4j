@@ -83,9 +83,9 @@ public interface IndexingProvidersService extends IndexConfigCompleter
     IndexProviderDescriptor getTextIndexProvider();
 
     /**
-     * @return the range index provider for this instance.
+     * @return the btree index provider for this instance.
      */
-    IndexProviderDescriptor getRangeIndexProvider();
+    IndexProviderDescriptor getBtreeIndexProvider();
 
     /**
      * @return the point index provider for this instance.

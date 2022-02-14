@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -142,13 +143,14 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).create();
+                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).withIndexType( IndexType.BTREE ).create();
                     }
 
                     @Override
                     void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
                     {
-                        tx.schema().indexFor( label( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
+                        tx.schema().indexFor( label( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).withIndexType( IndexType.BTREE )
+                                .create();
                     }
 
                     @Override
@@ -195,13 +197,15 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).create();
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).withIndexType( IndexType.BTREE )
+                                .create();
                     }
 
                     @Override
                     void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
                     {
-                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName )
+                                .withIndexType( IndexType.BTREE ).create();
                     }
 
                     @Override

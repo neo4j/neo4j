@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.IndexType.POINT;
@@ -53,12 +54,12 @@ class SchemaRuleTest
     private final AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptors.forAnyEntityTokens( RELATIONSHIP );
     private final LabelSchemaDescriptor labelSinglePropSchema = SchemaDescriptors.forLabel( 1, 2 );
     private final RelationTypeSchemaDescriptor relTypeSinglePropSchema = SchemaDescriptors.forRelType( 1, 2 );
-    private final IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema );
-    private final IndexPrototype labelPrototype2 = IndexPrototype.forSchema( labelSchema2 );
-    private final IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema );
-    private final IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema );
-    private final IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema );
+    private final IndexPrototype labelPrototype = IndexPrototype.forSchema( labelSchema ).withIndexType( BTREE );
+    private final IndexPrototype labelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema ).withIndexType( BTREE );
+    private final IndexPrototype relTypePrototype = IndexPrototype.forSchema( relTypeSchema ).withIndexType( BTREE );
+    private final IndexPrototype relTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema ).withIndexType( BTREE );
     private final IndexPrototype rangeLabelPrototype = IndexPrototype.forSchema( labelSchema ).withIndexType( RANGE );
+    private final IndexPrototype rangeLabelPrototype2 = IndexPrototype.forSchema( labelSchema2 ).withIndexType( RANGE );
     private final IndexPrototype rangeLabelUniquePrototype = IndexPrototype.uniqueForSchema( labelSchema ).withIndexType( RANGE );
     private final IndexPrototype rangeRelTypePrototype = IndexPrototype.forSchema( relTypeSchema ).withIndexType( RANGE );
     private final IndexPrototype rangeRelTypeUniquePrototype = IndexPrototype.uniqueForSchema( relTypeSchema ).withIndexType( RANGE );
@@ -71,12 +72,14 @@ class SchemaRuleTest
     private final IndexPrototype textRelTypePrototype = IndexPrototype.forSchema( relTypeSinglePropSchema ).withIndexType( TEXT );
     private final IndexPrototype pointLabelPrototype = IndexPrototype.forSchema( labelSinglePropSchema ).withIndexType( POINT );
     private final IndexPrototype pointRelTypePrototype = IndexPrototype.forSchema( relTypeSinglePropSchema ).withIndexType( POINT );
-    private final IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withName( "labelPrototypeNamed" );
-    private final IndexPrototype labelPrototype2Named = IndexPrototype.forSchema( labelSchema2 ).withName( "labelPrototype2Named" );
-    private final IndexPrototype labelUniquePrototypeNamed = IndexPrototype.uniqueForSchema( labelSchema ).withName( "labelUniquePrototypeNamed" );
-    private final IndexPrototype relTypePrototypeNamed = IndexPrototype.forSchema( relTypeSchema ).withName( "relTypePrototypeNamed" );
-    private final IndexPrototype relTypeUniquePrototypeNamed = IndexPrototype.uniqueForSchema( relTypeSchema ).withName( "relTypeUniquePrototypeNamed" );
+    private final IndexPrototype labelPrototypeNamed = IndexPrototype.forSchema( labelSchema ).withIndexType( BTREE ).withName( "labelPrototypeNamed" );
+    private final IndexPrototype labelUniquePrototypeNamed =
+            IndexPrototype.uniqueForSchema( labelSchema ).withIndexType( BTREE ).withName( "labelUniquePrototypeNamed" );
+    private final IndexPrototype relTypePrototypeNamed = IndexPrototype.forSchema( relTypeSchema ).withIndexType( BTREE ).withName( "relTypePrototypeNamed" );
+    private final IndexPrototype relTypeUniquePrototypeNamed =
+            IndexPrototype.uniqueForSchema( relTypeSchema ).withIndexType( BTREE ).withName( "relTypeUniquePrototypeNamed" );
     private final IndexPrototype rangeLabelPrototypeNamed = rangeLabelPrototype.withName( "rangeLabelPrototypeNamed" );
+    private final IndexPrototype rangeLabelPrototype2Named = IndexPrototype.forSchema( labelSchema2 ).withName( "labelPrototype2Named" );
     private final IndexPrototype rangeLabelUniquePrototypeNamed = rangeLabelUniquePrototype.withName( "rangeLabelUniquePrototypeNamed" );
     private final IndexPrototype rangeRelTypePrototypeNamed = rangeRelTypePrototype.withName( "rangeRelTypePrototypeNamed" );
     private final IndexPrototype rangeRelTypeUniquePrototypeNamed = rangeRelTypeUniquePrototype.withName( "rangeRelTypeUniquePrototypeNamed" );
@@ -95,11 +98,11 @@ class SchemaRuleTest
     private final IndexPrototype pointLabelPrototypeNamed = pointLabelPrototype.withName( "pointLabelPrototypeNamed" );
     private final IndexPrototype pointRelTypePrototypeNamed = pointRelTypePrototype.withName( "pointRelTypePrototypeNamed" );
     private final IndexDescriptor labelIndexNamed = labelPrototypeNamed.withName( "labelIndexNamed" ).materialise( 1 );
-    private final IndexDescriptor labelIndex2Named = labelPrototype2Named.withName( "labelIndex2Named" ).materialise(  2 );
     private final IndexDescriptor labelUniqueIndexNamed = labelUniquePrototypeNamed.withName( "labelUniqueIndexNamed" ).materialise( 3 );
     private final IndexDescriptor relTypeIndexNamed = relTypePrototypeNamed.withName( "relTypeIndexNamed" ).materialise( 4 );
     private final IndexDescriptor relTypeUniqueIndexNamed = relTypeUniquePrototypeNamed.withName( "relTypeUniqueIndexNamed" ).materialise( 5 );
     private final IndexDescriptor rangeLabelIndexNamed = rangeLabelPrototypeNamed.withName( "rangeLabelIndexNamed" ).materialise( 6 );
+    private final IndexDescriptor rangeLabelIndex2Named = rangeLabelPrototype2Named.withName( "labelIndex2Named" ).materialise(  2 );
     private final IndexDescriptor rangeLabelUniqueIndexNamed = rangeLabelUniquePrototypeNamed.withName( "rangeLabelUniqueIndexNamed" ).materialise( 7 );
     private final IndexDescriptor rangeRelTypeIndexNamed = rangeRelTypePrototypeNamed.withName( "rangeRelTypeIndexNamed" ).materialise( 8 );
     private final IndexDescriptor rangeRelTypeUniqueIndexNamed = rangeRelTypeUniquePrototypeNamed.withName( "rangeRelTypeUniqueIndexNamed" ).materialise( 9 );
@@ -114,10 +117,10 @@ class SchemaRuleTest
     private final IndexDescriptor pointRelTypeIndexNamed = pointRelTypePrototypeNamed.withName( "pointRelTypeIndexNamed" ).materialise( 18 );
     private final IndexDescriptor indexBelongingToConstraint =
             labelUniquePrototypeNamed.withName( "indexBelongingToConstraint" ).materialise( 19 ).withOwningConstraintId( 1 );
-    private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema );
+    private final ConstraintDescriptor uniqueLabelConstraint = ConstraintDescriptorFactory.uniqueForSchema( labelSchema, BTREE );
     private final ConstraintDescriptor uniqueLabelConstraintWithOtherType = ConstraintDescriptorFactory.uniqueForSchema( labelSchema, RANGE );
     private final ConstraintDescriptor existsLabelConstraint = ConstraintDescriptorFactory.existsForSchema( labelSchema );
-    private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema );
+    private final ConstraintDescriptor nodeKeyConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema, BTREE );
     private final ConstraintDescriptor nodeKeyConstraintWithOtherType = ConstraintDescriptorFactory.nodeKeyForSchema( labelSchema, RANGE );
     private final ConstraintDescriptor existsRelTypeConstraint = ConstraintDescriptorFactory.existsForSchema( relTypeSchema );
     private final ConstraintDescriptor uniqueLabelConstraint2 = ConstraintDescriptorFactory.uniqueForSchema( labelSchema2 );
@@ -170,11 +173,11 @@ class SchemaRuleTest
     void mustGenerateReasonableUserDescription()
     {
         assertUserDescription( "Index( type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", labelPrototype );
-        assertUserDescription( "Index( type='GENERAL BTREE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )", labelPrototype2 );
         assertUserDescription( "Index( type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", labelUniquePrototype );
         assertUserDescription( "Index( type='GENERAL BTREE', schema=()-[:Type1 {prop2, prop3}]-(), indexProvider='Undecided-0' )", relTypePrototype );
         assertUserDescription( "Index( type='UNIQUE BTREE', schema=()-[:Type1 {prop2, prop3}]-(), indexProvider='Undecided-0' )", relTypeUniquePrototype );
         assertUserDescription( "Index( type='GENERAL RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", rangeLabelPrototype );
+        assertUserDescription( "Index( type='GENERAL RANGE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )", rangeLabelPrototype2 );
         assertUserDescription( "Index( type='UNIQUE RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )", rangeLabelUniquePrototype );
         assertUserDescription( "Index( type='GENERAL RANGE', schema=()-[:Type1 {prop2, prop3}]-(), indexProvider='Undecided-0' )", rangeRelTypePrototype );
         assertUserDescription( "Index( type='UNIQUE RANGE', schema=()-[:Type1 {prop2, prop3}]-(), indexProvider='Undecided-0' )", rangeRelTypeUniquePrototype );
@@ -196,9 +199,6 @@ class SchemaRuleTest
 
         assertUserDescription( "Index( name='labelPrototypeNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelPrototypeNamed );
-        assertUserDescription(
-                "Index( name='labelPrototype2Named', type='GENERAL BTREE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
-                labelPrototype2Named );
         assertUserDescription( "Index( name='labelUniquePrototypeNamed', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelUniquePrototypeNamed );
         assertUserDescription( "Index( name='relTypePrototypeNamed', type='GENERAL BTREE', schema=()-[:Type1 {prop2, prop3}]-(), indexProvider='Undecided-0' )",
@@ -208,6 +208,9 @@ class SchemaRuleTest
                 relTypeUniquePrototypeNamed );
         assertUserDescription( "Index( name='rangeLabelPrototypeNamed', type='GENERAL RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelPrototypeNamed );
+        assertUserDescription(
+                "Index( name='labelPrototype2Named', type='GENERAL RANGE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
+                rangeLabelPrototype2Named );
         assertUserDescription(
                 "Index( name='rangeLabelUniquePrototypeNamed', type='UNIQUE RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelUniquePrototypeNamed );
@@ -241,9 +244,6 @@ class SchemaRuleTest
 
         assertUserDescription( "Index( id=1, name='labelIndexNamed', type='GENERAL BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelIndexNamed );
-        assertUserDescription(
-                "Index( id=2, name='labelIndex2Named', type='GENERAL BTREE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
-                labelIndex2Named );
         assertUserDescription( "Index( id=3, name='labelUniqueIndexNamed', type='UNIQUE BTREE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 labelUniqueIndexNamed );
         assertUserDescription(
@@ -254,6 +254,9 @@ class SchemaRuleTest
                 relTypeUniqueIndexNamed );
         assertUserDescription( "Index( id=6, name='rangeLabelIndexNamed', type='GENERAL RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelIndexNamed );
+        assertUserDescription(
+                "Index( id=2, name='labelIndex2Named', type='GENERAL RANGE', schema=(:`La:bel` {`prop:erty`, prop1}), indexProvider='Undecided-0' )",
+                rangeLabelIndex2Named );
         assertUserDescription(
                 "Index( id=7, name='rangeLabelUniqueIndexNamed', type='UNIQUE RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelUniqueIndexNamed );

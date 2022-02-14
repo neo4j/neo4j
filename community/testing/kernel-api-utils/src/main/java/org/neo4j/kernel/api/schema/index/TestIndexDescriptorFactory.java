@@ -43,7 +43,7 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor forSchema( SchemaDescriptor schema )
     {
-        return forSchema( IndexType.BTREE, schema );
+        return forSchema( IndexType.RANGE, schema );
     }
 
     public static IndexDescriptor forSchema( IndexType indexType, SchemaDescriptor schema )
@@ -55,7 +55,7 @@ public class TestIndexDescriptorFactory
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return uniqueForSchema( IndexType.BTREE, schema );
+        return uniqueForSchema( IndexType.RANGE, schema );
     }
 
     public static IndexDescriptor uniqueForSchema( IndexType indexType, SchemaDescriptor schema )

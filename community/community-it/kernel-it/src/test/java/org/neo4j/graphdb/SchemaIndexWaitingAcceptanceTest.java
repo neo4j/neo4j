@@ -24,8 +24,11 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ExtensionCallback;
@@ -34,7 +37,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
 @ImpermanentDbmsExtension( configurationCallback = "configure" )
@@ -48,8 +50,7 @@ public class SchemaIndexWaitingAcceptanceTest
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.addExtension( singleInstanceIndexProviderFactory( "test", provider ) )
-               .noOpSystemGraphInitializer()
-               .setConfig( default_schema_provider, provider.getProviderDescriptor().name() );
+               .noOpSystemGraphInitializer();
     }
 
     @BeforeEach
@@ -63,15 +64,17 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexToComeOnline() throws InterruptedException
+    void shouldTimeoutWaitingForIndexToComeOnline() throws InterruptedException, KernelException
     {
         // given
         Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
         IndexDefinition index;
-        try ( Transaction tx = database.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
         {
-            index = tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name" );
+
+            index = Iterables.single( tx.schema().getIndexes( Label.label( "Person" ) ) );
             tx.commit();
         }
 
@@ -89,14 +92,14 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    void shouldTimeoutWaitingForIndexByNameToComeOnline() throws InterruptedException
+    void shouldTimeoutWaitingForIndexByNameToComeOnline() throws InterruptedException, KernelException
     {
         // given
         Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
-        try ( Transaction tx = database.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
         {
-            tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).withName( "my_index" ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name", "my_index" );
             tx.commit();
         }
 
@@ -114,14 +117,14 @@ public class SchemaIndexWaitingAcceptanceTest
     }
 
     @Test
-    void shouldTimeoutWaitingForAllIndexesToComeOnline() throws InterruptedException
+    void shouldTimeoutWaitingForAllIndexesToComeOnline() throws InterruptedException, KernelException
     {
         // given
         Barrier.Control barrier = provider.installPopulationLatch( ControlledPopulationIndexProvider.PopulationLatchMethod.CREATE );
 
-        try ( Transaction tx = database.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) database.beginTx() )
         {
-            tx.schema().indexFor( Label.label( "Person" ) ).on( "name" ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, provider.getProviderDescriptor(), Label.label( "Person" ), "name" );
             tx.commit();
         }
 

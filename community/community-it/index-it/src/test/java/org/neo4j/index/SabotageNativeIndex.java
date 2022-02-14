@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Random;
 
+import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -35,9 +36,9 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
 {
     private final Random random;
 
-    SabotageNativeIndex( Random random )
+    SabotageNativeIndex( Random random, IndexProviderDescriptor descriptor )
     {
-        super();
+        super( descriptor );
         this.random = random;
     }
 

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 import java.util.Map;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
@@ -35,6 +34,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -63,7 +63,8 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
         KernelTransaction transaction = newTransaction( AUTH_DISABLED );
         LabelSchemaDescriptor schema = forLabel( failedLabel, propertyKeyId1 );
         String indexName = "fail foo index";
-        IndexDescriptor index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema ).withName( indexName ) );
+        IndexDescriptor index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( schema, FailingGenericNativeIndexProviderFactory.DESCRIPTOR )
+                .withName( indexName ) );
         long indexId = index.getId();
         String indexProvider = index.getIndexProvider().name();
         Map<String,Value> indexConfig = index.getIndexConfig().asMap();
@@ -88,7 +89,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
             assertThat( result.getString( "state" ) ).as( "state" ).isEqualTo( "FAILED" );
             assertThat( result.getNumber( "populationPercent" ) ).as( "populationPercent" ).isEqualTo( 0.0 );
             assertThat( result.getString( "uniqueness" ) ).as( "uniqueness" ).isEqualTo( "NONUNIQUE" );
-            assertThat( result.getString( "type" ) ).as( "type" ).isEqualTo( "BTREE" );
+            assertThat( result.getString( "type" ) ).as( "type" ).isEqualTo( "RANGE" );
             assertThat( result.getString( "entityType" ) ).as( "entityType" ).isEqualTo( "NODE" );
             assertThat( result.get( "labelsOrTypes" ) ).asList().as( "labelsOrTypes" ).containsExactly( labelName );
             assertThat( result.get( "properties" ) ).asList().as( "properties" ).containsExactly( propertyKey );
@@ -99,8 +100,7 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
             assertThat( result.getString( "failureMessage" ) ).as( "failureMessage" )
                                                               .startsWith( "java.lang.RuntimeException: Fail on update during population" );
             assertThat( result.getString( "createStatement" ) ).as( "createStatement" )
-                                                               .contains( "CREATE BTREE INDEX", indexName, "FOR", labelName, "ON", propertyKey,
-                                                                          "OPTIONS", "indexConfig", "indexProvider", indexProvider );
+                                                               .contains( "CREATE RANGE INDEX", indexName, "FOR", labelName, "ON", propertyKey );
         }
     }
 
@@ -119,7 +119,6 @@ class DbIndexesFailureMessageIT extends KernelIntegrationTest
     {
         return super.createGraphDatabaseFactory( databaseRootDir )
                 .noOpSystemGraphInitializer()
-                .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() );
+                .addExtension( new FailingGenericNativeIndexProviderFactory( new RangeIndexProviderFactory(), POPULATION ) );
     }
 }

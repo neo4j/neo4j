@@ -1490,9 +1490,9 @@ public class Operations implements Write, SchemaWrite
             {
                 provider = indexProviders.getTextIndexProvider();
             }
-            else if ( prototype.getIndexType() == IndexType.RANGE )
+            else if ( prototype.getIndexType() == IndexType.BTREE )
             {
-                provider = indexProviders.getRangeIndexProvider();
+                provider = indexProviders.getBtreeIndexProvider();
             }
             else if ( prototype.getIndexType() == IndexType.POINT )
             {

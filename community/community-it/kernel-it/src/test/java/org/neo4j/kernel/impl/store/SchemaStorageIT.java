@@ -50,6 +50,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -274,7 +275,7 @@ class SchemaStorageIT
     private IndexDescriptor makeIndexRule( long ruleId, String label, String propertyKey )
     {
         LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
-        IndexPrototype prototype = forSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
+        IndexPrototype prototype = forSchema( schema, RangeIndexProvider.DESCRIPTOR );
         prototype = prototype.withName( SchemaNameUtil.generateName( prototype, new String[]{label}, new String[]{propertyKey} ) );
         return prototype.materialise( ruleId );
     }
@@ -282,7 +283,7 @@ class SchemaStorageIT
     private IndexDescriptor makeIndexRuleForConstraint( long ruleId, String label, String propertyKey, long constraintId )
     {
         LabelSchemaDescriptor schema = forLabel( labelId( label ), propId( propertyKey ) );
-        IndexPrototype prototype = uniqueForSchema( schema, GenericNativeIndexProvider.DESCRIPTOR );
+        IndexPrototype prototype = uniqueForSchema( schema, RangeIndexProvider.DESCRIPTOR );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema );
         prototype = prototype.withName( SchemaNameUtil.generateName( constraint, new String[]{label}, new String[]{propertyKey} ) );
         return prototype.materialise( ruleId ).withOwningConstraintId( constraintId );

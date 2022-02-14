@@ -75,7 +75,12 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
 
     public FailingGenericNativeIndexProviderFactory( FailureType... failureTypes )
     {
-        super( new GenericNativeIndexProviderFactory(), DESCRIPTOR );
+        this( new GenericNativeIndexProviderFactory(), failureTypes );
+    }
+
+    public FailingGenericNativeIndexProviderFactory( AbstractIndexProviderFactory<?> indexProviderFactory, FailureType... failureTypes )
+    {
+        super( indexProviderFactory, DESCRIPTOR );
         if ( failureTypes.length == 0 )
         {
             throw new IllegalArgumentException( "At least one failure type, otherwise there's no point in this provider" );

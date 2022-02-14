@@ -92,7 +92,7 @@ public class ConstraintDescriptorFactory
 
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptorImplementation( UNIQUE, schema, IndexType.BTREE );
+        return new ConstraintDescriptorImplementation( UNIQUE, schema, IndexType.RANGE );
     }
 
     public static UniquenessConstraintDescriptor uniqueForSchema( SchemaDescriptor schema, IndexType indexType )
@@ -102,7 +102,7 @@ public class ConstraintDescriptorFactory
 
     public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema )
     {
-        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema, IndexType.BTREE ).asNodeKeyConstraint();
+        return new ConstraintDescriptorImplementation( UNIQUE_EXISTS, schema, IndexType.RANGE ).asNodeKeyConstraint();
     }
 
     public static NodeKeyConstraintDescriptor nodeKeyForSchema( SchemaDescriptor schema, IndexType indexType )

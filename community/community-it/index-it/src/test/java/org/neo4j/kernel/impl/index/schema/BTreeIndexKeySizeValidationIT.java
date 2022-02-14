@@ -37,6 +37,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -369,7 +370,7 @@ public class BTreeIndexKeySizeValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE );
+            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE ).withIndexType( IndexType.BTREE );
             for ( String propKey : propKeys )
             {
                 indexCreator = indexCreator.on( propKey );

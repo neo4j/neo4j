@@ -31,6 +31,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
@@ -59,12 +60,12 @@ class IndexDefinitionToStringTest
         {
             var labelTokenIndex = tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "labelTokenIndex" ).create();
             var labelProperty = tx.schema().indexFor( Label.label( "someLabel" ) )
-                                  .on( "someProperty" ).withName( "labelIndexName" ).create();
+                                  .on( "someProperty" ).withIndexType( BTREE ).withName( "labelIndexName" ).create();
             var labelProperties = tx.schema().indexFor( Label.label( "someLabel" ) )
-                                    .on( "someProperty" ).on( "someOtherProperty" )
+                                    .on( "someProperty" ).withIndexType( BTREE ).on( "someOtherProperty" )
                                     .withName( "labelIndexNames" ).create();
             var rangeLabelProperties = tx.schema().indexFor( Label.label( "someLabel" ) )
-                    .on( "someProperty" ).on( "someOtherProperty" ).withIndexType( RANGE ).withName( "rangeLabelIndexNames" ).create();
+                    .on( "someProperty" ).on( "someOtherProperty" ).withName( "rangeLabelIndexNames" ).create();
             var fulltextLabelProperty = tx.schema().indexFor( Label.label( "Label" ) ).on( "prop" ).withIndexType( FULLTEXT )
                     .withName( "fulltextLabelPropertyIndex" ).create();
             var fulltextLabelsProperties =
@@ -77,12 +78,12 @@ class IndexDefinitionToStringTest
 
             var relTypeTokenIndex = tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "relTypeTokenIndex" ).create();
             var relTypeProperty = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
-                                    .on( "someProperty" ).withName( "relTypeIndexName" ).create();
+                                    .on( "someProperty" ).withIndexType( BTREE ).withName( "relTypeIndexName" ).create();
             var relTypeProperties = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
-                                      .on( "someProperty" ).on( "someOtherProperty" )
+                                      .on( "someProperty" ).on( "someOtherProperty" ).withIndexType( BTREE )
                                       .withName( "relTypeIndexNames" ).create();
             var rangeRelTypeProperties = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
-                    .on( "someProperty" ).on( "someOtherProperty" ).withIndexType( RANGE ).withName( "rangeRelTypeIndexNames" ).create();
+                    .on( "someProperty" ).on( "someOtherProperty" ).withName( "rangeRelTypeIndexNames" ).create();
             var fulltextRelTypeProperty = tx.schema().indexFor( RelationshipType.withName( "TYPE" ) ).on( "prop" ).withIndexType( FULLTEXT )
                     .withName( "fulltextRelTypePropertyIndex" ).create();
             var fulltextRelTypesProperties =

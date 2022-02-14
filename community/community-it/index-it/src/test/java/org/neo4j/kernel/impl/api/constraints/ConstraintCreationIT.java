@@ -84,7 +84,7 @@ class ConstraintCreationIT
         attemptAndFailConstraintCreation();
 
         // then
-        IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
+        IndexProvider indexProvider = indexProviderMap.getBtreeIndexProvider();
         Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( Files.exists( indexDir ) );
@@ -98,7 +98,7 @@ class ConstraintCreationIT
         attemptAndFailConstraintCreation( indexType );
 
         // then
-        IndexProvider indexProvider = indexProviderMap.getDefaultProvider();
+        IndexProvider indexProvider = indexType == IndexType.BTREE ? indexProviderMap.getBtreeIndexProvider() : indexProviderMap.getDefaultProvider();
         Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
         assertFalse( Files.exists( indexDir ) );

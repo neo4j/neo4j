@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
-import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.test.RandomSupport;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
+import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
 
-public class GenericStringLengthIndexValidationIT extends StringLengthIndexValidationIT
+public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
     protected int getSingleKeySizeLimit( int payloadSize )
@@ -42,17 +42,23 @@ public class GenericStringLengthIndexValidationIT extends StringLengthIndexValid
     }
 
     @Override
-    protected GraphDatabaseSettings.SchemaIndex getSchemaIndex()
+    protected IndexType getIndexType()
     {
-        return NATIVE_BTREE10;
+        return RANGE;
+    }
+
+    @Override
+    protected String getIndexProviderString()
+    {
+        return RangeIndexProvider.DESCRIPTOR.name();
     }
 
     @Override
     protected String expectedPopulationFailureCauseMessage( long indexId, long entityId )
     {
         return String.format( "Property value is too large to index, please see index documentation for limitations. " +
-                              "Index: Index( id=%d, name='index_71616483', type='GENERAL BTREE', " +
-                              "schema=(:LABEL_ONE {largeString}), indexProvider='native-btree-1.0' ), entity id: %d",
+                              "Index: Index( id=%d, name='coolName', type='GENERAL RANGE', " +
+                              "schema=(:LABEL_ONE {largeString}), indexProvider='range-1.0' ), entity id: %d",
                               indexId, entityId );
     }
 }

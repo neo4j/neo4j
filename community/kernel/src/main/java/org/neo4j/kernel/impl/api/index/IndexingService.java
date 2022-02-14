@@ -475,9 +475,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     @Override
-    public IndexProviderDescriptor getRangeIndexProvider()
+    public IndexProviderDescriptor getBtreeIndexProvider()
     {
-        return providerMap.getRangeIndexProvider().getProviderDescriptor();
+        return providerMap.getBtreeIndexProvider().getProviderDescriptor();
     }
 
     @Override

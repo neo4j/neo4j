@@ -47,12 +47,12 @@ public class IndexCreatorImpl implements IndexCreator
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label... labels )
     {
-        this( actions, labels, null, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
+        this( actions, labels, null, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty() );
     }
 
     public IndexCreatorImpl( InternalSchemaActions actions, RelationshipType... types )
     {
-        this( actions, null, types, null, new ArrayList<>(), IndexType.BTREE, IndexConfig.empty() );
+        this( actions, null, types, null, new ArrayList<>(), IndexType.RANGE, IndexConfig.empty() );
     }
 
     private IndexCreatorImpl( InternalSchemaActions actions, Label[] labels, RelationshipType[] types, String indexName, Collection<String> propertyKeys,

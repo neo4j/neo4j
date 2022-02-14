@@ -37,6 +37,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
@@ -161,60 +162,60 @@ trait GraphIcing {
       getNodeConstraint(label, properties)
     }
 
-    def createNodeIndex(label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties)
+    def createBtreeNodeIndex(label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, IndexType.BTREE)
     }
 
     def createNodeIndex(indexType: IndexType, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties, indexType)
     }
 
-    def createNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, options = Map("indexProvider" -> s"'$provider'"))
+    def createBtreeNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties, IndexType.BTREE, Map("indexProvider" -> s"'$provider'"))
     }
 
-    def createRelationshipIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, label, properties, options = Map("indexProvider" -> s"'$provider'"))
+    def createBtreeRelationshipIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, label, properties, IndexType.BTREE, Map("indexProvider" -> s"'$provider'"))
     }
 
-    def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, relType, properties)
+    def createBtreeRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties, IndexType.BTREE)
     }
 
     def createRelationshipIndex(indexType: IndexType, relType: String, properties: String*): IndexDefinition = {
       createRelationshipIndex(None, relType, properties, indexType)
     }
 
-    def createNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(Some(name), label, properties)
+    def createBtreeNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(Some(name), label, properties, IndexType.BTREE)
     }
 
     def createNodeIndexWithName(indexType: IndexType, name: String, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(Some(name), label, properties, indexType)
     }
 
-    def createRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(Some(name), relType, properties)
+    def createBtreeRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, properties, IndexType.BTREE)
     }
 
     def createRelationshipIndexWithName(indexType: IndexType, name: String, relType: String, properties: String*): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, properties, indexType)
     }
 
-    def createRangeNodeIndex(label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, IndexType.RANGE)
+    def createNodeIndex(label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(None, label, properties)
     }
 
-    def createRangeNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(Some(name), label, properties, IndexType.RANGE)
+    def createNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
+      createNodeIndex(Some(name), label, properties)
     }
 
-    def createRangeRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, relType, properties, IndexType.RANGE)
+    def createRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties)
     }
 
-    def createRangeRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(Some(name), relType, properties, IndexType.RANGE)
+    def createRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(Some(name), relType, properties)
     }
 
     def createTextNodeIndex(label: String, property: String): IndexDefinition = {
@@ -249,11 +250,11 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, Seq(property), IndexType.POINT)
     }
 
-    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE, options: Map[String, String] = Map.empty): IndexDefinition = {
+    private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE, options: Map[String, String] = Map.empty): IndexDefinition = {
       createIndex(maybeName, s"(e:$label)", properties, indexType, () => getNodeIndex(label, properties, indexType), options)
     }
 
-    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE, options: Map[String, String] = Map.empty): IndexDefinition = {
+    private def createRelationshipIndex(maybeName: Option[String], relType: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE, options: Map[String, String] = Map.empty): IndexDefinition = {
       createIndex(maybeName, s"()-[e:$relType]-()", properties, indexType, () => getRelIndex(relType, properties, indexType), options)
     }
 
@@ -325,10 +326,10 @@ trait GraphIcing {
       } )
     }
 
-    def getNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): IndexDefinition =
+    def getNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): IndexDefinition =
       getMaybeNodeIndex(label, properties, indexType).get
 
-    def getRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): IndexDefinition =
+    def getRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): IndexDefinition =
       getMaybeRelIndex(relType, properties, indexType).get
 
     def getLookupIndex(isNodeIndex: Boolean): IndexDefinition =
@@ -337,12 +338,12 @@ trait GraphIcing {
     def getFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): IndexDefinition =
       getMaybeFulltextIndex(entities, props, isNodeIndex).get
 
-    def getMaybeNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): Option[IndexDefinition] = withTx(tx =>  {
+    def getMaybeNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): Option[IndexDefinition] = withTx(tx =>  {
       tx.schema().getIndexes(Label.label(label)).asScala
         .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
     } )
 
-    def getMaybeRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.BTREE): Option[IndexDefinition] = withTx(tx =>  {
+    def getMaybeRelIndex(relType: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): Option[IndexDefinition] = withTx(tx =>  {
       tx.schema().getIndexes(RelationshipType.withName(relType)).asScala
         .find(index => index.getIndexType.equals(indexType) && index.getPropertyKeys.asScala.toList == properties.toList)
     } )
@@ -435,9 +436,9 @@ trait GraphIcing {
       (labelOrRelType, properties)
     } )
 
-    def createUniqueIndex(label: String, property: String): Unit = {
+    def createUniqueIndex(label: String, property: String, provider: String = RangeIndexProvider.DESCRIPTOR.name()): Unit = {
       withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (p:$label) REQUIRE p.$property IS UNIQUE")
+        tx.execute(s"CREATE CONSTRAINT FOR (p:$label) REQUIRE p.$property IS UNIQUE OPTIONS {indexProvider: '$provider'}")
       } )
 
       withTx( tx => {

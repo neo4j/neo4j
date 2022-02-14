@@ -199,11 +199,11 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
       Map("relationshipType" -> tokenNames.STAYS_IN, "endLabel" -> tokenNames.Room, "count" -> 150)
     )
     list(res("data"), "indexes") should contain only(
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0, "indexType" -> "BTREE"),
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0, "indexType" -> "BTREE"),
-      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.firstName, tokenNames.lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0, "indexType" -> "BTREE"),
-      Map("labels" -> List(tokenNames.Room), "properties" -> List(tokenNames.hotel, tokenNames.number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0, "indexType" -> "BTREE"),
-      Map("labels" -> List(tokenNames.Car), "properties" -> List(tokenNames.number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8, "indexType" -> "BTREE")
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
+      Map("labels" -> List(tokenNames.User), "properties" -> List(tokenNames.firstName, tokenNames.lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
+      Map("labels" -> List(tokenNames.Room), "properties" -> List(tokenNames.hotel, tokenNames.number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0, "indexType" -> "RANGE"),
+      Map("labels" -> List(tokenNames.Car), "properties" -> List(tokenNames.number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8, "indexType" -> "RANGE")
     )
     list(res("data"), "constraints") should contain only
       Map("label" -> tokenNames.User, "properties" -> List(tokenNames.email), "type" -> "Uniqueness constraint")

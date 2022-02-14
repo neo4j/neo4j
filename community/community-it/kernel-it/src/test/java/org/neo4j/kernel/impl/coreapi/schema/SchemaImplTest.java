@@ -131,7 +131,7 @@ class SchemaImplTest
         try ( Transaction tx = db.beginTx() )
         {
             IndexDefinition index = tx.schema().indexFor( USER_LABEL ).on( "name" ).create();
-            assertThat( index.getName() ).isEqualTo( "index_a908f819" );
+            assertThat( index.getName() ).isEqualTo( "index_83617be8" );
             tx.commit();
         }
     }

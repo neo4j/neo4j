@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.test.RandomSupport;
 
-public class Native30StringLengthIndexValidationIT extends StringLengthIndexValidationIT
+import static org.neo4j.graphdb.schema.IndexType.TEXT;
+
+public class TextIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT
 {
     @Override
     protected int getSingleKeySizeLimit( int payloadSize )
@@ -38,9 +40,15 @@ public class Native30StringLengthIndexValidationIT extends StringLengthIndexVali
     }
 
     @Override
-    protected GraphDatabaseSettings.SchemaIndex getSchemaIndex()
+    protected IndexType getIndexType()
     {
-        return GraphDatabaseSettings.SchemaIndex.NATIVE30;
+        return TEXT;
+    }
+
+    @Override
+    protected String getIndexProviderString()
+    {
+        return TextIndexProvider.DESCRIPTOR.name();
     }
 
     @Override

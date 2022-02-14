@@ -21,24 +21,29 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.index.SetInitialStateInNativeIndex;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
+import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -49,7 +54,6 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
@@ -74,12 +78,20 @@ public class IndexCleanupIT
         }
     }
 
-    @ParameterizedTest
-    @EnumSource( SchemaIndex.class )
-    void mustClearIndexDirectoryOnDropWhileOnline( SchemaIndex schemaIndex ) throws IOException
+    private static Stream<Arguments> indexProviders()
     {
-        configureDb( schemaIndex );
-        createIndex( db, true );
+        return Stream.of(
+                Arguments.of( NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR, IndexType.BTREE ),
+                Arguments.of( GenericNativeIndexProvider.DESCRIPTOR, IndexType.BTREE ),
+                Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE ) );
+    }
+
+    @ParameterizedTest
+    @MethodSource( "indexProviders" )
+    void mustClearIndexDirectoryOnDropWhileOnline( IndexProviderDescriptor provider, IndexType indexType ) throws IOException, KernelException
+    {
+        configureDb();
+        createIndex( db, indexType, provider, true );
 
         Path[] providerDirectories = providerDirectories( fs, db );
         for ( Path providerDirectory : providerDirectories )
@@ -93,14 +105,13 @@ public class IndexCleanupIT
     }
 
     @ParameterizedTest
-    @EnumSource( SchemaIndex.class )
-    void mustClearIndexDirectoryOnDropWhileFailed( SchemaIndex schemaIndex ) throws IOException
+    @MethodSource( "indexProviders" )
+    void mustClearIndexDirectoryOnDropWhileFailed( IndexProviderDescriptor provider, IndexType indexType ) throws IOException, KernelException
     {
-        configureDb( schemaIndex );
-        createIndex( db, true );
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( schemaIndex.providerKey(), schemaIndex.providerVersion() );
-        SetInitialStateInNativeIndex setInitialStateInNativeIndex = new SetInitialStateInNativeIndex( BYTE_FAILED, providerDescriptor );
-        restartDatabase( schemaIndex, setInitialStateInNativeIndex );
+        configureDb();
+        createIndex( db, indexType, provider, true );
+        SetInitialStateInNativeIndex setInitialStateInNativeIndex = new SetInitialStateInNativeIndex( BYTE_FAILED, provider );
+        restartDatabase( setInitialStateInNativeIndex );
         // Index should be failed at this point
 
         try ( Transaction tx = db.beginTx() )
@@ -108,7 +119,7 @@ public class IndexCleanupIT
             for ( IndexDefinition index : tx.schema().getIndexes() )
             {
                 // ignore the lookup indexes which are there by default and have nothing to do with this test
-                if ( index.getIndexType() == IndexType.LOOKUP )
+                if ( index.getIndexType() == org.neo4j.graphdb.schema.IndexType.LOOKUP )
                 {
                     continue;
                 }
@@ -126,8 +137,9 @@ public class IndexCleanupIT
     }
 
     @ParameterizedTest
-    @EnumSource( SchemaIndex.class )
-    void mustClearIndexDirectoryOnDropWhilePopulating( SchemaIndex schemaIndex ) throws InterruptedException, IOException
+    @MethodSource( "indexProviders" )
+    void mustClearIndexDirectoryOnDropWhilePopulating( IndexProviderDescriptor provider, IndexType indexType )
+            throws InterruptedException, IOException, KernelException
     {
         // given
         Barrier.Control midPopulation = new Barrier.Control();
@@ -139,11 +151,11 @@ public class IndexCleanupIT
                 midPopulation.reached();
             }
         };
-        configureDb( schemaIndex );
+        configureDb();
         createSomeData();
         Monitors monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
         monitors.addMonitorListener( trappingMonitor );
-        createIndex( db, false );
+        createIndex( db, indexType, provider, false );
 
         midPopulation.await();
         Path[] providerDirectories = providerDirectories( fs, db );
@@ -176,25 +188,25 @@ public class IndexCleanupIT
         }
     }
 
-    private void restartDatabase( SchemaIndex index, SetInitialStateInNativeIndex action ) throws IOException
+    private void restartDatabase( SetInitialStateInNativeIndex action ) throws IOException
     {
         managementService.shutdown();
         action.run( fs, databaseLayout );
-        configureDb( index );
+        configureDb();
     }
 
-    private void configureDb( SchemaIndex schemaIndex )
+    private void configureDb()
     {
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setConfig( default_schema_provider, schemaIndex.providerName() ).build();
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
         db = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
     }
 
-    private static void createIndex( GraphDatabaseService db, boolean awaitOnline )
+    private static void createIndex( GraphDatabaseService db, IndexType indexType, IndexProviderDescriptor providerDescriptor, boolean awaitOnline )
+            throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            IndexDefinition indexDefinition = tx.schema().indexFor( LABEL_ONE ).on( propertyKey ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, providerDescriptor, LABEL_ONE, propertyKey, indexType );
             tx.commit();
         }
         if ( awaitOnline )

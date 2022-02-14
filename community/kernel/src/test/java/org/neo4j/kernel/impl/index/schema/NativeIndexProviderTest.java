@@ -83,25 +83,28 @@ class NativeIndexProviderTest extends IndexProviderTests
 
     private IndexDescriptor descriptorUnique()
     {
-        return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "constraint" ).materialise( indexId ) );
+        return completeConfiguration( uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.BTREE )
+                .withName( "constraint" ).materialise( indexId ) );
     }
 
     @Override
     IndexDescriptor descriptor()
     {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" ).materialise( indexId ) );
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.BTREE )
+                .withName( "index" ).materialise( indexId ) );
     }
 
     @Override
     IndexDescriptor otherDescriptor()
     {
-        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "otherIndex" ).materialise( indexId + 1 ) );
+        return completeConfiguration( forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.BTREE )
+                .withName( "otherIndex" ).materialise( indexId + 1 ) );
     }
 
     @Override
     IndexPrototype validPrototype()
     {
-        return forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withName( "index" );
+        return forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.BTREE ).withName( "index" );
     }
 
     @Override

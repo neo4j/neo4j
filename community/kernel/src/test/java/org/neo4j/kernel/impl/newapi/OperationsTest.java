@@ -65,7 +65,7 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
@@ -173,10 +173,10 @@ abstract class OperationsTest
         tokenHolders = mockedTokenHolders();
         creationContext = mock( CommandCreationContext.class );
         IndexingProvidersService indexingProvidersService = mock( IndexingProvidersService.class );
-        when( indexingProvidersService.indexProviderByName( "native-btree-1.0" ) ).thenReturn( GenericNativeIndexProvider.DESCRIPTOR );
-        when( indexingProvidersService.getDefaultProvider() ).thenReturn( GenericNativeIndexProvider.DESCRIPTOR );
         when( indexingProvidersService.indexProviderByName( "fulltext-1.0" ) ).thenReturn( FulltextIndexProviderFactory.DESCRIPTOR );
         when( indexingProvidersService.getFulltextProvider() ).thenReturn( FulltextIndexProviderFactory.DESCRIPTOR );
+        when( indexingProvidersService.indexProviderByName( "range-1.0" ) ).thenReturn( RangeIndexProvider.DESCRIPTOR );
+        when( indexingProvidersService.getDefaultProvider() ).thenReturn( RangeIndexProvider.DESCRIPTOR );
         when( indexingProvidersService.indexProviderByName( "provider-1.0" ) ).thenReturn( new IndexProviderDescriptor( "provider", "1.0" ) );
         when( indexingProvidersService.completeConfiguration( any() ) ).thenAnswer( inv -> inv.getArgument( 0 ) );
         operations = new Operations( allStoreHolder, storageReader, mock( IndexTxStateUpdater.class ), creationContext, storageLocks,

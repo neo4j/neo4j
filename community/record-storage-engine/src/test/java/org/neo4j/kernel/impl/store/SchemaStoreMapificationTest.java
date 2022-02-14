@@ -45,6 +45,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.IndexType.BTREE;
 import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.internal.schema.SchemaRuleMapifier.mapifySchemaRule;
@@ -69,11 +70,11 @@ class SchemaStoreMapificationTest
     private IndexDescriptor nodeFtsIndex = forSchema( fulltextNodeSchema, fts ).withIndexType( FULLTEXT ).withName( "nodeFtsIndex" ).materialise( 1 );
     private IndexDescriptor relFtsIndex = forSchema( fulltextRelSchema, fts ).withIndexType( FULLTEXT ).withName( "relFtsIndex" ).materialise( 1 );
     private ConstraintDescriptor uniqueLabelConstraint =
-            ConstraintDescriptorFactory.uniqueForSchema( labelSchema ).withName( "uniqueLabelConstraint" ).withId( 1 );
+            ConstraintDescriptorFactory.uniqueForSchema( labelSchema, BTREE ).withName( "uniqueLabelConstraint" ).withId( 1 );
     private ConstraintDescriptor uniqueLabelConstraintWithType =
             ConstraintDescriptorFactory.uniqueForSchema( labelSchema, RANGE ).withName( "uniqueLabelConstraintWithType" ).withOwnedIndexId( 7 ).withId( 1 );
     private ConstraintDescriptor existsLabelConstraint = existsForSchema( labelSchema ).withName( "existsLabelConstraint" ).withId( 1 );
-    private ConstraintDescriptor nodeKeyConstraint = nodeKeyForSchema( labelSchema ).withName( "nodeKeyConstraint" ).withId( 1 );
+    private ConstraintDescriptor nodeKeyConstraint = nodeKeyForSchema( labelSchema, BTREE ).withName( "nodeKeyConstraint" ).withId( 1 );
     private ConstraintDescriptor nodeKeyConstraintWithType =
             nodeKeyForSchema( labelSchema, RANGE ).withName( "nodeKeyConstraintWithType" ).withOwnedIndexId( 7 ).withId( 1 );
     private ConstraintDescriptor existsRelTypeConstraint = existsForSchema( relTypeSchema ).withName( "existsRelTypeConstraint" ).withId( 1 );
@@ -96,7 +97,7 @@ class SchemaStoreMapificationTest
     @Test
     void labelIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'labelIndex', GENERAL BTREE, :label[1](property[2], property[3]), native-btree-1.0 )
+        // Index( 1, 'labelIndex', GENERAL RANGE, :label[1](property[2], property[3]), native-btree-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "labelIndex" ),
@@ -105,7 +106,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "BTREE" ),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "RANGE" ),
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
@@ -115,7 +116,7 @@ class SchemaStoreMapificationTest
     @Test
     void labelUniqueIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'labelUniqueIndex', UNIQUE BTREE, :label[1](property[2], property[3]), native-btree-1.0 )
+        // Index( 1, 'labelUniqueIndex', UNIQUE RANGE, :label[1](property[2], property[3]), native-btree-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "labelUniqueIndex" ),
@@ -124,7 +125,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "BTREE" ),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "RANGE" ),
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
@@ -134,7 +135,7 @@ class SchemaStoreMapificationTest
     @Test
     void relTypeIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'relTypeIndex', GENERAL BTREE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
+        // Index( 1, 'relTypeIndex', GENERAL RANGE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "RELATIONSHIP" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "relTypeIndex" ),
@@ -143,7 +144,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "BTREE" ),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "RANGE" ),
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "NON_UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
@@ -153,7 +154,7 @@ class SchemaStoreMapificationTest
     @Test
     void relTypeUniqueIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'relTypeUniqueIndex', UNIQUE BTREE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
+        // Index( 1, 'relTypeUniqueIndex', UNIQUE RANGE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "RELATIONSHIP" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "relTypeUniqueIndex" ),
@@ -162,7 +163,7 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
-                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "BTREE" ),
+                "__org.neo4j.SchemaRule.indexType", Values.stringValue( "RANGE" ),
                 "__org.neo4j.SchemaRule.indexRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
@@ -220,12 +221,12 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "UNIQUE" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        // A uniqueness constraint without specified index type should have gotten the default type.
+        // A uniqueness constraint without specified index type should have gotten the BTREE type.
         assertThat( unmapifySchemaRule( 1, mapified ) ).isEqualTo( uniqueLabelConstraint );
     }
 
     @Test
-    void setUniqueLabelConstraintWithDefaultTypeDeterministicUnmapification() throws Exception
+    void setUniqueLabelConstraintWithBtreeTypeDeterministicUnmapification() throws Exception
     {
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),
@@ -286,12 +287,12 @@ class SchemaStoreMapificationTest
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue( "UNIQUE_EXISTS" ),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray( new int[] {1} )
         );
-        // A uniqueness constraint without specified index type should have gotten the default type.
+        // A uniqueness constraint without specified index type should have gotten the BTREE type.
         assertThat( unmapifySchemaRule( 1, mapified ) ).isEqualTo( nodeKeyConstraint );
     }
 
     @Test
-    void nodeKeyConstraintWithDefaultTypeDeterministicUnmapification() throws Exception
+    void nodeKeyConstraintWithBtreeTypeDeterministicUnmapification() throws Exception
     {
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),

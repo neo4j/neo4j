@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,6 +43,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -142,21 +142,9 @@ class RecoveryCleanupIT
     }
 
     @Test
-    void nativeIndexFusion30MustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
-        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE30, "native-btree-1.0" );
-    }
-
-    @Test
-    void nativeIndexBTreeMustLogCrashPointerCleanupDuringRecovery() throws Exception
-    {
-        nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, "index" );
-    }
-
-    private void nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex setting, String... subTypes ) throws Exception
+    void nativeIndexRangeMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.default_schema_provider, setting.providerName() );
         dirtyDatabase();
 
         // when
@@ -166,28 +154,26 @@ class RecoveryCleanupIT
         managementService.shutdown();
 
         // then
-        for ( String subType : subTypes )
-        {
-            assertThat( logProvider )
-                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job registered", subType ) )
-                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job started", subType ) )
-                    .containsMessageWithAll( indexRecoveryFinishedLogMatcher( subType ) )
-                    .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
-        }
+        String providerString = RangeIndexProvider.DESCRIPTOR.name();
+        assertThat( logProvider )
+                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job registered", providerString ) )
+                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job started", providerString ) )
+                .containsMessageWithAll( indexRecoveryFinishedLogMatcher( providerString ) )
+                .containsMessageWithAll( indexRecoveryLogMatcher( "Schema index cleanup job closed", providerString ) );
     }
 
-    private static String[] indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
+    private static String[] indexRecoveryLogMatcher( String logMessage, String providerString )
     {
-        return new String[] { logMessage, "descriptor", "type='GENERAL BTREE'", "indexFile=", File.separator + subIndexProviderKey };
+        return new String[] { logMessage, "descriptor", "type='GENERAL RANGE'", "indexFile=", File.separator + providerString };
     }
 
-    private static String[] indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
+    private static String[] indexRecoveryFinishedLogMatcher( String providerString )
     {
         return new String[] { "Schema index cleanup job finished",
                 "descriptor",
-                "type='GENERAL BTREE'",
+                "type='GENERAL RANGE'",
                 "indexFile=",
-                File.separator + subIndexProviderKey,
+                File.separator + providerString,
                 "Number of pages visited",
                 "Number of cleaned crashed pointers",
                 "Time spent" };

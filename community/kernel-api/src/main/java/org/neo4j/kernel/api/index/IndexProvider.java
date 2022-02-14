@@ -162,6 +162,12 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
+                public IndexType getIndexType()
+                {
+                    return IndexType.RANGE;
+                }
+
+                @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
                         PageCache pageCache, StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
                 {
@@ -231,7 +237,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * that is not the case.
      * @param prototype The prototype to be validated.
      */
-    public abstract  void validatePrototype( IndexPrototype prototype );
+    public abstract void validatePrototype( IndexPrototype prototype );
 
     /**
      * @return a description of this index provider
@@ -244,10 +250,7 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     /**
      * @return the index type this provider works with.
      */
-    public IndexType getIndexType()
-    {
-        return IndexType.BTREE;
-    }
+    public abstract IndexType getIndexType();
 
     @Override
     public boolean equals( Object o )
@@ -328,6 +331,12 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
+        public IndexType getIndexType()
+        {
+            return IndexType.RANGE;
+        }
+
+        @Override
         public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
                 CursorContextFactory contextFactory )
         {
@@ -393,6 +402,12 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         public IndexProviderDescriptor getProviderDescriptor()
         {
             return provider.getProviderDescriptor();
+        }
+
+        @Override
+        public IndexType getIndexType()
+        {
+            return provider.getIndexType();
         }
 
         @Override

@@ -38,8 +38,8 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
+import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
-import static org.neo4j.internal.kernel.api.PropertyIndexQuery.stringContains;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -77,7 +77,7 @@ class ReadTracingIT
                                                                                          kernelTransaction.memoryTracker() ) )
             {
                 dataRead.nodeIndexSeek( kernelTransaction.queryContext(), indexSession, cursor, unconstrained(),
-                        stringContains( propertyId, stringValue( testPropertyValue ) ) );
+                        exact( propertyId, stringValue( testPropertyValue ) ) );
 
                 consumeCursor( cursor );
             }

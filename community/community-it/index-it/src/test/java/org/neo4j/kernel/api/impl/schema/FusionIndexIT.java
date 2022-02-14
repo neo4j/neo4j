@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -205,7 +206,7 @@ public class FusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().indexFor( label ).on( propKey ).withName( indexName ).create();
+            tx.schema().indexFor( label ).on( propKey ).withName( indexName ).withIndexType( IndexType.BTREE ).create();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

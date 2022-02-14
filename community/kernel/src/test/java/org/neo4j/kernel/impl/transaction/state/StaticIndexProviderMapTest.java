@@ -68,8 +68,8 @@ class StaticIndexProviderMapTest
         assertThat( map.getTextIndexProvider() ).isEqualTo( textIndexProvider );
         assertThat( map.getFulltextProvider() ).isEqualTo( fulltextIndexProvider );
         assertThat( map.getTokenIndexProvider() ).isEqualTo( tokenIndexProvider );
-        assertThat( map.getDefaultProvider() ).isEqualTo( btreeIndexProvider );
-        assertThat( map.getRangeIndexProvider() ).isEqualTo( rangeIndexProvider );
+        assertThat( map.getBtreeIndexProvider() ).isEqualTo( btreeIndexProvider );
+        assertThat( map.getDefaultProvider() ).isEqualTo( rangeIndexProvider );
         assertThat( map.getPointIndexProvider() ).isEqualTo( pointIndexProvider );
     }
 
@@ -141,18 +141,20 @@ class StaticIndexProviderMapTest
         var config = Config.newBuilder()
                            .set( GraphDatabaseSettings.default_schema_provider, extension.getProviderDescriptor().name() )
                            .build();
+        RangeIndexProvider rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var map = new StaticIndexProviderMap( mockProvider( TokenIndexProvider.class ),
                                               mockProvider( GenericNativeIndexProvider.class ),
                                               mockProvider( FusionIndexProvider.class ),
                                               mockProvider( TextIndexProvider.class ),
                                               mockProvider( FulltextIndexProvider.class ),
-                                              mockProvider( RangeIndexProvider.class ),
+                                              rangeIndexProvider,
                                               mockProvider( PointIndexProvider.class ),
                                               config,
                                               dependencies );
         map.init();
 
-        assertThat( map.getDefaultProvider() ).isEqualTo( extension );
+        assertThat( map.getDefaultProvider() ).isEqualTo( rangeIndexProvider );
+        assertThat( map.getBtreeIndexProvider() ).isEqualTo( extension );
         assertThat( map.lookup( extension.getProviderDescriptor() ) ).isEqualTo( extension );
         assertThat( map.lookup( extension.getProviderDescriptor().name() ) ).isEqualTo( extension );
         var accepted = new ArrayList<>();

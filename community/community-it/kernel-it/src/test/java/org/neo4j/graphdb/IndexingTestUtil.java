@@ -21,7 +21,17 @@ package org.neo4j.graphdb;
 
 import java.util.function.Predicate;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
@@ -74,5 +84,55 @@ public class IndexingTestUtil
             } );
             tx.commit();
         }
+    }
+
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop )
+            throws KernelException
+    {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
+                        tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider );
+        return kernelTransaction.schemaWrite().indexCreate( prototype );
+    }
+
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label, String prop,
+            IndexType indexType ) throws KernelException
+    {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
+                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withIndexType( indexType );
+        return kernelTransaction.schemaWrite().indexCreate( prototype );
+    }
+
+    public static IndexDescriptor createNodePropIndexWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
+            String prop, String name ) throws KernelException
+    {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.forSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
+                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withName( name );
+        return kernelTransaction.schemaWrite().indexCreate( prototype );
+    }
+
+    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
+            String prop ) throws KernelException
+    {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
+                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider );
+        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
+    }
+
+    public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
+            String prop, IndexType indexType, String name ) throws KernelException
+    {
+        KernelTransaction kernelTransaction = tx.kernelTransaction();
+        TokenWrite tokenWrite = kernelTransaction.tokenWrite();
+        IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
+                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withIndexType( indexType ).withName( name );
+        return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
     }
 }

@@ -206,6 +206,12 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
+    public IndexType getIndexType()
+    {
+        return IndexType.BTREE;
+    }
+
+    @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory )
     {

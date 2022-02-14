@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -87,7 +88,6 @@ public class IndexPopulationMissConcurrentUpdateIT
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
         builder.noOpSystemGraphInitializer().addExtension( index );
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
         builder.setConfig( GraphDatabaseInternalSettings.index_population_queue_threshold, 1 );
     }
 
@@ -127,9 +127,9 @@ public class IndexPopulationMissConcurrentUpdateIT
         idController.maintenance();
 
         // when
-        try ( Transaction tx = db.beginTx() )
+        try ( TransactionImpl tx = (TransactionImpl) db.beginTx() )
         {
-            tx.schema().indexFor( LABEL_ONE ).on( NAME_PROPERTY ).create();
+            IndexingTestUtil.createNodePropIndexWithSpecifiedProvider( tx, ControlledSchemaIndexProvider.INDEX_PROVIDER, LABEL_ONE, NAME_PROPERTY );
             tx.commit();
         }
 

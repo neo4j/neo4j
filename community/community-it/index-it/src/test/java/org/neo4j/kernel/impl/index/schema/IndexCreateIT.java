@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -142,30 +141,24 @@ public class IndexCreateIT extends KernelIntegrationTest
 
     protected void shouldCreateWithSpecificExistingProviderName( IndexCreator creator ) throws KernelException
     {
+        // given
+        TokenWrite tokenWrite = tokenWriteInNewTransaction();
+        int labelId = tokenWrite.labelGetOrCreateForName( "Label0" );
+        int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
+        commit();
 
-        int counter = 0;
-        for ( GraphDatabaseSettings.SchemaIndex indexSetting : GraphDatabaseSettings.SchemaIndex.values() )
-        {
-            // given
-            TokenWrite tokenWrite = tokenWriteInNewTransaction();
-            int labelId = tokenWrite.labelGetOrCreateForName( "Label" + counter );
-            int propId = tokenWrite.propertyKeyGetOrCreateForName( "property" );
-            commit();
+        SchemaWrite schemaWrite = schemaWriteInNewTransaction();
+        LabelSchemaDescriptor descriptor = forLabel( labelId, propId );
+        String provider = RangeIndexProvider.DESCRIPTOR.name();
+        String indexName = "index-0";
+        creator.create( schemaWrite, descriptor, provider, indexName );
+        IndexDescriptor index = transaction.kernelTransaction().schemaRead().indexGetForName( indexName );
 
-            SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-            LabelSchemaDescriptor descriptor = forLabel( labelId, propId );
-            String provider = indexSetting.providerName();
-            String indexName = "index-" + counter;
-            creator.create( schemaWrite, descriptor, provider, indexName );
-            IndexDescriptor index = transaction.kernelTransaction().schemaRead().indexGetForName( indexName );
+        // when
+        commit();
 
-            // when
-            commit();
-
-            // then
-            assertEquals( provider, indexingService.getIndexProxy( index ).getDescriptor().getIndexProvider().name() );
-            counter++;
-        }
+        // then
+        assertEquals( provider, indexingService.getIndexProxy( index ).getDescriptor().getIndexProvider().name() );
     }
 
     protected interface IndexCreator

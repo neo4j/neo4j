@@ -209,16 +209,12 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
 
       // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-      case CreateRangeNodeIndex(_, label, props, name, ifExistsDo, options, fromDefault, _) =>
-        // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
-        if (fromDefault) createBtreeIndex(Left(label), props, name, ifExistsDo, options)
-        else createRangeIndex(Left(label), props, name, ifExistsDo, options)
+      case CreateRangeNodeIndex(_, label, props, name, ifExistsDo, options, _, _) =>
+        createRangeIndex(Left(label), props, name, ifExistsDo, options)
 
       // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
-      case CreateRangeRelationshipIndex(_, relType, props, name, ifExistsDo, options, fromDefault, _) =>
-        // We want to make RANGE default eventually, but for now we keep the behavior of BTREE being default
-        if (fromDefault) createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
-        else createRangeIndex(Right(relType), props, name, ifExistsDo, options)
+      case CreateRangeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _, _) =>
+        createRangeIndex(Right(relType), props, name, ifExistsDo, options)
 
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)

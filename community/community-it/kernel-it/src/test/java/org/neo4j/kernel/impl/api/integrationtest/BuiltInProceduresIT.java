@@ -268,11 +268,11 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
 
         // Then
         assertThat( result ).contains(
-                dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "BTREE", "NODE", singletonList( "Age" ),
+                dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "RANGE", "NODE", singletonList( "Age" ),
                         singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
-                dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "Person" ),
+                dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE", singletonList( "Person" ),
                         singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
-                dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE",
+                dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE",
                         singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ) );
         commit();
     }
@@ -370,13 +370,13 @@ class BuiltInProceduresIT extends CommunityProcedureITBase
         try
         {
             assertThat( result ).contains(
-                    dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "BTREE", "NODE", singletonList( "Age" ),
+                    dbIndexesResult( ageFooIndex.getId(), ageFooIndex.getName(), "ONLINE", 100D, "UNIQUE", "RANGE", "NODE", singletonList( "Age" ),
                             singletonList( "foo" ), ageFooIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE", singletonList( "Person" ),
+                    dbIndexesResult( personFooIndex.getId(), personFooIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE", singletonList( "Person" ),
                             singletonList( "foo" ), personFooIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "BTREE", "NODE",
+                    dbIndexesResult( personFooBarIndex.getId(), personFooBarIndex.getName(), "ONLINE", 100D, "NONUNIQUE", "RANGE", "NODE",
                             singletonList( "Person" ), Arrays.asList( "foo", "bar" ), personFooBarIndex.getIndexProvider().name() ),
-                    dbIndexesResult( personBazIndex.getId(), personBazIndex.getName() /*???*/, "POPULATING", 100D, "UNIQUE", "BTREE", "NODE",
+                    dbIndexesResult( personBazIndex.getId(), personBazIndex.getName() /*???*/, "POPULATING", 100D, "UNIQUE", "RANGE", "NODE",
                             singletonList( "Person" ), singletonList( "baz" ), personBazIndex.getIndexProvider().name() ) );
             commit();
         }
