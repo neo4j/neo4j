@@ -69,3 +69,6 @@ Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates":
 Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "5"
 Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "6"
 Feature "List6 - List size": Scenario "Fail for `size()` on pattern predicates": Example "7"
+
+// Failing with M18 TCK - Bug in TCK impacting Scala 2.13 Only https://github.com/opencypher/openCypher/pull/528
+Feature "Graph3 - Node labels": Scenario "`labels()` should accept type Any"
