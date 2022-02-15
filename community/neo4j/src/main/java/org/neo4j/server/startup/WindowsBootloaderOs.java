@@ -212,6 +212,11 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
             // - Paused
             //
             // It seems plausible to interpret anything other than "Stopped" as running, at least for how the Neo4j boot loader is interacting with it
+            //
+            // Stderr should not be part of the stream since Get-Service will write stuff like:
+            //      Get-service : Cannot find any service with service name 'neo4j'
+            // to stderr and we should not interpret that as the service is running.
+            //
             return stream( resultFromPowerShellCommand( "Get-Service", serviceName(), "|", "Format-Table", "-AutoSize" ) )
                     .filter( s -> s.contains( serviceName() ) )
                     .findFirst()
@@ -233,11 +238,15 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction
 
     private String[] resultFromPowerShellCommand( String... command )
     {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        try ( PrintStream out = new PrintStream( buffer ) )
+        var outBuffer = new ByteArrayOutputStream();
+        var errBuffer = new ByteArrayOutputStream();
+        try ( var out = new PrintStream( outBuffer );
+              var err = new PrintStream( errBuffer ) )
         {
-            ctx.processManager().run( asPowershellScript( List.of( command ) ), behaviour().blocking().outputConsumer( out ).errorConsumer( out ) );
-            return buffer.toString().split( format( "%n" ) );
+            // Note that stderr is kept separate but "muted" by ignoring what has been written to the stream.
+            ctx.processManager().run(
+                    asPowershellScript( List.of( command ) ), behaviour().blocking().outputConsumer( out ).errorConsumer( err ) );
+            return outBuffer.toString().split( format( "%n" ) );
         }
     }
 
