@@ -137,10 +137,4 @@ public class PageAlignedV5_0 extends BaseRecordFormats
     {
         return new RecordFormats[0];
     }
-
-    @Override
-    public boolean formatUnderDevelopment()
-    {
-        return true;
-    }
 }

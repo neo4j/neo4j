@@ -130,7 +130,7 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSAC
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.HIGH_LIMIT_V5_0_0;
+import static org.neo4j.kernel.impl.store.format.StoreVersion.HIGH_LIMIT_V5_0;
 import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V5_0;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -248,7 +248,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // KernelVersion is before 5.0 (assuming we set the kernel version to 5.0 in this migration).
             if ( ( STANDARD_V5_0.versionString().equals( newFormat.storeVersion() ) ||
                   ALIGNED_V5_0.versionString().equals( newFormat.storeVersion() ) ||
-                  HIGH_LIMIT_V5_0_0.versionString().equals( newFormat.storeVersion() ) ) &&
+                  HIGH_LIMIT_V5_0.versionString().equals( newFormat.storeVersion() ) ) &&
                  !newFormat.storeVersion().equals( oldFormat.storeVersion() ) )
             {
                 List<DatabaseFile> databaseFiles =
