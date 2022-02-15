@@ -58,22 +58,25 @@ import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.persist
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE;
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.BTREE;
+import static org.neo4j.storageengine.api.SchemaRule44.IndexType.POINT;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.RANGE;
+import static org.neo4j.storageengine.api.SchemaRule44.IndexType.TEXT;
 
-class RecordStorageMizgratorTest
+class RecordStorageMigratorTest
 {
     private static final String MISSING_REPLACEMENT_MESSAGE =
-            "All BTREE indexes and constraints backed by BTREE indexes will be removed during migration. " +
-            "To make sure no indexes or constraints are deleted unknowingly, migration is prevented if there are " +
-            "any indexes that hasn't been replaced by a RANGE, TEXT or POINT index or any constraints that hasn't " +
-            "been replaced by a constraint backed by a RANGE index. Please drop the indexes and constraints associated " +
-            "with BTREE or replace them as described above. For more details, please refer to the upgrade guide in documentation. " +
+            "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
+            "To guard from unintentionally removing indexes or constraints, " +
+            "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or " +
+            "need to have a valid replacement. " +
+            "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. " +
+            "Please drop your indexes and constraints or create replacements and retry the migration. " +
             "The indexes and constraints without replacement are: ";
     private static final String NAME_ONE = "Index one";
     private static final String NAME_TWO = "Index two";
     private final MutableInt schemaId = new MutableInt();
-    private int labelOne;
-    private int propOne;
+    private int[] labels;
+    private int[] props;
     private TokenHolders tokenHolders;
 
     @BeforeEach
@@ -84,15 +87,21 @@ class RecordStorageMizgratorTest
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE )
         );
-        labelOne = tokenHolders.labelTokens().getOrCreateId( "LabelOne" );
-        propOne = tokenHolders.propertyKeyTokens().getOrCreateId( "propOne" );
+        var nbrOfTokens = 8;
+        labels = new int[nbrOfTokens];
+        props = new int[nbrOfTokens];
+        for ( int i = 0; i < nbrOfTokens; i++ )
+        {
+            labels[i] = tokenHolders.labelTokens().getOrCreateId( "Label" + i );
+            props[i] = tokenHolders.propertyKeyTokens().getOrCreateId( "prop" + i );
+        }
     }
 
     @Test
-    void shouldThrowOnNonReplacedBtreeIndex()
+    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeIndex()
     {
         // Given
-        var index = index( BTREE, labelOne, propOne, NAME_ONE );
+        var index = index( BTREE, labels[0], props[0], NAME_ONE );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
@@ -108,10 +117,10 @@ class RecordStorageMizgratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void shouldThrowOnNonReplacedBtreeBackedConstraint( SchemaRule44.ConstraintRuleType constraintType )
+    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeBackedConstraint( SchemaRule44.ConstraintRuleType constraintType )
     {
         // Given
-        var indexConstraint = constraint( constraintType, BTREE, labelOne, propOne, NAME_ONE );
+        var indexConstraint = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
         var index = indexConstraint.index();
         var constraint = indexConstraint.constraint();
         var reader = mock( SchemaStore44Reader.class );
@@ -129,12 +138,12 @@ class RecordStorageMizgratorTest
 
     @ParameterizedTest
     @MethodSource( value = "nonReplacingConstraintCombinations" )
-    void shouldThrowOnNonReplacedBtreeBackedConstraintWithConstraintOfDifferentTypeOnSameSchema( SchemaRule44.ConstraintRuleType btreeConstraint,
-                                                                                                 SchemaRule44.ConstraintRuleType otherConstraint )
+    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeBackedConstraintWithConstraintOfDifferentTypeOnSameSchema(
+            SchemaRule44.ConstraintRuleType btreeConstraint, SchemaRule44.ConstraintRuleType otherConstraint )
     {
         // Given
-        var btree = constraint( btreeConstraint, BTREE, labelOne, propOne, NAME_ONE );
-        var rangeNodeKey = constraint( otherConstraint, RANGE, labelOne, propOne, NAME_TWO );
+        var btree = constraint( btreeConstraint, BTREE, labels[0], props[0], NAME_ONE );
+        var rangeNodeKey = constraint( otherConstraint, RANGE, labels[0], props[0], NAME_TWO );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
@@ -149,13 +158,120 @@ class RecordStorageMizgratorTest
                        .hasMessageContaining( btree.constraint().userDescription( tokenHolders ) );
     }
 
-    @ParameterizedTest
-    @EnumSource( value = SchemaRule44.IndexType.class, names = {"RANGE", "POINT", "TEXT"} )
-    void shouldRemoveBtreeIndexIfReplaced( SchemaRule44.IndexType indexType ) throws KernelException
+    @Test
+    void filterOutBtreeIndexesShouldIncludeAllSchemaRulesThatLackReplacementInException()
     {
         // Given
-        var btree = index( BTREE, labelOne, propOne, NAME_ONE );
-        var range = index( indexType, labelOne, propOne, NAME_TWO );
+        var btreeIndex1 = index( BTREE, labels[0], props[0], "btreeIndex1" );
+        var btreeIndex2 = index( BTREE, labels[1], props[2], "btreeIndex2" );
+        var btreeConstraintUnique = constraint( UNIQUE, BTREE, labels[2], props[2], "btreeConstraintUnique" );
+        var btreeConstraintNodeKey = constraint( UNIQUE_EXISTS, BTREE, labels[3], props[3], "btreeConstraintNodeKey" );
+
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of(
+                        btreeIndex1, btreeIndex2,
+                        btreeConstraintUnique.index, btreeConstraintUnique.constraint,
+                        btreeConstraintNodeKey.index, btreeConstraintNodeKey.constraint
+                ) );
+
+        // When
+        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+
+        // Then
+        assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
+                       .hasMessageContaining( btreeIndex1.userDescription( tokenHolders ) )
+                       .hasMessageContaining( btreeIndex2.userDescription( tokenHolders ) )
+                       .hasMessageContaining( btreeConstraintUnique.constraint.userDescription( tokenHolders ) )
+                       .hasMessageContaining( btreeConstraintNodeKey.constraint.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( btreeConstraintUnique.index.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( btreeConstraintNodeKey.index.userDescription( tokenHolders ) );
+    }
+
+    @Test
+    void filterOutBtreeIndexesShouldNotRemoveAnythingIfSomeRulesLackReplacement()
+    {
+        // Given
+        var btreeIndexReplaced = index( BTREE, labels[0], props[0], "btreeIndexReplaced" );
+        var replacingIndex = index( RANGE, labels[0], props[0], "replacingIndex" );
+
+        var btreeConstraintReplaced = constraint( UNIQUE, BTREE, labels[1], props[1], "btreeConstraintReplaced" );
+        var replacingConstraint = constraint( UNIQUE, RANGE, labels[1], props[1], "replacingConstraint" );
+
+        var btreeIndexWithoutReplacement = index( BTREE, labels[2], props[2], "btreeIndexWithoutReplacement" );
+        var btreeConstraintWithoutReplacement = constraint( UNIQUE, BTREE, labels[3], props[3], "btreeConstraintWithoutReplacement" );
+
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of(
+                        btreeIndexReplaced, replacingIndex,
+                        btreeConstraintReplaced.index, btreeConstraintReplaced.constraint,
+                        replacingConstraint.index, replacingConstraint.constraint,
+                        btreeIndexWithoutReplacement,
+                        btreeConstraintWithoutReplacement.index, btreeConstraintWithoutReplacement.constraint
+                ) );
+
+        // When
+        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+
+        // Then
+        assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
+                       .hasMessageContaining( btreeIndexWithoutReplacement.userDescription( tokenHolders ) )
+                       .hasMessageContaining( btreeConstraintWithoutReplacement.constraint.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( btreeIndexReplaced.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( replacingIndex.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( btreeConstraintReplaced.constraint.userDescription( tokenHolders ) )
+                       .hasMessageNotContaining( replacingConstraint.constraint.userDescription( tokenHolders ) );
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verifyNoInteractions( access );
+    }
+
+    @Test
+    void filterOutBtreeIndexesShouldNotBeAffectedByExistsConstraint() throws KernelException
+    {
+        // Given
+        var btreeIndexReplacedByRange = index( BTREE, labels[0], props[0], "btreeIndexReplacedByRange" );
+        var replacingRangeIndex = index( RANGE, labels[0], props[0], "replacingRangeIndex" );
+        var existsConstraintOnIndexSchema = existsConstraint( labels[0], props[0], "existsConstraintOnIndexSchema" );
+
+        // exists constraint on same schema as replaced constraint
+        var btreeConstraintUnique = constraint( UNIQUE, BTREE, labels[1], props[1], "btreeConstraintUnique" );
+        var replacingRangeConstraintUnique = constraint( UNIQUE, RANGE, labels[1], props[1], "replacingRangeConstraintUnique" );
+        var existsConstraintOnConstraintSchema = existsConstraint( labels[1], props[1], "existsConstraintOnConstraintSchema" );
+
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of(
+                        btreeIndexReplacedByRange, replacingRangeIndex, existsConstraintOnIndexSchema,
+                        btreeConstraintUnique.index, btreeConstraintUnique.constraint,
+                        replacingRangeConstraintUnique.index, replacingRangeConstraintUnique.constraint,
+                        existsConstraintOnConstraintSchema
+                ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+
+        // Then
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).deleteSchemaRule( btreeIndexReplacedByRange.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintUnique.index.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintUnique.constraint.id() );
+        verifyNoMoreInteractions( access );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = SchemaRule44.IndexType.class, names = {"RANGE", "POINT", "TEXT"} )
+    void filterOutBtreeIndexesShouldRemoveBtreeIndexIfReplaced( SchemaRule44.IndexType indexType ) throws KernelException
+    {
+        // Given
+        var btree = index( BTREE, labels[0], props[0], NAME_ONE );
+        var range = index( indexType, labels[0], props[0], NAME_TWO );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
@@ -172,11 +288,11 @@ class RecordStorageMizgratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void shouldRemoveBtreeConstraintsIfReplaced( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    void filterOutBtreeIndexesShouldRemoveBtreeConstraintsIfReplaced( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
     {
         // Given
-        var btreeUnique = constraint( constraintType, BTREE, labelOne, propOne, NAME_ONE );
-        var rangeUnique = constraint( constraintType, RANGE, labelOne, propOne, NAME_TWO );
+        var btreeUnique = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
+        var rangeUnique = constraint( constraintType, RANGE, labels[0], props[0], NAME_TWO );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
@@ -194,7 +310,64 @@ class RecordStorageMizgratorTest
     }
 
     @Test
-    void shouldIgnoreSystemDb() throws KernelException
+    void filterOutBtreeIndexesShouldRemoveMultipleIndexesAndConstraints() throws KernelException
+    {
+        // Given
+        var btreeIndexReplacedByRange = index( BTREE, labels[0], props[0], "btreeIndexReplacedByRange" );
+        var replacingRangeIndex = index( RANGE, labels[0], props[0], "replacingRangeIndex" );
+
+        var btreeIndexReplacedByText = index( BTREE, labels[1], props[1], "btreeIndexReplacedByText" );
+        var replacingTextIndex = index( TEXT, labels[1], props[1], "replacingTextIndex" );
+
+        var btreeIndexReplacedByPoint = index( BTREE, labels[2], props[2], "btreeIndexReplacedByPoint" );
+        var replacingPointIndex = index( POINT, labels[2], props[2], "replacingPointIndex" );
+
+        var rangeIndex = index( RANGE, labels[3], props[3], "rangeIndex" );
+        var textIndex = index( TEXT, labels[3], props[3], "textIndex" );
+        var pointIndex = index( POINT, labels[3], props[3], "pointIndex" );
+
+        var btreeConstraintUnique = constraint( UNIQUE, BTREE, labels[4], props[4], "btreeConstraintUnique" );
+        var replacingRangeConstraintUnique = constraint( UNIQUE, RANGE, labels[4], props[4], "replacingRangeConstraintUnique" );
+
+        var btreeConstraintNodeKey = constraint( UNIQUE_EXISTS, BTREE, labels[5], props[5], "btreeConstraintNodeKey" );
+        var replacingRangeConstraintNodeKey = constraint( UNIQUE_EXISTS, RANGE, labels[5], props[5], "replacingRangeConstraintNodeKey" );
+
+        var rangeConstraintUnique = constraint( UNIQUE, RANGE, labels[6], props[6], "rangeConstraintUnique" );
+        var rangeConstraintNodeKey = constraint( UNIQUE_EXISTS, RANGE, labels[7], props[7], "rangeConstraintNodeKey" );
+
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of(
+                        btreeIndexReplacedByRange, replacingRangeIndex,
+                        btreeIndexReplacedByText, replacingTextIndex,
+                        btreeIndexReplacedByPoint, replacingPointIndex,
+                        rangeIndex, textIndex, pointIndex,
+                        btreeConstraintUnique.index, btreeConstraintUnique.constraint,
+                        replacingRangeConstraintUnique.index, replacingRangeConstraintUnique.constraint,
+                        btreeConstraintNodeKey.index, btreeConstraintNodeKey.constraint,
+                        replacingRangeConstraintNodeKey.index, replacingRangeConstraintNodeKey.constraint,
+                        rangeConstraintUnique.index, rangeConstraintUnique.constraint, rangeConstraintNodeKey.index, rangeConstraintNodeKey.constraint
+                ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+
+        // Then
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).deleteSchemaRule( btreeIndexReplacedByRange.id() );
+        verify( access ).deleteSchemaRule( btreeIndexReplacedByText.id() );
+        verify( access ).deleteSchemaRule( btreeIndexReplacedByPoint.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintUnique.index.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintUnique.constraint.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintNodeKey.index.id() );
+        verify( access ).deleteSchemaRule( btreeConstraintNodeKey.constraint.id() );
+        verifyNoMoreInteractions( access );
+    }
+
+    @Test
+    void filterOutBtreeIndexesShouldIgnoreSystemDb() throws KernelException
     {
         // Given
         var reader = mock( SchemaStore44Reader.class );
@@ -292,6 +465,12 @@ class RecordStorageMizgratorTest
         var index = uniqueIndex( indexType, label, property, name, constraintId );
         var constraint = new SchemaRule44.Constraint( constraintId, index.schema(), name, constraintType, index.id(), index.indexType() );
         return new ConstraintPair( index, constraint );
+    }
+
+    private SchemaRule44.Constraint existsConstraint( int label, int property, String name )
+    {
+        var schema = SchemaDescriptors.forLabel( label, property );
+        return new SchemaRule44.Constraint( schemaId.getAndIncrement(), schema, name, SchemaRule44.ConstraintRuleType.EXISTS, null, null );
     }
 
     private static Stream<Arguments> nonReplacingConstraintCombinations()
