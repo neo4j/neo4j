@@ -805,7 +805,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Description( "If set, the database will locate token index files in the old location and under the old name." +
             "This is just a temporary setting to be used when the relocation of these indexes is under development" )
     public static final Setting<Boolean> use_old_token_index_location =
-            newBuilder( "unsupported.dbms.use_old_token_index_location", BOOL, true ).build();
+            newBuilder( "unsupported.dbms.use_old_token_index_location", BOOL, false ).build();
 
     @Description( "Whether or not to do parallel index writes during online transaction application" )
     public static Setting<Boolean> parallel_index_updates_apply = newBuilder( "unsupported.dbms.parallel_index_updates_apply", BOOL, false ).build();
