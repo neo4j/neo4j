@@ -37,8 +37,8 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FO
  *  log version    7 bytes
  *  log format     1 bytes
  *  last committed 8 bytes
- *  store id       40 bytes
- *  reserved       8 bytes
+ *  store id       24 bytes
+ *  reserved       24 bytes
  * </pre>
  */
 public class LogHeaderWriter

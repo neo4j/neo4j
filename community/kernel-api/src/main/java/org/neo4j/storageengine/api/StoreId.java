@@ -35,7 +35,6 @@ public final class StoreId
 
     public StoreId( long storeVersion )
     {
-        // If creationTime == upgradeTime && randomNumber == upgradeTxId then store has never been upgraded
         long currentTimeMillis = System.currentTimeMillis();
         long randomLong = r.nextLong();
         this.storeVersion = storeVersion;

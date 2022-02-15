@@ -33,7 +33,7 @@ public interface CheckpointAppender
      * After this method have returned the check point mark must have been flushed to disk.
      *
      * @param logCheckPointEvent a trace event for the given check point operation.
-     * @param transactionId checkpoint last closed transaction id
+     * @param transactionId last closed transaction id at time of checkpoint
      * @param logPosition the log position contained in the written check point
      * @param checkpointTime time when checkpoint occurred
      * @param reason reason for checkpoint to occur
