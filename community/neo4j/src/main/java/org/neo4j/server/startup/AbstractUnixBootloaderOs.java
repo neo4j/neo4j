@@ -91,8 +91,7 @@ abstract class AbstractUnixBootloaderOs extends BootloaderOsAbstraction
     {
         if ( pid != null )
         {
-            ProcessHandle process = ctx.processManager().getProcessHandle( pid );
-            return process != null && process.isAlive() ? process : null;
+            return ctx.processManager().getProcessHandle( pid );
         }
         return null;
     }
