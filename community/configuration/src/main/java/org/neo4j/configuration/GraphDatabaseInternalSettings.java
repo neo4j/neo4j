@@ -74,12 +74,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.directories.databases.root", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASES_ROOT_DIR_NAME ) )
                     .setDependency( GraphDatabaseSettings.data_directory ).immutable().build();
 
-    @Deprecated
-    @Internal
-    @Description( "Location where Neo4j keeps the logical transaction logs." )
-    public static final Setting<Path> logical_logs_location =
-            newBuilder( "dbms.directories.tx_log", PATH, Path.of( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ).setDependency( databases_root_path ).build();
-
     @Internal
     @Description( "Configure lucene to be in memory only, for test environment. This is set in code and should never be configured explicitly." )
     public static final Setting<Boolean> ephemeral_lucene = newBuilder( "unsupported.dbms.lucene.ephemeral", BOOL, false ).build();
