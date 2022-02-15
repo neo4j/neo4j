@@ -55,8 +55,6 @@ import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
-import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
-import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
@@ -149,36 +147,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-      case i: ast.DropIndex =>
-        Deprecation(
-          None,
-          Some(DeprecatedDropIndexSyntax(i.position))
-        )
-
-      case c: ast.DropNodeKeyConstraint =>
-        Deprecation(
-          None,
-          Some(DeprecatedDropConstraintSyntax(c.position))
-        )
-
-      case c: ast.DropUniquePropertyConstraint =>
-        Deprecation(
-          None,
-          Some(DeprecatedDropConstraintSyntax(c.position))
-        )
-
-      case c: ast.DropNodePropertyExistenceConstraint =>
-        Deprecation(
-          None,
-          Some(DeprecatedDropConstraintSyntax(c.position))
-        )
-
-      case c: ast.DropRelationshipPropertyExistenceConstraint =>
-        Deprecation(
-          None,
-          Some(DeprecatedDropConstraintSyntax(c.position))
         )
 
       // CREATE CONSTRAINT ... OPTIONS {<btree options>}

@@ -202,8 +202,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
     singleDbHit(inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
-
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
 
   override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = singleDbHit(inner.getAllIndexes())
@@ -286,26 +284,14 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
     singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
-  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    singleDbHit(inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
-
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
     singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
-
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyIds))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
-    singleDbHit(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
-
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     singleDbHit(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
-
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
-    singleDbHit(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def dropNamedConstraint(name: String): Unit =
     singleDbHit(inner.dropNamedConstraint(name))

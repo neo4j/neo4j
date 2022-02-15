@@ -68,13 +68,8 @@ import org.neo4j.cypher.internal.ast.DestroyData
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabase
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
-import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.ast.DropRole
-import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropUser
 import org.neo4j.cypher.internal.ast.DumpData
 import org.neo4j.cypher.internal.ast.ElementQualifier
@@ -313,9 +308,6 @@ case class Prettifier(
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
-      case DropIndex(LabelName(label), properties, _) =>
-        s"DROP INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
-
       case DropIndexOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
         s"DROP INDEX ${backtick(name)}$ifExistsString"
@@ -326,17 +318,11 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS NODE KEY${asString(options)}"
 
-      case DropNodeKeyConstraint(Variable(variable), LabelName(label), properties, _) =>
-        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS NODE KEY"
-
       case CreateUniquePropertyConstraint(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire ${propertiesToString(properties)} IS UNIQUE${asString(options)}"
-
-      case DropUniquePropertyConstraint(Variable(variable), LabelName(label), properties, _) =>
-        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT ${propertiesToString(properties)} IS UNIQUE"
 
       case CreateNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
@@ -346,9 +332,6 @@ case class Prettifier(
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
 
-      case DropNodePropertyExistenceConstraint(Variable(variable), LabelName(label), property, _) =>
-        s"DROP CONSTRAINT ON (${backtick(variable)}:${backtick(label)}) ASSERT exists(${propertyToString(property)})"
-
       case CreateRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, name, ifExistsDo, options, containsOn, constraintVersion, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
@@ -356,9 +339,6 @@ case class Prettifier(
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
         s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
-
-      case DropRelationshipPropertyExistenceConstraint(Variable(variable), RelTypeName(relType), property, _) =>
-        s"DROP CONSTRAINT ON ()-[${backtick(variable)}:${backtick(relType)}]-() ASSERT exists(${propertyToString(property)})"
 
       case DropConstraintOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""

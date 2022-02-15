@@ -522,25 +522,6 @@ public class PlainOperationsTest extends OperationsTest
     }
 
     @Test
-    void shouldAcquireSchemaWriteLockBeforeRemovingIndexRuleBySchema() throws Exception
-    {
-        // given
-        IndexDescriptor index = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 0 ) ).withName( "index" ).materialise( 0 );
-        IndexProxy indexProxy = mock( IndexProxy.class );
-        when( indexProxy.getDescriptor() ).thenReturn( index );
-        when( indexingService.getIndexProxy( index ) ).thenReturn( indexProxy );
-        when( storageReader.indexGetForSchemaAndType( index.schema(), IndexType.BTREE ) ).thenReturn( index );
-        when( storageReader.indexExists( index ) ).thenReturn( true );
-
-        // when
-        operations.indexDrop( index.schema() );
-
-        // then
-        order.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.LABEL, 0 );
-        order.verify( txState ).indexDoDrop( index );
-    }
-
-    @Test
     void shouldAcquireSchemaNameWriteLockBeforeRemovingIndexByName() throws Exception
     {
         // given

@@ -183,13 +183,8 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
-import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
-import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
 import org.neo4j.cypher.internal.logical.plans.DropRole
-import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.DropUser
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
@@ -920,14 +915,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "CreateIndex", NoChildren, Seq(details("POINT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
   }
 
-  test("DropIndex") {
-    assertGood(attach(DropIndex(label("Label"), List(key("prop"))), 63.2),
-      planDescription(id, "DropIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
-
-    assertGood(attach(DropIndex(label("Label"), List(key("prop1"), key("prop2"))), 63.2),
-      planDescription(id, "DropIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop1, prop2)")), Set.empty))
-  }
-
   test("DropIndexOnName") {
     assertGood(attach(DropIndexOnName("indexName", ifExists = false), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty))
@@ -1028,26 +1015,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(id, "CreateConstraint", SingleChild(
         planDescription(id, "DoNothingIfExists(CONSTRAINT)", NoChildren, Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS NOT NULL")), Set.empty)
       ), Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS NOT NULL")), Set.empty))
-  }
-
-  test("DropUniquePropertyConstraint") {
-    assertGood(attach(DropUniquePropertyConstraint(label("Label"), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
-      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS UNIQUE")), Set.empty))
-  }
-
-  test("DropNodeKeyConstraint") {
-    assertGood(attach(DropNodeKeyConstraint(label("Label"), Seq(prop(" x", "prop"), prop(" x", "prop2"))), 63.2),
-      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (` x`:Label) ASSERT (` x`.prop, ` x`.prop2) IS NODE KEY")), Set.empty))
-  }
-
-  test("DropNodePropertyExistenceConstraint") {
-    assertGood(attach(DropNodePropertyExistenceConstraint(label("Label"), prop("x", " prop")), 63.2),
-      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON (x:Label) ASSERT exists(x.` prop`)")), Set.empty))
-  }
-
-  test("DropRelationshipPropertyExistenceConstraint") {
-    assertGood(attach(DropRelationshipPropertyExistenceConstraint(relType("$R"), prop("x", " prop")), 63.2),
-      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT ON ()-[x:`$R`]-() ASSERT exists(x.` prop`)")), Set.empty))
   }
 
   test("DropConstraintOnName") {

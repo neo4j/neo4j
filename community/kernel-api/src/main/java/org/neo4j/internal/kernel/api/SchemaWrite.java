@@ -76,15 +76,6 @@ public interface SchemaWrite
     void indexDrop( IndexDescriptor index ) throws SchemaKernelException;
 
     /**
-     * Drop an index that matches the given schema.
-     *
-     * @param schema the schema matching the index to drop
-     * @deprecated this method only exists to support deprecated cypher syntax. to be removed in 5.0.
-     */
-    @Deprecated
-    void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException;
-
-    /**
      * Drop the index by the given name.
      * @param indexName the name of the index to drop.
      */
@@ -123,15 +114,6 @@ public interface SchemaWrite
      * @param schema description of the constraint
      */
     ConstraintDescriptor relationshipPropertyExistenceConstraintCreate( RelationTypeSchemaDescriptor schema, String name ) throws KernelException;
-
-    /**
-     * Drop a constraint with the given schema.
-     *
-     * @param schema The schema of the constraint to be dropped.
-     * @deprecated this method only exists to support deprecated cypher syntax. to be removed in 5.0.
-     */
-    @Deprecated
-    void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException;
 
     /**
      * Drop the constraint with the given name.

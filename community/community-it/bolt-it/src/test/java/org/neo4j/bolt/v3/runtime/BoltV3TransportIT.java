@@ -406,13 +406,13 @@ public class BoltV3TransportIT extends BoltV3TransportBase
         // When
         negotiateBoltV3();
         connection.send( util.chunk(
-                        new RunMessage( "DROP INDEX on :Movie12345(id)" ),
+                        new RunMessage( "DROP INDEX my_index" ),
                         PullAllMessage.INSTANCE ) );
 
         // Then
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgFailure( Status.Schema.IndexDropFailed,
-                        "Unable to drop index on (:Movie12345 {id}). There is no such index." ),
+                        "Unable to drop index called `my_index`. There is no such index." ),
                 msgIgnored() ) );
     }
 

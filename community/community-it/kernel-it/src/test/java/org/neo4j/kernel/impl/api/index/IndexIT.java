@@ -262,29 +262,6 @@ class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    void shouldDisallowDroppingIndexBySchemaThatDoesNotExist() throws Exception
-    {
-        // given
-        IndexDescriptor index;
-        {
-            SchemaWrite statement = schemaWriteInNewTransaction();
-            index = statement.indexCreate( IndexPrototype.forSchema( schema ).withIndexType( IndexType.BTREE ).withName( "my index" ) );
-            commit();
-        }
-        {
-            SchemaWrite statement = schemaWriteInNewTransaction();
-            statement.indexDrop( index.schema() );
-            commit();
-        }
-
-        // when
-        SchemaWrite statement = schemaWriteInNewTransaction();
-        SchemaKernelException e = assertThrows( SchemaKernelException.class, () -> statement.indexDrop( index.schema() ) );
-        assertEquals( "Unable to drop index on (:" + LABEL + " {" + PROPERTY_KEY + "}). There is no such index.", e.getMessage() );
-        commit();
-    }
-
-    @Test
     void shouldDisallowDroppingIndexByNameThatDoesNotExist() throws KernelException
     {
         // given

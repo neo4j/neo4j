@@ -27,8 +27,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
@@ -109,26 +107,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
          |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
-  }
-
-  test("deprecated drop index syntax") {
-    assertNotificationInSupportedVersions("DROP INDEX ON :Label(prop)", DEPRECATED_DROP_INDEX_SYNTAX)
-  }
-
-  test("deprecated drop node key constraint syntax") {
-    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
-  }
-
-  test("deprecated drop uniqueness constraint syntax") {
-    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
-  }
-
-  test("deprecated drop node property existence constraint syntax") {
-    assertNotificationInSupportedVersions("DROP CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
-  }
-
-  test("deprecated drop relationship existence constraint syntax") {
-    assertNotificationInSupportedVersions("DROP CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)", DEPRECATED_DROP_CONSTRAINT_SYNTAX)
   }
 
   test("deprecated create node property existence constraint syntax - deprecate version 0") {

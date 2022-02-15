@@ -199,30 +199,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         }
     }
 
-    @Test
-    void shouldDropIndexBySchema() throws Exception
-    {
-        IndexDescriptor index;
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            index = transaction.schemaWrite()
-                    .indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withIndexType( IndexType.BTREE ).withName( "my index" ) );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            transaction.schemaWrite().indexDrop( index.schema() );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.index( SchemaDescriptors.forLabel( label, prop1 ) ).hasNext() );
-        }
-    }
-
     @ParameterizedTest
     @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
     void shouldDropIndexByName( IndexType type ) throws Exception
@@ -277,30 +253,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void shouldFailToDropNonExistentIndexSchema() throws Exception
-    {
-        IndexDescriptor index;
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            index = transaction.schemaWrite().indexCreate( IndexPrototype.forSchema( forLabel( label, prop1 ) ).withName( "my index" ) );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            transaction.schemaWrite().indexDrop( index );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            assertThrows( SchemaKernelException.class, () ->
-                    transaction.schemaWrite().indexDrop( index.schema() ) );
             transaction.commit();
         }
     }
@@ -731,34 +683,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    void shouldOnlyDropBtreeConstraintBySchema() throws Exception
-    {
-        ConstraintDescriptor constraint;
-        ConstraintDescriptor constraint2;
-        final LabelSchemaDescriptor schema = forLabel( label, prop1 );
-        IndexPrototype prototype = uniqueForSchema( schema );
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            constraint = transaction.schemaWrite().nodeKeyConstraintCreate( prototype.withIndexType( IndexType.BTREE ) );
-            constraint2 = transaction.schemaWrite().nodeKeyConstraintCreate( prototype.withIndexType( IndexType.RANGE ) );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            transaction.schemaWrite().constraintDrop( schema, ConstraintType.UNIQUE_EXISTS );
-            transaction.commit();
-        }
-
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            SchemaRead schemaRead = transaction.schemaRead();
-            assertFalse( schemaRead.constraintExists( constraint ) );
-            assertTrue( schemaRead.constraintExists( constraint2 ) );
-        }
-    }
-
-    @Test
     void shouldFailToCreateUniqueConstraintIfExistingIndex() throws Exception
     {
         //Given
@@ -818,27 +742,6 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             IndexDescriptor index = transaction.schemaRead().indexGetForName( schemaName );
             assertThrows( SchemaKernelException.class, () ->
                     transaction.schemaWrite().indexDrop( index ) );
-            transaction.commit();
-        }
-    }
-
-    @Test
-    void shouldFailToDropIndexBySchemaIfExistingUniqueConstraint() throws Exception
-    {
-        //Given
-        String schemaName = "constraint name";
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            transaction.schemaWrite().uniquePropertyConstraintCreate( uniqueForSchema( forLabel( label, prop1 ) ).withName( schemaName ) );
-            transaction.commit();
-        }
-
-        //When
-        try ( KernelTransaction transaction = beginTransaction() )
-        {
-            IndexDescriptor index = transaction.schemaRead().indexGetForName( schemaName );
-            assertThrows( SchemaKernelException.class, () ->
-                    transaction.schemaWrite().indexDrop( index.schema() ) );
             transaction.commit();
         }
     }

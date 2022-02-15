@@ -217,12 +217,6 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
-  test("remove_index") {
-    context.dropIndexRule(0, Array(1))
-
-    context.getStatistics should equal(QueryStatistics(indexesRemoved = 1))
-  }
-
   test("remove_index with name") {
     context.dropIndexRule("name")
 
@@ -241,12 +235,6 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
 
-  test("constraint_dropped") {
-    context.dropUniqueConstraint(0, Array(1))
-
-    context.getStatistics should equal(QueryStatistics(uniqueConstraintsRemoved = 1))
-  }
-
   test("create node property existence constraint") {
     context.createNodePropertyExistenceConstraint(0, 1, None)
 
@@ -257,12 +245,6 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.createNodePropertyExistenceConstraint(0, 1, Some("name"))
 
     context.getStatistics should equal(QueryStatistics(existenceConstraintsAdded = 1))
-  }
-
-  test("drop node property existence constraint") {
-    context.dropNodePropertyExistenceConstraint(0, 42)
-
-    context.getStatistics should equal(QueryStatistics(existenceConstraintsRemoved = 1))
   }
 
   test("create rel property existence constraint") {
@@ -277,12 +259,6 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(QueryStatistics(existenceConstraintsAdded = 1))
   }
 
-  test("drop rel property existence constraint") {
-    context.dropRelationshipPropertyExistenceConstraint(0, 1)
-
-    context.getStatistics should equal(QueryStatistics(existenceConstraintsRemoved = 1))
-  }
-
   test("create node key constraint") {
     context.createNodeKeyConstraint(0, Array(1), None, None, IndexConfig.empty)
 
@@ -295,15 +271,9 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }
 
-  test("drop node key constraint") {
-    context.dropNodeKeyConstraint(0, Array(1))
-
-    context.getStatistics should equal(QueryStatistics(nodekeyConstraintsRemoved = 1))
-  }
-
   test("drop named constraint") {
     context.dropNamedConstraint("name")
 
-    context.getStatistics should equal(QueryStatistics(namedConstraintsRemoved = 1))
+    context.getStatistics should equal(QueryStatistics(constraintsRemoved = 1))
   }
 }

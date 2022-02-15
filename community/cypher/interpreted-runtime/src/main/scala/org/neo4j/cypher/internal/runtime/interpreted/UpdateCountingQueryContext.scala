@@ -53,12 +53,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val indexesAdded = new Counter
   private val indexesRemoved = new Counter
   private val uniqueConstraintsAdded = new Counter
-  private val uniqueConstraintsRemoved = new Counter
   private val propertyExistenceConstraintsAdded = new Counter
-  private val propertyExistenceConstraintsRemoved = new Counter
   private val nodekeyConstraintsAdded = new Counter
-  private val nodekeyConstraintsRemoved = new Counter
-  private val namedConstraintsRemoved = new Counter
+  private val constraintsRemoved = new Counter
 
   def getTrackedStatistics: QueryStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
@@ -71,12 +68,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesAdded = indexesAdded.count,
     indexesRemoved = indexesRemoved.count,
     uniqueConstraintsAdded = uniqueConstraintsAdded.count,
-    uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
     existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
-    existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count,
     nodekeyConstraintsAdded = nodekeyConstraintsAdded.count,
-    nodekeyConstraintsRemoved = nodekeyConstraintsRemoved.count,
-    namedConstraintsRemoved = namedConstraintsRemoved.count)
+    constraintsRemoved = constraintsRemoved.count)
 
   override def addStatistics(statistics: QueryStatistics): Unit = {
     nodesCreated.increase(statistics.nodesCreated)
@@ -89,11 +83,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     indexesAdded.increase(statistics.indexesAdded)
     indexesRemoved.increase(statistics.indexesRemoved)
     uniqueConstraintsAdded.increase(statistics.uniqueConstraintsAdded)
-    uniqueConstraintsRemoved.increase(statistics.uniqueConstraintsRemoved)
     propertyExistenceConstraintsAdded.increase(statistics.existenceConstraintsAdded)
-    propertyExistenceConstraintsRemoved.increase(statistics.existenceConstraintsRemoved)
     nodekeyConstraintsAdded.increase(statistics.nodekeyConstraintsAdded)
-    nodekeyConstraintsRemoved.increase(statistics.nodekeyConstraintsRemoved)
+    constraintsRemoved.increase(statistics.constraintsRemoved)
     inner.addStatistics(statistics)
   }
 
@@ -163,11 +155,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     result
   }
 
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
-    inner.dropIndexRule(labelId, propertyKeyIds)
-    indexesRemoved.increase()
-  }
-
   override def dropIndexRule(name: String): Unit = {
     inner.dropIndexRule(name)
     indexesRemoved.increase()
@@ -194,19 +181,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     nodekeyConstraintsAdded.increase()
   }
 
-  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
-    inner.dropNodeKeyConstraint(labelId, propertyKeyIds)
-    nodekeyConstraintsRemoved.increase()
-  }
-
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit = {
     inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig)
     uniqueConstraintsAdded.increase()
-  }
-
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
-    inner.dropUniqueConstraint(labelId, propertyKeyIds)
-    uniqueConstraintsRemoved.increase()
   }
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit = {
@@ -214,24 +191,14 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsAdded.increase()
   }
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = {
-    inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId)
-    propertyExistenceConstraintsRemoved.increase()
-  }
-
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit = {
     inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name)
     propertyExistenceConstraintsAdded.increase()
   }
 
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = {
-    inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
-    propertyExistenceConstraintsRemoved.increase()
-  }
-
   override def dropNamedConstraint(name: String): Unit = {
     inner.dropNamedConstraint(name)
-    namedConstraintsRemoved.increase()
+    constraintsRemoved.increase()
   }
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = inner.getAllConstraints()

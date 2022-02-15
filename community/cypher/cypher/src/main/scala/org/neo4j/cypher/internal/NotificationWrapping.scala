@@ -51,8 +51,6 @@ import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
-import org.neo4j.cypher.internal.util.DeprecatedDropConstraintSyntax
-import org.neo4j.cypher.internal.util.DeprecatedDropIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
@@ -131,10 +129,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedBtreeIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedDropIndexSyntax(pos) =>
-      NotificationCode.DEPRECATED_DROP_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedDropConstraintSyntax(pos) =>
-      NotificationCode.DEPRECATED_DROP_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCreatePropertyExistenceConstraintSyntax(pos) =>
       NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedCreateConstraintOnAssertSyntax(pos) =>

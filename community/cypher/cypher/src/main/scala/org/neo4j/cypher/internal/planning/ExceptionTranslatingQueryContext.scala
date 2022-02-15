@@ -445,35 +445,20 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
   override def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor =
     translateException(tokenNameLookup, inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropIndexRule(labelId, propertyKeyIds))
-
   override def dropIndexRule(name: String): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(name))
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
     translateException(tokenNameLookup, inner.createNodeKeyConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
 
-  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
-
   override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit =
     translateException(tokenNameLookup, inner.createUniqueConstraint(labelId, propertyKeyIds, name, provider, indexConfig))
-
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    translateException(tokenNameLookup, inner.dropUniqueConstraint(labelId, propertyKeyIds))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     translateException(tokenNameLookup, inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId, name))
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
-    translateException(tokenNameLookup, inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
-
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     translateException(tokenNameLookup, inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
-
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
-    translateException(tokenNameLookup, inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def dropNamedConstraint(name: String): Unit =
     translateException(tokenNameLookup, inner.dropNamedConstraint(name))

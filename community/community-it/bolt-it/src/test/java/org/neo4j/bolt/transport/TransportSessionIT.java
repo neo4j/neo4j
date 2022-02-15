@@ -388,14 +388,14 @@ public class TransportSessionIT extends AbstractBoltTransportsTest
         connection.connect( address )
                 .send( util.defaultAcceptedVersions() )
                 .send( util.defaultAuth() )
-                .send( util.defaultRunAutoCommitTx( "DROP INDEX on :Movie12345(id)" ) );
+                .send( util.defaultRunAutoCommitTx( "DROP INDEX my_index" ) );
 
         // Then
         assertThat( connection ).satisfies( TransportTestUtil.eventuallyReceivesSelectedProtocolVersion() );
         assertThat( connection ).satisfies( util.eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed,
-                        "Unable to drop index on (:Movie12345 {id}). There is no such index." ),
+                        "Unable to drop index called `my_index`. There is no such index." ),
                 msgIgnored() ) );
     }
 

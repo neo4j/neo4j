@@ -115,12 +115,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
-import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
-import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.DropRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
@@ -430,9 +425,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case CreatePointIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
-      case DropIndex(labelName, propertyKeyNames) =>
-        PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(btreeIndexInfo(None, Left(labelName), propertyKeyNames, NoOptions))), variables, withRawCardinalities)
-
       case DropIndexOnName(name, _) =>
         PlanDescriptionImpl(id, "DropIndex", NoChildren, Seq(Details(pretty"INDEX ${asPrettyString(name)}")), variables, withRawCardinalities)
 
@@ -466,26 +458,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
         val relationship = prop.map.asCanonicalStringVal
         val details = Details(constraintInfo(nameOption, relationship, scala.util.Right(relTypeName), Seq(prop), scala.util.Right("IS NOT NULL"), options))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case DropUniquePropertyConstraint(label, props) =>
-        val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS UNIQUE"), useForAndRequire = false))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case DropNodeKeyConstraint(label, props) =>
-        val node = props.head.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), props, scala.util.Right("IS NODE KEY"), useForAndRequire = false))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case DropNodePropertyExistenceConstraint(label, prop) =>
-        val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, node, scala.util.Left(label), Seq(prop), scala.util.Left("exists"), useForAndRequire = false))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case DropRelationshipPropertyExistenceConstraint(relTypeName, prop) =>
-        val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(None, relationship,scala.util.Right(relTypeName), Seq(prop), scala.util.Left("exists"), useForAndRequire = false))
-        PlanDescriptionImpl(id, "DropConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
 
       case DropConstraintOnName(name, _) =>
         val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")

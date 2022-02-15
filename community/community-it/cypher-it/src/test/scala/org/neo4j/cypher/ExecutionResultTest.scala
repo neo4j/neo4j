@@ -123,7 +123,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val stats  = result.queryStatistics()
 
     assert(stats.uniqueConstraintsAdded === 1)
-    assert(stats.uniqueConstraintsRemoved === 0)
+    assert(stats.constraintsRemoved === 0)
   }
 
   test("hasNext should not change resultAsString") {

@@ -37,12 +37,7 @@ import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
-import org.neo4j.cypher.internal.ast.DropIndex
 import org.neo4j.cypher.internal.ast.DropIndexOnName
-import org.neo4j.cypher.internal.ast.DropNodeKeyConstraint
-import org.neo4j.cypher.internal.ast.DropNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.DropRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.ast.DropUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -150,10 +145,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         }
         Some(plans.CreateNodeKeyConstraint(source, node.name, label, props, name, options))
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-      case DropNodeKeyConstraint(_, label, props, _) =>
-        Some(plans.DropNodeKeyConstraint(label, props))
-
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
       case CreateUniquePropertyConstraint(node, label, props, name, ifExistsDo, options, _, _, _) =>
@@ -163,11 +154,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         }
         Some(plans.CreateUniquePropertyConstraint(source, node.name, label, props, name, options))
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
-      // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-      case DropUniquePropertyConstraint(_, label, props, _) =>
-        Some(plans.DropUniquePropertyConstraint(label, props))
-
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
       case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
@@ -176,10 +162,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         }
         Some(plans.CreateNodePropertyExistenceConstraint(source, label, prop, name, options))
 
-      // DROP CONSTRAINT ON (node:Label) ASSERT EXISTS (node.prop)
-      case DropNodePropertyExistenceConstraint(_, label, prop, _) =>
-        Some(plans.DropNodePropertyExistenceConstraint(label, prop))
-
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
@@ -187,10 +169,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
           case _ => None
         }
         Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options))
-
-      // DROP CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.prop)
-      case DropRelationshipPropertyExistenceConstraint(_, relType, prop, _) =>
-        Some(plans.DropRelationshipPropertyExistenceConstraint(relType, prop))
 
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>
@@ -249,10 +227,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreatePointRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
         createPointIndex(Right(relType), props, name, ifExistsDo, options)
-
-      // DROP INDEX ON :LABEL(prop)
-      case DropIndex(label, props, _) =>
-        Some(plans.DropIndex(label, props))
 
       // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>

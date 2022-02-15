@@ -37,10 +37,6 @@ case class DeprecatedCreateIndexSyntax(position: InputPosition) extends Internal
 
 case class DeprecatedBtreeIndexSyntax(position: InputPosition) extends InternalNotification
 
-case class DeprecatedDropIndexSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedDropConstraintSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedCreatePropertyExistenceConstraintSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedCreateConstraintOnAssertSyntax(position: InputPosition) extends InternalNotification

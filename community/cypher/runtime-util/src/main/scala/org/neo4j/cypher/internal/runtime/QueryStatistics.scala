@@ -37,21 +37,15 @@ case class QueryStatistics(
                             @BeanProperty indexesAdded: Int = 0,
                             @BeanProperty indexesRemoved: Int = 0,
                             uniqueConstraintsAdded: Int = 0,
-                            uniqueConstraintsRemoved: Int = 0,
                             existenceConstraintsAdded: Int = 0,
-                            existenceConstraintsRemoved: Int = 0,
                             nodekeyConstraintsAdded: Int = 0,
-                            nodekeyConstraintsRemoved: Int = 0,
-                            namedConstraintsRemoved: Int = 0,
+                            @BeanProperty constraintsRemoved: Int = 0,
                             transactionsCommitted: Int = 0,
                             @BeanProperty systemUpdates: Int = 0,
                           ) extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
-
-  @BeanProperty
-  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved + nodekeyConstraintsRemoved + namedConstraintsRemoved
 
   override def containsUpdates: Boolean =
     nodesCreated > 0 ||
@@ -84,12 +78,9 @@ case class QueryStatistics(
       includeIfNonZero(builder, "Indexes added: ", indexesAdded)
       includeIfNonZero(builder, "Indexes removed: ", indexesRemoved)
       includeIfNonZero(builder, "Unique constraints added: ", uniqueConstraintsAdded)
-      includeIfNonZero(builder, "Unique constraints removed: ", uniqueConstraintsRemoved)
       includeIfNonZero(builder, "Property existence constraints added: ", existenceConstraintsAdded)
-      includeIfNonZero(builder, "Property existence constraints removed: ", existenceConstraintsRemoved)
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
-      includeIfNonZero(builder, "Node key constraints removed: ", nodekeyConstraintsRemoved)
-      includeIfNonZero(builder, "Named constraints removed: ", namedConstraintsRemoved)
+      includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
       includeIfNonZero(builder, "Transactions committed: ", transactionsCommitted)
     }
     val result = builder.toString()
@@ -113,12 +104,9 @@ case class QueryStatistics(
       indexesAdded = this.indexesAdded + other.indexesAdded,
       indexesRemoved = this.indexesRemoved + other.indexesRemoved,
       uniqueConstraintsAdded = this.uniqueConstraintsAdded + other.uniqueConstraintsAdded,
-      uniqueConstraintsRemoved = this.uniqueConstraintsRemoved + other.uniqueConstraintsRemoved,
       existenceConstraintsAdded = this.existenceConstraintsAdded + other.existenceConstraintsAdded,
-      existenceConstraintsRemoved = this.existenceConstraintsRemoved + other.existenceConstraintsRemoved,
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded + other.nodekeyConstraintsAdded,
-      nodekeyConstraintsRemoved = this.nodekeyConstraintsRemoved + other.nodekeyConstraintsRemoved,
-      namedConstraintsRemoved = this.namedConstraintsRemoved + other.namedConstraintsRemoved,
+      constraintsRemoved = this.constraintsRemoved + other.constraintsRemoved,
       transactionsCommitted = this.transactionsCommitted + other.transactionsCommitted,
       systemUpdates = this.systemUpdates + other.systemUpdates,
     )
@@ -142,7 +130,7 @@ object QueryStatistics {
         indexesAdded = statistics.getIndexesAdded,
         indexesRemoved = statistics.getIndexesRemoved,
         uniqueConstraintsAdded = statistics.getConstraintsAdded,
-        uniqueConstraintsRemoved = statistics.getConstraintsRemoved,
+        constraintsRemoved = statistics.getConstraintsRemoved,
         systemUpdates = statistics.getSystemUpdates,
       )
   }

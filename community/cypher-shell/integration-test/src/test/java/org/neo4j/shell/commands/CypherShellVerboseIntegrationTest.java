@@ -29,6 +29,7 @@ import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
+import org.neo4j.shell.parser.StatementParser;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.prettyprint.TablePlanFormatter;
@@ -134,19 +135,12 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void cypherWithOrder() throws CommandException
     {
         // given
-        assumeTrue( runningAtLeast( "3.6" ) );
+        assumeTrue( runningAtLeast( "4.1" ) );
 
         // Make sure we are creating a new NEW index
-        try
-        {
-            shell.execute( CypherStatement.complete( "DROP INDEX ON :Person(age)" ) );
-        }
-        catch ( Exception e )
-        {
-            // ignore if the index didn't exist
-        }
+        shell.execute( StatementParser.CypherStatement.complete( "DROP INDEX ages IF EXISTS" ) );
 
-        shell.execute( CypherStatement.complete( "CREATE INDEX ON :Person(age)" ) );
+        shell.execute( CypherStatement.complete( "CREATE INDEX ages FOR (n:Person) ON (n.age)" ) );
         shell.execute( CypherStatement.complete( "CALL db.awaitIndexes()" ) );
 
         //when

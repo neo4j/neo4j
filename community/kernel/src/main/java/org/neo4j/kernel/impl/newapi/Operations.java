@@ -1544,22 +1544,6 @@ public class Operations implements Write, SchemaWrite
         }
     }
 
-    @Deprecated
-    @Override
-    public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
-    {
-        exclusiveSchemaLock( schema );
-        // deprecated method to drop index by schema drops only deprecated BTREE index
-        var existingIndex = allStoreHolder.index( schema, IndexType.BTREE );
-
-        if ( existingIndex == IndexDescriptor.NO_INDEX )
-        {
-            String description = schema.userDescription( token );
-            throw new DropIndexFailureException( "Unable to drop index on " + description + ". There is no such index." );
-        }
-        indexDrop( existingIndex );
-    }
-
     @Override
     public void indexDrop( String indexName ) throws SchemaKernelException
     {
@@ -1933,39 +1917,6 @@ public class Operations implements Write, SchemaWrite
         {
             exclusiveSchemaUnlock( descriptor );
             throw e;
-        }
-    }
-
-    @Deprecated
-    @Override
-    public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
-    {
-        ktx.assertOpen();
-        Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
-        // Deprecated method to drop constraint by schema drops only deprecated BTREE constraints
-        constraints = Iterators.filter(
-                constraint -> constraint.type() == type &&
-                              (!constraint.isIndexBackedConstraint() || constraint.asIndexBackedConstraint().indexType() == IndexType.BTREE ),
-                constraints );
-        if ( constraints.hasNext() )
-        {
-            ConstraintDescriptor constraint = constraints.next();
-            if ( !constraints.hasNext() )
-            {
-                constraintDrop( constraint );
-            }
-            else
-            {
-                String schemaDescription = schema.userDescription( token );
-                String constraintDescription = constraints.next().userDescription( token );
-                throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
-                        "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription +
-                                ", please drop constraint by name instead." ) );
-            }
-        }
-        else
-        {
-            throw new DropConstraintFailureException( schema, new NoSuchConstraintException( schema, token ) );
         }
     }
 

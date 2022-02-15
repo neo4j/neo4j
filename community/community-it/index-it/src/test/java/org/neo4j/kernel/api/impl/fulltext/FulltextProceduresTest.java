@@ -1779,7 +1779,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( "CREATE BTREE INDEX FOR (n:Person) ON (n.name)" ).close();
+            tx.execute( "CREATE INDEX firstNameIndex FOR (n:Person) ON (n.name)" ).close();
             tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
             tx.commit();
         }
@@ -1787,7 +1787,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             // This must not throw:
-            tx.execute( "DROP INDEX ON :Person(name)" ).close();
+            tx.execute( "DROP INDEX firstNameIndex" ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )

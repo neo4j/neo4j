@@ -103,16 +103,6 @@ public enum NotificationCode
             "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. " +
                     "For now, b-tree indexes are still the correct alternative to use."
     ),
-    DEPRECATED_DROP_INDEX_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The drop index syntax `DROP INDEX ON :Label(property)` is deprecated, please use `DROP INDEX index_name` instead"
-    ),
-    DEPRECATED_DROP_CONSTRAINT_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The drop constraint by schema syntax `DROP CONSTRAINT ON ...` is deprecated, please use `DROP CONSTRAINT constraint_name` instead"
-    ),
     DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

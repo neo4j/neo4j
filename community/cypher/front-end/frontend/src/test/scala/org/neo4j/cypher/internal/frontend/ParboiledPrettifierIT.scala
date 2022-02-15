@@ -730,12 +730,6 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
     // drop
 
-    "drop INDEX ON :A(p)" ->
-      "DROP INDEX ON :A(p)",
-
-    "drop INDEX ON :A(p1, p2, p3)" ->
-      "DROP INDEX ON :A(p1, p2, p3)",
-
     "drop INDEX foo" ->
       "DROP INDEX foo",
 
@@ -892,24 +886,6 @@ class ParboiledPrettifierIT extends CypherFunSuite {
 
       "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
         "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
-
-      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
-        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
-
-      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
-        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
-
-      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
-        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
-
-      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
-        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
-
-      "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
-        "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
-      "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
-        "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
 
       "drop CONSTRAINT foo" ->
         "DROP CONSTRAINT foo",

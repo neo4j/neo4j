@@ -384,29 +384,19 @@ trait WriteQueryContext {
 
   def addPointIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor
 
-  def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
-
   def dropIndexRule(name: String): Unit
 
   /* throws if failed or pre-existing */
   def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
 
-  def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
-
   /* throws if failed or pre-existing */
   def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): Unit
-
-  def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* throws if failed or pre-existing */
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit
 
-  def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit
-
   /* throws if failed or pre-existing */
   def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
-
-  def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit
 
   def dropNamedConstraint(name: String): Unit
 

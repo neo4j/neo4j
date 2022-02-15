@@ -102,7 +102,6 @@ import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCurs
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.schema.ConstraintDescriptor
-import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexPrototype
@@ -279,10 +278,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     }
   }
 
-  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    transactionalContext.schemaWrite
-      .indexDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*))
-
   override def dropIndexRule(name: String): Unit =
     transactionalContext.schemaWrite.indexDrop(name)
 
@@ -295,10 +290,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     val indexPrototype = getUniqueIndexPrototype(labelId, propertyKeyIds, name, provider, indexConfig, schemaWrite)
     schemaWrite.nodeKeyConstraintCreate(indexPrototype)
   }
-
-  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    transactionalContext.schemaWrite
-      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE_EXISTS)
 
   override def createUniqueConstraint(labelId: Int,
                                       propertyKeyIds: Seq[Int],
@@ -325,26 +316,14 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     indexPrototype.withName(name.orNull).withIndexConfig(indexConfig)
   }
 
-  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
-    transactionalContext.schemaWrite
-      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyIds: _*), ConstraintType.UNIQUE)
-
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int, name: Option[String]): Unit =
     transactionalContext.schemaWrite.nodePropertyExistenceConstraintCreate(
       SchemaDescriptors.forLabel(labelId, propertyKeyId), name.orNull)
-
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
-    transactionalContext.schemaWrite
-      .constraintDrop(SchemaDescriptors.forLabel(labelId, propertyKeyId), ConstraintType.EXISTS)
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int,
                                                              name: Option[String]): Unit =
     transactionalContext.schemaWrite.relationshipPropertyExistenceConstraintCreate(
       SchemaDescriptors.forRelType(relTypeId, propertyKeyId), name.orNull)
-
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
-    transactionalContext.schemaWrite
-      .constraintDrop(SchemaDescriptors.forRelType(relTypeId, propertyKeyId), ConstraintType.EXISTS)
 
   override def dropNamedConstraint(name: String): Unit =
     transactionalContext.schemaWrite.constraintDrop(name)

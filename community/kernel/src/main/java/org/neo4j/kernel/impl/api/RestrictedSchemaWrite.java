@@ -75,13 +75,6 @@ public class RestrictedSchemaWrite implements SchemaWrite
     }
 
     @Override
-    public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
-    {
-        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_INDEX );
-        inner.indexDrop( schema );
-    }
-
-    @Override
     public void indexDrop( String indexName ) throws SchemaKernelException
     {
         securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_INDEX );
@@ -114,14 +107,6 @@ public class RestrictedSchemaWrite implements SchemaWrite
     {
         securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.CREATE_CONSTRAINT );
         return inner.relationshipPropertyExistenceConstraintCreate( schema, name );
-    }
-
-    @Deprecated
-    @Override
-    public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
-    {
-        securityAuthorizationHandler.assertSchemaWrites( securityContext, PrivilegeAction.DROP_CONSTRAINT );
-        inner.constraintDrop( schema, type );
     }
 
     @Override
