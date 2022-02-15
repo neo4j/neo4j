@@ -46,7 +46,7 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public final class ValuePopulation
 {
-    private static final NodeValue MISSING_NODE = VirtualValues.nodeValue( -1L, EMPTY_TEXT_ARRAY, EMPTY_MAP, false );
+    private static final NodeValue MISSING_NODE = VirtualValues.nodeValue( -1L, null, EMPTY_TEXT_ARRAY, EMPTY_MAP, false );
 
     private ValuePopulation()
     {
@@ -197,12 +197,13 @@ public final class ValuePopulation
         if ( !nodeCursor.next() )
         {
             //the node has probably been deleted, we still return it but just a bare id
-            return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP, true );
+            return VirtualValues.nodeValue( id, dbAccess.elementIdMapper().nodeElementId( id ), EMPTY_TEXT_ARRAY, EMPTY_MAP, true );
         }
         else
         {
             nodeCursor.properties( propertyCursor );
-            return VirtualValues.nodeValue( id, labels( dbAccess, nodeCursor.labels() ), properties( propertyCursor, dbAccess ) );
+            return VirtualValues.nodeValue( id, dbAccess.elementIdMapper().nodeElementId( id ), labels( dbAccess, nodeCursor.labels() ),
+                    properties( propertyCursor, dbAccess ) );
         }
     }
 
@@ -216,15 +217,18 @@ public final class ValuePopulation
         if ( !relCursor.next() )
         {
             //the relationship has probably been deleted, we still return it but just a bare id
-            return VirtualValues.relationshipValue( id, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true );
+            return VirtualValues.relationshipValue( id, dbAccess.elementIdMapper().relationshipElementId( id ), MISSING_NODE, MISSING_NODE, EMPTY_STRING,
+                    EMPTY_MAP, true );
         }
         else
         {
-            VirtualNodeValue start = VirtualValues.node( relCursor.sourceNodeReference() );
-            VirtualNodeValue end = VirtualValues.node( relCursor.targetNodeReference() );
+            VirtualNodeValue start =
+                    VirtualValues.node( relCursor.sourceNodeReference(), dbAccess.elementIdMapper().nodeElementId( relCursor.sourceNodeReference() ) );
+            VirtualNodeValue end =
+                    VirtualValues.node( relCursor.targetNodeReference(), dbAccess.elementIdMapper().nodeElementId( relCursor.targetNodeReference() ) );
             relCursor.properties( propertyCursor );
-            return VirtualValues.relationshipValue( id, start, end, Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ),
-                                                    properties( propertyCursor, dbAccess ) );
+            return VirtualValues.relationshipValue( id, dbAccess.elementIdMapper().relationshipElementId( id ), start, end,
+                    Values.stringValue( dbAccess.relationshipTypeName( relCursor.type() ) ), properties( propertyCursor, dbAccess ) );
         }
     }
 

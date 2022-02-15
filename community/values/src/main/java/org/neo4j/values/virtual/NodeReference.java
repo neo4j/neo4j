@@ -29,10 +29,28 @@ public class NodeReference extends VirtualNodeValue
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeReference.class );
 
     private final long id;
+    private final String elementId;
 
     NodeReference( long id )
     {
+        this( id, null );
+    }
+
+    NodeReference( long id, String elementId )
+    {
         this.id = id;
+        this.elementId = elementId;
+    }
+
+    @Override
+    public String elementId()
+    {
+        if ( elementId == null )
+        {
+            throw new UnsupportedOperationException( "This is tricky to implement for NodeReference because of the disconnected nature of it. " +
+                    "Didn't we want to get rid of this thing completely?" );
+        }
+        return elementId;
     }
 
     @Override

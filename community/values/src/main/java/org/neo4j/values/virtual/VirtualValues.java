@@ -130,19 +130,41 @@ public final class VirtualValues
         return new NodeReference( id );
     }
 
+    public static NodeReference node( long id, String elementId )
+    {
+        return new NodeReference( id, elementId );
+    }
+
     public static RelationshipReference relationship( long id )
     {
-        return new RelationshipReference( id );
+        return new RelationshipReference( id, null );
     }
 
     public static RelationshipReference relationship( long id, long startNode, long endNode )
     {
-        return new RelationshipReference( id, startNode, endNode );
+        return new RelationshipReference( id, null, startNode, null, endNode, null );
     }
 
     public static RelationshipReference relationship( long id, long startNode, long endNode, int type )
     {
-        return new RelationshipReference( id, startNode, endNode, type );
+        return new RelationshipReference( id, null, startNode, null, endNode, null, type );
+    }
+
+    public static RelationshipReference relationship( long id, String elementId )
+    {
+        return new RelationshipReference( id, elementId );
+    }
+
+    public static RelationshipReference relationship( long id, String elementId, long startNode, String startNodeElementId, long endNode,
+            String endNodeElementId )
+    {
+        return new RelationshipReference( id, elementId, startNode, startNodeElementId, endNode, endNodeElementId );
+    }
+
+    public static RelationshipReference relationship( long id, String elementId, long startNode, String startNodeElementId, long endNode,
+            String endNodeElementId, int type )
+    {
+        return new RelationshipReference( id, elementId, startNode, startNodeElementId, endNode, endNodeElementId, type );
     }
 
     public static PathReference pathReference( long[] nodes, long[] relationships )
@@ -211,25 +233,25 @@ public final class VirtualValues
         return new DirectPathValue( nodes, relationships, payloadSize );
     }
 
-    public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )
+    public static NodeValue nodeValue( long id, String elementId, TextArray labels, MapValue properties )
     {
-        return new NodeValue.DirectNodeValue( id, labels, properties );
+        return new NodeValue.DirectNodeValue( id, elementId, labels, properties );
     }
 
-    public static NodeValue nodeValue( long id, TextArray labels, MapValue properties, boolean isDeleted )
+    public static NodeValue nodeValue( long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted )
     {
-        return new NodeValue.DirectNodeValue( id, labels, properties, isDeleted );
+        return new NodeValue.DirectNodeValue( id, elementId, labels, properties, isDeleted );
     }
 
-    public static RelationshipValue relationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
+    public static RelationshipValue relationshipValue( long id, String elementId, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
             MapValue properties )
     {
-        return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties );
+        return new RelationshipValue.DirectRelationshipValue( id, elementId, startNode, endNode, type, properties );
     }
 
-    public static RelationshipValue relationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
+    public static RelationshipValue relationshipValue( long id, String elementId, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type,
                                                        MapValue properties, boolean isDeleted )
     {
-        return new RelationshipValue.DirectRelationshipValue( id, startNode, endNode, type, properties, isDeleted );
+        return new RelationshipValue.DirectRelationshipValue( id, elementId, startNode, endNode, type, properties, isDeleted );
     }
 }

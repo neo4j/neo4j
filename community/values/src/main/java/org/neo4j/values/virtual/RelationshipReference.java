@@ -33,25 +33,31 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipReference.class );
 
     private final long id;
+    private final String elementId;
     private long startNode;
+    private final String startNodeElementId;
     private long endNode;
+    private final String endNodeElementId;
     private int type;
 
-    RelationshipReference( long id )
+    RelationshipReference( long id, String elementId )
     {
-        this( id, NO_NODE, NO_NODE, NO_TYPE );
+        this( id, elementId, NO_NODE, null, NO_NODE, null, NO_TYPE );
     }
 
-    RelationshipReference( long id, long startNode, long endNode )
+    RelationshipReference( long id, String elementId, long startNode, String startNodeElementId, long endNode, String endNodeElementId )
     {
-        this( id, startNode, endNode, NO_TYPE );
+        this( id, elementId, startNode, startNodeElementId, endNode, endNodeElementId, NO_TYPE );
     }
 
-    RelationshipReference( long id, long startNode, long endNode, int type )
+    RelationshipReference( long id, String elementId, long startNode, String startNodeElementId, long endNode, String endNodeElementId, int type )
     {
         this.id = id;
+        this.elementId = elementId;
         this.startNode = startNode;
+        this.startNodeElementId = startNodeElementId;
         this.endNode = endNode;
+        this.endNodeElementId = endNodeElementId;
         this.type = type;
     }
 
@@ -66,6 +72,17 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     }
 
     @Override
+    public String startNodeElementId( Consumer<RelationshipVisitor> consumer )
+    {
+        if ( startNodeElementId == null )
+        {
+            throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
+                    "Didn't we want to get rid of this thing completely?" );
+        }
+        return startNodeElementId;
+    }
+
+    @Override
     public long endNodeId( Consumer<RelationshipVisitor> consumer )
     {
         if ( endNode == NO_NODE )
@@ -73,6 +90,17 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
             consumer.accept( this );
         }
         return endNode;
+    }
+
+    @Override
+    public String endNodeElementId( Consumer<RelationshipVisitor> consumer )
+    {
+        if ( endNodeElementId == null )
+        {
+            throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
+                    "Didn't we want to get rid of this thing completely?" );
+        }
+        return endNodeElementId;
     }
 
     @Override
@@ -107,6 +135,17 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     public long id()
     {
         return id;
+    }
+
+    @Override
+    public String elementId()
+    {
+        if ( elementId == null )
+        {
+            throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
+                    "Didn't we want to get rid of this thing completely?" );
+        }
+        return elementId;
     }
 
     @Override

@@ -31,15 +31,21 @@ import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 public abstract class RelationshipValue extends VirtualRelationshipValue implements RelationshipVisitor
 {
     private final long id;
+    private final String elementId;
     private final long startNodeId;
+    private final String startNodeElementId;
     private final long endNodeId;
+    private final String endNodeElementId;
     private int type = RelationshipReference.NO_TYPE;
 
-    protected RelationshipValue( long id, long startNodeId, long endNodeId )
+    protected RelationshipValue( long id, String elementId, long startNodeId, String startNodeElementId, long endNodeId, String endNodeElementId )
     {
         this.id = id;
+        this.elementId = elementId;
         this.startNodeId = startNodeId;
+        this.startNodeElementId = startNodeElementId;
         this.endNodeId = endNodeId;
+        this.endNodeElementId = endNodeElementId;
     }
 
     @Override
@@ -72,6 +78,17 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         return startNodeId;
     }
 
+    @Override
+    public String startNodeElementId( Consumer<RelationshipVisitor> consumer )
+    {
+        return startNodeElementId;
+    }
+
+    public String startNodeElementId()
+    {
+        return startNodeElementId;
+    }
+
     public long endNodeId()
     {
         return endNodeId;
@@ -83,6 +100,17 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         return endNodeId;
     }
 
+    public String endNodeElementId()
+    {
+        return endNodeElementId;
+    }
+
+    @Override
+    public String endNodeElementId( Consumer<RelationshipVisitor> consumer )
+    {
+        return endNodeElementId;
+    }
+
     public abstract VirtualNodeValue startNode();
 
     public abstract VirtualNodeValue endNode();
@@ -91,6 +119,12 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
     public long id()
     {
         return id;
+    }
+
+    @Override
+    public String elementId()
+    {
+        return elementId;
     }
 
     @Override
@@ -138,9 +172,9 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         private final MapValue properties;
         private final boolean isDeleted;
 
-        DirectRelationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties )
+        DirectRelationshipValue( long id, String elementId, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties )
         {
-            super( id, startNode.id(), endNode.id() );
+            super( id, elementId, startNode.id(), startNode.elementId(), endNode.id(), endNode.elementId() );
             assert properties != null;
 
             this.startNode = startNode;
@@ -150,9 +184,10 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
             this.isDeleted = false;
         }
 
-        DirectRelationshipValue( long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties, boolean isDeleted )
+        DirectRelationshipValue( long id, String elementId, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties,
+                boolean isDeleted )
         {
-            super( id, startNode.id(), endNode.id() );
+            super( id, elementId, startNode.id(), startNode.elementId(), endNode.id(), endNode.elementId() );
             assert properties != null;
 
             this.startNode = startNode;

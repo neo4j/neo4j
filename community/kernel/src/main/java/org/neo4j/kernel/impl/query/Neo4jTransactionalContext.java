@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistry;
@@ -52,6 +53,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private final InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private KernelStatement statement;
+    private final ElementIdMapper elementIdMapper;
     private long userTransactionId;
     private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
@@ -76,6 +78,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.namedDatabaseId = initialStatement.namedDatabaseId();
         this.kernelTransaction = transaction.kernelTransaction();
         this.statement = initialStatement;
+        this.elementIdMapper = transaction.elementIdMapper();
         this.userTransactionId = kernelTransaction.getUserTransactionId();
         this.valueMapper = new DefaultValueMapper( transaction );
         this.transactionFactory = transactionFactory;
@@ -303,6 +306,12 @@ public class Neo4jTransactionalContext implements TransactionalContext
         // We use the current statement as resourceTracker since it is attached to the KernelTransaction
         // and is guaranteed to be cleaned up on transaction failure.
         return statement;
+    }
+
+    @Override
+    public ElementIdMapper elementIdMapper()
+    {
+        return elementIdMapper;
     }
 
     @Override

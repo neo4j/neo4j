@@ -24,6 +24,7 @@ import java.util.Optional;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -163,4 +164,6 @@ public interface DbAccess extends EntityById
      * @return the number of relationships with the given start label, type and end label in the database
      */
     long relationshipCountByCountStore( int startLabelId, int typeId, int endLabelId );
+
+    ElementIdMapper elementIdMapper();
 }

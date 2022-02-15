@@ -49,7 +49,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
 
     NodeEntityWrappingNodeValue( Node node )
     {
-        super( node.getId() );
+        super( node.getId(), node.getElementId() );
         this.node = node;
     }
 

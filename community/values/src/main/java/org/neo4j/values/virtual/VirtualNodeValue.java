@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.virtual;
 
-
 import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
@@ -31,6 +30,8 @@ import org.neo4j.values.VirtualValue;
 public abstract class VirtualNodeValue extends VirtualValue
 {
     public abstract long id();
+
+    public abstract String elementId();
 
     @Override
     public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )

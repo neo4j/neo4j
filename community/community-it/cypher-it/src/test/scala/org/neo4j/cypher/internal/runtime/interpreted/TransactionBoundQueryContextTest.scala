@@ -129,6 +129,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
     verify(outerTx).kernelTransaction()
+    verify(outerTx).elementIdMapper()
     verifyNoMoreInteractions(outerTx)
   }
 
@@ -152,6 +153,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
     verify(outerTx).kernelTransaction()
+    verify(outerTx).elementIdMapper()
     verifyNoMoreInteractions(outerTx)
   }
 

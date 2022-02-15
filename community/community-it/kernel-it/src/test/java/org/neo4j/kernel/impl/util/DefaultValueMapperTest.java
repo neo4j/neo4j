@@ -38,7 +38,6 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +45,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.pathReference;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 @ImpermanentDbmsExtension
 class DefaultValueMapperTest
@@ -163,8 +163,8 @@ class DefaultValueMapperTest
             tx.commit();
         }
         RelationshipValue relationshipValue =
-                VirtualValues.relationshipValue( relationship.getId(), nodeValue( start.getId(),
-                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), nodeValue( start.getId(),
+                relationshipValue( relationship.getId(), "r", nodeValue( start.getId(), "n1",
+                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), nodeValue( start.getId(), "n2",
                         Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), stringValue( "R" ), EMPTY_MAP );
 
         // Then

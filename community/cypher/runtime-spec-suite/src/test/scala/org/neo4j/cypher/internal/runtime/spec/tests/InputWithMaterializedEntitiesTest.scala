@@ -38,6 +38,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.nodeValue
+import org.neo4j.values.virtual.VirtualValues.relationshipValue
 
 import java.util.Collections
 
@@ -209,8 +211,8 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
 
   test("relationship 'type' function") {
     val (startNode, endNode) = given {
-      val startNode = VirtualValues.nodeValue(1, Values.stringArray(), MapValue.EMPTY)
-      val endNode = VirtualValues.nodeValue(2, Values.stringArray(), MapValue.EMPTY)
+      val startNode = nodeValue(1, "n1", Values.stringArray(), MapValue.EMPTY)
+      val endNode = nodeValue(2, "n2", Values.stringArray(), MapValue.EMPTY)
       (startNode, endNode)
     }
 
@@ -259,7 +261,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
         Values.stringArray(label)
       }
 
-    VirtualValues.nodeValue(id, labelValue, convertProperties(properties))
+    nodeValue(id, "n", labelValue, convertProperties(properties))
   }
 
   private def createNode(id: Long): NodeValue = {
@@ -267,7 +269,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
   }
 
   private def createRelationship(id: Long, startNode: NodeValue, endNode: NodeValue, relType: String, properties: Map[String, Any]): RelationshipValue = {
-    VirtualValues.relationshipValue(id, startNode, endNode, Values.stringValue(relType), convertProperties(properties))
+    relationshipValue(id, "r", startNode, endNode, Values.stringValue(relType), convertProperties(properties))
   }
 
   private def convertProperties(properties: Map[String, Any]): MapValue = {

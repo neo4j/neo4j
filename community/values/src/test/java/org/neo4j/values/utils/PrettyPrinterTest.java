@@ -60,6 +60,8 @@ import static org.neo4j.values.storable.TimeValue.time;
 import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.node;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
@@ -83,7 +85,7 @@ class PrettyPrinterTest
     void shouldHandleNodeValue()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray( "L1", "L2", "L3" ),
+        NodeValue node = node( 42L, Values.stringArray( "L1", "L2", "L3" ),
                 props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter();
 
@@ -98,7 +100,7 @@ class PrettyPrinterTest
     void shouldHandleNodeValueAsReference()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray( "L1", "L2", "L3" ),
+        NodeValue node = node( 42L, Values.stringArray( "L1", "L2", "L3" ),
                                                   props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter( REFERENCE );
 
@@ -113,7 +115,7 @@ class PrettyPrinterTest
     void shouldHandleNodeValueWithoutLabels()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(),
+        NodeValue node = node( 42L, Values.stringArray(),
                 props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter();
 
@@ -128,7 +130,7 @@ class PrettyPrinterTest
     void shouldHandleNodeValueWithoutProperties()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray( "L1", "L2", "L3" ), EMPTY_MAP );
+        NodeValue node = node( 42L, Values.stringArray( "L1", "L2", "L3" ), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -142,7 +144,7 @@ class PrettyPrinterTest
     void shouldHandleNodeValueWithoutLabelsNorProperties()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(), EMPTY_MAP );
+        NodeValue node = node( 42L, Values.stringArray(), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -170,9 +172,9 @@ class PrettyPrinterTest
     void shouldHandleRelationshipValue()
     {
         // Given
-        NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
-        NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ),
+        NodeValue startNode = node( 1L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue endNode = node( 2L, Values.stringArray( "L" ), EMPTY_MAP );
+        RelationshipValue rel = rel( 42L, startNode, endNode, stringValue( "R" ),
                                                                  props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter();
 
@@ -187,9 +189,9 @@ class PrettyPrinterTest
     void shouldHandleRelationshipValueAsReference()
     {
         // Given
-        NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
-        NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
-        RelationshipValue rel = VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ),
+        NodeValue startNode = node( 1L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue endNode = node( 2L, Values.stringArray( "L" ), EMPTY_MAP );
+        RelationshipValue rel = rel( 42L, startNode, endNode, stringValue( "R" ),
                                                                  props( "foo", intValue( 42 ), "bar", list( intValue( 1337 ), stringValue( "baz" ) ) ) );
         PrettyPrinter printer = new PrettyPrinter( REFERENCE );
 
@@ -203,10 +205,10 @@ class PrettyPrinterTest
     @Test
     void shouldHandleRelationshipValueWithoutProperties()
     {
-        NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
-        NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue startNode = node( 1L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue endNode = node( 2L, Values.stringArray( "L" ), EMPTY_MAP );
         RelationshipValue rel =
-                VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+                rel( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -220,7 +222,7 @@ class PrettyPrinterTest
     void shouldHandleRelationshipValueWithoutLabelsNorProperties()
     {
         // Given
-        NodeValue node = VirtualValues.nodeValue( 42L, Values.stringArray(), EMPTY_MAP );
+        NodeValue node = node( 42L, Values.stringArray(), EMPTY_MAP );
         PrettyPrinter printer = new PrettyPrinter();
 
         // When
@@ -234,10 +236,10 @@ class PrettyPrinterTest
     void shouldHandlePaths()
     {
         // Given
-        NodeValue startNode = VirtualValues.nodeValue( 1L, Values.stringArray( "L" ), EMPTY_MAP );
-        NodeValue endNode = VirtualValues.nodeValue( 2L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue startNode = node( 1L, Values.stringArray( "L" ), EMPTY_MAP );
+        NodeValue endNode = node( 2L, Values.stringArray( "L" ), EMPTY_MAP );
         RelationshipValue rel =
-                VirtualValues.relationshipValue( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
+                rel( 42L, startNode, endNode, stringValue( "R" ), EMPTY_MAP );
         PathValue path = VirtualValues.path( new NodeValue[]{startNode, endNode}, new RelationshipValue[]{rel} );
         PrettyPrinter printer = new PrettyPrinter();
 

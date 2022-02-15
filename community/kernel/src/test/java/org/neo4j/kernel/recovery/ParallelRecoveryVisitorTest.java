@@ -441,5 +441,29 @@ class ParallelRecoveryVisitorTest
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public byte[] encodeNodeId( long nodeId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public byte[] encodeRelationshipId( long relationshipId )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long decodeNodeId( byte[] from, int offset )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long decodeRelationshipId( byte[] from, int offset )
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }

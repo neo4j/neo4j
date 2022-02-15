@@ -31,22 +31,22 @@ import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 public class Nodes
 {
     public static final NodeValue ALICE = nodeValue(
-            1001L,
+            1001L, "n1",
             stringArray( "Person", "Employee" ),
             VirtualValues.map( new String[]{"name", "age"},
                     new AnyValue[]{stringValue( "Alice" ), Values.longValue( 33L )} ) );
     public static final NodeValue BOB = nodeValue(
-            1002L,
+            1002L, "n2",
             stringArray( "Person", "Employee" ),
             VirtualValues.map( new String[]{"name", "age"},
                     new AnyValue[]{stringValue( "Bob" ), Values.longValue( 44L )} ) );
     public static final NodeValue CAROL = nodeValue(
-            1003L,
+            1003L, "n3",
             stringArray( "Person" ),
             VirtualValues.map( new String[]{"name"},
                     new AnyValue[]{stringValue( "Carol" )} ) );
     public static final NodeValue DAVE = nodeValue(
-            1004L,
+            1004L, "n4",
             stringArray(),
             VirtualValues.map( new String[]{"name"},
                     new AnyValue[]{stringValue( "Dave" )} ) );

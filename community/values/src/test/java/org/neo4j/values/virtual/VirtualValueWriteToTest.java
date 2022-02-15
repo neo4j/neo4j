@@ -46,11 +46,11 @@ import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.node;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.map;
-import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.relationship;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 @SuppressWarnings( "ReferenceEquality" )
 class VirtualValueWriteToTest
@@ -90,18 +90,18 @@ class VirtualValueWriteToTest
                 ) ),
                 of(shouldWrite(
                         VirtualValues.path(
-                                new NodeValue[]{nodeValue( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                        nodeValue( 40L, stringArray( "L" ), EMPTY_MAP )},
+                                new NodeValue[]{node( 20L, stringArray( "L" ), EMPTY_MAP ),
+                                        node( 40L, stringArray( "L" ), EMPTY_MAP )},
                                 new RelationshipValue[]{
-                                        relationshipValue( 100L, nodeValue( 40L, stringArray( "L" ), EMPTY_MAP ),
-                                                nodeValue( 20L, stringArray( "L" ), EMPTY_MAP ),
+                                        rel( 100L, node( 40L, stringArray( "L" ), EMPTY_MAP ),
+                                                node( 20L, stringArray( "L" ), EMPTY_MAP ),
                                                 stringValue( "T" ), EMPTY_MAP )} ),
                         writePath(
-                                new NodeValue[]{nodeValue( 20L, stringArray( "L" ), EMPTY_MAP ),
-                                        nodeValue( 40L, stringArray( "L" ), EMPTY_MAP )},
+                                new NodeValue[]{node( 20L, stringArray( "L" ), EMPTY_MAP ),
+                                        node( 40L, stringArray( "L" ), EMPTY_MAP )},
                                 new RelationshipValue[]{
-                                        relationshipValue( 100L, nodeValue( 40L, stringArray( "L" ), EMPTY_MAP ),
-                                                nodeValue( 20L, stringArray( "L" ), EMPTY_MAP ),
+                                        rel( 100L, node( 40L, stringArray( "L" ), EMPTY_MAP ),
+                                                node( 20L, stringArray( "L" ), EMPTY_MAP ),
                                                 stringValue( "T" ), EMPTY_MAP )} )
                 ) ),
                 // map( list( map( list() ) ) )
@@ -129,7 +129,7 @@ class VirtualValueWriteToTest
                         endMap()
                 ) ) ,
                 of(shouldWrite(
-                        nodeValue( 1337L,
+                        node( 1337L,
                                 stringArray( "L1", "L2" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
                         writeNode( 1337L,
@@ -137,8 +137,8 @@ class VirtualValueWriteToTest
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
                 ) ),
                 of(shouldWrite(
-                        relationshipValue( 1337L, nodeValue( 42L, stringArray( "L" ), EMPTY_MAP ),
-                                nodeValue( 43L, stringArray( "L" ), EMPTY_MAP ),
+                        rel( 1337L, node( 42L, stringArray( "L" ), EMPTY_MAP ),
+                                node( 43L, stringArray( "L" ), EMPTY_MAP ),
                                 stringValue( "T" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
                         writeRelationship( 1337L, 42L, 43L,

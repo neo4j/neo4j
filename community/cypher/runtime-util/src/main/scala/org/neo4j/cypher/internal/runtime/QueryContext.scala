@@ -62,6 +62,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.kernel.api.ElementIdMapper
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -337,6 +338,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     resources.trace(cursors)
     cursors
   }
+
+  override def elementIdMapper(): ElementIdMapper = transactionalContext.elementIdMapper()
 }
 
 trait WriteQueryContext {
@@ -542,6 +545,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   @VisibleForTesting
   def validateSameDB[E <: Entity](entity: E): E
+
+  def elementIdMapper(): ElementIdMapper
 }
 
 trait KernelPredicate[T] {

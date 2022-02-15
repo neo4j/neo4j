@@ -45,6 +45,7 @@ import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.nodeValue
 
 trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
@@ -94,7 +95,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     val query = mock[QueryContext](RETURNS_DEEP_STUBS)
     when(query.nodeById(any())).thenAnswer(new Answer[NodeValue] {
       override def answer(invocationOnMock: InvocationOnMock): NodeValue =
-        VirtualValues.nodeValue(invocationOnMock.getArgument(0), Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
+        nodeValue(invocationOnMock.getArgument(0), "n", Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
     })
     query
   }

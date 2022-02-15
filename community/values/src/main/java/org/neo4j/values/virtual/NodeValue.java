@@ -29,10 +29,12 @@ import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 public abstract class NodeValue extends VirtualNodeValue
 {
     private final long id;
+    private final String elementId;
 
-    protected NodeValue( long id )
+    protected NodeValue( long id, String elementId )
     {
         this.id = id;
+        this.elementId = elementId;
     }
 
     public abstract TextArray labels();
@@ -59,6 +61,12 @@ public abstract class NodeValue extends VirtualNodeValue
     }
 
     @Override
+    public String elementId()
+    {
+        return elementId;
+    }
+
+    @Override
     public String toString()
     {
         return format( "(%d)", id );
@@ -71,25 +79,21 @@ public abstract class NodeValue extends VirtualNodeValue
     }
 
     private static final long DIRECT_NODE_SHALLOW_SIZE = shallowSizeOfInstance( DirectNodeValue.class );
+
     static class DirectNodeValue extends NodeValue
     {
         private final TextArray labels;
         private final MapValue properties;
         private final boolean isDeleted;
 
-        DirectNodeValue( long id, TextArray labels, MapValue properties )
+        DirectNodeValue( long id, String elementId, TextArray labels, MapValue properties )
         {
-            super( id );
-            assert labels != null;
-            assert properties != null;
-            this.labels = labels;
-            this.properties = properties;
-            this.isDeleted = false;
+            this( id, elementId, labels, properties, false );
         }
 
-        DirectNodeValue( long id, TextArray labels, MapValue properties, boolean isDeleted )
+        DirectNodeValue( long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted )
         {
-            super( id );
+            super( id, elementId );
             assert labels != null;
             assert properties != null;
             this.labels = labels;

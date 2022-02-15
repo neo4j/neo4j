@@ -58,17 +58,17 @@ import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.node;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
+import static org.neo4j.values.virtual.VirtualValueTestUtil.rel;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.relationships;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.concat;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.node;
-import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 import static org.neo4j.values.virtual.VirtualValues.relationship;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 class AnyValueComparatorTest
 {
@@ -94,13 +94,13 @@ class AnyValueComparatorTest
 
             // Node
             node( 1L ),
-            nodeValue( 2L, stringArray( "L" ), EMPTY_MAP ),
+            node( 2L, stringArray( "L" ), EMPTY_MAP ),
             node( 3L ),
 
             // Edge
             relationship( 1L ),
-            relationshipValue( 2L, nodeValue( 1L, stringArray( "L" ), EMPTY_MAP ),
-                    nodeValue( 2L, stringArray( "L" ), EMPTY_MAP ), stringValue( "type" ), EMPTY_MAP ),
+            rel( 2L, node( 1L, stringArray( "L" ), EMPTY_MAP ),
+                    node( 2L, stringArray( "L" ), EMPTY_MAP ), stringValue( "type" ), EMPTY_MAP ),
             relationship( 3L ),
 
             // LIST AND STORABLE ARRAYS
@@ -264,24 +264,24 @@ class AnyValueComparatorTest
     @Test
     void shouldTernaryCompareNodes()
     {
-        assertTernaryCompare( nodeValue( 42, stringArray( "L" ), EMPTY_MAP ),
-                nodeValue( 42, stringArray( "L" ), EMPTY_MAP ), EQUAL );
-        assertTernaryCompare( nodeValue( 42, stringArray( "L" ), EMPTY_MAP ),
-                nodeValue( 43, stringArray( "L" ), EMPTY_MAP ), SMALLER_THAN );
-        assertTernaryCompare( node( 42 ), nodeValue( 42, stringArray( "L" ), EMPTY_MAP ), EQUAL );
-        assertTernaryCompare( nodeValue( 42, stringArray( "L" ), EMPTY_MAP ), intValue( 42 ), UNDEFINED );
+        assertTernaryCompare( node( 42, stringArray( "L" ), EMPTY_MAP ),
+                node( 42, stringArray( "L" ), EMPTY_MAP ), EQUAL );
+        assertTernaryCompare( node( 42, stringArray( "L" ), EMPTY_MAP ),
+                node( 43, stringArray( "L" ), EMPTY_MAP ), SMALLER_THAN );
+        assertTernaryCompare( node( 42 ), node( 42, stringArray( "L" ), EMPTY_MAP ), EQUAL );
+        assertTernaryCompare( node( 42, stringArray( "L" ), EMPTY_MAP ), intValue( 42 ), UNDEFINED );
         MapValue propMap = map( "foo", "bar" );
-        assertTernaryCompare( nodeValue( 42, stringArray( "L" ), propMap ), propMap, UNDEFINED );
+        assertTernaryCompare( node( 42, stringArray( "L" ), propMap ), propMap, UNDEFINED );
     }
 
     @Test
     void shouldTernaryCompareRelationships()
     {
-        NodeValue start = nodeValue( 42, stringArray( "L" ), EMPTY_MAP );
-        NodeValue end = nodeValue( 43, stringArray( "L" ), EMPTY_MAP );
+        NodeValue start = node( 42, stringArray( "L" ), EMPTY_MAP );
+        NodeValue end = node( 43, stringArray( "L" ), EMPTY_MAP );
         MapValue propMap = map( "foo", "bar" );
-        RelationshipValue rel1 = relationshipValue( 42, start, end, stringValue( "R" ), propMap );
-        RelationshipValue rel2 = relationshipValue( 43, start, end, stringValue( "R" ), propMap );
+        RelationshipValue rel1 = rel( 42, start, end, stringValue( "R" ), propMap );
+        RelationshipValue rel2 = rel( 43, start, end, stringValue( "R" ), propMap );
 
         assertTernaryCompare( rel1, rel1, EQUAL );
         assertTernaryCompare( rel1, rel2, SMALLER_THAN );

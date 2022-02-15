@@ -24,7 +24,7 @@ import org.neo4j.annotations.api.PublicApi;
 /**
  * This exception will be thrown if a request is made to a node, relationship or
  * property that does not exist. As an example, using
- * {@link Transaction#getNodeById} passing in an id that does not exist
+ * {@link Transaction#getNodeByElementId} passing in an id that does not exist
  * will cause this exception to be thrown.
  * {@link Entity#getProperty(String)} will also throw this exception
  * if the given key does not exist.

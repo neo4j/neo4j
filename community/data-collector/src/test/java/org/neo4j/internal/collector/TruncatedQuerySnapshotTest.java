@@ -32,14 +32,16 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 class TruncatedQuerySnapshotTest
 {
-    static final NodeValue NODE = VirtualValues.nodeValue( 42,
+    static final NodeValue NODE = nodeValue( 42, "n",
                                                      Values.stringArray( "Phone" ),
                                                      map( "number", Values.stringValue( "07303725xx" ) ) );
 
-    static final RelationshipValue RELATIONSHIP = VirtualValues.relationshipValue( 100,
+    static final RelationshipValue RELATIONSHIP = relationshipValue( 100, "r",
                                                                              NODE,
                                                                              NODE,
                                                                              Values.stringValue( "CALL" ),

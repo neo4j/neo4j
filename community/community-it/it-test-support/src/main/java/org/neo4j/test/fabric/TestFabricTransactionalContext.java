@@ -21,6 +21,7 @@ package org.neo4j.test.fabric;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
@@ -155,6 +156,12 @@ public class TestFabricTransactionalContext implements TransactionalContext
 
     @Override
     public TransactionalContext contextWithNewTransaction()
+    {
+        throw failure();
+    }
+
+    @Override
+    public ElementIdMapper elementIdMapper()
     {
         throw failure();
     }

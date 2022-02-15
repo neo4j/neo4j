@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.ElementIdMapper
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -144,6 +145,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
     require(threadSafeCursors != null)
     new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
   }
+
+  override def elementIdMapper(): ElementIdMapper = tc.elementIdMapper()
 }
 
 object TransactionalContextWrapper {
