@@ -408,9 +408,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
             nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
             throw new IllegalStateException(
-                    "All BTREE indexes will be removed during migration. " +
-                    "It is assumed that those indexes should be replaced by some other index and to guard from unknowingly removing indexes, " +
-                    "all BTREE indexes need to have a corresponding RANGE, TEXT or POINT index as replacement for migration to succeed. " +
+                    "Migration will remove all BTREE indexes. " +
+                    "To guard from unintentionally removing indexes, " +
+                    "all BTREE indexes must either have been removed before this migration or need to have a corresponding " +
+                    "RANGE, TEXT or POINT index as replacement for migration to succeed. " +
                     "Please drop your BTREE indexes or create RANGE, TEXT or POINT indexes as replacements and retry the migration. " +
                     "BTREE indexes without replacement: " + nonReplacedIndexString
             );
