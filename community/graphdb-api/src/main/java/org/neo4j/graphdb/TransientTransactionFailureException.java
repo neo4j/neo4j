@@ -29,25 +29,17 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public class TransientTransactionFailureException extends TransientFailureException
 {
-    private static final Status DEFAULT_STATUS = Status.Transaction.TransientTransactionFailure;
-
     private final Status status;
 
-    @Deprecated // A specific status should be provided
-    public TransientTransactionFailureException( String message, Throwable cause )
+    public TransientTransactionFailureException( Status status, String message )
     {
-        this( DEFAULT_STATUS, message, cause );
+        super( message );
+        this.status = status;
     }
 
     public TransientTransactionFailureException( Status status, String message, Throwable cause )
     {
         super( message, cause );
-        this.status = status;
-    }
-
-    public TransientTransactionFailureException( Status status, String message )
-    {
-        super( message );
         this.status = status;
     }
 
