@@ -127,6 +127,14 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     }
 
     @Internal
+    @Description(
+            "This is used for an optimisation in VarExpandCursor. For paths where the length of the path is below this threshold, " +
+            "the `selectionCursor` will be used to check if a relationship is unique in the path. When the threshold is reached a set will be used instead. " +
+            "If the threshold is set to -1 `selectionCursor` will be used no matter the length of the path." )
+    public static final Setting<Integer> var_expand_relationship_id_set_threshold =
+            newBuilder( "unsupported.cypher.var_expand_relationship_id_set_threshold", INT, 128 ).addConstraint( min( -1 ) ).build();
+
+    @Internal
     @Description( "Choose the expression engine. The default is to only compile expressions that are hot, if 'COMPILED' " +
             "is chosen all expressions will be compiled directly and if 'INTERPRETED' is chosen expressions will " +
             "never be compiled." )

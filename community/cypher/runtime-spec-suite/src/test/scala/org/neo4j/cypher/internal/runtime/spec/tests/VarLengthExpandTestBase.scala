@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -33,7 +34,9 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.scalatest.Outcome
 
+import java.lang.System.lineSeparator
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.util.Random
@@ -1041,4 +1044,17 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   // HELPERS
 
   private def closestMultipleOf(sizeHint: Int, div: Int) = (sizeHint / div) * div
+}
+
+abstract class PipelinedVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
+                                                                            edition: Edition[CONTEXT],
+                                                                            runtime: CypherRuntime[CONTEXT],
+                                                                            sizeHint: Int,
+                                                                            varExpandRelationshipIdSetThreshold: Int = Random.nextInt(128) - 1
+                                                                          ) extends VarLengthExpandTestBase[CONTEXT](
+  edition.copyWith(GraphDatabaseInternalSettings.var_expand_relationship_id_set_threshold -> Int.box(varExpandRelationshipIdSetThreshold)), runtime, sizeHint) {
+
+  override def withFixture(test: NoArgTest): Outcome = {
+    withClue(s"Failed with varExpandRelationshipIdSetThreshold=$varExpandRelationshipIdSetThreshold${lineSeparator()}")(super.withFixture(test))
+  }
 }

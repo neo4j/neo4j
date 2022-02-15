@@ -234,7 +234,8 @@ object CypherRuntimeConfiguration {
       memoryTrackingController = config.memoryTrackingController,
       enableMonitors = config.enableMonitors,
       executionPlanCacheSize = config.executionPlanCacheSize,
-      renderPlanDescription = config.renderPlanDescription
+      renderPlanDescription = config.renderPlanDescription,
+      varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold
     )
   }
 
@@ -250,7 +251,8 @@ case class CypherRuntimeConfiguration(pipelinedBatchSizeSmall: Int,
                                       memoryTrackingController: MemoryTrackingController,
                                       enableMonitors: Boolean,
                                       executionPlanCacheSize: Int,
-                                      renderPlanDescription: Boolean) {
+                                      renderPlanDescription: Boolean,
+                                      varExpandRelationshipIdSetThreshold: Int) {
 
   Preconditions.checkArgument(pipelinedBatchSizeSmall <= pipelinedBatchSizeBig, s"pipelinedBatchSizeSmall (got $pipelinedBatchSizeSmall) must be <= pipelinedBatchSizeBig (got $pipelinedBatchSizeBig)")
 
