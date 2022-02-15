@@ -103,7 +103,7 @@ public interface StoragePropertyCursor extends StorageCursor
      * cursor it will have to be initialized again.
      *
      * @param propertyKeyId the property key id to get the value for.
-     * @return @{@code true} if the property exists, otherwise {@code false}.
+     * @return {@code true} if the property exists, otherwise {@code false}.
      * @deprecated only a temporary method to allow compiled runtime to continue working w/o bigger rewrite.
      */
     default boolean seekProperty( int propertyKeyId )

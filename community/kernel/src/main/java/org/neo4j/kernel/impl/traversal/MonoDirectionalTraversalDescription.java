@@ -100,9 +100,6 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         } );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness)
-     */
     @Override
     public TraversalDescription uniqueness( UniquenessFactory uniqueness )
     {
@@ -110,9 +107,6 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
                 evaluator, initialState, branchOrdering, sorting, endNodes );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#uniqueness(org.neo4j.graphdb.traversal.Uniqueness, java.lang.Object)
-     */
     @Override
     public TraversalDescription uniqueness( UniquenessFactory uniqueness,
             Object parameter )
@@ -170,9 +164,6 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         }
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#order(org.neo4j.graphdb.traversal.Order)
-     */
     @Override
     public TraversalDescription order( BranchOrderingPolicy order )
     {
@@ -196,18 +187,12 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         return order( BranchOrderingPolicies.PREORDER_BREADTH_FIRST );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#relationships(org.neo4j.graphdb.RelationshipType)
-     */
     @Override
     public TraversalDescription relationships( RelationshipType type )
     {
         return relationships( type, Direction.BOTH );
     }
 
-    /* (non-Javadoc)
-     * @see org.neo4j.graphdb.traversal.TraversalDescription#relationships(org.neo4j.graphdb.RelationshipType, org.neo4j.graphdb.Direction)
-     */
     @Override
     public TraversalDescription relationships( RelationshipType type,
             Direction direction )

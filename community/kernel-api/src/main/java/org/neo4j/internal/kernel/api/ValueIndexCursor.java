@@ -29,7 +29,7 @@ public interface ValueIndexCursor
     int numberOfProperties();
 
     /**
-     * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #next()}.
+     * Check before trying to access values with {@link #propertyValue(int)}. Result can change with each call to {@link #hasValue()}.
      *
      * @return {@code true} if {@link #propertyValue(int)} can be used to get property value on cursor's current location,
      * else {@code false}.

@@ -51,18 +51,18 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
  *         must be updated, since that is the only data part of the node record.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes##DEGREES} - Node id</dt>
+ *     <dt>{@link ResourceTypes#DEGREES} - Node id</dt>
  *     <dd>
  *         Used to lock nodes to avoid concurrent label changes with relationship addition/deletion. This would otherwise lead to inconsistent count store.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes##RELATIONSHIP_DELETE} - Relationship id</dt>
+ *     <dt>{@link ResourceTypes#RELATIONSHIP_DELETE} - Relationship id</dt>
  *     <dd>Lock a relationship for exclusive access during deletion.</dd>
  *
- *     <dt>{@link ResourceTypes##RELATIONSHIP_GROUP} - Node id</dt>
+ *     <dt>{@link ResourceTypes#RELATIONSHIP_GROUP} - Node id</dt>
  *     <dd>
  *         Lock the full relationship group chain for a given node(dense). This will not lock the node in contrast to
- *         {@link ResourceTypes##NODE_RELATIONSHIP_GROUP_DELETE}.
+ *         {@link ResourceTypes#NODE_RELATIONSHIP_GROUP_DELETE}.
  *     </dd>
  *
  *     <dt>{@link ResourceTypes#RELATIONSHIP} - Relationship id</dt>

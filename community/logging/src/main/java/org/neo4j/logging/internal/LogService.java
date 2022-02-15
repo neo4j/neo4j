@@ -33,7 +33,7 @@ public interface LogService
     InternalLogProvider getUserLogProvider();
 
     /**
-     * Equivalent to {@code {@link #getUserLogProvider}()( loggingClass )}
+     * Equivalent to {@code getUserLogProvider().getLog( loggingClass )}
      * @param loggingClass the context for the return logger.
      * @return a {@link InternalLog} that logs user visible messages with the {@code loggingClass} as context.
      */
@@ -45,7 +45,7 @@ public interface LogService
     InternalLogProvider getInternalLogProvider();
 
     /**
-     * Equivalent to {@code {@link #getInternalLogProvider}()( loggingClass )}
+     * Equivalent to {@code #getInternalLogProvider().getLog( loggingClass )}
      * @param loggingClass the context for the return logger.
      * @return a {@link InternalLog} that logs internal messages with the {@code loggingClass} as context.
      */

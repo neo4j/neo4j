@@ -72,7 +72,7 @@ public class Location
                 return false;
             }
             Local local = (Local) o;
-            return Objects.equals( getGraphId(), local.getGraphId() )
+            return getGraphId() == local.getGraphId()
                     && Objects.equals( getUuid(), local.getUuid() )
                     && Objects.equals( getDatabaseName(), local.getDatabaseName() );
         }
@@ -125,7 +125,7 @@ public class Location
                     return false;
                 }
                 Remote remote = (Remote) o;
-                return getUri().equals( remote.getUri() ) || Objects.equals( getGraphId(), remote.getGraphId() )
+                return Objects.equals( getUri(), remote.getUri() ) || ( getGraphId() == remote.getGraphId() )
                         && Objects.equals( getUuid(), remote.getUuid() )
                         && Objects.equals( getDatabaseName(), remote.getDatabaseName() );
             }
@@ -164,7 +164,7 @@ public class Location
                     return false;
                 }
                 Remote remote = (Remote) o;
-                return getUri().equals( remote.getUri() ) || Objects.equals( getGraphId(), remote.getGraphId() )
+                return Objects.equals( getUri(), remote.getUri() ) || ( getGraphId() == remote.getGraphId() )
                         && Objects.equals( getUuid(), remote.getUuid() )
                         && Objects.equals( getDatabaseName(), remote.getDatabaseName() );
             }

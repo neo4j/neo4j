@@ -63,8 +63,6 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
 
     /**
      *  Refresh partition. No-op in read only partition.
-     *
-     * @throws IOException if refreshing fails.
      */
     @Override
     public void maybeRefreshBlocking()

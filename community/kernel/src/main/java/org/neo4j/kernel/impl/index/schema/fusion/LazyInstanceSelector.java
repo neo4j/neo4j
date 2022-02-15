@@ -32,8 +32,7 @@ class LazyInstanceSelector<T> extends InstanceSelector<T>
 
     /**
      * Empty lazy selector
-     *
-     * See {@link this#LazyInstanceSelector(EnumMap, Function)}
+     * @see LazyInstanceSelector#LazyInstanceSelector(EnumMap, Function)
      */
     LazyInstanceSelector( Function<IndexSlot,T> factory )
     {

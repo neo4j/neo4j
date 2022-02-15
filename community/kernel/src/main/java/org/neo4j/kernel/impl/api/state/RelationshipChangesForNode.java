@@ -307,7 +307,7 @@ public class RelationshipChangesForNode
         return ids != null ? ids.size() : 0;
     }
 
-    private final class IdsByType implements RelationshipModifications.NodeRelationshipTypeIds
+    private static final class IdsByType implements RelationshipModifications.NodeRelationshipTypeIds
     {
         private final RelationshipSetsByDirection byDirection;
         private final RelationshipModifications.IdDataDecorator idDataDecorator;

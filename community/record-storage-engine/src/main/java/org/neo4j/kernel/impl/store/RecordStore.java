@@ -27,9 +27,9 @@ import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
 /**
@@ -105,7 +105,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
 
     /**
      * Opens a {@link PageCursor} on this store, capable of writing records using
-     * {@link #updateRecord(AbstractBaseRecord, IdUpdateListener, PageCursor, CursorContext)}.
+     * {@link #updateRecord(AbstractBaseRecord, PageCursor, CursorContext, StoreCursors)}.
      * The caller is responsible for closing it when done with it.
      *
      * @param id cursor will initially be placed at the page containing this record id.

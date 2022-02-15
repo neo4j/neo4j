@@ -65,7 +65,7 @@ public class LogEntryCursor implements IOCursor<LogEntry>
      * Reading {@link LogEntry log entries} may have the source move over physically multiple log files.
      * This accessor returns the log version of the most recent call to {@link #next()}.
      *
-     * @return the log version of the most recent {@link LogEntry} returned from {@link #next().
+     * @return the log version of the most recent {@link LogEntry} returned from {@link #next()}.
      */
     public long getCurrentLogVersion() throws IOException
     {

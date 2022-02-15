@@ -66,7 +66,7 @@ public class DetachedLogTailScanner
     private final LogEntryReader logEntryReader;
     private final LogTailScannerMonitor monitor;
     private final MemoryTracker memoryTracker;
-    private final CheckpointFile checkPointFile;
+    private final CheckpointFile checkpointFile;
     private final boolean failOnCorruptedLogFiles;
     private final FileSystemAbstraction fileSystem;
 
@@ -77,7 +77,7 @@ public class DetachedLogTailScanner
         this.logFiles = logFiles;
         this.logEntryReader = context.getLogEntryReader();
         this.memoryTracker = context.getMemoryTracker();
-        this.checkPointFile = checkpointFile;
+        this.checkpointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
         this.failOnCorruptedLogFiles = context.isFailOnCorruptedLogFiles();
         this.logTailInformation = context.getExternalTailInfo();
@@ -91,7 +91,7 @@ public class DetachedLogTailScanner
         long lowestLogVersion = logFile.getLowestLogVersion();
         try
         {
-            var lastAccessibleCheckpoint = checkPointFile.findLatestCheckpoint();
+            var lastAccessibleCheckpoint = checkpointFile.findLatestCheckpoint();
             if ( lastAccessibleCheckpoint.isEmpty() )
             {
                 return noCheckpointLogTail( logFile, highestLogVersion, lowestLogVersion );
@@ -109,7 +109,7 @@ public class DetachedLogTailScanner
                 throwUnableToCleanRecover( new RuntimeException( exceptionMessage ) );
             }
             // our last checkpoint is not valid (we have a pointer to non existent place) lets try to find last one that looks correct
-            List<CheckpointInfo> checkpointInfos = checkPointFile.reachableCheckpoints();
+            List<CheckpointInfo> checkpointInfos = checkpointFile.reachableCheckpoints();
             // we know that last one is not valid so no reason to double check that again
             ListIterator<CheckpointInfo> reverseCheckpoints = checkpointInfos.listIterator( checkpointInfos.size() - 1 );
             while ( reverseCheckpoints.hasPrevious() )

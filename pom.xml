@@ -879,7 +879,8 @@
                   -Xep:StringSplitter:OFF -Xep:BadImport:OFF -Xep:InvalidBlockTag:OFF -Xep:InvalidInlineTag:OFF -Xep:AnnotateFormatMethod:OFF \
                   -Xep:ImmutableEnumChecker:OFF -Xep:UnescapedEntity:OFF -Xep:InvalidParam:OFF -Xep:JavaLangClash:OFF -Xep:ReturnValueIgnored:OFF \
                   -Xep:FutureReturnValueIgnored:OFF -Xep:UnusedVariable:OFF -Xep:UnnecessaryLambda:OFF -Xep:DefaultCharset:OFF -Xep:UnnecessaryParentheses:OFF \
-                  -Xep:OperatorPrecedence:OFF -Xep:IntLongMath:OFF \
+                  -Xep:OperatorPrecedence:OFF -Xep:IntLongMath:OFF -Xep:InlineFormatString:OFF -Xep:ReferenceEquality:OFF -Xep:NonOverridingEquals:OFF \
+                  -Xep:NarrowingCompoundAssignment:OFF -Xep:JavaLocalDateTimeGetNano:OFF -Xep:JavaLocalTimeGetNano:OFF \
                   -Xep:SelfComparison:WARN -Xep:BadAnnotationImplementation:WARN -Xep:ModifyingCollectionWithItself:WARN \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->

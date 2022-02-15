@@ -55,7 +55,7 @@ public class LogEntryDetachedCheckpoint extends AbstractLogEntry
             return false;
         }
         LogEntryDetachedCheckpoint that = (LogEntryDetachedCheckpoint) o;
-        return Objects.equals( logPosition, that.logPosition ) && Objects.equals( checkpointTime, that.checkpointTime ) &&
+        return Objects.equals( logPosition, that.logPosition ) && checkpointTime == that.checkpointTime &&
                 Objects.equals( storeId, that.storeId ) && Objects.equals( reason, that.reason );
     }
 
