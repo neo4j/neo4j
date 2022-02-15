@@ -291,7 +291,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     {
                         persistNodeLabelIndex( dstAccess );
                         filterOurBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
-                                               directoryLayoutArg.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) );
+                                               SYSTEM_DATABASE_NAME.equals( directoryLayoutArg.getDatabaseName() ) );
                     }
                     dstStore.flush( cursorContext );
                 }
