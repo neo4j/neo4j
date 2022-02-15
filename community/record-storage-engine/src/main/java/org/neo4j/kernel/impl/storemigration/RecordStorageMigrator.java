@@ -291,7 +291,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
                     try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
                     {
-                        persistNodeLabelIndex( dstAccess );
+                        persistNodeLabelIndex( schemaStore44Reader, dstCursors, dstAccess );
                         filterOutBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
                                                SYSTEM_DATABASE_NAME.equals( directoryLayoutArg.getDatabaseName() ) );
                     }
@@ -321,26 +321,28 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      *    {@link IndexDescriptor#INJECTED_NLI} will be injected by {@link org.neo4j.internal.recordstorage.SchemaStorage}
      *    when reading schema rules. In this case we materialise this injected rule with a new real id (instead of -2).
      */
-    private static void persistNodeLabelIndex( SchemaRuleMigrationAccess dstAccess ) throws KernelException
+    @VisibleForTesting
+    static void persistNodeLabelIndex( SchemaStore44Reader schemaStore44Reader, StoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess )
+            throws KernelException
     {
         SchemaRule foundNLIThatNeedsUpdate = null;
-        Iterable<SchemaRule> all = dstAccess.getAll();
-        for ( SchemaRule schemaRule : all )
+        Iterable<SchemaRule44> all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
+        for ( SchemaRule44 schemaRule : all )
         {
-            // This is the previous labelscanstore that we want to make into a real complete record
-            if ( schemaRule.schema().equals( IndexDescriptor.NLI_PROTOTYPE.schema() ) )
+            if  ( schemaRule instanceof SchemaRule44.Index index )
             {
-                // It was never persisted and now needs to persisted with a new id.
-                if ( schemaRule.getId() == IndexDescriptor.INJECTED_NLI_ID )
+                // This is the previous labelscanstore that we want to make into a real complete record
+                if ( index.schema().equals( SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_SCHEMA ) )
                 {
-                    foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( dstAccess.nextId() );
-                    break;
-                }
-                // It was persisted and is a record with no properties, rewriting it will give it properties.
-                if ( IndexDescriptor.NLI_GENERATED_NAME.equals( schemaRule.getName() ) )
-                {
-                    foundNLIThatNeedsUpdate = schemaRule;
-                    break;
+                    // Need to update NLI schema record
+                    if ( SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_GENERATED_NAME.equals( index.name() ) )
+                    {
+                        long newId = index.id() == SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_ID ?
+                                     dstAccess.nextId() : // It was never persisted and now needs to persisted with a new id.
+                                     index.id();          // It was persisted and is a record with no properties, can keep id.
+                        foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( newId );
+                        break;
+                    }
                 }
             }
         }

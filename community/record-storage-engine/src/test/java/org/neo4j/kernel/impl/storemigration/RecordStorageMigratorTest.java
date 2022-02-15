@@ -30,9 +30,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.SimpleTokenCreator;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.filterOutBtreeIndexes;
+import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.persistNodeLabelIndex;
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE;
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.BTREE;
@@ -135,7 +138,8 @@ class RecordStorageMizgratorTest
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
-        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btree.index(), btree.constraint(), rangeNodeKey.index(), rangeNodeKey.constraint() ) );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( btree.index(), btree.constraint(), rangeNodeKey.index(), rangeNodeKey.constraint() ) );
 
         // When
         var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
@@ -176,7 +180,8 @@ class RecordStorageMizgratorTest
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
-        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index(), rangeUnique.constraint() ) );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index(), rangeUnique.constraint() ) );
 
         // When
         filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
@@ -198,6 +203,69 @@ class RecordStorageMizgratorTest
 
         // When
         filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+
+        // Then
+        verifyNoInteractions( access );
+    }
+
+    @Test
+    void shouldPersistNodeLabelIndexWhenLoadingFormerLabelScanStoreWithoutId() throws KernelException
+    {
+        // Given
+        var id = 15L;
+        var formerLabelScanStoreWithoutId = SchemaStore44Reader.constructFormerLabelScanStoreSchemaRule();
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( formerLabelScanStoreWithoutId )
+        );
+        when( access.nextId() ).thenReturn( id );
+
+        // When
+        persistNodeLabelIndex( reader, storeCursors, access );
+
+        // Then
+        verify( access ).nextId();
+        verify( access ).writeSchemaRule( IndexDescriptor.NLI_PROTOTYPE.materialise( id ) );
+        verifyNoMoreInteractions( access );
+    }
+
+    @Test
+    void shouldPersistNodeLabelIndexWhenLoadingFormerLabelScanStoreWithId() throws KernelException
+    {
+        // Given
+        var id = 15L;
+        var formerLabelScanStoreWithId = SchemaStore44Reader.constructFormerLabelScanStoreSchemaRule( id );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( formerLabelScanStoreWithId )
+        );
+
+        // When
+        persistNodeLabelIndex( reader, storeCursors, access );
+
+        // Then
+        verify( access ).writeSchemaRule( IndexDescriptor.NLI_PROTOTYPE.materialise( id ) );
+        verifyNoMoreInteractions( access );
+    }
+
+    @Test
+    void shouldNotPersisNodeLabelIndexWhenLoadingExistingNodeLabelIndex() throws KernelException
+    {
+        // Given
+        var existingNli = new SchemaRule44.Index( 15L, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), false, "My nli",
+                                                  SchemaRule44.IndexType.LOOKUP, new IndexProviderDescriptor( "token-lookup", "1.0" ),
+                                                  IndexConfig.empty(), null );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( existingNli ) );
+
+        // When
+        persistNodeLabelIndex( reader, storeCursors, access );
 
         // Then
         verifyNoInteractions( access );

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -34,6 +35,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
@@ -73,6 +75,11 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 public class SchemaStore44Reader implements AutoCloseable
 {
+    public static final long FORMER_LABEL_SCAN_STORE_ID = -2;
+    public static final AnyTokenSchemaDescriptor FORMER_LABEL_SCAN_STORE_SCHEMA = SchemaDescriptors.forAnyEntityTokens( EntityType.NODE );
+    public static final String FORMER_LABEL_SCAN_STORE_GENERATED_NAME =
+            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
+
     private static final String PROP_SCHEMA_RULE_PREFIX = "__org.neo4j.SchemaRule.";
     private static final String PROP_SCHEMA_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaRuleType"; // index / constraint
     private static final String PROP_INDEX_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexRuleType"; // Uniqueness
@@ -90,9 +97,14 @@ public class SchemaStore44Reader implements AutoCloseable
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
-    private static final long FORMER_LABEL_SCAN_STORE_ID = -2;
-    private static final String FORMER_LABEL_SCAN_STORE_GENERATED_NAME =
-            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
+    private static final Function<Long,SchemaRule44.Index> FORMER_LABEL_SCAN_STORE_SCHEMA_RULE_FACTORY =
+            id -> new SchemaRule44.Index( id,
+                                          FORMER_LABEL_SCAN_STORE_SCHEMA,
+                                          false,
+                                          FORMER_LABEL_SCAN_STORE_GENERATED_NAME,
+                                          SchemaRule44.IndexType.LOOKUP,
+                                          new IndexProviderDescriptor( "token-lookup", "1.0" ),
+                                          IndexConfig.empty(), null );
 
     private final SchemaStore44 schemaStore;
     private final PropertyStore propertyStore;
@@ -219,7 +231,7 @@ public class SchemaStore44Reader implements AutoCloseable
     {
         if ( props.isEmpty() )
         {
-            return constructFormerLabelScanStoreSchemaRule();
+            return constructFormerLabelScanStoreSchemaRule( ruleId );
         }
 
         String schemaRuleType = getString( PROP_SCHEMA_RULE_TYPE, props );
@@ -229,6 +241,11 @@ public class SchemaStore44Reader implements AutoCloseable
                     case "CONSTRAINT" -> buildConstraintRule( ruleId, props );
                     default -> throw new MalformedSchemaRuleException( "Can not create a schema rule of type: " + schemaRuleType );
                 };
+    }
+
+    public static SchemaRule44 constructFormerLabelScanStoreSchemaRule()
+    {
+        return constructFormerLabelScanStoreSchemaRule( FORMER_LABEL_SCAN_STORE_ID );
     }
 
     /**
@@ -256,15 +273,9 @@ public class SchemaStore44Reader implements AutoCloseable
      *     </li>
      * </ul>
      */
-    private SchemaRule44 constructFormerLabelScanStoreSchemaRule()
+    public static SchemaRule44 constructFormerLabelScanStoreSchemaRule( long ruleId )
     {
-        return new SchemaRule44.Index( FORMER_LABEL_SCAN_STORE_ID,
-                SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ),
-                false,
-                FORMER_LABEL_SCAN_STORE_GENERATED_NAME,
-                SchemaRule44.IndexType.LOOKUP,
-                new IndexProviderDescriptor( "token-lookup", "1.0" ),
-                IndexConfig.empty(), null );
+        return FORMER_LABEL_SCAN_STORE_SCHEMA_RULE_FACTORY.apply( ruleId );
     }
 
     private static SchemaRule44.Index buildIndexRule( long schemaRuleId, Map<String,Value> props ) throws MalformedSchemaRuleException
