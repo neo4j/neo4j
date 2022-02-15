@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -103,6 +104,8 @@ case object PushdownPropertyReads {
         plan.treeFold(List.empty[Property]) {
           case lp: LogicalPlan if lp.id != plan.id =>
             acc2 => SkipChildren(acc2) // do not traverse further
+          case _: CaseExpression => // we don't want to pushdown properties inside case expressions since it's not sure we will ever need to read them
+            acc2 => SkipChildren(acc2)
           case p @ Property(v: LogicalVariable, _) if isNodeOrRel(v) =>
             acc2 => TraverseChildren(p :: acc2)
         }

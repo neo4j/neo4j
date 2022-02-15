@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
+import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -1417,6 +1418,21 @@ class PushdownPropertyReadsTest
         .cacheProperties("a.prop1", "a.prop2")
         .allNodeScan("a")
         .build()
+  }
+
+  test("should not co-read when reading multiple properties from case expression on same node") {
+    val caseExpression = CaseExpression.apply(
+      Some(prop(varFor("a"), "prop")),
+      List.empty,
+      Some(prop(varFor("a"), "prop1")))(pos)
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .projection(Map("r" -> caseExpression)).withEffectiveCardinality(10)
+      .allNodeScan("a").withEffectiveCardinality(10)
+    val plan = planBuilder.build()
+
+    val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
+    rewritten shouldBe plan
   }
 
   test("should not cache when already cached") {
