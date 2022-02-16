@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.kernel.impl.index.schema.TextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
@@ -173,7 +172,7 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
 
   protected def checkForBtreeProvider(indexProviderString: String, schemaType: String): Unit =
     if (indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) ||
-      indexProviderString.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()))
+      indexProviderString.equalsIgnoreCase("lucene+native-3.0"))
       throw new InvalidArgumentsException(
         s"""Could not create $schemaType with specified index provider '$indexProviderString'.
            |To create btree index, please use 'CREATE BTREE INDEX ...'.""".stripMargin)
@@ -319,7 +318,7 @@ case class IndexBackedConstraintsOptionsConverter(schemaType: String) extends In
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
-        !indexProviderString.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()) &&
+        !indexProviderString.equalsIgnoreCase("lucene+native-3.0") &&
         !indexProviderString.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name()))
         throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
 
@@ -367,7 +366,7 @@ case class CreateBtreeIndexOptionsConverter(schemaType: String) extends IndexOpt
       checkForPointProvider(indexProviderString, schemaType)
 
       if (!indexProviderString.equalsIgnoreCase(GenericNativeIndexProvider.DESCRIPTOR.name()) &&
-        !indexProviderString.equalsIgnoreCase(NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()))
+        !indexProviderString.equalsIgnoreCase("lucene+native-3.0"))
         throw new InvalidArgumentsException(s"Could not create $schemaType with specified index provider '$indexProviderString'.")
 
       indexProviderString
