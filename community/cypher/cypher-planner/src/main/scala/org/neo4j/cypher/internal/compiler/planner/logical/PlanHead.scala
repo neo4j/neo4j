@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 /**
  * Solves the first query graph and its horizon of a SinglePlannerQuery.
  */
-case class PlanHead(planPart: MatchPlanner = planMatch,
-                    planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
+case class PlanHead(matchPlanner: MatchPlanner = planMatch,
+                    eventHorizonPlanner: EventHorizonPlanner = PlanEventHorizon,
                     planUpdates: UpdatesPlanner = PlanUpdates) extends HeadPlanner {
 
-  override def apply(headQuery: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
+  override def plan(headQuery: SinglePlannerQuery, context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
     val aggregationPropertyAccesses = PropertyAccessHelper.findAggregationPropertyAccesses(headQuery)
     val localPropertyAccesses = PropertyAccessHelper.findLocalPropertyAccesses(headQuery)
     val updatedContext = context
@@ -44,11 +44,11 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
       case Some(plan) =>
         BestResults(plan, None)
       case None =>
-        val matchPlans = planPart(headQuery, updatedContext)
+        val matchPlans = matchPlanner.plan(headQuery, updatedContext)
         // We take all plans solving the MATCH part. This could be two, if we have a required order.
         val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, headQuery, updatedContext))
 
-        val plansWithHorizon = planEventHorizon.planHorizon(headQuery, plansWithInput, None, updatedContext)
+        val plansWithHorizon = eventHorizonPlanner.planHorizon(headQuery, plansWithInput, None, updatedContext)
         plansWithHorizon.map(context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(_, headQuery, updatedContext))
       }
 
@@ -61,7 +61,7 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
    * Horizon planning will ensure that any ORDER BY clause is solved, so in the end we have up to two plans that are comparable.
    */
   private def planUpdatesAndInput(matchPlan: LogicalPlan, headQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val planWithUpdates = planUpdates(headQuery, matchPlan, firstPlannerQuery = true, context)
+    val planWithUpdates = planUpdates.plan(headQuery, matchPlan, firstPlannerQuery = true, context)
 
     headQuery.queryInput match {
       case Some(variables) =>
