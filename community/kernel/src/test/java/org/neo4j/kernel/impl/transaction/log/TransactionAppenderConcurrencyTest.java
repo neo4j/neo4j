@@ -41,6 +41,7 @@ import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.DelegatingStoreChannel;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -81,6 +82,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
@@ -136,6 +138,7 @@ public class TransactionAppenderConcurrencyTest
     @Test
     void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
     {
+        assumeTrue( Config.defaults().get( GraphDatabaseInternalSettings.dedicated_transaction_appender ) );
         // GIVEN
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, false ),
                 failMethod( TransactionLogFile.class, "locklessForce" ) );
@@ -182,6 +185,7 @@ public class TransactionAppenderConcurrencyTest
     @Test
     void databasePanicShouldHandleOutOfMemoryErrors() throws IOException, InterruptedException, ExecutionException
     {
+        assumeTrue( Config.defaults().get( GraphDatabaseInternalSettings.dedicated_transaction_appender ) );
         OutOfMemoryAwareFileSystem fs = new OutOfMemoryAwareFileSystem();
 
         DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
