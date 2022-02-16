@@ -163,8 +163,8 @@ class DefaultValueMapperTest
             tx.commit();
         }
         RelationshipValue relationshipValue =
-                relationshipValue( relationship.getId(), "r", nodeValue( start.getId(), "n1",
-                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), nodeValue( start.getId(), "n2",
+                relationshipValue( relationship.getId(), "r", null, nodeValue( start.getId(), "n1", null,
+                        Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), nodeValue( start.getId(), "n2", null,
                         Values.EMPTY_TEXT_ARRAY, EMPTY_MAP ), stringValue( "R" ), EMPTY_MAP );
 
         // Then

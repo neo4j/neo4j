@@ -43,12 +43,12 @@ public class Edges
     public static final TextValue WORKS_FOR = stringValue( "WORKS_FOR" );
 
     // Edges
-    public static final RelationshipValue ALICE_KNOWS_BOB = relationshipValue( 12L, "r1", ALICE, BOB, KNOWS,
+    public static final RelationshipValue ALICE_KNOWS_BOB = relationshipValue( 12L, "r1", null, ALICE, BOB, KNOWS,
                     map( new String[]{"since"}, new AnyValue[]{longValue( 1999L )} ) );
-    public static final RelationshipValue ALICE_LIKES_CAROL = relationshipValue( 13L, "r2", ALICE, CAROL, LIKES, NO_PROPERTIES );
-    public static final RelationshipValue CAROL_DISLIKES_BOB = relationshipValue( 32L, "r3", CAROL, BOB, DISLIKES, NO_PROPERTIES );
-    public static final RelationshipValue CAROL_MARRIED_TO_DAVE = relationshipValue( 34L, "r4", CAROL, DAVE, MARRIED_TO, NO_PROPERTIES );
-    public static final RelationshipValue DAVE_WORKS_FOR_DAVE = relationshipValue( 44L, "r5", DAVE, DAVE, WORKS_FOR, NO_PROPERTIES );
+    public static final RelationshipValue ALICE_LIKES_CAROL = relationshipValue( 13L, "r2", null, ALICE, CAROL, LIKES, NO_PROPERTIES );
+    public static final RelationshipValue CAROL_DISLIKES_BOB = relationshipValue( 32L, "r3", null, CAROL, BOB, DISLIKES, NO_PROPERTIES );
+    public static final RelationshipValue CAROL_MARRIED_TO_DAVE = relationshipValue( 34L, "r4", null, CAROL, DAVE, MARRIED_TO, NO_PROPERTIES );
+    public static final RelationshipValue DAVE_WORKS_FOR_DAVE = relationshipValue( 44L, "r5", null, DAVE, DAVE, WORKS_FOR, NO_PROPERTIES );
 
     private Edges()
     {

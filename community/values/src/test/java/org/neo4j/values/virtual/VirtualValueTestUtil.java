@@ -55,7 +55,7 @@ public class VirtualValueTestUtil
 
     public static NodeValue node( long id, TextArray labels, MapValue properties )
     {
-        return nodeValue( id, singleLongToElementId( id ), labels, properties );
+        return nodeValue( id, String.valueOf( id ), null, labels, properties );
     }
 
     public static VirtualValue path( VirtualValue... pathElements )
@@ -79,7 +79,7 @@ public class VirtualValueTestUtil
 
     public static RelationshipValue rel( long id, VirtualNodeValue start, VirtualNodeValue end, TextValue type, MapValue properties )
     {
-        return relationshipValue( id, singleLongToElementId( id ), start, end, type, properties );
+        return relationshipValue( id, String.valueOf( id ), null, start, end, type, properties );
     }
 
     public static ListValue list( Object... objects )
@@ -108,7 +108,7 @@ public class VirtualValueTestUtil
     public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> nodeValue( id, singleLongToElementId( id ), stringArray( "L" ), EMPTY_MAP ) )
+                .mapToObj( id -> nodeValue( id, String.valueOf( id ), null, stringArray( "L" ), EMPTY_MAP ) )
                 .toArray( NodeValue[]::new );
     }
 

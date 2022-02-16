@@ -23,6 +23,7 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
@@ -32,6 +33,8 @@ public abstract class VirtualNodeValue extends VirtualValue
     public abstract long id();
 
     public abstract String elementId();
+
+    abstract ElementIdMapper elementIdMapper();
 
     @Override
     public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )

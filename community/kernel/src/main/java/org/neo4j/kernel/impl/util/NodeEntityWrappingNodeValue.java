@@ -49,7 +49,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
 
     NodeEntityWrappingNodeValue( Node node )
     {
-        super( node.getId(), node.getElementId() );
+        super( node.getId(), null );
         this.node = node;
     }
 
@@ -138,6 +138,12 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
             }
         }
         return l;
+    }
+
+    @Override
+    public String elementId()
+    {
+        return node.getElementId();
     }
 
     @Override

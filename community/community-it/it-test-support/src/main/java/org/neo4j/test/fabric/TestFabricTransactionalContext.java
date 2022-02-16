@@ -21,7 +21,6 @@ package org.neo4j.test.fabric;
 
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
@@ -30,6 +29,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
 public class TestFabricTransactionalContext implements TransactionalContext

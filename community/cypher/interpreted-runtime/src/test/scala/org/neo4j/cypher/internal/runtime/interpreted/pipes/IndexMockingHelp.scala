@@ -95,7 +95,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     val query = mock[QueryContext](RETURNS_DEEP_STUBS)
     when(query.nodeById(any())).thenAnswer(new Answer[NodeValue] {
       override def answer(invocationOnMock: InvocationOnMock): NodeValue =
-        nodeValue(invocationOnMock.getArgument(0), "n", Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
+        nodeValue(invocationOnMock.getArgument(0), "n", null, Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
     })
     query
   }

@@ -37,11 +37,11 @@ import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 class TruncatedQuerySnapshotTest
 {
-    static final NodeValue NODE = nodeValue( 42, "n",
+    static final NodeValue NODE = nodeValue( 42, "n", null,
                                                      Values.stringArray( "Phone" ),
                                                      map( "number", Values.stringValue( "07303725xx" ) ) );
 
-    static final RelationshipValue RELATIONSHIP = relationshipValue( 100, "r",
+    static final RelationshipValue RELATIONSHIP = relationshipValue( 100, "r", null,
                                                                              NODE,
                                                                              NODE,
                                                                              Values.stringValue( "CALL" ),

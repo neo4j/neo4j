@@ -338,6 +338,7 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record>
             return VirtualValues.nodeValue(
                     tag( nodeValue.id() ),
                     nodeValue.elementId(),
+                    null,
                     nodeValue.labels(),
                     nodeValue.properties() );
         }
@@ -347,8 +348,9 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record>
             return VirtualValues.relationshipValue(
                     tag( relationshipValue.id() ),
                     relationshipValue.elementId(),
-                    VirtualValues.node( tag( relationshipValue.startNodeId() ), relationshipValue.startNodeElementId() ),
-                    VirtualValues.node( tag( relationshipValue.endNodeId() ), relationshipValue.endNodeElementId() ),
+                    null,
+                    VirtualValues.node( tag( relationshipValue.startNodeId() ) ),
+                    VirtualValues.node( tag( relationshipValue.endNodeId() ) ),
                     relationshipValue.type(),
                     relationshipValue.properties() );
         }

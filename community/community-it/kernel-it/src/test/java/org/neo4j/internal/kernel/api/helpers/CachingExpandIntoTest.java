@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -51,6 +50,7 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.ElementIdMapper;
 
 import static java.util.Arrays.stream;
 import static org.assertj.core.api.Assertions.assertThat;

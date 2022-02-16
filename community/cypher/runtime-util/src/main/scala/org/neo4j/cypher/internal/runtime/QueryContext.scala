@@ -62,7 +62,6 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
-import org.neo4j.kernel.api.ElementIdMapper
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -73,6 +72,7 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.util.VisibleForTesting
 import org.neo4j.values.AnyValue
+import org.neo4j.values.ElementIdMapper
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue

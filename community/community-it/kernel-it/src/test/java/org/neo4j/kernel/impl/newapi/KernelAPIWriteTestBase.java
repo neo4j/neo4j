@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -47,6 +46,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;

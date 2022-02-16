@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.TextArray;
 
 import static java.lang.String.format;
@@ -29,12 +30,12 @@ import static org.neo4j.values.AnyValueWriter.EntityMode.REFERENCE;
 public abstract class NodeValue extends VirtualNodeValue
 {
     private final long id;
-    private final String elementId;
+    private final ElementIdMapper elementIdMapper;
 
-    protected NodeValue( long id, String elementId )
+    protected NodeValue( long id, ElementIdMapper elementIdMapper )
     {
         this.id = id;
-        this.elementId = elementId;
+        this.elementIdMapper = elementIdMapper;
     }
 
     public abstract TextArray labels();
@@ -63,7 +64,7 @@ public abstract class NodeValue extends VirtualNodeValue
     @Override
     public String elementId()
     {
-        return elementId;
+        return elementIdMapper.nodeElementId( id );
     }
 
     @Override
@@ -78,6 +79,12 @@ public abstract class NodeValue extends VirtualNodeValue
         return "Node";
     }
 
+    @Override
+    ElementIdMapper elementIdMapper()
+    {
+        return elementIdMapper;
+    }
+
     private static final long DIRECT_NODE_SHALLOW_SIZE = shallowSizeOfInstance( DirectNodeValue.class );
 
     static class DirectNodeValue extends NodeValue
@@ -85,15 +92,20 @@ public abstract class NodeValue extends VirtualNodeValue
         private final TextArray labels;
         private final MapValue properties;
         private final boolean isDeleted;
+        private final String elementId;
 
-        DirectNodeValue( long id, String elementId, TextArray labels, MapValue properties )
+        /**
+         * @param id internal id of the node.
+         * @param elementId element id of the node, or {@code null} which means it will be created from the {@code elementIdMapper} only when requested.
+         * @param elementIdMapper mapping internal id to element id.
+         * @param labels label names of this node.
+         * @param properties properties of this node.
+         * @param isDeleted whether this node is deleted.
+         */
+        DirectNodeValue( long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties, boolean isDeleted )
         {
-            this( id, elementId, labels, properties, false );
-        }
-
-        DirectNodeValue( long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted )
-        {
-            super( id, elementId );
+            super( id, elementIdMapper );
+            this.elementId = elementId;
             assert labels != null;
             assert properties != null;
             this.labels = labels;
@@ -123,6 +135,12 @@ public abstract class NodeValue extends VirtualNodeValue
         public boolean isDeleted()
         {
             return isDeleted;
+        }
+
+        @Override
+        public String elementId()
+        {
+            return elementId != null ? elementId : super.elementId();
         }
     }
 }

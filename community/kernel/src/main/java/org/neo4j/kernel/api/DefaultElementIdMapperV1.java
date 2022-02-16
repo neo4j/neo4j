@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.neo4j.common.EntityType;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.values.ElementIdMapper;
 
 import static java.lang.String.format;
 

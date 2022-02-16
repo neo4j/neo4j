@@ -79,7 +79,6 @@ import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -105,6 +104,7 @@ import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenNotFoundException;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 

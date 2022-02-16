@@ -97,7 +97,7 @@ class PrimitiveOnlyValueWriterTest
     private static Stream<AnyValue> unsupportedValues()
     {
         return Stream.of(
-                nodeValue( 42, "n", stringArray( "Person" ), EMPTY_MAP ),
+                nodeValue( 42, "n", null, stringArray( "Person" ), EMPTY_MAP ),
                 newRelationshipValue(),
                 pointValue( CoordinateReferenceSystem.WGS_84, new double[2] ),
                 byteArray( new byte[]{1, 2, 3} ),
@@ -112,8 +112,8 @@ class PrimitiveOnlyValueWriterTest
 
     private static RelationshipValue newRelationshipValue()
     {
-        NodeValue startNode = nodeValue( 24, "n1", stringArray( "Person" ), EMPTY_MAP );
-        NodeValue endNode = nodeValue( 42, "n2", stringArray( "Person" ), EMPTY_MAP );
-        return relationshipValue( 42, "r", startNode, endNode, stringValue( "KNOWS" ), EMPTY_MAP );
+        NodeValue startNode = nodeValue( 24, "n1", null, stringArray( "Person" ), EMPTY_MAP );
+        NodeValue endNode = nodeValue( 42, "n2", null, stringArray( "Person" ), EMPTY_MAP );
+        return relationshipValue( 42, "r", null, startNode, endNode, stringValue( "KNOWS" ), EMPTY_MAP );
     }
 }

@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.QueryRegistry;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
 public class Neo4jTransactionalContext implements TransactionalContext

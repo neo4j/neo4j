@@ -69,7 +69,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.DefaultElementIdMapperV1;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.database.transaction.TransactionLogServiceImpl;
@@ -178,6 +177,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.ElementIdMapper;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;

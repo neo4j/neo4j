@@ -22,6 +22,7 @@ package org.neo4j.values.virtual;
 import java.util.function.Consumer;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.ElementIdMapper;
 
 import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
@@ -33,31 +34,27 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     private static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipReference.class );
 
     private final long id;
-    private final String elementId;
+    private final ElementIdMapper elementIdMapper;
     private long startNode;
-    private final String startNodeElementId;
     private long endNode;
-    private final String endNodeElementId;
     private int type;
 
-    RelationshipReference( long id, String elementId )
+    RelationshipReference( long id, ElementIdMapper elementIdMapper )
     {
-        this( id, elementId, NO_NODE, null, NO_NODE, null, NO_TYPE );
+        this( id, elementIdMapper, NO_NODE, NO_NODE, NO_TYPE );
     }
 
-    RelationshipReference( long id, String elementId, long startNode, String startNodeElementId, long endNode, String endNodeElementId )
+    RelationshipReference( long id, ElementIdMapper elementIdMapper, long startNode, long endNode )
     {
-        this( id, elementId, startNode, startNodeElementId, endNode, endNodeElementId, NO_TYPE );
+        this( id, elementIdMapper, startNode, endNode, NO_TYPE );
     }
 
-    RelationshipReference( long id, String elementId, long startNode, String startNodeElementId, long endNode, String endNodeElementId, int type )
+    RelationshipReference( long id, ElementIdMapper elementIdMapper, long startNode, long endNode, int type )
     {
         this.id = id;
-        this.elementId = elementId;
+        this.elementIdMapper = elementIdMapper;
         this.startNode = startNode;
-        this.startNodeElementId = startNodeElementId;
         this.endNode = endNode;
-        this.endNodeElementId = endNodeElementId;
         this.type = type;
     }
 
@@ -74,12 +71,12 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     @Override
     public String startNodeElementId( Consumer<RelationshipVisitor> consumer )
     {
-        if ( startNodeElementId == null )
+        if ( elementIdMapper == null )
         {
             throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
                     "Didn't we want to get rid of this thing completely?" );
         }
-        return startNodeElementId;
+        return elementIdMapper.nodeElementId( startNode );
     }
 
     @Override
@@ -95,12 +92,12 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     @Override
     public String endNodeElementId( Consumer<RelationshipVisitor> consumer )
     {
-        if ( endNodeElementId == null )
+        if ( elementIdMapper == null )
         {
             throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
                     "Didn't we want to get rid of this thing completely?" );
         }
-        return endNodeElementId;
+        return elementIdMapper.nodeElementId( endNode );
     }
 
     @Override
@@ -140,12 +137,12 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     @Override
     public String elementId()
     {
-        if ( elementId == null )
+        if ( elementIdMapper == null )
         {
             throw new UnsupportedOperationException( "This is tricky to implement for RelationshipReference because of the disconnected nature of it. " +
                     "Didn't we want to get rid of this thing completely?" );
         }
-        return elementId;
+        return elementIdMapper.relationshipElementId( id );
     }
 
     @Override

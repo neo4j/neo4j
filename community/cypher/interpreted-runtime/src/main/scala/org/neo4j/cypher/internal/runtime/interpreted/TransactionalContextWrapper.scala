@@ -37,7 +37,6 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.ElementIdMapper
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.MemoryTracker
+import org.neo4j.values.ElementIdMapper
 
 /**
  * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.

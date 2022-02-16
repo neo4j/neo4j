@@ -65,7 +65,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.ElementIdMapper;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -91,6 +90,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.ValueMapper;
 
 import static java.util.Arrays.asList;

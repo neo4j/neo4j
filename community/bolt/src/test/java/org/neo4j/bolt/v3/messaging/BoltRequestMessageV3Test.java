@@ -108,7 +108,7 @@ class BoltRequestMessageV3Test
     @Test
     void shouldSerializeNode() throws Throwable
     {
-        NodeValue nodeValue = nodeValue( 12L, "n", stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
+        NodeValue nodeValue = nodeValue( 12L, "n", null, stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
                 new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
         assertThat( serialized( nodeValue ) ).isEqualTo(
                 "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
@@ -119,9 +119,9 @@ class BoltRequestMessageV3Test
     @Test
     void shouldSerializeRelationship() throws Throwable
     {
-        RelationshipValue rel = relationshipValue( 12L, "r",
-                nodeValue( 1L, "n1", stringArray(), VirtualValues.EMPTY_MAP ),
-                nodeValue( 2L, "n2", stringArray(), VirtualValues.EMPTY_MAP ),
+        RelationshipValue rel = relationshipValue( 12L, "r", null,
+                nodeValue( 1L, "n1", null, stringArray(), VirtualValues.EMPTY_MAP ),
+                nodeValue( 2L, "n2", null, stringArray(), VirtualValues.EMPTY_MAP ),
                 stringValue( "KNOWS" ), map( new String[]{"name", "age"},
                         new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
         assertThat( serialized( rel ) ).isEqualTo(
