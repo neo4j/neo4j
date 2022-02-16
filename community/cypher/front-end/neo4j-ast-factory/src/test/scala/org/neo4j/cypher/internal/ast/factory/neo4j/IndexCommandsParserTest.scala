@@ -132,9 +132,9 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           None, posN2(testName), ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), true))
       }
 
-      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
         yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError,
-          OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+          OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
             "indexConfig"   -> mapOf(
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
@@ -143,9 +143,9 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         ))
       }
 
-      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+      test(s"CREATE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}") {
         yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError,
-          OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+          OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
             "indexConfig"   -> mapOf(
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
@@ -389,9 +389,9 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           None, posN2(testName), ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0")))))
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
         yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError,
-          OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+          OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
             "indexConfig"   -> mapOf(
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
@@ -400,9 +400,9 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
         ))
       }
 
-      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'lucene+native-3.0'}") {
+      test(s"CREATE BTREE INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }, indexProvider : 'native-btree-1.0'}") {
         yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError,
-          OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+          OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
             "indexConfig"   -> mapOf(
               "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
               "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))

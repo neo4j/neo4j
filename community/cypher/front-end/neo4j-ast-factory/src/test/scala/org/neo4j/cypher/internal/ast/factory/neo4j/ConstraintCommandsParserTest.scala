@@ -88,9 +88,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
               None, ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), containsOn, constraintVersion))
           }
 
-          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+          test(s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS NODE KEY OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
             yields(ast.CreateNodeKeyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), None, ast.IfExistsThrowError,
-              OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+              OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
                 "indexConfig" -> mapOf(
                   "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
                   "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))
@@ -288,9 +288,9 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
               Some("my_constraint"), ast.IfExistsThrowError, OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"))), containsOn, constraintVersion))
           }
 
-          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'lucene+native-3.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
+          test(s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) IS UNIQUE OPTIONS {indexProvider : 'native-btree-1.0', indexConfig : {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}") {
             yields(ast.CreateUniquePropertyConstraint(varFor("node"), labelName("Label"), Seq(prop("node", "prop")), Some("my_constraint"), ast.IfExistsThrowError,
-              OptionsMap(Map("indexProvider" -> literalString("lucene+native-3.0"),
+              OptionsMap(Map("indexProvider" -> literalString("native-btree-1.0"),
                 "indexConfig" -> mapOf(
                   "spatial.cartesian.max" -> listOf(literalFloat(100.0), literalFloat(100.0)),
                   "spatial.cartesian.min" -> listOf(literalFloat(-100.0), literalFloat(-100.0))

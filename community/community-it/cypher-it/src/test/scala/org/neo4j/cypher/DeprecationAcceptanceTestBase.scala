@@ -40,7 +40,6 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
-import org.neo4j.kernel.impl.index.schema.fusion.NativeLuceneFusionIndexProviderFactory30
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll with DeprecationTestSupport {
@@ -89,7 +88,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
     assertNotificationInSupportedVersions_4_X(
       s"""CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
-         |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
+         |OPTIONS {indexprovider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(
@@ -151,7 +150,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotificationInSupportedVersions_4_X(
       s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS UNIQUE
-         |OPTIONS {indexprovider: '${NativeLuceneFusionIndexProviderFactory30.DESCRIPTOR.name()}'}""".stripMargin,
+         |OPTIONS {indexprovider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
       DEPRECATED_BTREE_INDEX_SYNTAX
     )
     assertNotificationInSupportedVersions_4_X(

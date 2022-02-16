@@ -131,7 +131,7 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           "labelsOrTypes" -> labelsOrTypesValue,
           // The properties of this constraint, for example ["propKey", "propKey2"], null for lookup indexes
           "properties" -> propertiesValue,
-          // The index provider for this index, one of "native-btree-1.0", "lucene+native-3.0", "fulltext-1.0", "token-lookup-1.0", "text-1.0", "range-1.0", "point-1.0"
+          // The index provider for this index, one of "native-btree-1.0", "fulltext-1.0", "token-lookup-1.0", "text-1.0", "range-1.0", "point-1.0"
           "indexProvider" -> Values.stringValue(providerName)
         )
         if (verbose) {
