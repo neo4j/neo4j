@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
 */
-case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon,
-                        planPart: MatchPlanner = planMatch,
-                        planUpdates: UpdatesPlanner = PlanUpdates)
+case class PlanWithTail(eventHorizonPlanner: EventHorizonPlanner = PlanEventHorizon,
+                        matchPlanner: MatchPlanner = planMatch,
+                        updatesPlanner: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 
-  override def apply(lhsPlans: BestPlans,
+  override def plan(lhsPlans: BestPlans,
                      tailQuery: SinglePlannerQuery,
                      previousInterestingOrder: InterestingOrder,
                      context: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
@@ -46,8 +46,8 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
   }
 
   private def planRhs(tailQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
-    val rhsPlan = planPart(tailQuery, context, rhsPart = true).result // always expecting a single plan currently
-    val rhsPlanWithUpdates = planUpdates(tailQuery, rhsPlan, firstPlannerQuery = false, context)
+    val rhsPlan = matchPlanner.plan(tailQuery, context, rhsPart = true).result // always expecting a single plan currently
+    val rhsPlanWithUpdates = updatesPlanner.plan(tailQuery, rhsPlan, firstPlannerQuery = false, context)
     context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(rhsPlanWithUpdates, tailQuery, context)
   }
 
@@ -58,7 +58,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                         lhsContext: LogicalPlanningContext): (BestPlans, LogicalPlanningContext) = {
     val applyPlans = lhsPlans.map(lhsContext.logicalPlanProducer.planTailApply(_, rhsPlan, lhsContext))
     val applyContext = lhsContext.withUpdatedLabelInfo(applyPlans.bestResult)
-    val horizonPlans = planEventHorizon.planHorizon(tailQuery, applyPlans, Some(previousInterestingOrder), applyContext)
+    val horizonPlans = eventHorizonPlanner.planHorizon(tailQuery, applyPlans, Some(previousInterestingOrder), applyContext)
     val contextForTail = applyContext.withUpdatedLabelInfo(horizonPlans.bestResult) // cardinality should be the same for all plans, let's use the first one
     (horizonPlans, contextForTail)
   }

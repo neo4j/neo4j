@@ -157,7 +157,7 @@ case object plannerQueryPartPlanner {
   def plan(plannerQueryPart: PlannerQueryPart, context: LogicalPlanningContext, distinctifyUnions: Boolean = true): LogicalPlan =
     plannerQueryPart match {
       case pq:SinglePlannerQuery =>
-        planSingleQuery(pq, context)
+        planSingleQuery.plan(pq, context)
       case UnionQuery(part, query, distinct, unionMappings) =>
         val projectionsForPart = unionMappings.map(um => um.unionVariable.name -> um.variableInPart).toMap
         val projectionsForQuery = unionMappings.map(um => um.unionVariable.name -> um.variableInQuery).toMap
@@ -165,7 +165,7 @@ case object plannerQueryPartPlanner {
         val partPlan = plan(part, context, distinctifyUnions = false) // Only one distinct at the top level
         val partPlanWithProjection = context.logicalPlanProducer.planProjectionForUnionMapping(partPlan, projectionsForPart, context)
 
-        val queryPlan = planSingleQuery(query, context)
+        val queryPlan = planSingleQuery.plan(query, context)
         val queryPlanWithProjection = context.logicalPlanProducer.planRegularProjection(queryPlan, projectionsForQuery, None, context)
 
         val unionPlan = context.logicalPlanProducer.planUnion(partPlanWithProjection, queryPlanWithProjection, unionMappings, context)
@@ -179,5 +179,5 @@ case object plannerQueryPartPlanner {
 
 
 trait SingleQueryPlanner {
-  def apply(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan
+  def plan(in: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan
 }
