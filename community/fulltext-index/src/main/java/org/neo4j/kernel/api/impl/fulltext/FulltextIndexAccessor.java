@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.isEventuallyConsistent;
@@ -89,12 +88,6 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public IndexEntriesReader[] newAllEntriesValueReader( int partitions, CursorContext cursorContext )
     {
         return super.newAllEntriesValueReader( LuceneFulltextDocumentStructure::getNodeId, partitions );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor )
-    {
-        //The fulltext index does not care about constraints.
     }
 
     @Override

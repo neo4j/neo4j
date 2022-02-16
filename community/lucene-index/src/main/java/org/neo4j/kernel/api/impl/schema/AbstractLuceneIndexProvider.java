@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
-import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -105,6 +104,10 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
             String providerName = getProviderDescriptor().name();
             throw new IllegalArgumentException( "The '" + providerName + "' index provider does not support " + indexType + " indexes: " + prototype );
         }
+        if ( prototype.isUnique() )
+        {
+            throw new IllegalArgumentException( "The '" + getProviderDescriptor().name() + "' index provider does not support unique indexes: " + prototype );
+        }
     }
 
     @Override
@@ -132,9 +135,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        return descriptor.isUnique()
-               ? new UniqueLuceneIndexPopulator( luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY )
-               : new NonUniqueLuceneIndexPopulator( luceneIndex, UPDATE_IGNORE_STRATEGY );
+        return new NonUniqueLuceneIndexPopulator( luceneIndex, UPDATE_IGNORE_STRATEGY );
     }
 
     @Override

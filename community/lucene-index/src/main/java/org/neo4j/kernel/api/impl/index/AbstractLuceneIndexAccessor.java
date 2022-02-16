@@ -174,7 +174,10 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
     }
 
     @Override
-    public abstract void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException;
+    public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor ) throws IndexEntryConflictException
+    {
+        //The lucene indexes does not back any constraints.
+    }
 
     @Override
     public boolean consistencyCheck( ReporterFactory reporterFactory, CursorContext cursorContext )

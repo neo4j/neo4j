@@ -30,7 +30,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexReader,SchemaIndex>
@@ -68,20 +66,6 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<ValueIndexR
     public IndexEntriesReader[] newAllEntriesValueReader( ToLongFunction<Document> entityIdReader, int numPartitions )
     {
         return super.newAllEntriesValueReader( LuceneDocumentStructure::getNodeId, numPartitions );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-            throws IndexEntryConflictException
-    {
-        try
-        {
-            luceneIndex.verifyUniqueness( nodePropertyAccessor, descriptor.schema().getPropertyIds() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 
     @Override

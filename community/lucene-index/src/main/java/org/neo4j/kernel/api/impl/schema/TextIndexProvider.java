@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexCapability;

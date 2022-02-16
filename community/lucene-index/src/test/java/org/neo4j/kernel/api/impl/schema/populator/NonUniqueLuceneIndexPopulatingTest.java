@@ -26,7 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 
@@ -102,6 +102,6 @@ class NonUniqueLuceneIndexPopulatingTest
 
     private static NonUniqueLuceneIndexPopulatingUpdater newUpdater( LuceneIndexWriter writer )
     {
-        return new NonUniqueLuceneIndexPopulatingUpdater( writer, LuceneIndexProvider.UPDATE_IGNORE_STRATEGY );
+        return new NonUniqueLuceneIndexPopulatingUpdater( writer, AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY );
     }
 }

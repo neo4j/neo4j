@@ -43,7 +43,6 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.AbstractValueIndexReader;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -80,14 +79,7 @@ public class SimpleValueIndexReader extends AbstractValueIndexReader
     @Override
     public IndexSampler createSampler()
     {
-        if ( descriptor.isUnique() )
-        {
-            return new UniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator );
-        }
-        else
-        {
-            return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator, samplingConfig );
-        }
+        return new NonUniqueLuceneIndexSampler( getIndexSearcher(), taskCoordinator, samplingConfig );
     }
 
     @Override

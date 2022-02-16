@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.neo4j.common.TokenNameLookup;
@@ -33,7 +32,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -53,7 +52,6 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
@@ -68,7 +66,6 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
     @Inject
     private TestDirectory testDir;
     private static final SchemaDescriptorSupplier SCHEMA_DESCRIPTOR = () -> SchemaDescriptors.forLabel( 1, 42 );
-    private static final SchemaDescriptorSupplier COMPOSITE_SCHEMA_DESCRIPTOR = () -> SchemaDescriptors.forLabel( 1, 42, 43 );
 
     @Test
     void shouldSampleAdditions() throws Exception
@@ -132,31 +129,6 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
 
         // Then samples calculated with documents pending merge
         assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 1, 4, 4 ) );
-    }
-
-    @Test
-    void shouldSampleCompositeIndex() throws Exception
-    {
-        // Given
-        var provider = createIndexProvider();
-        var populator = getPopulator( provider, COMPOSITE_SCHEMA_DESCRIPTOR );
-
-        // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
-        {
-            updater.process( add( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
-            updater.process( add( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
-            updater.process( add( 3, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "baz" ) );
-            updater.process( add( 4, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "qux" ) );
-
-            updater.process( remove( 1, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "foo" ) );
-            updater.process( remove( 2, COMPOSITE_SCHEMA_DESCRIPTOR, "bit", "bar" ) );
-
-            updater.process( change( 3, COMPOSITE_SCHEMA_DESCRIPTOR, new Object[]{"bit", "baz"}, new Object[]{"foo", "bar"} ) );
-        }
-
-        // Then samples calculated with documents pending merge
-        assertThat( populator.sample( NULL_CONTEXT ) ).isEqualTo( new IndexSample( 2, 5, 10 ) );
     }
 
     @Test
@@ -243,25 +215,23 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
 
     private Collection<IndexEntryUpdate<?>> generateUpdates( long n, LongFunction<IndexEntryUpdate<?>> updateFunction )
     {
-        return LongStream.range( 0L, n )
-                         .mapToObj( updateFunction )
-                         .collect( Collectors.toUnmodifiableList() );
+        return LongStream.range( 0L, n ).mapToObj( updateFunction ).toList();
     }
 
-    private IndexPopulator getPopulator( LuceneIndexProvider provider, SchemaDescriptorSupplier supplier ) throws Exception
+    private IndexPopulator getPopulator( TextIndexProvider provider, SchemaDescriptorSupplier supplier ) throws Exception
     {
         var samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        var index = forSchema( supplier.schema(), DESCRIPTOR ).withName( "some_name" ).materialise( 1 );
+        var index = forSchema( supplier.schema(), TextIndexProvider.DESCRIPTOR ).withName( "some_name" ).materialise( 1 );
         var bufferFactory = heapBufferFactory( (int) kibiBytes( 100 ) );
         var populator = provider.getPopulator( index, samplingConfig, bufferFactory, INSTANCE, mock( TokenNameLookup.class ) );
         populator.create();
         return populator;
     }
 
-    private LuceneIndexProvider createIndexProvider()
+    private TextIndexProvider createIndexProvider()
     {
         var directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         var directoryStructureFactory = directoriesByProvider( testDir.homePath() );
-        return new LuceneIndexProvider( fileSystem, directoryFactory, directoryStructureFactory, new Monitors(), Config.defaults(), writable() );
+        return new TextIndexProvider( fileSystem, directoryFactory, directoryStructureFactory, new Monitors(), Config.defaults(), writable() );
     }
 }

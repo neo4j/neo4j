@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -32,13 +31,8 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.reader.PartitionedValueIndexReader;
 import org.neo4j.kernel.api.impl.schema.reader.SimpleValueIndexReader;
-import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
-import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
-import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.values.storable.Value;
 
 /**
  * Implementation of Lucene schema index that support multiple partitions.
@@ -57,44 +51,6 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
         this.samplingConfig = samplingConfig;
     }
 
-    /**
-     * Verifies uniqueness of property values present in this index.
-     *
-     * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyIds the ids of the properties to verify.
-     * @throws IndexEntryConflictException if there are duplicates.
-     * @throws IOException
-     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[])
-     */
-    public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds )
-            throws IOException, IndexEntryConflictException
-    {
-        flush( true );
-        try ( UniquenessVerifier verifier = createUniquenessVerifier() )
-        {
-            verifier.verify( accessor, propertyKeyIds );
-        }
-    }
-
-    /**
-     * Verifies uniqueness of updated property values.
-     *
-     * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyIds the ids of the properties to verify.
-     * @param updatedValueTuples the values to check uniqueness for.
-     * @throws IndexEntryConflictException if there are duplicates.
-     * @throws IOException
-     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[], List)
-     */
-    public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
-            throws IOException, IndexEntryConflictException
-    {
-        try ( UniquenessVerifier verifier = createUniquenessVerifier() )
-        {
-            verifier.verify( accessor, propertyKeyIds, updatedValueTuples );
-        }
-    }
-
     @Override
     public void drop()
     {
@@ -108,28 +64,6 @@ class LuceneSchemaIndex extends AbstractLuceneIndex<ValueIndexReader>
             throw new RuntimeException( "Interrupted while waiting for concurrent tasks to complete.", e );
         }
         super.drop();
-    }
-
-    private UniquenessVerifier createUniquenessVerifier() throws IOException
-    {
-        ensureOpen();
-        maybeRefreshBlocking();
-        List<AbstractIndexPartition> partitions = getPartitions();
-        return hasSinglePartition( partitions ) ? createSimpleUniquenessVerifier( partitions )
-                                                : createPartitionedUniquenessVerifier( partitions );
-    }
-
-    private static UniquenessVerifier createSimpleUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        SearcherReference partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleUniquenessVerifier( partitionSearcher );
-    }
-
-    private static UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        List<SearcherReference> searchers = acquireSearchers( partitions );
-        return new PartitionedUniquenessVerifier( searchers );
     }
 
     @Override

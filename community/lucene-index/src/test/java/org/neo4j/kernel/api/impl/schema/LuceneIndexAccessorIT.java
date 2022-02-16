@@ -113,7 +113,7 @@ public class LuceneIndexAccessorIT
     private TestDirectory directory;
 
     private final LifeSupport life = new LifeSupport();
-    private LuceneIndexProvider indexProvider;
+    private TextIndexProvider indexProvider;
     private IndexSamplingConfig samplingConfig;
     private DatabaseReadOnlyChecker readOnlyChecker;
     private Config config;
@@ -130,7 +130,7 @@ public class LuceneIndexAccessorIT
         var globalChecker = new ReadOnlyDatabases( readOnlyLookup );
         var listener = new ConfigReadOnlyDatabaseListener( globalChecker, config );
         readOnlyChecker = globalChecker.forDatabase( defaultDatabaseId );
-        indexProvider = new LuceneIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ),
+        indexProvider = new TextIndexProvider( directory.getFileSystem(), PERSISTENT, directoriesByProvider( path ),
                                                  new Monitors(), config, readOnlyChecker );
         life.add( listener );
         life.add( indexProvider );

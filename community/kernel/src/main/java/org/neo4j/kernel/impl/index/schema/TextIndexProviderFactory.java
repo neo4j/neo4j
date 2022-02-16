@@ -27,7 +27,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.impl.schema.IndexProviderFactoryUtil;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.logging.InternalLog;
@@ -35,6 +34,8 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.ephemeral_lucene;
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextIndexProvider>
@@ -62,6 +63,6 @@ public class TextIndexProviderFactory extends AbstractIndexProviderFactory<TextI
                                                 CursorContextFactory contextFactory )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( databaseLayout.databaseDirectory() );
-        return IndexProviderFactoryUtil.textProvider( fs, directoryStructure, monitors, config, readOnlyDatabaseChecker );
+        return new TextIndexProvider( fs, directoryFactory( config.get( ephemeral_lucene ) ), directoryStructure, monitors, config, readOnlyDatabaseChecker );
     }
 }

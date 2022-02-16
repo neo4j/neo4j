@@ -19,45 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.io.IOException;
-import java.util.List;
-
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.values.storable.Value;
 
 /**
  * Partitioned lucene schema index.
  */
 public interface SchemaIndex extends DatabaseIndex<ValueIndexReader>
 {
-
-    /**
-     * Verifies uniqueness of property values present in this index.
-     *
-     * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyIds the ids of the properties to verify.
-     * @throws IndexEntryConflictException if there are duplicates.
-     * @throws IOException
-     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[])
-     */
-    void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds )
-            throws IOException, IndexEntryConflictException;
-
-    /**
-     * Verifies uniqueness of updated property values.
-     *
-     * @param accessor the accessor to retrieve actual property values from the store.
-     * @param propertyKeyIds the ids of the properties to verify.
-     * @param updatedValueTuples the values to check uniqueness for.
-     * @throws IndexEntryConflictException if there are duplicates.
-     * @throws IOException
-     * @see UniquenessVerifier#verify(NodePropertyAccessor, int[], List)
-     */
-    void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
-                    throws IOException, IndexEntryConflictException;
 }

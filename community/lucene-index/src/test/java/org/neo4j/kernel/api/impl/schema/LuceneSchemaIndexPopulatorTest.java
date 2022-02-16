@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.neo4j.configuration.Config;
@@ -80,7 +79,7 @@ class LuceneSchemaIndexPopulatorTest
     @Inject
     private TestDirectory testDir;
 
-    private LuceneIndexProvider provider;
+    private TextIndexProvider provider;
     private Directory directory;
     private IndexPopulator indexPopulator;
     private IndexReader reader;
@@ -95,7 +94,7 @@ class LuceneSchemaIndexPopulatorTest
         directory = new ByteBuffersDirectory();
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
-        provider = new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
+        provider = new TextIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
                 new Monitors(), Config.defaults(), writable() );
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
@@ -146,7 +145,7 @@ class LuceneSchemaIndexPopulatorTest
         final var ids = LongStream.range( 0L, 10L ).toArray();
 
         // when   updates of unsupported value types (longs in this case) are processed
-        final var updates = Arrays.stream( ids ).mapToObj( id -> add( id, id ) ).collect( Collectors.toUnmodifiableList() );
+        final var updates = Arrays.stream( ids ).mapToObj( id -> add( id, id ) ).toList();
         indexPopulator.add( updates, NULL_CONTEXT );
 
         // then   should not be indexed

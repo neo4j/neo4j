@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.values.storable.Value;
 
 /**
  * Writable schema index
@@ -44,42 +38,5 @@ public class WritableDatabaseSchemaIndex extends WritableAbstractDatabaseIndex<L
             WritableIndexPartitionFactory writableIndexPartitionFactory, DatabaseReadOnlyChecker readOnlyChecker, Config config )
     {
         super( new LuceneSchemaIndex( storage, descriptor, samplingConfig, writableIndexPartitionFactory, config ), readOnlyChecker );
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds )
-            throws IOException, IndexEntryConflictException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            luceneIndex.verifyUniqueness( accessor, propertyKeyIds );
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void verifyUniqueness( NodePropertyAccessor accessor, int[] propertyKeyIds, List<Value[]> updatedValueTuples )
-            throws IOException, IndexEntryConflictException
-    {
-        commitCloseLock.lock();
-        try
-        {
-
-            luceneIndex.verifyUniqueness( accessor, propertyKeyIds, updatedValueTuples );
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
     }
 }

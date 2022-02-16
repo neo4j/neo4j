@@ -54,7 +54,6 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -66,7 +65,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @TestDirectoryExtension
 class LuceneIndexProviderTest
 {
-    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
+    private static final IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), TextIndexProvider.DESCRIPTOR ).withName( "index_1" ).materialise( 1 );
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
@@ -84,7 +83,7 @@ class LuceneIndexProviderTest
     void shouldFailToInvokePopulatorInReadOnlyMode()
     {
         var config = Config.defaults();
-        LuceneIndexProvider readOnlyIndexProvider =
+        TextIndexProvider readOnlyIndexProvider =
                 getLuceneIndexProvider( config, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
         assertThrows( UnsupportedOperationException.class,
                 () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( config ),
@@ -98,7 +97,7 @@ class LuceneIndexProviderTest
         createEmptySchemaIndex( directoryFactory );
 
         Config readOnlyConfig = Config.defaults( read_only_database_default, true );
-        LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
+        TextIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 directoryFactory, fileSystem, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( readOnlyConfig, readOnlyIndexProvider );
 
@@ -109,7 +108,7 @@ class LuceneIndexProviderTest
     void indexUpdateNotAllowedInReadOnlyMode()
     {
         Config readOnlyConfig = Config.defaults( read_only_database_default, true );
-        LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
+        TextIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         assertThrows( UnsupportedOperationException.class,
@@ -122,7 +121,7 @@ class LuceneIndexProviderTest
         // IndexAccessor.force is used in check-pointing, and must be allowed in read-only mode as it would otherwise
         // prevent backups from working.
         Config readOnlyConfig = Config.defaults( read_only_database_default, true );
-        LuceneIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
+        TextIndexProvider readOnlyIndexProvider = getLuceneIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
 
         // We assert that 'force' does not throw an exception
@@ -173,31 +172,31 @@ class LuceneIndexProviderTest
         populator.close( true, NULL_CONTEXT );
     }
 
-    private LuceneIndexProvider createIndexProvider( Config config )
+    private TextIndexProvider createIndexProvider( Config config )
     {
         var directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         var directoryStructureFactory = directoriesByProvider( testDir.homePath() );
-        return new LuceneIndexProvider( fileSystem, directoryFactory, directoryStructureFactory, new Monitors(), config, writable() );
+        return new TextIndexProvider( fileSystem, directoryFactory, directoryStructureFactory, new Monitors(), config, writable() );
     }
 
     private void createEmptySchemaIndex( DirectoryFactory directoryFactory ) throws IOException
     {
         Config config = Config.defaults();
-        LuceneIndexProvider indexProvider = getLuceneIndexProvider( config, directoryFactory, fileSystem, graphDbDir );
+        TextIndexProvider indexProvider = getLuceneIndexProvider( config, directoryFactory, fileSystem, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( config, indexProvider );
         onlineAccessor.close();
     }
 
-    private static IndexAccessor getIndexAccessor( Config readOnlyConfig, LuceneIndexProvider indexProvider )
+    private static IndexAccessor getIndexAccessor( Config readOnlyConfig, TextIndexProvider indexProvider )
             throws IOException
     {
         return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), SIMPLE_TOKEN_LOOKUP );
     }
 
-    private static LuceneIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
+    private static TextIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,
             FileSystemAbstraction fs, Path graphDbDir )
     {
-        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
+        return new TextIndexProvider( fs, directoryFactory, directoriesByProvider( graphDbDir ),
                 new Monitors(), config, readOnly() );
     }
 }

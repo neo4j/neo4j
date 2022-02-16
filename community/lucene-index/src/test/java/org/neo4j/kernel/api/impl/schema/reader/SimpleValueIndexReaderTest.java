@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.impl.index.partition.Neo4jIndexSearcher;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
-import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -78,7 +77,7 @@ class SimpleValueIndexReaderTest
     @Test
     void releaseSearcherOnClose() throws IOException
     {
-        IndexReader simpleIndexReader = getUniqueSimpleReader();
+        IndexReader simpleIndexReader = getNonUniqueSimpleReader();
 
         simpleIndexReader.close();
 
@@ -88,7 +87,7 @@ class SimpleValueIndexReaderTest
     @Test
     void seekQueryReachSearcher() throws Exception
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
 
         doQuery( simpleIndexReader, PropertyIndexQuery.exact( 1, "test" ) );
 
@@ -98,7 +97,7 @@ class SimpleValueIndexReaderTest
     @Test
     void scanQueryReachSearcher() throws Exception
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
 
         doQuery( simpleIndexReader, PropertyIndexQuery.exists( 1 ) );
 
@@ -108,7 +107,7 @@ class SimpleValueIndexReaderTest
     @Test
     void stringRangeSeekQueryReachSearcher() throws Exception
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
 
         doQuery( simpleIndexReader, range( 1, "a", false, "b", true ) );
 
@@ -118,7 +117,7 @@ class SimpleValueIndexReaderTest
     @Test
     void prefixRangeSeekQueryReachSearcher() throws Exception
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
 
         doQuery( simpleIndexReader, PropertyIndexQuery.stringPrefix( 1, stringValue( "bb" ) ));
 
@@ -128,7 +127,7 @@ class SimpleValueIndexReaderTest
     @Test
     void numberRangeSeekQueryReachSearcher()
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
         var query = range( 1, 7, true, 8, true );
 
         assertThatThrownBy( () -> doQuery( simpleIndexReader, query ) )
@@ -139,18 +138,11 @@ class SimpleValueIndexReaderTest
     @Test
     void countIndexedNodesReachSearcher() throws IOException
     {
-        var simpleIndexReader = getUniqueSimpleReader();
+        var simpleIndexReader = getNonUniqueSimpleReader();
 
         simpleIndexReader.countIndexedEntities( 2, CursorContext.NULL_CONTEXT, new int[] {3}, Values.of( "testValue" ) );
 
         verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
-    }
-
-    @Test
-    void uniqueIndexSamplerForUniqueIndex()
-    {
-        SimpleValueIndexReader uniqueSimpleReader = getUniqueSimpleReader();
-        assertThat( uniqueSimpleReader.createSampler() ).isInstanceOf( UniqueLuceneIndexSampler.class );
     }
 
     @Test
@@ -168,12 +160,6 @@ class SimpleValueIndexReaderTest
     private SimpleValueIndexReader getNonUniqueSimpleReader()
     {
         IndexDescriptor index = IndexPrototype.forSchema( SCHEMA ).withName( "a" ).materialise( 0 );
-        return new SimpleValueIndexReader( partitionSearcher, index, samplingConfig, taskCoordinator );
-    }
-
-    private SimpleValueIndexReader getUniqueSimpleReader()
-    {
-        IndexDescriptor index = IndexPrototype.uniqueForSchema( SCHEMA ).withName( "b" ).materialise( 1 );
         return new SimpleValueIndexReader( partitionSearcher, index, samplingConfig, taskCoordinator );
     }
 }

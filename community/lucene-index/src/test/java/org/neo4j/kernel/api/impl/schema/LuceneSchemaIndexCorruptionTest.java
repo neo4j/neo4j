@@ -74,7 +74,7 @@ class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         CorruptIndexException error = new CorruptIndexException( "It's broken.", "" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        TextIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
@@ -93,7 +93,7 @@ class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         NoSuchFileException error = new NoSuchFileException( "/some/path/somewhere" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        TextIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
@@ -112,7 +112,7 @@ class LuceneSchemaIndexCorruptionTest
         long faultyIndexId = 1;
         EOFException error = new EOFException( "/some/path/somewhere" );
 
-        LuceneIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
+        TextIndexProvider provider = newFaultyIndexProvider( faultyIndexId, error );
 
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
@@ -124,14 +124,14 @@ class LuceneSchemaIndexCorruptionTest
         assertThat( logProvider ).containsException( error );
     }
 
-    private LuceneIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
+    private TextIndexProvider newFaultyIndexProvider( long faultyIndexId, Exception error )
     {
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         Path indexRootFolder = testDirectory.homePath();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
-        return new LuceneIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitors,
+        return new TextIndexProvider( fs, directoryFactory, directoriesByProvider( indexRootFolder ), monitors,
                 Config.defaults(), readOnly() )
         {
             @Override
