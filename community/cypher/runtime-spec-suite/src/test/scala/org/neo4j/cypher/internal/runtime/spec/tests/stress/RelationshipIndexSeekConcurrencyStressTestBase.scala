@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests.stress
 
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -42,7 +41,7 @@ abstract class RelationshipIndexSeekConcurrencyStressTestBase[CONTEXT <: Runtime
   private def seekWithConcurrentDeletes(directed: Boolean): Unit = {
     val propValue = 42L
     val rels = given {
-      relationshipIndexWithProvider(SchemaIndex.NATIVE30.providerName(), "R", "prop")
+      relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.foreach(r => r.setProperty("prop", propValue))
       rels.map(_.getId)

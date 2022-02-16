@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.GetValue
@@ -34,6 +33,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
 import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
@@ -55,9 +55,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   with RandomValuesTestSupport
 {
 
-  for (indexProvider <- Seq(SchemaIndex.NATIVE30, SchemaIndex.NATIVE_BTREE10)) {
+  for (indexProvider <- Seq(GenericNativeIndexProvider.DESCRIPTOR.name())) {
 
-    test(s"should exact (single) seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (single) seek nodes of an index with a property (${indexProvider})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -74,7 +74,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should exact (single) seek nodes of an index with a property with multiple matches (${indexProvider.providerName()})") {
+    test(s"should exact (single) seek nodes of an index with a property with multiple matches (${indexProvider})") {
       val numMatches = sizeHint / 5
       val propertyValue = randomValue(randomPropertyType()).asObject()
       val nodes = given {
@@ -96,7 +96,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(nodes))
     }
 
-    test(s"exact single seek should handle null (${indexProvider.providerName()})") {
+    test(s"exact single seek should handle null (${indexProvider})") {
       given(defaultRandomIndexedNodePropertyGraph())
 
       // when
@@ -111,7 +111,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should exact (multiple) seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple) seek nodes of an index with a property (${indexProvider})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = Seq(randomAmong(nodes), randomAmong(nodes)).map(_.getProperty("prop"))
 
@@ -128,7 +128,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should handle null in exact multiple seek (${indexProvider.providerName()})") {
+    test(s"should handle null in exact multiple seek (${indexProvider})") {
       given(defaultRandomIndexedNodePropertyGraph())
 
       // when
@@ -143,7 +143,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should handle null in exact multiple seek 2 (${indexProvider.providerName()})") {
+    test(s"should handle null in exact multiple seek 2 (${indexProvider})") {
       given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -158,7 +158,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should handle null in exact multiple seek 3 (${indexProvider.providerName()})") {
+    test(s"should handle null in exact multiple seek 3 (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -173,7 +173,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
     }
 
-    test(s"should exact (multiple, but empty) seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but empty) seek nodes of an index with a property (${indexProvider})") {
       given(defaultRandomIndexedNodePropertyGraph())
 
       // when
@@ -188,7 +188,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should exact (multiple, with null) seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, with null) seek nodes of an index with a property (${indexProvider})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -205,7 +205,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should exact (multiple, but identical) seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but identical) seek nodes of an index with a property (${indexProvider})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -222,7 +222,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should exact seek nodes of a unique index with a property (${indexProvider.providerName()})") {
+    test(s"should exact seek nodes of a unique index with a property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -239,7 +239,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should exact (multiple, but identical) seek nodes of a unique index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but identical) seek nodes of a unique index with a property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -256,7 +256,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should exact (multiple, with null) seek nodes of a unique index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, with null) seek nodes of a unique index with a property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -274,7 +274,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     // RANGE queries
-    test(s"should seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should seek nodes of an index with a property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -290,9 +290,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should handle range seeks: > false (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: > false (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -314,9 +314,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(3))
     }
 
-    test(s"should handle range seeks: >= false (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: >= false (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -338,9 +338,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(5))
     }
 
-    test(s"should handle range seeks: < false (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: < false (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -362,9 +362,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should handle range seeks: <= false (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: <= false (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -386,9 +386,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(2))
     }
 
-    test(s"should handle range seeks: > true (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: > true (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -410,9 +410,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should handle range seeks: >= true (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: >= true (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -434,9 +434,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(3))
     }
 
-    test(s"should handle range seeks: < true (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: < true (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", 42)
         tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -458,9 +458,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(2))
     }
 
-    test(s"should handle range seeks: <= true (${indexProvider.providerName()})") {
+    test(s"should handle range seeks: <= true (${indexProvider})") {
       given {
-        nodeIndexWithProvider(indexProvider.providerName(), "L", "boolean")
+        nodeIndexWithProvider(indexProvider, "L", "boolean")
         tx.createNode(Label.label("L")).setProperty("boolean", false)
         tx.createNode(Label.label("L")).setProperty("boolean", false)
         tx.createNode(Label.label("L")).setProperty("boolean", true)
@@ -480,7 +480,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(5))
     }
 
-    test(s"should seek nodes with multiple less than bounds (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple less than bounds (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -500,7 +500,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should seek nodes with multiple less than bounds with different types (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple less than bounds with different types (${indexProvider})") {
       given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -519,7 +519,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should seek nodes with multiple less than bounds one inclusive (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple less than bounds one inclusive (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -539,7 +539,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should seek nodes with multiple greater than bounds (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple greater than bounds (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -559,7 +559,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should seek nodes with multiple greater than bounds with different types (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple greater than bounds with different types (${indexProvider})") {
       given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -578,7 +578,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should seek nodes with multiple greater than bounds one inclusive (${indexProvider.providerName()})") {
+    test(s"should seek nodes with multiple greater than bounds one inclusive (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         nodeGraph(5, "Honey")
@@ -598,7 +598,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should support composite index (${indexProvider.providerName()})") {
+    test(s"should support composite index (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -620,7 +620,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
     }
 
-    test(s"should support composite index (multiple results) (${indexProvider.providerName()})") {
+    test(s"should support composite index (multiple results) (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -643,7 +643,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should support composite index (multiple values) (${indexProvider.providerName()})") {
+    test(s"should support composite index (multiple values) (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -665,7 +665,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
     }
 
-    test(s"should support composite index with equality and existence check (${indexProvider.providerName()})") {
+    test(s"should support composite index with equality and existence check (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -690,7 +690,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should support composite index with equality and range check (${indexProvider.providerName()})") {
+    test(s"should support composite index with equality and range check (${indexProvider})") {
       given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -712,7 +712,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should support composite index with range check and existence check (${indexProvider.providerName()})") {
+    test(s"should support composite index with range check and existence check (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -735,7 +735,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should support composite index seek with null (${indexProvider.providerName()})") {
+    test(s"should support composite index seek with null (${indexProvider})") {
       given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -757,7 +757,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should support composite index seek with null 2 (${indexProvider.providerName()})") {
+    test(s"should support composite index seek with null 2 (${indexProvider})") {
       given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -779,7 +779,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withNoRows()
     }
 
-    test(s"should support composite index (multiple values) and null (${indexProvider.providerName()})") {
+    test(s"should support composite index (multiple values) and null (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -801,7 +801,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
     }
 
-    test(s"should cache properties with exact seek (${indexProvider.providerName()})") {
+    test(s"should cache properties with exact seek (${indexProvider})") {
       val nodes = given(defaultRandomIndexedNodePropertyGraph())
       val lookFor = randomAmong(nodes).getProperty("prop")
 
@@ -819,7 +819,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "prop").withRows(expected)
     }
 
-    test(s"should cache properties (${indexProvider.providerName()})") {
+    test(s"should cache properties (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -836,7 +836,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "prop").withRows(expected)
     }
 
-    test(s"should cache properties in composite index (${indexProvider.providerName()})") {
+    test(s"should cache properties in composite index (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop", "prop2") {
@@ -859,7 +859,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "prop", "prop2").withSingleRow(nodes(10 / 10), 10, "10")
     }
 
-    test(s"should use existing values from arguments when available (${indexProvider.providerName()})") {
+    test(s"should use existing values from arguments when available (${indexProvider})") {
       val nodes = given {
         indexedNodeGraph("Honey", "prop") {
           case (node, i) if i % 10 == 0 => node.setProperty("prop", i.toString)
@@ -882,7 +882,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes(20 / 10), nodes(50 / 10))))
     }
 
-    test(s"should seek nodes of an index with a property in ascending order (${indexProvider.providerName()})") {
+    test(s"should seek nodes of an index with a property in ascending order (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -898,7 +898,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should seek nodes of an index with a property in descending order (${indexProvider.providerName()})") {
+    test(s"should seek nodes of an index with a property in descending order (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -914,7 +914,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple index seek, int ascending (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple index seek, int ascending (${indexProvider})") {
       val nodes =
         given {
           nodeGraph(5, "Milk")
@@ -941,7 +941,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple index seek, string ascending (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple index seek, string ascending (${indexProvider})") {
       val nodes =
         given {
           nodeGraph(5, "Milk")
@@ -968,7 +968,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple index seek, int descending (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple index seek, int descending (${indexProvider})") {
       val nodes =
         given {
           nodeGraph(5, "Milk")
@@ -995,7 +995,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple index seek, string descending (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple index seek, string descending (${indexProvider})") {
       val nodes =
         given {
           nodeGraph(5, "Milk")
@@ -1023,7 +1023,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     //array properties
-    test(s"should handle multiple index seek with overflowing morsels (${indexProvider.providerName()})") {
+    test(s"should handle multiple index seek with overflowing morsels (${indexProvider})") {
       // given
       given {
         indexedNodeGraph("A", "prop") { case (node, i) =>
@@ -1050,7 +1050,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(rowCount(sizeHint * 5))
     }
 
-    test(s"should exact (single) seek nodes of an index with an array property (${indexProvider.providerName()})") {
+    test(s"should exact (single) seek nodes of an index with an array property (${indexProvider})") {
       val nodes = given {
         nodeGraph(5, "Milk")
         indexedNodeGraph("Honey", "prop") {
@@ -1070,7 +1070,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withSingleRow(nodes(20 / 10))
     }
 
-    test(s"should seek nodes of a unique index with a property (${indexProvider.providerName()})") {
+    test(s"should seek nodes of a unique index with a property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -1086,7 +1086,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x").withRows(singleColumn(expected))
     }
 
-    test(s"should multi seek nodes of a unique index with property (${indexProvider.providerName()})") {
+    test(s"should multi seek nodes of a unique index with property (${indexProvider})") {
       val nodes = given(defaultIndexedNodeIntPropertyGraph())
 
       // when
@@ -1118,7 +1118,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     def indexedNodeGraph(indexedLabel: String, indexedProperties: String*)(propFunction: PartialFunction[(Node, Int), Unit]): Seq[Node] = {
-      nodeIndexWithProvider(indexProvider.providerName(), indexedLabel, indexedProperties:_*)
+      nodeIndexWithProvider(indexProvider, indexedLabel, indexedProperties:_*)
       nodeGraph(sizeHint, indexedLabel).zipWithIndex.collect {
         case t@(n, _) if propFunction.isDefinedAt(t) =>
           propFunction.apply(t)

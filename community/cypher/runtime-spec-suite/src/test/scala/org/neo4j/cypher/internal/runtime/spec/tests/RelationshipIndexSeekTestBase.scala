@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
@@ -34,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.neo4j.values.storable.ValueType
 
 // Supported by all runtimes
@@ -49,9 +49,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   with RandomValuesTestSupport
 {
 
-  for (indexProvider <- Seq(SchemaIndex.NATIVE30, SchemaIndex.NATIVE_BTREE10)) {
+  for (indexProvider <- Seq(GenericNativeIndexProvider.DESCRIPTOR.name())) {
 
-    test(s"should exact (single) directed relationship seek of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (single) directed relationship seek of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -68,7 +68,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (single) undirected relationship seek of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (single) undirected relationship seek of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -85,7 +85,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (single) directed seek nodes of an index with a property with multiple matches (${indexProvider.providerName()})") {
+    test(s"should exact (single) directed seek nodes of an index with a property with multiple matches (${indexProvider})") {
       val propertyValues = randomValues(5, randomPropertyType())
       val relationships = given {
         defaultIndexedCircleGraph { case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject()) }
@@ -106,7 +106,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (single) undirected seek nodes of an index with a property with multiple matches (${indexProvider.providerName()})") {
+    test(s"should exact (single) undirected seek nodes of an index with a property with multiple matches (${indexProvider})") {
       val propertyValues = randomValues(5, randomPropertyType())
       val relationships = given {
         defaultIndexedCircleGraph { case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject()) }
@@ -127,7 +127,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"exact single directed seek should handle null (${indexProvider.providerName()})") {
+    test(s"exact single directed seek should handle null (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
@@ -144,7 +144,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"exact single undirected seek should handle null (${indexProvider.providerName()})") {
+    test(s"exact single undirected seek should handle null (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
@@ -161,7 +161,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should exact (multiple) directed seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple) directed seek nodes of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
 
       val lookFor = Seq(
@@ -185,7 +185,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (multiple) undirected seek nodes of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple) undirected seek nodes of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
 
       val lookFor = Seq(
@@ -209,7 +209,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should handle null in exact multiple directed seek (${indexProvider.providerName()})") {
+    test(s"should handle null in exact multiple directed seek (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
@@ -226,7 +226,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should handle null in exact multiple undirected seek (${indexProvider.providerName()})") {
+    test(s"should handle null in exact multiple undirected seek (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
@@ -243,7 +243,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should exact (multiple, but empty) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but empty) directed seek relationships of an index with a property (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", randomPropertyValue().asObject()) }
       }
@@ -260,7 +260,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should exact (multiple, but empty) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but empty) undirected seek relationships of an index with a property (${indexProvider})") {
       given {
         defaultIndexedCircleGraph { case (r, i) if i % 10 == 0 => r.setProperty("prop", i) }
       }
@@ -277,7 +277,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should exact (multiple, with null) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, with null) directed seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
 
       val lookFor = randomAmong(relationships).getProperty("prop")
@@ -298,7 +298,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (multiple, with null) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, with null) undirected seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -318,7 +318,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should support directed seek on composite index with random type (${indexProvider.providerName()})") {
+    test(s"should support directed seek on composite index with random type (${indexProvider})") {
       val propertyType1 = randomPropertyType()
       val propertyType2 = randomPropertyType()
       val relationships = given {
@@ -354,7 +354,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(inAnyOrder(expected))
     }
 
-    test(s"should exact (multiple, but identical) directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but identical) directed seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -374,7 +374,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should exact (multiple, but identical) undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should exact (multiple, but identical) undirected seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -395,7 +395,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     // RANGE queries
-    test(s"should directed seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should directed seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -411,7 +411,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should undirected seek relationships of an index with a property (${indexProvider.providerName()})") {
+    test(s"should undirected seek relationships of an index with a property (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -427,7 +427,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should directed seek relationships with multiple less than bounds (${indexProvider.providerName()})") {
+    test(s"should directed seek relationships with multiple less than bounds (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -443,7 +443,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should undirected seek relationships with multiple less than bounds (${indexProvider.providerName()})") {
+    test(s"should undirected seek relationships with multiple less than bounds (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -459,7 +459,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should directed seek relationships with multiple less than bounds with different types (${indexProvider.providerName()})") {
+    test(s"should directed seek relationships with multiple less than bounds with different types (${indexProvider})") {
       given(defaultIndexedIntCircleGraph())
 
       // when
@@ -474,7 +474,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should undirected seek relationships with multiple less than bounds with different types (${indexProvider.providerName()})") {
+    test(s"should undirected seek relationships with multiple less than bounds with different types (${indexProvider})") {
       given(defaultIndexedIntCircleGraph())
 
       // when
@@ -490,7 +490,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
 
-    test(s"should support directed seek on composite index (${indexProvider.providerName()})") {
+    test(s"should support directed seek on composite index (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -512,7 +512,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withSingleRow(expected:_*)
     }
 
-    test(s"should support undirected seek on composite index (${indexProvider.providerName()})") {
+    test(s"should support undirected seek on composite index (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -534,7 +534,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support directed seek on composite index (multiple results) (${indexProvider.providerName()})") {
+    test(s"should support directed seek on composite index (multiple results) (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 2 == 0 =>
@@ -557,7 +557,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support undirected seek on composite index (multiple results) (${indexProvider.providerName()})") {
+    test(s"should support undirected seek on composite index (multiple results) (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 2 == 0 =>
@@ -581,7 +581,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support directed seek on composite index (multiple values) (${indexProvider.providerName()})") {
+    test(s"should support directed seek on composite index (multiple values) (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -603,7 +603,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withSingleRow(expected.getStartNode, expected, expected.getEndNode)
     }
 
-    test(s"should support undirected seek on composite index (multiple values) (${indexProvider.providerName()})") {
+    test(s"should support undirected seek on composite index (multiple values) (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -625,7 +625,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support directed composite index seek with equality and existence check (${indexProvider.providerName()})") {
+    test(s"should support directed composite index seek with equality and existence check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 3 == 0 =>
@@ -651,7 +651,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support undirected composite index seek with equality and existence check (${indexProvider.providerName()})") {
+    test(s"should support undirected composite index seek with equality and existence check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 3 == 0 =>
@@ -677,7 +677,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support directed composite index seek with equality and range check (${indexProvider.providerName()})") {
+    test(s"should support directed composite index seek with equality and range check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) =>
@@ -701,7 +701,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support undirected composite index seek with equality and range check (${indexProvider.providerName()})") {
+    test(s"should support undirected composite index seek with equality and range check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) =>
@@ -725,7 +725,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support directed seek on composite index with range check and existence check (${indexProvider.providerName()})") {
+    test(s"should support directed seek on composite index with range check and existence check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 3 == 0 =>
@@ -751,7 +751,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support undirected seek on composite index with range check and existence check (${indexProvider.providerName()})") {
+    test(s"should support undirected seek on composite index with range check and existence check (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 3 == 0 =>
@@ -777,7 +777,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should support null in directed seek on composite index (${indexProvider.providerName()})") {
+    test(s"should support null in directed seek on composite index (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -799,7 +799,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"should support null in undirected seek on composite index (${indexProvider.providerName()})") {
+    test(s"should support null in undirected seek on composite index (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -821,7 +821,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withNoRows()
     }
 
-    test(s"directed exact seek should cache properties (${indexProvider.providerName()})") {
+    test(s"directed exact seek should cache properties (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -839,7 +839,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
     }
 
-    test(s"undirected exact seek should cache properties (${indexProvider.providerName()})") {
+    test(s"undirected exact seek should cache properties (${indexProvider})") {
       val relationships = given(defaultIndexedRandomCircleGraph())
       val lookFor = randomAmong(relationships).getProperty("prop")
 
@@ -857,7 +857,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
     }
 
-    test(s"directed seek should cache properties (${indexProvider.providerName()})") {
+    test(s"directed seek should cache properties (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -876,7 +876,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop").withRows(expected)
     }
 
-    test(s"undirected seek should cache properties (${indexProvider.providerName()})") {
+    test(s"undirected seek should cache properties (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -894,7 +894,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop").withRows(expected)
     }
 
-    test(s"directed composite seek should cache properties (${indexProvider.providerName()})") {
+    test(s"directed composite seek should cache properties (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
@@ -916,7 +916,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop", "prop2").withSingleRow(relationships(10 / 10), 10, "10")
     }
 
-    test(s"undirected composite seek should cache properties (${indexProvider.providerName()})") {
+    test(s"undirected composite seek should cache properties (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 => {
@@ -939,7 +939,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(Array(relationships(10 / 10), 10, "10"), Array(relationships(10 / 10), 10, "10")))
     }
 
-    test(s"should use existing values from arguments when available in directed seek (${indexProvider.providerName()})") {
+    test(s"should use existing values from arguments when available in directed seek (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -959,7 +959,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should use existing values from arguments when available in undirected seek (${indexProvider.providerName()})") {
+    test(s"should use existing values from arguments when available in undirected seek (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -979,7 +979,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("x", "r", "y").withRows(expected)
     }
 
-    test(s"should directed seek relationships of an index with a property in ascending order (${indexProvider.providerName()})") {
+    test(s"should directed seek relationships of an index with a property in ascending order (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -995,7 +995,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should undirected seek relationships of an index with a property in ascending order (${indexProvider.providerName()})") {
+    test(s"should undirected seek relationships of an index with a property in ascending order (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
 
       // when
@@ -1012,7 +1012,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
 
-    test(s"should directed seek relationships of an index with a property in descending order (${indexProvider.providerName()})") {
+    test(s"should directed seek relationships of an index with a property in descending order (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -1027,7 +1027,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should undirected seek relationships of an index with a property in descending order (${indexProvider.providerName()})") {
+    test(s"should undirected seek relationships of an index with a property in descending order (${indexProvider})") {
       val relationships = given(defaultIndexedIntCircleGraph())
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -1042,7 +1042,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("r").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple directed index seek, ascending int (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple directed index seek, ascending int (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", i % 10)
@@ -1065,7 +1065,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple directed index seek, ascending string (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple directed index seek, ascending string (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", (i % 10).toString)
@@ -1088,7 +1088,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple undirected index seek, ascending int (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple undirected index seek, ascending int (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", i % 10)
@@ -1111,7 +1111,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple undirected index seek, ascending string (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple undirected index seek, ascending string (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", (i % 10).toString)
@@ -1134,7 +1134,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple directed index seek, descending int (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple directed index seek, descending int (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", i % 10)
@@ -1157,7 +1157,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple directed index seek, descending string (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple directed index seek, descending string (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", (i % 10).toString)
@@ -1180,7 +1180,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple undirected index seek, descending int (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple undirected index seek, descending int (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", i % 10)
@@ -1206,7 +1206,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       runtimeResult should beColumns("prop").withRows(singleColumnInOrder(expected))
     }
 
-    test(s"should handle order in multiple undirected index seek, descending string (${indexProvider.providerName()})") {
+    test(s"should handle order in multiple undirected index seek, descending string (${indexProvider})") {
       val relationships = given {
         indexedCircleGraph("R", "prop") {
           case (r, i) => r.setProperty("prop", (i % 10).toString)
@@ -1248,7 +1248,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     }
 
     def indexedCircleGraph(indexedRelType: String, indexedProperties: String*)(propFunction: PartialFunction[(Relationship, Int), Unit]): Seq[Relationship] = {
-      relationshipIndexWithProvider(indexProvider.providerName(), indexedRelType, indexedProperties:_*)
+      relationshipIndexWithProvider(indexProvider, indexedRelType, indexedProperties:_*)
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.collect {
         case t@(r, _) if propFunction.isDefinedAt(t) =>
