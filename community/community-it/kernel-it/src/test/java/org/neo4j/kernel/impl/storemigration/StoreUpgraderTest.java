@@ -565,7 +565,7 @@ public class StoreUpgraderTest
         DatabaseHealth databaseHealth = new DatabaseHealth( NO_OP, NullLog.getInstance() );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );
-        var logsUpgrader = new LogsUpgrader( fileSystem, storageEngineFactory, databaseLayout, pageCache,
+        var logsUpgrader = new LogsMigrator( fileSystem, storageEngineFactory, storageEngineFactory, databaseLayout, pageCache,
                                              config, dependencies, INSTANCE, databaseHealth, contextFactory );
         StoreUpgrader upgrader =
                 new StoreUpgrader( storageEngineFactory, storeVersionCheck, progressMonitor, config, fileSystem, NullLogProvider.getInstance(), logsUpgrader,

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.StreamSupport;
@@ -365,6 +366,27 @@ public class RecordFormatSelector
         Iterable<RecordFormats.Factory> loadableFormatFactories = Services.loadAll( RecordFormats.Factory.class );
         Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );
         return concat( KNOWN_FORMATS, loadableFormats );
+    }
+
+    /**
+     * Returns the latest store version (both latest major and minor) for the submitted format family.
+     */
+    public static RecordFormats findLatestFormatInFamily( String formatFamily, Config config )
+    {
+        if ( Arrays.stream( FormatFamily.values() ).map( Enum::name ).noneMatch( familyName -> familyName.equals( formatFamily ) ) )
+        {
+            throw new IllegalArgumentException( "Unknown format family: '" + formatFamily + "'" );
+        }
+
+        RecordFormats formats = loadRecordFormat( formatFamily, false );
+
+        boolean includeDevFormats = config.get( GraphDatabaseInternalSettings.include_versions_under_development );
+        if ( includeDevFormats && formats != null )
+        {
+            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( formats, true );
+            formats = newestFormatInFamily.orElse( formats );
+        }
+        return formats;
     }
 
     private static RecordFormats selectSpecificFormat( String recordFormat, boolean includeDevFormats )

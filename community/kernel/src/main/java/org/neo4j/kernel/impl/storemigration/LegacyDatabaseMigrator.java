@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
  *
  * @see StoreUpgrader
  */
-public class DatabaseMigrator
+public class LegacyDatabaseMigrator
 {
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -61,7 +61,7 @@ public class DatabaseMigrator
     private final MemoryTracker memoryTracker;
     private final DatabaseHealth databaseHealth;
 
-    public DatabaseMigrator(
+    public LegacyDatabaseMigrator(
             FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
             PageCacheTracer pageCacheTracer, JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
@@ -89,9 +89,9 @@ public class DatabaseMigrator
     public void migrate( boolean forceUpgrade ) throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
-        var logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, databaseLayout, pageCache, config, dependencyResolver,
+        var logsUpgrader = new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, databaseLayout, pageCache, config, dependencyResolver,
                                                       memoryTracker, databaseHealth, contextFactory );
-        InternalLog userLog = logService.getUserLog( DatabaseMigrator.class );
+        InternalLog userLog = logService.getUserLog( LegacyDatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         InternalLogProvider logProvider = logService.getInternalLogProvider();
         StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, contextFactory );

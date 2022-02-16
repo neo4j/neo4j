@@ -65,11 +65,11 @@ public class DatabaseMigratorFactory
         this.contextFactory = contextFactory;
     }
 
-    public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
+    public LegacyDatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
             DependencyResolver dependencies )
     {
         DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), config, namedDatabaseId );
-        return new DatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, pageCacheTracer, jobScheduler, databaseLayout,
+        return new LegacyDatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, pageCacheTracer, jobScheduler, databaseLayout,
                 storageEngineFactory, contextFactory, memoryTracker, databaseHealth );
     }
 }

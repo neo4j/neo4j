@@ -31,6 +31,7 @@ import static org.neo4j.internal.helpers.Format.duration;
 
 class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
+    // TODO: Do something about the 'upgrade' wording when upgrade and migration code paths are split
     static final String MESSAGE_STARTED = "Starting upgrade of database";
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
     static final String TX_LOGS_MIGRATION_STARTED = "Starting transaction logs migration.";

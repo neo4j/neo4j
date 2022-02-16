@@ -43,7 +43,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
+import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -170,7 +170,7 @@ class DefaultDatabaseManagerUpgradeIT
     private void useThrowingMigrationLogProvider( Exception e )
     {
         InternalLog mockedLog = mock( InternalLog.class, RETURNS_MOCKS );
-        when( userLogProvider.getLog( DatabaseMigrator.class ) ).thenReturn( mockedLog );
+        when( userLogProvider.getLog( LegacyDatabaseMigrator.class ) ).thenReturn( mockedLog );
         Mockito.doThrow( e ).when( mockedLog ).info( anyString() );
     }
 }

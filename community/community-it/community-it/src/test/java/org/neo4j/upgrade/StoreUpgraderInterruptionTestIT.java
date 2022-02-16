@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.storemigration.LogsUpgrader;
+import org.neo4j.kernel.impl.storemigration.LogsMigrator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
@@ -281,10 +281,10 @@ public class StoreUpgraderInterruptionTestIT
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         var databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
-        LogsUpgrader logsUpgrader = new LogsUpgrader( fs, storageEngineFactory, workingDatabaseLayout, pageCache,
+        LogsMigrator logsMigrator = new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, workingDatabaseLayout, pageCache,
                 config, dependencies, INSTANCE, databaseHealth, contextFactory );
         StoreUpgrader upgrader =
-                new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader,
+                new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsMigrator,
                         contextFactory );
         for ( StoreMigrationParticipant participant : participants )
         {

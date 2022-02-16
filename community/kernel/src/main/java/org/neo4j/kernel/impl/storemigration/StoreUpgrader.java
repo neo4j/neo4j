@@ -89,19 +89,19 @@ public class StoreUpgrader
     private final Config config;
     private final FileSystemAbstraction fileSystem;
     private final InternalLog log;
-    private final LogsUpgrader logsUpgrader;
+    private final LogsMigrator logsUpgrader;
     private final String configuredFormat;
     private final CursorContextFactory contextFactory;
 
     public StoreUpgrader( StorageEngineFactory storageEngineFactory, StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-            Config config, FileSystemAbstraction fileSystem, InternalLogProvider logProvider, LogsUpgrader logsUpgrader, CursorContextFactory contextFactory )
+            Config config, FileSystemAbstraction fileSystem, InternalLogProvider logProvider, LogsMigrator logsMigrator, CursorContextFactory contextFactory )
     {
         this.storageEngineFactory = storageEngineFactory;
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.logsUpgrader = logsUpgrader;
+        this.logsUpgrader = logsMigrator;
         this.log = logProvider.getLog( getClass() );
         this.configuredFormat = storeVersionCheck.configuredVersion();
         this.contextFactory = contextFactory;
@@ -212,7 +212,7 @@ public class StoreUpgrader
         }
 
         progressMonitor.startTransactionLogsMigration();
-        logsUpgrader.upgrade( dbDirectoryLayout );
+        logsUpgrader.migrate( dbDirectoryLayout );
         progressMonitor.completeTransactionLogsMigration();
 
         cleanup( participants.values(), migrationLayout );

@@ -110,7 +110,7 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
+import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -675,7 +675,7 @@ public class Database extends LifecycleAdapter
         createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate( false );
     }
 
-    private DatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
+    private LegacyDatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
         var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
                 namedDatabaseId, memoryTracker, databaseHealth, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ) );
@@ -913,7 +913,7 @@ public class Database extends LifecycleAdapter
         }
 
         init();
-        DatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
+        LegacyDatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
         migrator.migrate( true );
         start(); // Start is required to bring the database to a "complete" state (ideally this should not be needed)
 

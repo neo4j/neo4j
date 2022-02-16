@@ -110,6 +110,25 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
+    public String getLatestAvailableVersion( String formatFamily, CursorContext cursorContext )
+    {
+        if ( formatFamily == null )
+        {
+            try
+            {
+                String currentVersion = readVersion( cursorContext );
+                RecordFormats recordFormats = RecordFormatSelector.selectForVersion( currentVersion );
+                formatFamily = recordFormats.getFormatFamily().name();
+            }
+            catch ( IOException e )
+            {
+                throw new IllegalStateException( "Failed to read the current store version", e );
+            }
+        }
+        return RecordFormatSelector.findLatestFormatInFamily( formatFamily, config ).storeVersion();
+    }
+
+    @Override
     public Result checkUpgrade( String desiredVersion, CursorContext cursorContext )
     {
         String version;

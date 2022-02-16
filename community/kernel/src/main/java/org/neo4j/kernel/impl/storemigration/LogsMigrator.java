@@ -44,11 +44,13 @@ import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
 
-public class LogsUpgrader
+// TODO: this class needs some love when the migration and upgrade code paths are split.
+public class LogsMigrator
 {
     private static final String UPGRADE_CHECKPOINT = "Upgrade checkpoint.";
     private final FileSystemAbstraction fs;
-    private final StorageEngineFactory storageEngineFactory;
+    private final StorageEngineFactory storageEngineFactoryToMigrateFrom;
+    private final StorageEngineFactory storageEngineFactoryToMigrateTo;
     private final DatabaseLayout databaseLayout;
     private final PageCache pageCache;
     private final Config config;
@@ -57,9 +59,10 @@ public class LogsUpgrader
     private final DatabaseHealth databaseHealth;
     private final CursorContextFactory contextFactory;
 
-    public LogsUpgrader(
+    public LogsMigrator(
             FileSystemAbstraction fs,
-            StorageEngineFactory storageEngineFactory,
+            StorageEngineFactory storageEngineFactoryToMigrateFrom,
+            StorageEngineFactory storageEngineFactoryToMigrateTo,
             DatabaseLayout databaseLayout,
             PageCache pageCache,
             Config config,
@@ -69,7 +72,8 @@ public class LogsUpgrader
             CursorContextFactory contextFactory )
     {
         this.fs = fs;
-        this.storageEngineFactory = storageEngineFactory;
+        this.storageEngineFactoryToMigrateFrom = storageEngineFactoryToMigrateFrom;
+        this.storageEngineFactoryToMigrateTo = storageEngineFactoryToMigrateTo;
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
         this.config = config;
@@ -131,7 +135,7 @@ public class LogsUpgrader
         try
         {
             logFiles = LogFilesBuilder.builder( layout, fs )
-                                      .withStorageEngineFactory( storageEngineFactory )
+                                      .withStorageEngineFactory( storageEngineFactoryToMigrateFrom )
                                       .withConfig( config )
                                       .withMemoryTracker( memoryTracker )
                                       .withDatabaseHealth( databaseHealth )
@@ -144,12 +148,12 @@ public class LogsUpgrader
         return logFiles;
     }
 
-    public void upgrade( DatabaseLayout layout )
+    public void migrate( DatabaseLayout layout )
     {
         try ( MetadataProvider store = getMetaDataStore() )
         {
             TransactionLogInitializer logInitializer = new TransactionLogInitializer(
-                    fs, store, storageEngineFactory, contextFactory );
+                    fs, store, storageEngineFactoryToMigrateTo, contextFactory );
 
             Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
 
@@ -184,7 +188,8 @@ public class LogsUpgrader
 
     private MetadataProvider getMetaDataStore() throws IOException
     {
-        return storageEngineFactory.transactionMetaDataStore( fs, databaseLayout, config, pageCache, DatabaseReadOnlyChecker.readOnly(), contextFactory );
+        return storageEngineFactoryToMigrateTo.transactionMetaDataStore( fs, databaseLayout, config, pageCache, DatabaseReadOnlyChecker.readOnly(),
+                contextFactory );
     }
 
     private static DatabaseNotCleanlyShutDownException upgradeException( LogTailInformation tail )

@@ -52,6 +52,14 @@ public interface StoreVersionCheck
     boolean isVersionConfigured();
 
     /**
+     * Returns the latest store version (both latest major and minor) for the submitted format family
+     * if the submitted format family is not {@code null}.
+     * If the submitted format family is {@code null }, it will return the latest store version
+     * for the store family the store is currently on.
+     */
+    String getLatestAvailableVersion( String formatFamily, CursorContext cursorContext );
+
+    /**
      * Should only be called if {@link #storeVersion(CursorContext)} and {@link #configuredVersion()} aren't equal.
      * Checks whether or not the store version can be upgraded to the desired (i.e. from configured) version.
      * @param desiredVersion store version to check whether or not the existing store is upgradable to.
