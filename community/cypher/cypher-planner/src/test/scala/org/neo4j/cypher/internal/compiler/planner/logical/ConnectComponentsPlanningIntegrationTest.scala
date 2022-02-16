@@ -536,7 +536,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN n
         |""".stripMargin)
 
-    plan.findByClass[OptionalExpand].lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
+    plan.treeFindByClass[OptionalExpand].get.lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
   }
 
   test("expensive optional match is solved after components are connected for Volcano") {

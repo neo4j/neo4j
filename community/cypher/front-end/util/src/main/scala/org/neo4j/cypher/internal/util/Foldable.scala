@@ -141,6 +141,12 @@ object Foldable {
       findAcc[A](mutable.ArrayStack(that), f.lift)
 
     /*
+    Allows searching through object tree and object collections for a class
+     */
+    def treeFindByClass[A: ClassTag]: Option[A] =
+      optionFindAcc[A](mutable.ArrayStack(that))
+
+    /*
     Searches in trees, counting how many matches are found
      */
     def treeCount(f: PartialFunction[Any, Boolean]): Int = {
@@ -151,9 +157,6 @@ object Foldable {
     def treeCountAccumulation(f: PartialFunction[Any, Int]): Int = {
       countAcc(mutable.ArrayStack(that), f.lift, 0)
     }
-
-    def findByClass[A: ClassTag]: A =
-      findAcc[A](mutable.ArrayStack(that))
 
     def findByAllClass[A: ClassTag]: Seq[A] = {
       val remaining = mutable.ArrayStack(that)
@@ -257,6 +260,18 @@ object Foldable {
       that match {
         case x: A => x
         case _ => findAcc(remaining ++= that.reverseTreeChildren)
+      }
+    }
+
+  @tailrec
+  private def optionFindAcc[A: ClassTag](remaining: mutable.ArrayStack[Any]): Option[A] =
+    if (remaining.isEmpty) {
+      None
+    } else {
+      val that = remaining.pop()
+      that match {
+        case x: A => Some(x)
+        case _    => optionFindAcc(remaining ++= that.reverseTreeChildren)
       }
     }
 
