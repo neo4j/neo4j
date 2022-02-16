@@ -113,7 +113,7 @@ public class LoggingPhaseTracker implements PhaseTracker
 
     private void finalReport()
     {
-        log.info( MESSAGE_PREFIX + mainReportString( "Final" ) );
+        log.debug( MESSAGE_PREFIX + mainReportString( "Final" ) );
     }
 
     private void periodReport( long millisSinceLastPeriodReport )

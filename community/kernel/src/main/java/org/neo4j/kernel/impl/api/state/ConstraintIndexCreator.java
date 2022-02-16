@@ -96,7 +96,7 @@ public class ConstraintIndexCreator
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
         String constraintString = constraint.userDescription( transaction.tokenRead() );
-        log.info( "Starting constraint creation: %s.", constraintString );
+        log.debug( "Starting constraint creation: %s.", constraintString );
 
         IndexDescriptor index;
         SchemaRead schemaRead = transaction.schemaRead();
@@ -130,7 +130,7 @@ public class ConstraintIndexCreator
             locks.releaseExclusive( keyType, lockingKeys );
 
             awaitConstraintIndexPopulation( constraint, proxy, transaction );
-            log.info( "Constraint %s populated, starting verification.", constraintString );
+            log.debug( "Constraint %s populated, starting verification.", constraintString );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
             // Acquire LABEL WRITE lock and verify the constraints here in this user transaction
@@ -144,7 +144,7 @@ public class ConstraintIndexCreator
             {
                 indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
             }
-            log.info( "Constraint %s verified.", constraintString );
+            log.debug( "Constraint %s verified.", constraintString );
             success = true;
             return index;
         }

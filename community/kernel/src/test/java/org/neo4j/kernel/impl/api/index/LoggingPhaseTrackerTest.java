@@ -35,12 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.api.index.LoggingPhaseTracker.PERIOD_INTERVAL;
 import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
-import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 class LoggingPhaseTrackerTest
 {
-    private FakeClock clock = new FakeClock();
+    private final FakeClock clock = new FakeClock();
 
     @Test
     void shouldLogSingleTime()
@@ -149,7 +148,7 @@ class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         // then
-        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages(
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
                 "TIME/PHASE Final: " +
                         "SCAN[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
                         "WRITE[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
@@ -207,7 +206,7 @@ class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         // then
-        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages(
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages(
                 "TIME/PHASE Final: SCAN[totalTime=1s234ms], BUILD[totalTime=56s789ms]" );
     }
 

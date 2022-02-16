@@ -883,7 +883,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
             {
                 entityType = "relationship";
             }
-            log.info( "Completed " + entityType + " store scan. " +
+            log.debug( "Completed " + entityType + " store scan. " +
                     "Flushing all pending updates." + EOL + MultipleIndexPopulator.this );
         }
 

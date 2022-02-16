@@ -112,6 +112,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -503,9 +504,9 @@ class IndexPopulationJobTest
             job.run();
 
             // Then
-            var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
-            matcher.containsMessageWithArgumentsContaining( "Index population started: [%s]", "type='GENERAL RANGE', schema=(:FIRST {name})" )
-                   .containsMessages( "TIME/PHASE Final: SCAN[" );
+            var populationLog = assertThat( logProvider ).forClass( IndexPopulationJob.class );
+            populationLog.forLevel( INFO ).containsMessages( "Index population started: [%s]", "type='GENERAL RANGE', schema=(:FIRST {name})" );
+            populationLog.forLevel( DEBUG ).containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
         {
@@ -531,9 +532,10 @@ class IndexPopulationJobTest
             job.run();
 
             // Then
-            var matcher = assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO );
-            matcher.containsMessageWithArgumentsContaining( "Index population started: [%s]", "type='UNIQUE RANGE', schema=(:FIRST {name})" )
-                   .containsMessages( "TIME/PHASE Final: SCAN[" );
+            var populationLog = assertThat( logProvider ).forClass( IndexPopulationJob.class );
+            populationLog.forLevel( INFO ).containsMessageWithArgumentsContaining( "Index population started: [%s]",
+                    "type='UNIQUE RANGE', schema=(:FIRST {name})" );
+            populationLog.forLevel( DEBUG ).containsMessages( "TIME/PHASE Final: SCAN[" );
         }
         finally
         {

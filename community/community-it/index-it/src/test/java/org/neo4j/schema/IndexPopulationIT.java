@@ -59,8 +59,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.logging.AssertableLogProvider.Level.DEBUG;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
-import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @TestDirectoryExtension
@@ -259,7 +259,7 @@ class IndexPopulationIT
             nodes.close();
             tx.commit();
         }
-        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( INFO ).containsMessages( "TIME/PHASE Final:" );
+        assertThat( logProvider ).forClass( IndexPopulationJob.class ).forLevel( DEBUG ).containsMessages( "TIME/PHASE Final:" );
     }
 
     private static void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
