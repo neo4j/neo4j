@@ -99,12 +99,14 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
     @Test
     void readerShouldThrowOnBoundingBoxQueries()
     {
-        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = PropertyIndexQuery.boundingBox( 0, CoordinateReferenceSystem.CARTESIAN );
+        PropertyIndexQuery.BoundingBoxPredicate boundingBoxPredicate = PropertyIndexQuery.boundingBox( 0,
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 1 ),
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 2, 2 ) );
 
         try ( var reader = accessor.newValueReader() )
         {
             assertThatThrownBy( () -> reader.query( new SimpleEntityValueClient(), NULL_CONTEXT, AccessMode.Static.ACCESS,
-                                                    unorderedValues(), boundingBoxPredicate ) )
+                    unorderedValues(), boundingBoxPredicate ) )
                     .isInstanceOf( IllegalArgumentException.class )
                     .hasMessageContaining( "Tried to query index with illegal query. A %s predicate is not allowed", boundingBoxPredicate.type() );
         }

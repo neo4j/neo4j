@@ -81,8 +81,8 @@ class GenericNativeIndexReader extends NativeIndexReader<BtreeKey>
                 // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
                 client.initialize( descriptor, multiProgressor, accessMode, false, constraints, query );
-                double[] from = boundingBoxPredicate.from() == null ? null : boundingBoxPredicate.from().coordinate();
-                double[] to = boundingBoxPredicate.to() == null ? null : boundingBoxPredicate.to().coordinate();
+                double[] from = boundingBoxPredicate.from().coordinate();
+                double[] to = boundingBoxPredicate.to().coordinate();
                 CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
                 SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs );
                 List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );

@@ -22,7 +22,6 @@ package org.neo4j.internal.kernel.api;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 
@@ -35,13 +34,11 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.StringSuffixPredicate;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
-import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.util.Arrays.array;
@@ -369,19 +366,6 @@ class IndexQueryTest
         assertFalse( test( p, car4 ) );
         assertTrue( test( p, gps1_3d ) );
         assertTrue( test( p, gps2_3d ) );
-    }
-
-    @Test
-    void testCRSBoundingBox()
-    {
-        BoundingBoxPredicate p = PropertyIndexQuery.boundingBox( propId, CoordinateReferenceSystem.WGS_84 );
-
-        assertTrue( test( p, gps2 ) );
-        assertFalse( test( p, DateValue.date( -4000, 1, 31 ) ) );
-        assertFalse( test( p, stringValue( "hej" ) ) );
-        assertFalse( test( p, car1 ) );
-        assertFalse( test( p, car4 ) );
-        assertFalse( test( p, gps1_3d ) );
     }
 
     // STRING PREFIX

@@ -344,19 +344,6 @@ class TxStateIndexChangesTest
 
         final var tests = new ArrayList<DynamicTest>();
 
-        tests.add( boundingBoxTest( state, CARTESIAN,
-                                    entityWithPropertyValues( 42L, minPointValueOf( CARTESIAN ) ),
-                                    entityWithPropertyValues( 43L, maxPointValueOf( CARTESIAN ) ),
-                                    entityWithPropertyValues( 44L, pointValue( CARTESIAN, -500, -500 ) ),
-                                    entityWithPropertyValues( 45L, pointValue( CARTESIAN, -250, 0 ) ),
-                                    entityWithPropertyValues( 46L, pointValue( CARTESIAN, -250, 500 ) ),
-                                    entityWithPropertyValues( 47L, pointValue( CARTESIAN, 0, -500 ) ),
-                                    entityWithPropertyValues( 48L, pointValue( CARTESIAN, 0, 0 ) ),
-                                    entityWithPropertyValues( 49L, pointValue( CARTESIAN, 250, 500 ) ),
-                                    entityWithPropertyValues( 50L, pointValue( CARTESIAN, 250, 0 ) ),
-                                    entityWithPropertyValues( 51L, pointValue( CARTESIAN, 500, -500 ) ),
-                                    entityWithPropertyValues( 52L, pointValue( CARTESIAN, 500, 500 ) ) ) );
-
         tests.add( boundingBoxTest( state, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ),
                                     entityWithPropertyValues( 42L, minPointValueOf( CARTESIAN ) ),
                                     entityWithPropertyValues( 43L, maxPointValueOf( CARTESIAN ) ),
@@ -388,17 +375,6 @@ class TxStateIndexChangesTest
                                     entityWithPropertyValues( 51L, pointValue( CARTESIAN, 500, -500 ) ),
                                     entityWithPropertyValues( 52L, pointValue( CARTESIAN, 500, 500 ) ) ) );
 
-        tests.add( boundingBoxTest( state, CARTESIAN_3D,
-                                    entityWithPropertyValues( 53L, minPointValueOf( CARTESIAN_3D ) ),
-                                    entityWithPropertyValues( 54L, maxPointValueOf( CARTESIAN_3D ) ),
-                                    entityWithPropertyValues( 55L, pointValue( CARTESIAN_3D, -500, -500, -500 ) ),
-                                    entityWithPropertyValues( 56L, pointValue( CARTESIAN_3D, -500, 0, 250 ) ),
-                                    entityWithPropertyValues( 57L, pointValue( CARTESIAN_3D, 0, -250, -250 ) ),
-                                    entityWithPropertyValues( 58L, pointValue( CARTESIAN_3D, 0, 0, 0 ) ),
-                                    entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
-                                    entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ),
-                                    entityWithPropertyValues( 61L, pointValue( CARTESIAN_3D, 500, 500, 500 ) ) ) );
-
         tests.add( boundingBoxTest( state, minPointValueOf( CARTESIAN_3D ), maxPointValueOf( CARTESIAN_3D ),
                                     entityWithPropertyValues( 53L, minPointValueOf( CARTESIAN_3D ) ),
                                     entityWithPropertyValues( 54L, maxPointValueOf( CARTESIAN_3D ) ),
@@ -425,14 +401,6 @@ class TxStateIndexChangesTest
                                     entityWithPropertyValues( 59L, pointValue( CARTESIAN_3D, 0, 250, -500 ) ),
                                     entityWithPropertyValues( 60L, pointValue( CARTESIAN_3D, 250, -250, 500 ) ) ) );
 
-        tests.add( boundingBoxTest( state, WGS_84,
-                                    entityWithPropertyValues( 62L, minPointValueOf( WGS_84 ) ),
-                                    entityWithPropertyValues( 63L, maxPointValueOf( WGS_84 ) ),
-                                    entityWithPropertyValues( 64L, pointValue( WGS_84, -122.322312, 37.563437 ) ),
-                                    entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ),
-                                    entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ),
-                                    entityWithPropertyValues( 67L, pointValue( WGS_84, 11.572188, 48.135813 ) ) ) );
-
         tests.add( boundingBoxTest( state, minPointValueOf( WGS_84 ), maxPointValueOf( WGS_84 ),
                                     entityWithPropertyValues( 62L, minPointValueOf( WGS_84 ) ),
                                     entityWithPropertyValues( 63L, maxPointValueOf( WGS_84 ) ),
@@ -456,14 +424,6 @@ class TxStateIndexChangesTest
         tests.add( boundingBoxTest( state, pointValue( WGS_84, -0.6, 51.23 ), pointValue( WGS_84, 13.1, 55.65 ),
                                     entityWithPropertyValues( 65L, pointValue( WGS_84, 12.994807, 55.612088 ) ),
                                     entityWithPropertyValues( 66L, pointValue( WGS_84, -0.101008, 51.503773 ) ) ) );
-
-        tests.add( boundingBoxTest( state, WGS_84_3D,
-                                    entityWithPropertyValues( 68L, minPointValueOf( WGS_84_3D ) ),
-                                    entityWithPropertyValues( 69L, maxPointValueOf( WGS_84_3D ) ),
-                                    entityWithPropertyValues( 70L, pointValue( WGS_84_3D, -122.322312, 37.563437, 10 ) ),
-                                    entityWithPropertyValues( 71L, pointValue( WGS_84_3D, 12.994807, 55.612088, 0 ) ),
-                                    entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ),
-                                    entityWithPropertyValues( 73L, pointValue( WGS_84_3D, 11.572188, 48.135813, 528 ) ) ) );
 
         tests.add( boundingBoxTest( state, minPointValueOf( WGS_84_3D ), maxPointValueOf( WGS_84_3D ),
                                     entityWithPropertyValues( 68L, minPointValueOf( WGS_84_3D ) ),
@@ -495,20 +455,6 @@ class TxStateIndexChangesTest
                                     entityWithPropertyValues( 72L, pointValue( WGS_84_3D, -0.101008, 51.503773, 10 ) ) ) );
 
         return tests;
-    }
-
-    private DynamicTest boundingBoxTest( ReadableTransactionState state,
-                                         CoordinateReferenceSystem crs,
-                                         EntityWithPropertyValues... expected )
-    {
-        return DynamicTest.dynamicTest( String.format( "bounding box seek: all crs=%s", crs.getName() ), () ->
-        {
-            final var query = PropertyIndexQuery.boundingBox( -1, crs );
-            final var changes = indexUpdatesForBoundingBoxSeek( state, index, new Value[0], query );
-            final var changesWithValues = indexUpdatesWithValuesForBoundingBoxSeek( state, index, new Value[0], query );
-
-            assertContains( IndexOrder.NONE, changes, changesWithValues, expected );
-        } );
     }
 
     private DynamicTest boundingBoxTest( ReadableTransactionState state,

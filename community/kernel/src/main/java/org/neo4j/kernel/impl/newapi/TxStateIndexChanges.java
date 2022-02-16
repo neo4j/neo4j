@@ -39,7 +39,6 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -527,38 +526,8 @@ class TxStateIndexChanges
 
         private static RangeFilterValues fromBoundingBox( int size, Value[] equalityValues, PropertyIndexQuery.BoundingBoxPredicate predicate )
         {
-            final var from = predicate.fromValue();
-            final var to = predicate.toValue();
-            final var crs = predicate.crs();
-
-            if ( from == null || to == null )
-            {
-                throw new IllegalStateException( "Use Values.NO_VALUE to encode the lack of a bound" );
-            }
-
-            ValueTuple selectedLower;
-            ValueTuple selectedUpper;
-
-            if ( from == NO_VALUE )
-            {
-                final var min = PointValue.minPointValueOf( crs );
-                selectedLower = getCompositeValueTuple( size, equalityValues, min, true );
-            }
-            else
-            {
-                selectedLower = getCompositeValueTuple( size, equalityValues, from, true );
-            }
-
-            if ( to == NO_VALUE )
-            {
-                final var max = PointValue.maxPointValueOf( crs );
-                selectedUpper = getCompositeValueTuple( size, equalityValues, max, false );
-            }
-            else
-            {
-                selectedUpper = getCompositeValueTuple( size, equalityValues, to, false );
-            }
-
+            ValueTuple selectedLower = getCompositeValueTuple( size, equalityValues, predicate.from(), true );
+            ValueTuple selectedUpper = getCompositeValueTuple( size, equalityValues, predicate.to(), false );
             return new RangeFilterValues( selectedLower, true, selectedUpper, true );
         }
 

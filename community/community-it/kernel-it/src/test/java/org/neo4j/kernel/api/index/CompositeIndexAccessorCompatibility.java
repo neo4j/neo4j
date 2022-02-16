@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -29,7 +28,6 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -374,35 +372,13 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 10L, descriptor.schema(), base2, obj5 ) ) );
 
         assertThat( query( exact( 0, base1 ), boundingBox( 1, obj2, obj4 ) ) ).containsExactly( 2L, 3L, 4L );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, obj4, null ) ) ).containsExactly( 4L, 5L );
         assertThat( query( exact( 0, base1 ), boundingBox( 1, obj5, obj2 ) ) ).isEmpty();
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, null, obj3 ) ) ).containsExactly( 1L, 2L, 3L );
         assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, obj2 ) ) ).containsExactly( 1L, 2L );
         assertThat( query( exact( 0, base1 ), boundingBox( 1, obj1, obj3 ) ) ).containsExactly( 1L, 2L, 3L );
         assertThat( query( exact( 0, base2 ), boundingBox( 1, obj2, obj4 ) ) ).containsExactly( 7L, 8L, 9L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, obj4, null ) ) ).containsExactly( 9L, 10L );
         assertThat( query( exact( 0, base2 ), boundingBox( 1, obj5, obj2 ) ) ).isEmpty();
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, null, obj3 ) ) ).containsExactly( 6L, 7L, 8L );
         assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, obj2 ) ) ).containsExactly( 6L, 7L);
         assertThat( query( exact( 0, base2 ), boundingBox( 1, obj1, obj3 ) ) ).containsExactly( 6L, 7L, 8L );
-
-        CoordinateReferenceSystem crs = getCrs( obj1 );
-        assertThat( query( exact( 0, base1 ), boundingBox( 1, crs ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
-        assertThat( query( exact( 0, base2 ), boundingBox( 1, crs ) ) ).containsExactly( 6L, 7L, 8L, 9L, 10L );
-    }
-
-    private static CoordinateReferenceSystem getCrs( Value value )
-    {
-        if ( Values.isGeometryValue( value ) )
-        {
-            return ((PointValue) value).getCoordinateReferenceSystem();
-        }
-        else if ( Values.isGeometryArray( value ) )
-        {
-            PointArray array = (PointArray) value;
-            return array.pointValue( 0 ).getCoordinateReferenceSystem();
-        }
-        throw new IllegalArgumentException( "Expected some geometry value to get CRS from, but got " + value );
     }
 
     private void testIndexSeekExactWithRangeByBooleanType( BooleanValue base1, BooleanValue base2, BooleanValue obj1, BooleanValue obj2 ) throws Exception
@@ -737,13 +713,9 @@ abstract class CompositeIndexAccessorCompatibility extends IndexAccessorCompatib
                 add( 5L, descriptor.schema(), obj5, Values.of( 42 ) ) ) );
 
         assertThat( query( boundingBox( 0, obj2, obj4 ), exists( 1 ) ) ).containsExactly( 2L, 3L, 4L );
-        assertThat( query( boundingBox( 0, obj4, null ), exists( 1 ) ) ).containsExactly( 4L, 5L );
         assertThat( query( boundingBox( 0, obj5, obj2 ), exists( 1 ) ) ).isEmpty();
-        assertThat( query( boundingBox( 0, null, obj3 ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
         assertThat( query( boundingBox( 0, obj1, obj2 ), exists( 1 ) ) ).containsExactly( 1L, 2L );
         assertThat( query( boundingBox( 0, obj1, obj3 ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L );
-
-        assertThat( query( boundingBox( 0, obj1.getCoordinateReferenceSystem() ), exists( 1 ) ) ).containsExactly( 1L, 2L, 3L, 4L, 5L );
     }
 
     /* IndexOrder */

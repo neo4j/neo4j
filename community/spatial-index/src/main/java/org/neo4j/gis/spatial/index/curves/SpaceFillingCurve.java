@@ -259,27 +259,16 @@ public abstract class SpaceFillingCurve
         return getTilesIntersectingEnvelope( referenceEnvelope.getMin(), referenceEnvelope.getMax(), new StandardConfiguration() );
     }
 
-    public List<LongRange> getTilesIntersectingEnvelope( double[] fromOrNull, double[] toOrNull, SpaceFillingCurveConfiguration config )
+    public List<LongRange> getTilesIntersectingEnvelope( double[] from, double[] to, SpaceFillingCurveConfiguration config )
     {
-        double[] from = fromOrNull == null ? range.getMin() : Arrays.copyOf( fromOrNull, fromOrNull.length );
-        double[] to = toOrNull == null ? range.getMax() : Arrays.copyOf( toOrNull, toOrNull.length );
+        from = Arrays.copyOf( from, from.length );
+        to = Arrays.copyOf( to, to.length );
 
         for ( int i = 0; i < from.length; i++ )
         {
             if ( from[i] > to[i] )
             {
-                if ( fromOrNull == null )
-                {
-                    to[i] = from[i];
-                }
-                else if ( toOrNull == null )
-                {
-                    from[i] = to[i];
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Invalid range, min greater than max: " + from[i] + " > " + to[i] );
-                }
+                throw new IllegalArgumentException( "Invalid range, min greater than max: " + from[i] + " > " + to[i] );
             }
         }
         Envelope referenceEnvelope = new Envelope( from, to );

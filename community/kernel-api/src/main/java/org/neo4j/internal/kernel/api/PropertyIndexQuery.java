@@ -24,6 +24,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.util.Objects;
+
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -129,8 +131,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
                     DURATION_ARRAY,
                     GEOMETRY,
                     GEOMETRY_ARRAY -> {
-                //TODO: the special behaviour for x <= PROP and x >= PROP can be moved
-                //      into IncomparableRangePredicate
                 if ( fromInclusive && to == null )
                 {
                     yield new RangePredicate<>( propertyKeyId, valueGroup, from, true, from, true );
@@ -157,15 +157,6 @@ public abstract class PropertyIndexQuery implements IndexQuery
     public static BoundingBoxPredicate boundingBox( int propertyKeyId, PointValue from, PointValue to, boolean inclusive )
     {
         return new BoundingBoxPredicate( propertyKeyId, from, to, inclusive );
-    }
-
-    /**
-     * Create IndexQuery for retrieving all indexed entries with spatial value of the given
-     * coordinate reference system.
-     */
-    public static BoundingBoxPredicate boundingBox( int propertyKeyId, CoordinateReferenceSystem crs )
-    {
-        return new BoundingBoxPredicate( propertyKeyId, crs );
     }
 
     /**
@@ -506,35 +497,25 @@ public abstract class PropertyIndexQuery implements IndexQuery
         private final PointValue to;
         private final boolean inclusive;
 
-        private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs,
-                                      PointValue from,
-                                      PointValue to,
-                                      boolean inclusive )
-        {
-            super( propertyKeyId );
-            this.crs = crs;
-            this.from = from;
-            this.to = to;
-            this.inclusive = inclusive;
-        }
-
         private BoundingBoxPredicate( int propertyKeyId,
                                       PointValue from,
                                       PointValue to,
                                       boolean inclusive )
         {
-            this( propertyKeyId, requireNonNullElse( from, to ).getCoordinateReferenceSystem(),
-                  from, to, inclusive );
+            super( propertyKeyId );
+            // The only user of this predicate is Cypher's BB function,
+            // which does not allow null 'corners'.
+            Objects.requireNonNull( from );
+            Objects.requireNonNull( to );
+            this.crs = from.getCoordinateReferenceSystem();
+            this.from = from;
+            this.to = to;
+            this.inclusive = inclusive;
         }
 
         private BoundingBoxPredicate( int propertyKeyId, PointValue from, PointValue to )
         {
             this( propertyKeyId, from, to, true );
-        }
-
-        private BoundingBoxPredicate( int propertyKeyId, CoordinateReferenceSystem crs )
-        {
-            this( propertyKeyId, crs, null, null, true );
         }
 
         @Override
@@ -570,19 +551,9 @@ public abstract class PropertyIndexQuery implements IndexQuery
             return from;
         }
 
-        public Value fromValue()
-        {
-            return from == null ? NO_VALUE : from;
-        }
-
         public PointValue to()
         {
             return to;
-        }
-
-        public Value toValue()
-        {
-            return to == null ? NO_VALUE : to;
         }
 
         @Override

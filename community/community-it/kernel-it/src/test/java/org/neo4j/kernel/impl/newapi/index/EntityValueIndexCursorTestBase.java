@@ -67,6 +67,8 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
+import static org.neo4j.values.storable.PointValue.maxPointValueOf;
+import static org.neo4j.values.storable.PointValue.minPointValueOf;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -571,25 +573,29 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints,
+                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 5, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, CARTESIAN_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints,
+                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN_3D ), maxPointValueOf( CARTESIAN_3D ) ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, WGS_84 ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints,
+                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( WGS_84 ), maxPointValueOf( WGS_84 ) ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
 
             // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints, PropertyIndexQuery.boundingBox( prop, WGS_84_3D ) );
+            entityParams.entityIndexSeek( tx, index, cursor, constraints,
+                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( WGS_84_3D ), maxPointValueOf( WGS_84_3D ) ) );
 
             // then
             assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
@@ -779,7 +785,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                                              PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
+                        PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
@@ -788,7 +794,7 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
             {
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                                              PropertyIndexQuery.boundingBox( prop, CARTESIAN ) );
+                        PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );

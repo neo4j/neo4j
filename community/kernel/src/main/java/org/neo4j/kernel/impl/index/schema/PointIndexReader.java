@@ -108,8 +108,8 @@ class PointIndexReader extends NativeIndexReader<PointKey>
                 // into a query that is split into multiple sub-queries.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
                 client.initialize( descriptor, multiProgressor, accessMode, false, constraints, boundingBoxPredicate );
-                double[] from = boundingBoxPredicate.from() == null ? null : boundingBoxPredicate.from().coordinate();
-                double[] to = boundingBoxPredicate.to() == null ? null : boundingBoxPredicate.to().coordinate();
+                double[] from = boundingBoxPredicate.from().coordinate();
+                double[] to = boundingBoxPredicate.to().coordinate();
                 CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
                 SpaceFillingCurve curve = spaceFillingCurveSettings.forCrs( crs );
                 List<SpaceFillingCurve.LongRange> ranges = curve.getTilesIntersectingEnvelope( from, to, configuration );
