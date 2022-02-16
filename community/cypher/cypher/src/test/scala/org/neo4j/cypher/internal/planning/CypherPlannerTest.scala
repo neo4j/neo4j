@@ -178,13 +178,13 @@ class CypherPlannerTest extends CypherFunSuite {
       .statement
 
     val withAnons = statement
-      .findByClass[With]
+      .treeFindByClass[With].get
       .findAllByClass[Variable]
       .map(_.name)
       .map(NameDeduplicator.removeGeneratedNamesAndParams)
 
     val whereAnons = statement
-      .findByClass[Where]
+      .treeFindByClass[Where].get
       .findAllByClass[Variable]
       .map(_.name)
       .map(NameDeduplicator.removeGeneratedNamesAndParams)

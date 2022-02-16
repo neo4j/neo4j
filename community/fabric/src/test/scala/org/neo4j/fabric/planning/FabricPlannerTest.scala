@@ -385,12 +385,12 @@ class FabricPlannerTest
       val statement = inst.asLocal(exec).query.state.statement()
 
       val whereAnons = statement
-        .findByClass[Where]
+        .treeFindByClass[Where].get
         .findAllByClass[Variable]
         .map(_.name)
         .map(NameDeduplicator.removeGeneratedNamesAndParams)
 
-      val pc = statement.findByClass[PatternComprehension]
+      val pc = statement.treeFindByClass[PatternComprehension].get
       val pAnons = Seq(pc.variableToCollectName, pc.collectionName)
         .map(NameDeduplicator.removeGeneratedNamesAndParams)
 
