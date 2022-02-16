@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher
 
-import java.io.File
-import java.util.concurrent.TimeUnit
-
-import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -30,12 +26,19 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.FailedIndexException
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.kernel.api.security.LoginContext
+import org.neo4j.internal.schema.IndexPrototype
+import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.utils.TestDirectory
 
+import java.io.File
+import java.util.concurrent.TimeUnit
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
@@ -122,13 +125,26 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
     dbFactory.addExtension(providerFactory)
-    dbFactory.setConfig( GraphDatabaseSettings.default_schema_provider, FailingGenericNativeIndexProviderFactory.DESCRIPTOR.name() )
     managementService = dbFactory.build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
     eengine = createEngine(graph)
+
     execute("create (:Person {name:42})")
-    execute("CREATE BTREE INDEX FOR (n:Person) ON (n.name)")
+
+    // Since only the officially supported indexProviders are valid through cypher we create the failing index on kernel level to be able to specify a weird provider.
+    val transaction = graph.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+    try {
+      val kernelTransaction = transaction.kernelTransaction()
+      val tokenWrite = kernelTransaction.tokenWrite
+      val prototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(tokenWrite.labelGetOrCreateForName("Person"),
+        tokenWrite.propertyKeyGetOrCreateForName("name")), FailingGenericNativeIndexProviderFactory.DESCRIPTOR).withIndexType(IndexType.BTREE)
+      kernelTransaction.schemaWrite.indexCreate(prototype)
+      transaction.commit()
+    } finally {
+      transaction.close()
+    }
+
     val tx = graph.beginTx()
     try {
       tx.schema().awaitIndexesOnline(3, TimeUnit.SECONDS)
