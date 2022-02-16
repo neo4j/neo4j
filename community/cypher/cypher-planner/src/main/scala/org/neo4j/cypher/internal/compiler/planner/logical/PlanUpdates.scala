@@ -85,7 +85,7 @@ case object PlanUpdates extends UpdatesPlanner {
     updatePlan
   }
 
-  override def apply(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
+  override def plan(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
     val eagerAnalyzer = new EagerAnalyzer(context)
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
@@ -111,7 +111,7 @@ case object PlanUpdates extends UpdatesPlanner {
     def planAllUpdatesRecursively(query: SinglePlannerQuery, plan: LogicalPlan): LogicalPlan = {
       query.allPlannerQueries.foldLeft((plan, true)) {
         case ((accPlan, innerFirst), plannerQuery) =>
-          val newPlan = this.apply(plannerQuery, accPlan, innerFirst, context)
+          val newPlan = this.plan(plannerQuery, accPlan, innerFirst, context)
           (newPlan, false)
       }._1
     }

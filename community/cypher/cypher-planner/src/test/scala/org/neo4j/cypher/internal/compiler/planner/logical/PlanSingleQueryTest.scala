@@ -122,17 +122,17 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
     val recordingPlanHorizon = new RecordingHorizonPlanner(log)
 
     val planner = PlanSingleQuery(
-      PlanHead(planPart = recordingPlanMatch, planEventHorizon = recordingPlanHorizon),
-      PlanWithTail(planPart = recordingPlanMatch, planEventHorizon = recordingPlanHorizon))
+      PlanHead(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon),
+      PlanWithTail(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon))
 
-    new given().withLogicalPlanningContext { (_, context) => planner(query, context) }
+    new given().withLogicalPlanningContext { (_, context) => planner.plan(query, context) }
     log.toVector
   }
 
   private class RecordingMatchPlanner(log: ArrayBuffer[LogEntry]) extends MatchPlanner {
     override protected def doPlan(query: SinglePlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean): BestPlans = {
       log += ((context.input.activePlanner, context.input.limitSelectivity))
-      planMatch(query, context, rhsPart)
+      planMatch.plan(query, context, rhsPart)
     }
   }
 
