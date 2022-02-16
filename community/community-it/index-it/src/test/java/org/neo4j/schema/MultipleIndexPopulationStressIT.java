@@ -92,6 +92,7 @@ import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -400,7 +401,7 @@ class MultipleIndexPopulationStressIT
             IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
-                    ExecutionMonitor.INVISIBLE, EMPTY, config, NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    ExecutionMonitor.INVISIBLE, EMPTY, EMPTY_LOG_TAIL, config, NO_MONITOR, jobScheduler, Collector.EMPTY,
                     TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) );
             importer.doImport( input );

@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.annotations.documented.ReporterFactory;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -81,14 +82,16 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -141,9 +144,6 @@ import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
-import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
@@ -695,13 +695,7 @@ class RecoveryIT
     void startDatabaseWithRemovedSingleTransactionLogFile() throws Throwable
     {
         GraphDatabaseAPI database = createDatabase();
-        PageCache pageCache = getDatabasePageCache( database );
         generateSomeData( database );
-
-        assertEquals( -1,
-                getRecord( pageCache, database.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, databaseLayout.getDatabaseName(),
-                        NULL_CONTEXT ) );
-
         managementService.shutdown();
 
         removeTransactionLogs();
@@ -711,7 +705,7 @@ class RecoveryIT
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
 
-        verifyRecoveryTimestampPresent( database );
+        verifyRecoveryMissingLogs();
     }
 
     @Test
@@ -1068,67 +1062,34 @@ class RecoveryIT
     }
 
     @Test
-    void keepCheckpointVersionOnMissingLogFilesWhenValueIsReasonable() throws Exception
+    void resetCheckpointVersionOnMissingLogFiles() throws Exception
     {
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
         DatabaseLayout layout = db.databaseLayout();
+        DependencyResolver resolver = db.getDependencyResolver();
+        LogFiles logFiles = resolver.resolveDependency( LogFiles.class );
+        MetadataProvider metadataProvider = resolver.resolveDependency( MetadataProvider.class );
+        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        for ( int i = 0; i < 10; i++ )
+        {
+            checkpointFile.rotate();
+        }
+        assertEquals( 10, metadataProvider.getCheckpointLogVersion() );
         managementService.shutdown();
 
         removeTransactionLogs();
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, 18, layout.getDatabaseName(), NULL_CONTEXT );
-
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 18, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( 0, createDatabase().getDependencyResolver().resolveDependency( MetadataProvider.class ).getCheckpointLogVersion() );
     }
 
     @Test
-    void resetCheckpointVersionOnMissingLogFilesWhenValueIsDefinitelyWrong() throws Exception
-    {
-        GraphDatabaseAPI db = createDatabase();
-        generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
-        managementService.shutdown();
-
-        removeTransactionLogs();
-
-        assertTrue( isRecoveryRequired( layout ) );
-
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -42, layout.getDatabaseName(), NULL_CONTEXT );
-
-        recoverDatabase();
-        assertFalse( isRecoveryRequired( layout ) );
-
-        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
-    }
-
-    @Test
-    void recoverySetsCheckpointLogVersionFieldNoCheckpointFiles() throws Exception
-    {
-        GraphDatabaseAPI db = createDatabase();
-        generateSomeData( db );
-        DatabaseLayout layout = db.databaseLayout();
-        managementService.shutdown();
-
-        removeFileWithCheckpoint();
-
-        assertTrue( isRecoveryRequired( layout ) );
-
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL_CONTEXT );
-
-        recoverDatabase();
-        assertFalse( isRecoveryRequired( layout ) );
-
-        assertEquals( 0, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
-    }
-
-    @Test
-    void recoverySetsCheckpointLogVersionFieldSeveralCheckpointFiles() throws Exception
+    void recoverySetsCheckpointLogVersionSeveralCheckpointFiles() throws Exception
     {
         GraphDatabaseAPI db = createDatabase();
         generateSomeData( db );
@@ -1150,12 +1111,10 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        MetaDataStore.setRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, -5, layout.getDatabaseName(), NULL_CONTEXT );
-
         recoverDatabase();
         assertFalse( isRecoveryRequired( layout ) );
 
-        assertEquals( 2, MetaDataStore.getRecord( pageCache, layout.metadataStore(), CHECKPOINT_LOG_VERSION, layout.getDatabaseName(), NULL_CONTEXT ) );
+        assertEquals( 2, createDatabase().getDependencyResolver().resolveDependency( MetadataProvider.class ).getCheckpointLogVersion() );
     }
 
     @Test
@@ -1393,12 +1352,12 @@ class RecoveryIT
 
         assertTrue( isRecoveryRequired( layout ) );
 
-        LogFiles spiedLogFiles = Mockito.spy( buildLogFiles() );
+        LogTailMetadata spiedLogTail = Mockito.spy( buildLogFiles().getTailMetadata() );
         performRecovery( context( fileSystem, pageCache, EMPTY, Config.defaults(), databaseLayout, INSTANCE, IOController.DISABLED )
-                                 .log( logProvider )
-                                 .logFiles( spiedLogFiles )
-                                 .clock( fakeClock ) );
-        verify( spiedLogFiles, times( 2 ) ).getTailInformation();
+                .log( logProvider )
+                .logTail( spiedLogTail )
+                .clock( fakeClock ) );
+        verify( spiedLogTail, times( 1 ) ).getLastTransactionLogPosition();
 
         assertFalse( isRecoveryRequired( layout ) );
     }
@@ -1487,7 +1446,7 @@ class RecoveryIT
         Recovery.performRecovery( Recovery.context( fileSystem, pageCache, databaseTracers, config, databaseLayout, INSTANCE, IOController.DISABLED )
                                           .storageEngineFactory( storageEngineFactory )
                                           .log( logProvider )
-                                          .logFiles( logFiles )
+                                          .logTail( logFiles.getTailMetadata() )
                                           .recoveryPredicate( recoveryCriteria.toPredicate() )
                                           .monitors( monitors )
                                           .extensionFactories( Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) )
@@ -1505,12 +1464,14 @@ class RecoveryIT
 
     private boolean isRecoveryRequired( DatabaseLayout layout, Config config, LogFiles logFiles ) throws Exception
     {
-        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles ), INSTANCE, EMPTY );
+        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles.getTailMetadata() ), INSTANCE,
+                EMPTY );
     }
 
     private boolean isRecoveryRequired( DatabaseLayout layout, Config config, LogFiles logFiles, DatabaseTracers tracers ) throws Exception
     {
-        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles ), INSTANCE, tracers );
+        return Recovery.isRecoveryRequired( fileSystem, pageCache, layout, defaultStorageEngine(), config, Optional.of( logFiles.getTailMetadata() ), INSTANCE,
+                tracers );
     }
 
     private int countCheckPointsInTransactionLogs() throws IOException
@@ -1611,25 +1572,19 @@ class RecoveryIT
         return additionalConfiguration( serviceBuilder ).build();
     }
 
-    private static PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
-    {
-        return databaseAPI.getDependencyResolver().resolveDependency( PageCache.class );
-    }
-
     private static MetadataProvider getMetadataProvider( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( MetadataProvider.class );
     }
 
-    private void verifyRecoveryTimestampPresent( GraphDatabaseAPI databaseAPI ) throws IOException
+    private void verifyRecoveryMissingLogs() throws IOException
     {
         GraphDatabaseAPI restartedDatabase = createDatabase();
         try
         {
-            PageCache restartedCache = getDatabasePageCache( restartedDatabase );
-            final long record = getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP,
-                    databaseLayout.getDatabaseName(), NULL_CONTEXT );
-            assertThat( record ).isGreaterThan( 0L );
+            LogFiles logFiles = restartedDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
+            CheckpointInfo checkpointInfo = logFiles.getCheckpointFile().getReachableDetachedCheckpoints().get( 0 );
+            assertThat( checkpointInfo.getReason() ).contains( "missing logs" );
         }
         finally
         {

@@ -78,7 +78,7 @@ class DbmsRuntimeSystemGraphComponentTest
 
         systemGraphComponents.initializeSystemGraph( fakeSystemDb );
 
-        assertVersion( DbmsRuntimeVersion.V4_2, fakeSystemDb );
+        assertVersion( DbmsRuntimeVersion.V5_0, fakeSystemDb );
 
         assertStatus( SystemGraphComponent.Status.UNINITIALIZED );
     }

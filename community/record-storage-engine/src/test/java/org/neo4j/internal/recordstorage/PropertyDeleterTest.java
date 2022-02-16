@@ -74,6 +74,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -101,7 +102,7 @@ class PropertyDeleterTest
         idGeneratorFactory = new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" );
         neoStores = new StoreFactory( DatabaseLayout.ofFlat( directory.homePath() ), config, idGeneratorFactory, pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable() ).openAllNeoStores( true );
+                writable(), EMPTY_LOG_TAIL ).openAllNeoStores( true );
         propertyStore = neoStores.getPropertyStore();
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
         deleter = new PropertyDeleter( traverser, this.neoStores, new TokenNameLookup()

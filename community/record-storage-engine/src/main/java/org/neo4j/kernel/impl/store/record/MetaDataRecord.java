@@ -25,11 +25,6 @@ public class MetaDataRecord extends AbstractBaseRecord
 {
     private long value;
 
-    public MetaDataRecord( int id )
-    {
-        super( id );
-    }
-
     public MetaDataRecord()
     {
         super( -1 );

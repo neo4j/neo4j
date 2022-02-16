@@ -26,6 +26,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.storageengine.api.StoreVersion;
 
 public interface StoreMigrationParticipant
 {
@@ -35,8 +37,8 @@ public interface StoreMigrationParticipant
     StoreMigrationParticipant NOT_PARTICIPATING = new AbstractStoreMigrationParticipant( "Nothing" )
     {
         @Override
-        public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-            String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
+        public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, StoreVersion fromVersion,
+                StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
         {
             // nop
         }
@@ -59,25 +61,26 @@ public interface StoreMigrationParticipant
      *
      * Data to migrate sits in {@code sourceDirectory} and must not be modified.
      * Migrated data should go into {@code targetStoreDir}, where source and target dirs are
-     * highest level database store dirs.
+     * the highest level database store dirs.
      *
      * @param directoryLayout data to migrate.
      * @param migrationLayout place to migrate to.
      * @param progress migration progress monitor
-     * @param versionToMigrateFrom the version to migrate from
-     * @param versionToMigrateTo the version to migrate to
+     * @param fromVersion the version to migrate from
+     * @param toVersion the version to migrate to
      * @param indexImporterFactory the factory to create an index updater to keep the indexes updated.
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
     void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress,
-            String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException;
+            StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
+            throws IOException, KernelException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
-     * @param migrationLayout directory where the
-     * {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, String, String, IndexImporterFactory) migration} put its files.
+     * @param migrationLayout directory where the* {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, StoreVersion,
+     * StoreVersion, IndexImporterFactory, LogTailMetadata) migration} put its files.
      * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from
      * @param versionToMigrateTo the version we want to migrate to

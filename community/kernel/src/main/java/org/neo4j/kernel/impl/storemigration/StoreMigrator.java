@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.ProgressReporter;
@@ -40,12 +41,14 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -70,17 +73,17 @@ public class StoreMigrator
     private final LogService logService;
     private final JobScheduler jobScheduler;
     private final PageCacheTracer pageCacheTracer;
-    private final DependencyResolver dependencyResolver;
     private final MemoryTracker memoryTracker;
-    private final DatabaseHealth databaseHealth;
     private final IndexProviderMap indexProviderMap;
     private final StorageEngineFactory storageEngineFactoryToMigrateFrom;
     private final InternalLog userLog;
+    private final Supplier<LogTailMetadata> logTailSupplier;
 
     public StoreMigrator(
-            FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
+            FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache,
             PageCacheTracer pageCacheTracer, JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactoryToMigrateFrom,
-            IndexProviderMap indexProviderMap, CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
+            IndexProviderMap indexProviderMap, CursorContextFactory contextFactory, MemoryTracker memoryTracker,
+            Supplier<LogTailMetadata> logTailSupplier )
     {
         this.fs = fs;
         this.config = config;
@@ -91,16 +94,15 @@ public class StoreMigrator
         this.contextFactory = contextFactory;
         this.jobScheduler = jobScheduler;
         this.pageCacheTracer = pageCacheTracer;
-        this.dependencyResolver = dependencyResolver;
         this.memoryTracker = memoryTracker;
-        this.databaseHealth = databaseHealth;
         this.indexProviderMap = indexProviderMap;
 
         this.userLog = logService.getUserLog( getClass() );
+        this.logTailSupplier = logTailSupplier;
         progressMonitor = new VisibleMigrationProgressMonitor( userLog );
     }
 
-    public void migrateIfNeeded( StorageEngineFactory storageEngineFactoryToMigrateTo, String formatFamily ) throws UnableToMigrateException
+    public void migrateIfNeeded( StorageEngineFactory storageEngineFactoryToMigrateTo, String formatFamily ) throws UnableToMigrateException, IOException
     {
         // Let's do the check to make sure the logic in this class does not blow up.
         // However, since this class was provided a storage engine factory representing the current store,
@@ -140,15 +142,15 @@ public class StoreMigrator
     }
 
     private void doMigrate( DatabaseLayout migrationLayout, Path migrationStateFile, String versionToMigrateFrom,
-            StorageEngineFactory storageEngineFactoryToMigrateTo, String versionToMigrateTo )
+            StorageEngineFactory storageEngineFactoryToMigrateTo, String versionToMigrateTo ) throws IOException
     {
         var participants = getStoreMigrationParticipants( storageEngineFactoryToMigrateTo );
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
 
         var logsUpgrader = new LogsMigrator( fs, storageEngineFactoryToMigrateFrom, storageEngineFactoryToMigrateTo, databaseLayout, pageCache, config,
-                dependencyResolver, memoryTracker, databaseHealth, contextFactory );
-        logsUpgrader.assertCleanlyShutDown( databaseLayout );
+                contextFactory, logTailSupplier );
+        logsUpgrader.assertCleanlyShutDown();
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fs, migrationStateFile );
         // We don't need to migrate if we're at the phase where we have migrated successfully
@@ -156,9 +158,11 @@ public class StoreMigrator
         // TODO: we need to make sure that the the migration that happens to be in progress is to 'versionToMigrateTo'
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
+            StoreVersion fromVersion = storageEngineFactoryToMigrateFrom.versionInformation( versionToMigrateFrom );
+            StoreVersion toVersion = storageEngineFactoryToMigrateTo.versionInformation( versionToMigrateTo );
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fs, migrationStateFile, versionToMigrateFrom );
-            migrateToIsolatedDirectory( participants, databaseLayout, migrationLayout, versionToMigrateFrom, versionToMigrateTo );
+            migrateToIsolatedDirectory( participants, databaseLayout, migrationLayout, fromVersion, toVersion );
             MigrationStatus.moving.setMigrationStatus( fs, migrationStateFile, versionToMigrateFrom );
         }
 
@@ -168,7 +172,7 @@ public class StoreMigrator
         }
 
         progressMonitor.startTransactionLogsMigration();
-        logsUpgrader.migrate( databaseLayout );
+        logsUpgrader.upgrade( databaseLayout );
         progressMonitor.completeTransactionLogsMigration();
 
         cleanup( participants, migrationLayout );
@@ -238,7 +242,7 @@ public class StoreMigrator
     }
 
     private void migrateToIsolatedDirectory( List<StoreMigrationParticipant> participants, DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
-            String versionToMigrateFrom, String versionToMigrateTo )
+            StoreVersion fromVersion, StoreVersion toVersion )
     {
         try
         {
@@ -246,7 +250,8 @@ public class StoreMigrator
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
                 IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
-                participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
+                participant.migrate( directoryLayout, migrationLayout, progressReporter, fromVersion, toVersion, indexImporterFactory,
+                        logTailSupplier.get() );
                 progressReporter.completed();
             }
         }

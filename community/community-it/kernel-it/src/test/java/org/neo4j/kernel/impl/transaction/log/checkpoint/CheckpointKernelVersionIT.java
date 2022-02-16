@@ -26,14 +26,13 @@ import java.util.List;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @DbmsExtension
 public class CheckpointKernelVersionIT
@@ -49,7 +48,7 @@ public class CheckpointKernelVersionIT
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException
     {
         // we can't test any earlier version since those version do not support new format of checkpoint commands so its impossible to read them back
-        ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V5_0, NULL_CONTEXT );
+        ((MetaDataStore) metadataProvider).setKernelVersion( KernelVersion.V5_0 );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Forced 5.0" ) );
 
         List<CheckpointInfo> checkpointInfos = logFiles.getCheckpointFile().reachableCheckpoints();

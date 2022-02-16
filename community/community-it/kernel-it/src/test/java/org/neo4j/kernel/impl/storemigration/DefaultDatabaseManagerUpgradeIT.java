@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package migration;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,9 +43,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -65,6 +62,7 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @Neo4jLayoutExtension
@@ -86,7 +84,6 @@ class DefaultDatabaseManagerUpgradeIT
     @BeforeEach
     void setUp() throws IOException
     {
-        // Create store with standard format. This will be upgraded to high_limit in tests.
         userLogProvider = mock( InternalLogProvider.class, RETURNS_MOCKS );
         Path prepareDirectory = testDirectory.directory( "prepare" );
         MigrationTestUtils.prepareSampleLegacyDatabase( StandardV4_3.STORE_VERSION, fs, databaseLayout, prepareDirectory );
@@ -110,6 +107,8 @@ class DefaultDatabaseManagerUpgradeIT
         assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.setDynamic( allow_upgrade, true, "test" );
         databaseManager.upgradeDatabase( db.databaseId() );
 
         // Then
@@ -163,14 +162,14 @@ class DefaultDatabaseManagerUpgradeIT
 
     /**
      * Create a mocked user log provider that will throw provided exception
-     * when trying to log on info level on DatabaseMigrator class.
+     * when trying to log on info level on LogsMigrator class.
      * This is designed to hook in on MigrationProgressMonitor.started in
      * StoreUpgrader.migrate.
      */
     private void useThrowingMigrationLogProvider( Exception e )
     {
         InternalLog mockedLog = mock( InternalLog.class, RETURNS_MOCKS );
-        when( userLogProvider.getLog( LegacyDatabaseMigrator.class ) ).thenReturn( mockedLog );
+        when( userLogProvider.getLog( LogsMigrator.class ) ).thenReturn( mockedLog );
         Mockito.doThrow( e ).when( mockedLog ).info( anyString() );
     }
 }

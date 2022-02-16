@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
@@ -101,6 +102,7 @@ class Lucene8IndexCompatibilityTest
     @Test
     void testExistingIndexesWork() throws KernelException
     {
+        awaitIndexes();
         assertTextIndexContainsExactlyValues(
                 "Text 0 written by 4.4",
                 "Text 1 written by 4.4",
@@ -147,6 +149,14 @@ class Lucene8IndexCompatibilityTest
                 "Text 4 written by 4.4",
                 "New text 1",
                 "New text 2" );
+    }
+
+    private void awaitIndexes()
+    {
+        try ( var transaction = db.beginTx() )
+        {
+            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+        }
     }
 
     private void assertTextIndexContainsExactlyValues( String... values ) throws KernelException

@@ -19,22 +19,20 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
  * {@code closed transaction id}. The committed transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
- * completion of those are marked using {@link #transactionClosed(long, long, long, int, long, CursorContext)}.
+ * completion of those are marked using {@link #transactionClosed(long, long, long, int, long)}.
  * <p>
  * A transaction ID passes through a {@link TransactionIdStore} like this:
  * <ol>
  * <li>{@link #nextCommittingTransactionId()} is called and an id is returned to a committer.
  * At this point that id isn't visible from any getter.</li>
- * <li>{@link #transactionCommitted(long, int, long, CursorContext)} is called with this id after the fact that the transaction
+ * <li>{@link #transactionCommitted(long, int, long)} is called with this id after the fact that the transaction
  * has been committed, i.e. written forcefully to a log. After this call the id may be visible from
  * {@link #getLastCommittedTransactionId()} if all ids before it have also been committed.</li>
- * <li>{@link #transactionClosed(long, long, long, int, long, CursorContext)} is called with this id again, this time after all changes the
+ * <li>{@link #transactionClosed(long, long, long, int, long)} is called with this id again, this time after all changes the
  * transaction imposes have been applied to the store.
  * </ol>
  */
@@ -67,7 +65,7 @@ public interface TransactionIdStore
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented
      * with each call. Ids returned from this method will not be visible from {@link #getLastCommittedTransactionId()}
-     * until handed to {@link #transactionCommitted(long, int, long, CursorContext)}.
+     * until handed to {@link #transactionCommitted(long, int, long)}.
      */
     long nextCommittingTransactionId();
 
@@ -83,12 +81,11 @@ public interface TransactionIdStore
      * @param transactionId the applied transaction id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
-     * @param cursorContext underlying page cursor context
      */
-    void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext );
+    void transactionCommitted( long transactionId, int checksum, long commitTimestamp );
 
     /**
-     * @return highest seen {@link #transactionCommitted(long, int, long, CursorContext)}  committed transaction id}.
+     * @return highest seen {@link #transactionCommitted(long, int, long)}  committed transaction id}.
      */
     long getLastCommittedTransactionId();
 
@@ -101,15 +98,7 @@ public interface TransactionIdStore
     TransactionId getLastCommittedTransaction();
 
     /**
-     * Returns transaction information about transaction where the last upgrade was performed, i.e.
-     * transaction id as well as checksum.
-     *
-     * @return {@link TransactionId} describing the most recent upgrade transaction.
-     */
-    TransactionId getUpgradeTransaction();
-
-    /**
-     * @return highest seen gap-free {@link #transactionClosed(long, long, long, int, long, CursorContext)}  closed transaction id}.
+     * @return highest seen gap-free {@link #transactionClosed(long, long, long, int, long)}  closed transaction id}.
      */
     long getLastClosedTransactionId();
 
@@ -123,16 +112,13 @@ public interface TransactionIdStore
 
     /**
      * Used by recovery, where last committed/closed transaction ids are set.
-     * Perhaps this shouldn't be exposed like this?
      * @param transactionId transaction id that will be the last closed/committed id.
      * @param checksum checksum of the transaction.
      * @param commitTimestamp the timestamp of the transaction commit.
      * @param byteOffset offset in the log file where the committed entry has been written.
      * @param logVersion version of log the committed entry has been written into.
-     * @param cursorContext underlying page cursor context.
      */
-    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
-            CursorContext cursorContext );
+    void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion );
 
     /**
      * Signals that a transaction with the given transaction id has been fully applied. Calls to this method
@@ -142,9 +128,8 @@ public interface TransactionIdStore
      * @param byteOffset offset in the log file where start writing the next log entry.
      * @param checksum applied transaction checksum
      * @param commitTimestamp applied transaction commit timestamp
-     * @param cursorContext underlying page cursor context
      */
-    void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext );
+    void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp );
 
     /**
      * Unconditionally set last closed transaction info. Should be used for cases where last closed transaction info should be
@@ -153,16 +138,8 @@ public interface TransactionIdStore
      * @param transactionId new last closed transaction id.
      * @param logVersion new last closed transaction log version
      * @param byteOffset new last closed transaction offset
-     * @param missingLogs flag to record missing logs date
      * @param checksum new last closed transaction checksum
      * @param commitTimestamp new last closed transaction commit timestamp
-     * @param cursorContext underlying page cursor context
      */
-    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
-            CursorContext cursorContext );
-
-    /**
-     * Forces the transaction id counters to persistent storage.
-     */
-    void flush( CursorContext cursorContext );
+    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp );
 }

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -103,7 +102,7 @@ class InternalTransactionCommitProcessTest
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
-        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong() );
     }
 
     @Test
@@ -126,7 +125,7 @@ class InternalTransactionCommitProcessTest
 
         commitProcess.commit( new TransactionToApply( noCommandTx, NULL_CONTEXT, StoreCursors.NULL ), commitEvent, INTERNAL );
 
-        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP, NULL_CONTEXT );
+        verify( transactionIdStore ).transactionCommitted( txId, FakeCommitment.CHECKSUM, FakeCommitment.TIMESTAMP );
     }
 
     private static TransactionToApply mockedTransaction()

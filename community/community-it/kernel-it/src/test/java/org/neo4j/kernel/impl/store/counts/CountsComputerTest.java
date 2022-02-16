@@ -81,6 +81,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
@@ -520,7 +521,7 @@ class CountsComputerTest
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, CONTEXT_FACTORY, writable() );
+                new StoreFactory( databaseLayout, CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER, CONTEXT_FACTORY, writable(), EMPTY_LOG_TAIL );
 
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {

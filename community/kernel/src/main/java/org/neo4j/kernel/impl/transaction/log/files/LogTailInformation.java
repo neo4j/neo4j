@@ -19,10 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
-public class LogTailInformation
+public class LogTailInformation implements LogTailMetadata
 {
     public final CheckpointInfo lastCheckPoint;
     public final long firstTxIdAfterLastCheckPoint;
@@ -31,15 +36,17 @@ public class LogTailInformation
     public final byte latestLogEntryVersion;
     private final boolean recordAfterCheckpoint;
     private final StoreId storeId;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
     public LogTailInformation( boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound, long currentLogVersion,
-            byte latestLogEntryVersion )
+            byte latestLogEntryVersion, DbmsRuntimeRepository dbmsRuntimeRepository )
     {
-        this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, filesNotFound, currentLogVersion, latestLogEntryVersion, StoreId.UNKNOWN );
+        this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, filesNotFound, currentLogVersion, latestLogEntryVersion, StoreId.UNKNOWN,
+                dbmsRuntimeRepository );
     }
 
     public LogTailInformation( CheckpointInfo lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound,
-            long currentLogVersion, byte latestLogEntryVersion, StoreId storeId )
+            long currentLogVersion, byte latestLogEntryVersion, StoreId storeId, DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -48,6 +55,7 @@ public class LogTailInformation
         this.latestLogEntryVersion = latestLogEntryVersion;
         this.recordAfterCheckpoint = recordAfterCheckpoint;
         this.storeId = storeId;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
     public boolean commitsAfterLastCheckpoint()
@@ -55,26 +63,31 @@ public class LogTailInformation
         return recordAfterCheckpoint;
     }
 
+    @Override
     public boolean logsMissing()
     {
         return lastCheckPoint == null && filesNotFound;
     }
 
+    @Override
     public boolean hasUnreadableBytesInCheckpointLogs()
     {
         return lastCheckPoint != null && !lastCheckPoint.getChannelPositionAfterCheckpoint().equals( lastCheckPoint.getCheckpointFilePostReadPosition() );
     }
 
+    @Override
     public boolean isRecoveryRequired()
     {
         return recordAfterCheckpoint || logsMissing() || hasUnreadableBytesInCheckpointLogs();
     }
 
+    @Override
     public StoreId getStoreId()
     {
         return storeId;
     }
 
+    @Override
     public CheckpointInfo getLastCheckPoint()
     {
         return lastCheckPoint;
@@ -86,5 +99,52 @@ public class LogTailInformation
         return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint=" + firstTxIdAfterLastCheckPoint +
                 ", filesNotFound=" + filesNotFound + ", currentLogVersion=" + currentLogVersion + ", latestLogEntryVersion=" +
                 latestLogEntryVersion + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';
+    }
+
+    @Override
+    public long getCheckpointLogVersion()
+    {
+        if ( lastCheckPoint == null )
+        {
+            return EMPTY_LOG_TAIL.getCheckpointLogVersion();
+        }
+        return lastCheckPoint.getChannelPositionAfterCheckpoint().getLogVersion();
+    }
+
+    @Override
+    public KernelVersion getKernelVersion()
+    {
+        if ( lastCheckPoint == null )
+        {
+            // there was no checkpoint since it's the first start, or we restart after logs removal, and we should use version that is defined in the system
+            return dbmsRuntimeRepository.getVersion().kernelVersion();
+        }
+        return lastCheckPoint.getVersion();
+    }
+
+    @Override
+    public long getLogVersion()
+    {
+        return filesNotFound ? EMPTY_LOG_TAIL.getLogVersion() : currentLogVersion;
+    }
+
+    @Override
+    public TransactionId getLastCommittedTransaction()
+    {
+        if ( lastCheckPoint == null )
+        {
+            return EMPTY_LOG_TAIL.getLastCommittedTransaction();
+        }
+        return lastCheckPoint.getTransactionId();
+    }
+
+    @Override
+    public LogPosition getLastTransactionLogPosition()
+    {
+        if ( lastCheckPoint == null )
+        {
+            return EMPTY_LOG_TAIL.getLastTransactionLogPosition();
+        }
+        return lastCheckPoint.getTransactionLogPosition();
     }
 }

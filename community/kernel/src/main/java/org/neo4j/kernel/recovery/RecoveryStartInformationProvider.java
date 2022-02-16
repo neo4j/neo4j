@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.function.ThrowingSupplier;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
@@ -99,7 +99,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
     @Override
     public RecoveryStartInformation get()
     {
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = (LogTailInformation) logFiles.getTailMetadata();
         CheckpointInfo lastCheckPoint = logTailInformation.lastCheckPoint;
         long txIdAfterLastCheckPoint = logTailInformation.firstTxIdAfterLastCheckPoint;
 

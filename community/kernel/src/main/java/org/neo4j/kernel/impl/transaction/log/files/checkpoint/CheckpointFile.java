@@ -24,9 +24,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.RotatableFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLog;
@@ -69,7 +70,7 @@ public interface CheckpointFile extends Lifecycle, RotatableFile
     /**
      * @return Information about log tail: records after checkpoint, missing logs etc
      */
-    LogTailInformation getTailInformation();
+    LogTailMetadata getTailMetadata();
 
     /**
      * @return checkpoint file that is currently used to store checkpoints into

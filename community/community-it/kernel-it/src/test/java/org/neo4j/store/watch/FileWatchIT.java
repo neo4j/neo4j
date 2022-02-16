@@ -94,7 +94,7 @@ class FileWatchIT
     @Test
     void notifyAboutStoreFileDeletion() throws IOException, InterruptedException
     {
-        String fileName = databaseLayout.metadataStore().getFileName().toString();
+        String fileName = databaseLayout.nodeStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
         DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( fileName );
@@ -180,8 +180,8 @@ class FileWatchIT
     {
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
-        String metadataStore = databaseLayout.metadataStore().getFileName().toString();
-        ModificationEventListener modificationEventListener = new ModificationEventListener( metadataStore );
+        String store = databaseLayout.nodeStore().getFileName().toString();
+        ModificationEventListener modificationEventListener = new ModificationEventListener( store );
         fileWatcher.addFileWatchEventListener( modificationEventListener );
 
         do
@@ -203,7 +203,7 @@ class FileWatchIT
     @Test
     void notifyWhenWholeStoreDirectoryRemoved() throws IOException, InterruptedException
     {
-        String fileName = databaseLayout.metadataStore().getFileName().toString();
+        String fileName = databaseLayout.nodeStore().getFileName().toString();
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkpointer = getCheckpointer( database );
 

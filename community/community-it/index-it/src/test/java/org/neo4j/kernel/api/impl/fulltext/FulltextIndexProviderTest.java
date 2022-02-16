@@ -120,6 +120,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asP
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @DbmsExtension
@@ -535,7 +536,7 @@ class FulltextIndexProviderTest
             {
 
                 StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idGenFactory, pageCache, fs, NullLogProvider.getInstance(),
-                        contextFactory, writable() );
+                        contextFactory, writable(), EMPTY_LOG_TAIL );
                 var cursorContext = CursorContext.NULL_CONTEXT;
                 try ( NeoStores neoStores = factory.openAllNeoStores( false );
                       var storeCursors = new CachedStoreCursors( neoStores, cursorContext )  )

@@ -95,7 +95,7 @@ class LogTruncationTest
                 new Command[] { new Command.LabelTokenCommand( serialization, new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
         permutations.put( Command.MetaDataCommand.class,
-                new Command[] { new Command.MetaDataCommand( serialization, new MetaDataRecord( 2 ), new MetaDataRecord( 2 ).initialize( true, 123 ) ) } );
+                new Command[] { new Command.MetaDataCommand( serialization, new MetaDataRecord(), new MetaDataRecord().initialize( true, 123 ) ) } );
 
         // Counts commands
         permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( serialization, 42, 11 )} );

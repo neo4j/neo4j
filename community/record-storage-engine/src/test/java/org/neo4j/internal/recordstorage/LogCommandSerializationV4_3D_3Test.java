@@ -29,9 +29,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -46,8 +46,8 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        MetaDataRecord before = new MetaDataRecord( 12 );
-        MetaDataRecord after = new MetaDataRecord( 12 );
+        MetaDataRecord before = new MetaDataRecord();
+        MetaDataRecord after = new MetaDataRecord();
         after.initialize( true, 999 );
         new Command.MetaDataCommand( writer(), before, after ).serialize( channel );
 

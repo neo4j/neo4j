@@ -23,6 +23,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
 import org.neo4j.cli.AbstractCommand;
@@ -35,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.function.Suppliers;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -44,6 +47,7 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -52,17 +56,20 @@ import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -145,8 +152,11 @@ public class MigrateStoreCommand extends AbstractCommand
                 // Add the kernel store migrator
                 life.start();
 
-                StoreMigrator storeMigrator = new StoreMigrator( fs, config, logService, deps, pageCache, pageCacheTracer, jobScheduler, databaseLayout,
-                        currentStorageEngineFactory, indexProviderMap, contextFactory, memoryTracker, new DatabaseHealth( NO_OP, log ) );
+                StoreMigrator storeMigrator =
+                        new StoreMigrator( fs, config, logService, pageCache, pageCacheTracer, jobScheduler, databaseLayout, currentStorageEngineFactory,
+                                indexProviderMap, contextFactory, memoryTracker, Suppliers.lazySingleton(
+                                () -> loadLogTail( fs, pageCache, config, currentStorageEngineFactory, DatabaseTracers.EMPTY, databaseLayout,
+                                        memoryTracker ) ) );
 
                 StorageEngineFactory storageEngineFactoryToMigrateTo = getStorageEngineFactoryToMigrateTo( fs, databaseLayout, pageCache );
                 storeMigrator.migrateIfNeeded( storageEngineFactoryToMigrateTo, formatFamily );
@@ -164,6 +174,19 @@ public class MigrateStoreCommand extends AbstractCommand
         {
             life.shutdown();
             jobScheduler.close();
+        }
+    }
+
+    private LogTailMetadata loadLogTail( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory engineFactory,
+            DatabaseTracers databaseTracers, DatabaseLayout layout, MemoryTracker memoryTracker )
+    {
+        try
+        {
+            return new LogTailExtractor( fs, pageCache, config, engineFactory, databaseTracers ).getTailMetadata( layout, memoryTracker );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
+package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
-import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-
-import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 
 public class CheckpointInfo
 {
@@ -38,40 +32,11 @@ public class CheckpointInfo
     private final KernelVersion version;
     private final StoreId storeId;
     private final TransactionId transactionId;
-
-    public static CheckpointInfo ofLogEntry( LogEntry entry, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
-            LogPosition checkpointFilePostReadPosition )
-    {
-        if ( entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42 )
-        {
-            return new CheckpointInfo( checkpoint42, checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition );
-        }
-        else if ( entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50 )
-        {
-            return new CheckpointInfo( checkpoint50, checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Expected to observe only checkpoint entries, but: `" + entry + "` was found." );
-        }
-    }
-
-    private CheckpointInfo( LogEntryDetachedCheckpointV4_2 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
-            LogPosition checkpointFilePostReadPosition )
-    {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
-                checkpoint.getVersion(), UNKNOWN_TRANSACTION_ID );
-    }
-
-    private CheckpointInfo( LogEntryDetachedCheckpointV5_0 checkpoint, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
-            LogPosition checkpointFilePostReadPosition )
-    {
-        this( checkpoint.getLogPosition(), checkpoint.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint, checkpointFilePostReadPosition,
-                checkpoint.getVersion(), checkpoint.getTransactionId() );
-    }
+    private final String reason;
 
     public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
-            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version, TransactionId transactionId )
+            LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version, TransactionId transactionId,
+            String reason )
     {
         this.transactionLogPosition = transactionLogPosition;
         this.storeId = storeId;
@@ -80,6 +45,7 @@ public class CheckpointInfo
         this.checkpointFilePostReadPosition = checkpointFilePostReadPosition;
         this.version = version;
         this.transactionId = transactionId;
+        this.reason = reason;
     }
 
     public LogPosition getTransactionLogPosition()
@@ -117,11 +83,16 @@ public class CheckpointInfo
         return transactionId;
     }
 
+    public String getReason()
+    {
+        return reason;
+    }
+
     @Override
     public String toString()
     {
         return "CheckpointInfo{" + "transactionLogPosition=" + transactionLogPosition + ", checkpointEntryPosition=" + checkpointEntryPosition +
                 ", channelPositionAfterCheckpoint=" + channelPositionAfterCheckpoint + ", checkpointFilePostReadPosition=" + checkpointFilePostReadPosition +
-                ", version=" + version + ", storeId=" + storeId + ", transactionId=" + transactionId + '}';
+                ", version=" + version + ", storeId=" + storeId + ", transactionId=" + transactionId + ", reason='" + reason + '\'' + '}';
     }
 }

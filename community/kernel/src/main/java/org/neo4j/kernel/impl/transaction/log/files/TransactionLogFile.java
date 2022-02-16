@@ -47,7 +47,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
@@ -99,6 +98,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     private final TransactionLogFileInformation logFileInformation;
     private final TransactionLogChannelAllocator channelAllocator;
     private final DatabaseHealth databaseHealth;
+    private final LogFiles logFiles;
     private final String baseName;
     private final LogRotation logRotation;
 
@@ -112,6 +112,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
 
     TransactionLogFile( LogFiles logFiles, TransactionLogFilesContext context, String baseName )
     {
+        this.logFiles = logFiles;
         this.baseName = baseName;
         this.context = context;
         this.rotateAtSize = context.getRotationThreshold();
@@ -131,14 +132,15 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     @Override
     public void init() throws IOException
     {
-        logVersionRepository = context.getLogVersionRepository();
+        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository( logFiles );
     }
 
     @Override
     public void start() throws IOException
     {
         long currentLogVersion = logVersionRepository.getCurrentLogVersion();
-        channel = createLogChannelForVersion( currentLogVersion, context::getLastCommittedTransactionId );
+        channel = createLogChannelForVersion( currentLogVersion,
+                () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles ) );
         context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), currentLogVersion );
 
         //try to set position
@@ -211,7 +213,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
                     "current log file version: " + currentVersion + "." );
         }
 
-        LogPosition lastClosed = context.getLastClosedTransactionPosition();
+        LogPosition lastClosed = context.getLastClosedTransactionPositionProvider().lastClosedPosition( logFiles );
         if ( isCoveredByCommittedTransaction( targetPosition, targetVersion, lastClosed ) )
         {
             throw new IllegalArgumentException( "Log position requested to be used for restore belongs to the log file that " +
@@ -438,7 +440,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
     {
         // Start from the where we're currently at and go backwards in time (versions)
         long logVersion = getHighestLogVersion();
-        long highTransactionId = context.getLastCommittedTransactionId();
+        long highTransactionId = context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles );
         while ( versionExists( logVersion ) )
         {
             LogHeader logHeader = extractHeader( logVersion, false );
@@ -595,12 +597,9 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
 
     private synchronized Path rotate( LongSupplier committedTransactIdSupplier ) throws IOException
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( TRANSACTION_LOG_FILE_ROTATION_TAG ) ) )
-        {
-            channel = rotate( channel, cursorContext, committedTransactIdSupplier );
-            writer.setChannel( channel );
-            return channel.getPath();
-        }
+        channel = rotate( channel, committedTransactIdSupplier );
+        writer.setChannel( channel );
+        return channel.getPath();
     }
 
     /**
@@ -611,7 +610,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      *
      * Steps during rotation are:
      * <ol>
-     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion(CursorContext)} (also flushes the store)</li>
+     * <li>1: Increment log version, {@link LogVersionRepository#incrementAndGetVersion()} (also flushes the store)</li>
      * <li>2: Flush current log</li>
      * <li>3: Create new log file</li>
      * <li>4: Write header</li>
@@ -642,18 +641,17 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
      * </ol>
      *
      * @param currentLog current {@link LogVersionedStoreChannel channel} to flush and close.
-     * @param cursorContext underlying page cursor context.
      * @return the channel of the newly opened/created log file.
      * @throws IOException if an error regarding closing or opening log files occur.
      */
-    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, CursorContext cursorContext, LongSupplier lastTransactionIdSupplier )
+    private PhysicalLogVersionedStoreChannel rotate( LogVersionedStoreChannel currentLog, LongSupplier lastTransactionIdSupplier )
             throws IOException
     {
         /*
          * The store is now flushed. If we fail now the recovery code will open the
          * current log file and replay everything. That's unnecessary but totally ok.
          */
-        long newLogVersion = logVersionRepository.incrementAndGetVersion( cursorContext );
+        long newLogVersion = logVersionRepository.incrementAndGetVersion();
 
         /*
          * Rotation can happen at any point, although not concurrently with an append,
@@ -729,7 +727,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
 
     private void jumpToTheLastClosedTxPosition( long currentLogVersion ) throws IOException
     {
-        LogPosition logPosition = context.getLastClosedTransactionPosition();
+        LogPosition logPosition = context.getLastClosedTransactionPositionProvider().lastClosedPosition( logFiles );
         long lastTxOffset = logPosition.getByteOffset();
         long lastTxLogVersion = logPosition.getLogVersion();
         long headerSize = extractHeader( currentLogVersion ).getStartPosition().getByteOffset();

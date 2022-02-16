@@ -20,7 +20,6 @@
 package org.neo4j.dbms.database;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -59,7 +58,7 @@ public class StandaloneDbmsRuntimeRepository extends DbmsRuntimeRepository imple
 
         List<Long> nodesWithChangedProperties = Iterables.stream( transactionData.assignedNodeProperties() )
                                                          .map( nodePropertyEntry -> nodePropertyEntry.entity().getId() )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
         var systemDatabase = getSystemDb();
         try ( var tx = systemDatabase.beginTx() )

@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -58,20 +59,21 @@ public class StoreFactory
     private final RecordFormats recordFormats;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final LogTailMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, InternalLogProvider logProvider, CursorContextFactory contextFactory,
-            DatabaseReadOnlyChecker readOnlyChecker )
+            DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfigForNewDbs( config, RecordDatabaseLayout.convert( directoryStructure ), fileSystemAbstraction, pageCache, logProvider,
-                        contextFactory ), logProvider, contextFactory, readOnlyChecker, immutable.empty() );
+                        contextFactory ), logProvider, contextFactory, readOnlyChecker, logTailMetadata, immutable.empty() );
     }
 
     public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, InternalLogProvider logProvider, CursorContextFactory contextFactory,
-            DatabaseReadOnlyChecker readOnlyChecker, ImmutableSet<OpenOption> openOptions )
+            DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata, ImmutableSet<OpenOption> openOptions )
     {
         this.databaseLayout = RecordDatabaseLayout.convert( databaseLayout );
         this.config = config;
@@ -80,6 +82,7 @@ public class StoreFactory
         this.recordFormats = recordFormats;
         this.contextFactory = contextFactory;
         this.readOnlyChecker = readOnlyChecker;
+        this.logTailMetadata = logTailMetadata;
         this.openOptions = buildOpenOptions( config, recordFormats, openOptions );
         this.logProvider = logProvider;
         this.pageCache = pageCache;
@@ -139,7 +142,7 @@ public class StoreFactory
             }
         }
         return new NeoStores( fileSystemAbstraction, databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists,
-                contextFactory, readOnlyChecker, storeTypes, openOptions );
+                contextFactory, readOnlyChecker, logTailMetadata, storeTypes, openOptions );
     }
 
     private static ImmutableSet<OpenOption> buildOpenOptions( Config config, RecordFormats recordFormats, ImmutableSet<OpenOption> openOptions )

@@ -29,6 +29,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
@@ -36,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.api.StoreId;
@@ -123,9 +124,9 @@ class TransactionRangeDiagnosticsTest
         TransactionId transactionId = new TransactionId( 37, 38, 39 );
         Database database = databaseWithLogFilesContainingLowestTxId( logs(
                 transactionLogsWithTransaction( txLogLowVersion, txLogHighVersion, 42 ),
-                checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, CheckpointInfo.ofLogEntry(
+                checkpointLogsWithLastCheckpoint( checkpointLogLowVersion, checkpointLogHighVersion, CheckpointInfoFactory.ofLogEntry(
                         new LogEntryDetachedCheckpointV5_0( KernelVersion.LATEST, transactionId, checkpointLogPosition, 1234, storeId, "testing" ),
-                        checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition ) ) ) );
+                        checkpointLogPosition, afterCheckpointLogPosition, readerPostPosition, null, null ) ) ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog logger = logProvider.getLog( getClass() );
 

@@ -39,7 +39,7 @@ public class StandardV4_3 extends BaseRecordFormats
 {
     public static final String STORE_VERSION = StoreVersion.STANDARD_V4_3.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV4_3();
-    public static final String NAME = "standard";
+    public static final String NAME = FormatFamily.standard.name() + "V4_3";
 
     public StandardV4_3()
     {

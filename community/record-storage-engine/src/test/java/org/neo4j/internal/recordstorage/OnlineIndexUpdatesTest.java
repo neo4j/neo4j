@@ -87,6 +87,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -122,7 +123,7 @@ class OnlineIndexUpdatesTest
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache,
-                        fileSystem, nullLogProvider, contextFactory, writable() );
+                        fileSystem, nullLogProvider, contextFactory, writable(), EMPTY_LOG_TAIL );
 
         neoStores = storeFactory.openAllNeoStores( true );
         GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),

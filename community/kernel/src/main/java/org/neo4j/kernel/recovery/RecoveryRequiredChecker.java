@@ -26,16 +26,11 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RecoveryState;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
-
-import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
 /**
  * Utility that can determine if a given store will need recovery.
@@ -44,37 +39,25 @@ class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final Config config;
     private final StorageEngineFactory storageEngineFactory;
-    private final DatabaseTracers databaseTracers;
+    private final LogTailExtractor logTailExtractor;
 
     RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory,
             DatabaseTracers databaseTracers )
     {
         this.fs = fs;
         this.pageCache = pageCache;
-        this.config = config;
+        this.logTailExtractor = new LogTailExtractor( fs, pageCache, config, storageEngineFactory, databaseTracers );
         this.storageEngineFactory = storageEngineFactory;
-        this.databaseTracers = databaseTracers;
     }
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
-        LogFiles logFiles = buildLogFiles( databaseLayout, memoryTracker );
-        return isRecoveryRequiredAt( databaseLayout, logFiles );
+        var logTail = logTailExtractor.getTailMetadata( databaseLayout, memoryTracker );
+        return isRecoveryRequiredAt( databaseLayout, logTail );
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
-    {
-        return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
-                    .withConfig( config )
-                    .withMemoryTracker( memoryTracker )
-                    .withDatabaseTracers( databaseTracers )
-                    .withStorageEngineFactory( storageEngineFactory )
-                    .build();
-    }
-
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogFiles logFiles )
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailMetadata logTailMetadata )
     {
         if ( !storageEngineFactory.storageExists( fs, databaseLayout, pageCache ) )
         {
@@ -85,6 +68,6 @@ class RecoveryRequiredChecker
         {
             return true;
         }
-        return new RecoveryStartInformationProvider( logFiles, NO_MONITOR ).get().isRecoveryRequired();
+        return logTailMetadata.isRecoveryRequired();
     }
 }

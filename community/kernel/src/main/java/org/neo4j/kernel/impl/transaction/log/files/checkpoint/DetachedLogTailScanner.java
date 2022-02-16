@@ -28,10 +28,13 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -70,8 +73,9 @@ public class DetachedLogTailScanner
     private final CheckpointFile checkpointFile;
     private final boolean failOnCorruptedLogFiles;
     private final FileSystemAbstraction fileSystem;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
-    private LogTailInformation logTailInformation;
+    private LogTailMetadata logTail;
 
     public DetachedLogTailScanner( LogFiles logFiles, TransactionLogFilesContext context, CheckpointFile checkpointFile, LogTailScannerMonitor monitor )
     {
@@ -81,7 +85,8 @@ public class DetachedLogTailScanner
         this.checkpointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
         this.failOnCorruptedLogFiles = context.isFailOnCorruptedLogFiles();
-        this.logTailInformation = context.getExternalTailInfo();
+        this.dbmsRuntimeRepository = context.getDbmsRuntimeRepository();
+        this.logTail = context.getExternalTailInfo();
         this.monitor = monitor;
     }
 
@@ -135,14 +140,14 @@ public class DetachedLogTailScanner
     {
         var entries = getFirstTransactionIdAfterCheckpoint( logFile, checkpoint.getTransactionLogPosition() );
         return new LogTailInformation( checkpoint, entries.isPresent(), entries.getCommitId(), lowestLogVersion == UNKNOWN, highestLogVersion,
-                entries.getEntryVersion(), checkpoint.storeId() );
+                entries.getEntryVersion(), checkpoint.storeId(), dbmsRuntimeRepository );
     }
 
     private LogTailInformation noCheckpointLogTail( LogFile logFile, long highestLogVersion, long lowestLogVersion ) throws IOException
     {
         var entries = getFirstTransactionId( logFile, lowestLogVersion );
         return new LogTailInformation( entries.isPresent(),
-                entries.getCommitId(), lowestLogVersion == UNKNOWN, highestLogVersion, entries.getEntryVersion() );
+                entries.getCommitId(), lowestLogVersion == UNKNOWN, highestLogVersion, entries.getEntryVersion(), dbmsRuntimeRepository );
     }
 
     private StartCommitEntries getFirstTransactionId( LogFile logFile, long lowestLogVersion ) throws IOException
@@ -154,7 +159,7 @@ public class DetachedLogTailScanner
 
     /**
      * Valid checkpoint points to valid location in a file, which exists and header store id matches with checkpoint store id.
-     * Otherwise checkpoint is not considered valid and we need to recover.
+     * Otherwise, checkpoint is not considered valid, and we need to recover.
      */
     private boolean isValidCheckpoint( LogFile logFile, CheckpointInfo checkpointInfo ) throws IOException
     {
@@ -344,14 +349,14 @@ public class DetachedLogTailScanner
      *
      * @return snapshot of the state of the transaction logs tail at startup.
      */
-    public LogTailInformation getTailInformation()
+    public LogTailMetadata getTailMetadata()
     {
-        if ( logTailInformation == null )
+        if ( logTail == null )
         {
-            logTailInformation = findLogTail();
+            logTail = findLogTail();
         }
 
-        return logTailInformation;
+        return logTail;
     }
 
     private static String dumpBufferToString( ByteBuffer byteBuffer )

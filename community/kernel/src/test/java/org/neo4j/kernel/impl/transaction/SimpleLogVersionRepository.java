@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.LogVersionRepository;
 
 public class SimpleLogVersionRepository implements LogVersionRepository
@@ -46,7 +45,7 @@ public class SimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public long incrementAndGetVersion( CursorContext cursorContext )
+    public long incrementAndGetVersion()
     {
         return logVersion.incrementAndGet();
     }
@@ -58,7 +57,7 @@ public class SimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCurrentLogVersion( long version, CursorContext cursorContext )
+    public void setCurrentLogVersion( long version )
     {
         this.logVersion.set( version );
     }
@@ -70,13 +69,13 @@ public class SimpleLogVersionRepository implements LogVersionRepository
     }
 
     @Override
-    public void setCheckpointLogVersion( long version, CursorContext cursorContext )
+    public void setCheckpointLogVersion( long version )
     {
         checkpointLogVersion.set( version );
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
+    public long incrementAndGetCheckpointLogVersion()
     {
         return checkpointLogVersion.incrementAndGet();
     }

@@ -32,8 +32,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
-import org.neo4j.internal.helpers.Numbers;
-import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -47,6 +45,7 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
@@ -55,77 +54,38 @@ import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.HighestTransactionId;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
+import static java.lang.String.valueOf;
+import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.internal.id.EmptyIdGeneratorFactory.EMPTY_ID_GENERATOR_FACTORY;
 import static org.neo4j.io.pagecache.IOController.DISABLED;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.CHECKPOINT_LOG_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_LEAST_SIGN_BITS;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.DATABASE_ID_MOST_SIGN_BITS;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.KERNEL_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CONSTRAINT_TRANSACTION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LOG_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.RECORD_SIZE;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements MetadataProvider
 {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once
-    static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
-    private static final String METADATA_REFRESH_TAG = "metadataRefresh";
-    static final UUID NOT_INITIALIZED_UUID = new UUID( FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
-    private final CursorContextFactory contextFactory;
+    static final long NOT_INITIALIZED = Long.MIN_VALUE;
+    static final UUID NOT_INITIALIZED_UUID = new UUID( NOT_INITIALIZED, NOT_INITIALIZED );
 
     // Positions of meta-data records
     public enum Position
     {
-        TIME( 0, "Creation time" ),
-        RANDOM_NUMBER( 1, "Random number for store id" ),
-        LOG_VERSION( 2, "Current log version" ),
-        LAST_TRANSACTION_ID( 3, "Last committed transaction" ),
-        STORE_VERSION( 4, "Store format version" ),
-        // Obsolete field was used to store first graph property, keep it to avoid conflicts and migrations
-        FIRST_GRAPH_PROPERTY( 5, "First property record containing graph properties" ),
-        LAST_CONSTRAINT_TRANSACTION( 6, "Last committed transaction containing constraint changes" ),
-        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
-        UPGRADE_TRANSACTION_ID( 7, "Transaction id most recent upgrade was performed at" ),
-        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
-        UPGRADE_TIME( 8, "Time of last upgrade" ),
-        LAST_TRANSACTION_CHECKSUM( 9, "Checksum of last committed transaction" ),
-        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
-        UPGRADE_TRANSACTION_CHECKSUM( 10, "Checksum of transaction id the most recent upgrade was performed at" ),
-        LAST_CLOSED_TRANSACTION_LOG_VERSION( 11, "Log version where the last transaction commit entry has been written into" ),
-        LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET( 12, "Byte offset in the log file where the last transaction commit entry " +
-                                                     "has been written into" ),
-        LAST_TRANSACTION_COMMIT_TIMESTAMP( 13, "Commit time timestamp for last committed transaction" ),
-        @Deprecated() //Will stop being updated in the future since it no longer serves any functionality.
-        UPGRADE_TRANSACTION_COMMIT_TIMESTAMP( 14, "Commit timestamp of transaction the most recent upgrade was performed at" ),
-        LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP( 15, "Timestamp of last attempt to perform a recovery on the store with missing files." ),
-        EXTERNAL_STORE_UUID_MOST_SIGN_BITS( 16, "Database identifier exposed as external store identity. " +
+        EXTERNAL_STORE_UUID_MOST_SIGN_BITS( 0, "Database identifier exposed as external store identity. " +
                 "Generated on creation and never updated. Most significant bits." ),
-        EXTERNAL_STORE_UUID_LEAST_SIGN_BITS( 17, "Database identifier exposed as external store identity. " +
+        EXTERNAL_STORE_UUID_LEAST_SIGN_BITS( 1, "Database identifier exposed as external store identity. " +
                 "Generated on creation and never updated. Least significant bits" ),
-        CHECKPOINT_LOG_VERSION( 18, "Current checkpoint log version" ),
-        // This field is changed using explicit upgrade trigger. Store can be upgraded to a later version, but still write commands for an older version
-        KERNEL_VERSION( 19, "The kernel version (also transaction log version) that is currently being used when writing new transactions" ),
-        DATABASE_ID_MOST_SIGN_BITS( 20, "The last used DatabaseId for this database. Most significant bits" ),
-        DATABASE_ID_LEAST_SIGN_BITS( 21, "The last used DatabaseId for this database. Least significant bits" );
+        DATABASE_ID_MOST_SIGN_BITS( 2, "The last used DatabaseId for this database. Most significant bits" ),
+        DATABASE_ID_LEAST_SIGN_BITS( 3, "The last used DatabaseId for this database. Least significant bits" ),
+        STORE_VERSION( 4, "Store format version" ),
+        TIME( 5, "Creation time" ),
+        RANDOM_NUMBER( 6, "Random number for store id" );
 
         private final int id;
         private final String description;
@@ -147,94 +107,69 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    // Fields the neostore keeps cached and must be initialized on startup
-    private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
-    private volatile long randomNumberField = FIELD_NOT_INITIALIZED;
-    private volatile long versionField = FIELD_NOT_INITIALIZED;
-    private volatile long checkpointLogVersionField = FIELD_NOT_INITIALIZED;
-    // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
-    // we do that when flushing, which performs better and fine from a recovery POV.
-    private final AtomicLong lastCommittingTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
-    private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
-    private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
-    private volatile long upgradeTxIdField = FIELD_NOT_INITIALIZED;
-    private volatile int upgradeTxChecksumField = (int) FIELD_NOT_INITIALIZED;
-    private volatile long upgradeTimeField = FIELD_NOT_INITIALIZED;
-    private volatile long upgradeCommitTimestampField = FIELD_NOT_INITIALIZED;
+    private volatile long creationTime = NOT_INITIALIZED;
+    private volatile long randomNumber = NOT_INITIALIZED;
+    private volatile long storeIdStoreVersion = NOT_INITIALIZED;
     private volatile UUID externalStoreUUID;
     private volatile UUID databaseUUID;
-    private volatile long kernelVersion = FIELD_NOT_INITIALIZED;
 
-    private volatile TransactionId upgradeTransaction = new TransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+    private final AtomicLong logVersion = new AtomicLong();
+    private final AtomicLong checkpointLogVersion = new AtomicLong();
+    // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
+    // we do that when flushing, which performs better and fine from a recovery POV.
+    private final AtomicLong lastCommittingTx = new AtomicLong( NOT_INITIALIZED );
+    private volatile long latestConstraintIntroducingTxId;
+    private volatile KernelVersion kernelVersion;
 
     // This is not a field in the store, but something keeping track of which is the currently highest
     // committed transaction id, together with its checksum.
     private final HighestTransactionId highestCommittedTransaction =
-            new HighestTransactionId( FIELD_NOT_INITIALIZED, (int) FIELD_NOT_INITIALIZED, FIELD_NOT_INITIALIZED );
+            new HighestTransactionId( NOT_INITIALIZED, (int) NOT_INITIALIZED, NOT_INITIALIZED );
 
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200, new long[4] );
-
-    // We use these objects and their monitors as "entity" locks on the records, because page write locks are not
-    // exclusive. Therefore, these locks are only used when *writing* records, not when reading them.
-    private final Object upgradeTimeLock = new Object();
-    private final Object creationTimeLock  = new Object();
-    private final Object randomNumberLock = new Object();
-    private final Object upgradeTransactionLock = new Object();
-    private final Object logVersionLock = new Object();
-    private final Object checkpointLogVersionLock = new Object();
-    private final Object storeVersionLock = new Object();
-    private final Object lastConstraintIntroducingTxLock = new Object();
-    private final Object transactionCommittedLock = new Object();
-    private final Object transactionClosedLock = new Object();
-
     private volatile boolean closed;
 
     MetaDataStore( Path file, Config conf,
             PageCache pageCache, InternalLogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
-            String storeVersion, CursorContextFactory contextFactory,
+            String storeVersion,
             DatabaseReadOnlyChecker readOnlyChecker,
+            LogTailMetadata logTailMetadata,
             String databaseName,
             ImmutableSet<OpenOption> openOptions )
     {
         super( file, null, conf, null, EMPTY_ID_GENERATOR_FACTORY, pageCache, logProvider,
                 TYPE_DESCRIPTOR, recordFormat, NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT, storeVersion, readOnlyChecker, databaseName, openOptions );
-        this.contextFactory = contextFactory;
+
+        checkpointLogVersion.set( logTailMetadata.getCheckpointLogVersion() );
+        kernelVersion = logTailMetadata.getKernelVersion();
+        logVersion.set( logTailMetadata.getLogVersion() );
+        var lastCommittedTx = logTailMetadata.getLastCommittedTransaction();
+        lastCommittingTx.set( lastCommittedTx.transactionId() );
+        highestCommittedTransaction.set( lastCommittedTx.transactionId(), lastCommittedTx.checksum(),
+                lastCommittedTx.commitTimestamp() );
+        var logPosition = logTailMetadata.getLastTransactionLogPosition();
+        lastClosedTx.set( lastCommittedTx.transactionId(),
+                new long[]{logPosition.getLogVersion(), logPosition.getByteOffset(), lastCommittedTx.checksum(), lastCommittedTx.commitTimestamp()} );
     }
 
     @Override
     protected void initialiseNewStoreFile( CursorContext cursorContext ) throws IOException
     {
         super.initialiseNewStoreFile( cursorContext );
-
-        long storeVersionAsLong = StoreVersion.versionStringToLong( storeVersion );
-        StoreId storeId = new StoreId( storeVersionAsLong );
-
-        setCreationTime( storeId.getCreationTime(), cursorContext );
-        setRandomNumber( storeId.getRandomId(), cursorContext );
-        // If metaDataStore.creationTime == metaDataStore.upgradeTime && metaDataStore.upgradeTransactionId == BASE_TX_ID
-        // then store has never been upgraded
-        setUpgradeTime( storeId.getCreationTime(), cursorContext );
-        setUpgradeTransaction( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, cursorContext );
-        setCurrentLogVersion( 0, cursorContext );
-        setLastCommittedAndClosedTransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, BASE_TX_LOG_BYTE_OFFSET, BASE_TX_LOG_VERSION,
-                cursorContext );
-        setStoreVersion( storeVersionAsLong, cursorContext );
-        setLatestConstraintIntroducingTx( 0, cursorContext );
-        setExternalStoreUUID( UUID.randomUUID(), cursorContext );
-        setCheckpointLogVersion( 0, cursorContext );
-        setKernelVersion( KernelVersion.LATEST, cursorContext );
-        setDatabaseIdUuid( NOT_INITIALIZED_UUID, cursorContext );
-
-        flush( cursorContext );
+        StoreId storeId = new StoreId( StoreVersion.versionStringToLong( storeVersion ) );
+        generateMetadataFile( storeId, UUID.randomUUID(), NOT_INITIALIZED_UUID, cursorContext );
     }
 
     @Override
     protected void initialise( boolean createIfNotExists, CursorContextFactory contextFactory )
     {
         super.initialise( createIfNotExists, contextFactory );
-        refreshFields();
+        try ( CursorContext context = contextFactory.create( "readMetadata" ) )
+        {
+            readMetadataFile( context );
+        }
     }
 
     @Override
@@ -244,83 +179,43 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return values[values.length - 1].id + 1;
     }
 
-    public void setKernelVersion( KernelVersion kernelVersion, CursorContext cursorContext )
+    public void setKernelVersion( KernelVersion kernelVersion )
     {
         assertNotClosed();
-        byte version = kernelVersion.version();
-        try ( var cursor = openPageCursorForWriting( KERNEL_VERSION.id, cursorContext ) )
-        {
-            setRecord( KERNEL_VERSION, version, cursor, cursorContext );
-        }
-        this.kernelVersion = version;
+        this.kernelVersion = kernelVersion;
     }
 
     @Override
     public KernelVersion kernelVersion()
     {
         assertNotClosed();
-        if ( kernelVersion == FIELD_NOT_PRESENT )
-        {
-            throw new IllegalStateException( "KernelVersion unavailable. KernelVersion is not present in pre-4.3 stores" );
-        }
-        return KernelVersion.getForVersion( Numbers.safeCastLongToByte( kernelVersion ) );
+        return kernelVersion;
     }
 
     @Override
     public long getCheckpointLogVersion()
     {
         assertNotClosed();
-        return checkpointLogVersionField;
+        return checkpointLogVersion.get();
     }
 
     @Override
-    public void setCheckpointLogVersion( long version, CursorContext cursorContext )
+    public void setCheckpointLogVersion( long version )
     {
-        synchronized ( checkpointLogVersionLock )
-        {
-            try ( var cursor = openPageCursorForWriting( CHECKPOINT_LOG_VERSION.id, cursorContext ) )
-            {
-                setRecord( CHECKPOINT_LOG_VERSION, version, cursor, cursorContext );
-            }
-            checkpointLogVersionField = version;
-        }
+        checkpointLogVersion.set( version );
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
+    public long incrementAndGetCheckpointLogVersion()
     {
-        long checkPointVersion = incrementAndGetVersion( cursorContext, checkpointLogVersionLock, CHECKPOINT_LOG_VERSION );
-        checkpointLogVersionField = checkPointVersion;
-        return checkPointVersion;
+        return checkpointLogVersion.incrementAndGet();
     }
 
-    private void setExternalStoreUUID( UUID uuid, CursorContext cursorContext )
+    @Override
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion )
     {
         assertNotClosed();
-        try ( var cursor = openPageCursorForWriting( EXTERNAL_STORE_UUID_MOST_SIGN_BITS.id, cursorContext ) )
-        {
-            setRecord( EXTERNAL_STORE_UUID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
-            setRecord( EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
-            externalStoreUUID = uuid;
-        }
-    }
-
-    // Only for initialization and recovery, so we don't need to lock the records
-
-    @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
-            CursorContext cursorContext )
-    {
-        assertNotClosed();
-        try ( var cursor = openPageCursorForWriting( LAST_TRANSACTION_ID.id, cursorContext ) )
-        {
-            setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursor, cursorContext );
-            setRecord( Position.LAST_TRANSACTION_CHECKSUM, checksum, cursor, cursorContext );
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursor, cursorContext );
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursor, cursorContext );
-            setRecord( Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp, cursor, cursorContext );
-        }
-        lastCommittingTxField.set( transactionId );
+        lastCommittingTx.set( transactionId );
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
@@ -341,7 +236,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     public static long setRecord( PageCache pageCache, Path neoStore, Position position, long value, String databaseName, CursorContext cursorContext )
             throws IOException
     {
-        long previousValue = FIELD_NOT_INITIALIZED;
+        long previousValue = NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
         try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
         {
@@ -432,36 +327,19 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return value;
     }
 
-    public static void setStoreId( PageCache pageCache, Path neoStore, StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp,
-            String databaseName, CursorContext cursorContext ) throws IOException
+    @Override
+    public void regenerateMetadata( StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext )
     {
-        setRecord( pageCache, neoStore, Position.TIME, storeId.getCreationTime(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.RANDOM_NUMBER, storeId.getRandomId(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.STORE_VERSION, storeId.getStoreVersion(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TIME, 0, databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID, 0, databaseName, cursorContext );
-
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_CHECKSUM, upgradeTxChecksum, databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, upgradeTxCommitTimestamp, databaseName, cursorContext );
-    }
-
-    public static void setExternalStoreUUID( PageCache pageCache, Path neoStore, UUID externalStoreId,
-                                   String databaseName, CursorContext cursorContext ) throws IOException
-    {
-        setRecord( pageCache, neoStore, Position.EXTERNAL_STORE_UUID_MOST_SIGN_BITS, externalStoreId.getMostSignificantBits(), databaseName, cursorContext );
-        setRecord( pageCache, neoStore, Position.EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, externalStoreId.getLeastSignificantBits(), databaseName, cursorContext );
+        generateMetadataFile( storeId, externalStoreUUID, NOT_INITIALIZED_UUID, cursorContext );
+        readMetadataFile( cursorContext );
     }
 
     @Override
     public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
     {
         assertNotClosed();
-        try ( var cursor = openPageCursorForWriting( DATABASE_ID_MOST_SIGN_BITS.id, cursorContext ) )
-        {
-            setRecord( DATABASE_ID_MOST_SIGN_BITS, uuid.getMostSignificantBits(), cursor, cursorContext );
-            setRecord( DATABASE_ID_LEAST_SIGN_BITS, uuid.getLeastSignificantBits(), cursor, cursorContext );
-            databaseUUID = uuid;
-        }
+        generateMetadataFile( getStoreId(), externalStoreUUID, uuid, cursorContext );
+        readMetadataFile( cursorContext );
     }
 
     public static Optional<UUID> getDatabaseIdUuid( PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext )
@@ -469,8 +347,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         try
         {
             long msb = getRecord( pageCache, neoStore, Position.DATABASE_ID_MOST_SIGN_BITS, databaseName, cursorContext );
-            long lsb = getRecord( pageCache, neoStore, DATABASE_ID_LEAST_SIGN_BITS, databaseName, cursorContext );
-            return instantiateDatabaseIdUuid( msb, lsb );
+            long lsb = getRecord( pageCache, neoStore, Position.DATABASE_ID_LEAST_SIGN_BITS, databaseName, cursorContext );
+            var uuid = new UUID( msb, lsb );
+            return wrapDatabaseIdUuid( uuid );
         }
         catch ( IOException e )
         {
@@ -484,19 +363,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         assertNotClosed();
         var databaseUUID = this.databaseUUID;
         return isNotInitializedUUID( databaseUUID ) ? Optional.empty() : Optional.of( databaseUUID );
-    }
-
-    private static Optional<UUID> instantiateDatabaseIdUuid( long msb, long lsb )
-    {
-        var uuid = new UUID( msb, lsb );
-        if ( isNotInitializedUUID( uuid ) || (msb == FIELD_NOT_PRESENT && lsb == FIELD_NOT_PRESENT) )
-        {
-            return Optional.empty();
-        }
-        else
-        {
-            return Optional.of( uuid );
-        }
     }
 
     @Override
@@ -522,376 +388,73 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         );
     }
 
-    public long getUpgradeTime()
-    {
-        assertNotClosed();
-        return upgradeTimeField;
-    }
-
-    public void setUpgradeTime( long time, CursorContext cursorContext )
-    {
-        synchronized ( upgradeTimeLock )
-        {
-            try ( var cursor = openPageCursorForWriting( UPGRADE_TIME.id, cursorContext ) )
-            {
-                setRecord( Position.UPGRADE_TIME, time, cursor, cursorContext );
-            }
-            upgradeTimeField = time;
-        }
-    }
-
-    public void setUpgradeTransaction( long id, int checksum, long timestamp, CursorContext cursorContext )
-    {
-        long pageId = pageIdForRecord( Position.UPGRADE_TRANSACTION_ID.id );
-        assert pageId == pageIdForRecord( Position.UPGRADE_TRANSACTION_CHECKSUM.id );
-        synchronized ( upgradeTransactionLock )
-        {
-            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext ) )
-            {
-                if ( !cursor.next() )
-                {
-                    throw new UnderlyingStorageException( "Could not access MetaDataStore page " + pageId );
-                }
-                setRecord( cursor, Position.UPGRADE_TRANSACTION_ID, id );
-                setRecord( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM, checksum );
-                setRecord( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
-                upgradeTxIdField = id;
-                upgradeTxChecksumField = checksum;
-                upgradeCommitTimestampField = timestamp;
-                upgradeTransaction = new TransactionId( id, checksum, timestamp );
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-    }
-
-    private static boolean isNotInitializedUUID( UUID uuid )
-    {
-        return NOT_INITIALIZED_UUID.equals( uuid );
-    }
-
     public long getCreationTime()
     {
         assertNotClosed();
-        return creationTimeField;
-    }
-
-    public void setCreationTime( long time, CursorContext cursorContext )
-    {
-        synchronized ( creationTimeLock )
-        {
-            try ( var cursor = openPageCursorForWriting( TIME.id, cursorContext ) )
-            {
-                setRecord( Position.TIME, time, cursor, cursorContext );
-            }
-            creationTimeField = time;
-        }
+        return creationTime;
     }
 
     public long getRandomNumber()
     {
         assertNotClosed();
-        return randomNumberField;
-    }
-
-    public void setRandomNumber( long random, CursorContext cursorContext )
-    {
-        synchronized ( randomNumberLock )
-        {
-            try ( var cursor = openPageCursorForWriting( RANDOM_NUMBER.id, cursorContext ) )
-            {
-                setRecord( Position.RANDOM_NUMBER, random, cursor, cursorContext );
-            }
-            randomNumberField = random;
-        }
+        return randomNumber;
     }
 
     @Override
     public long getCurrentLogVersion()
     {
         assertNotClosed();
-        return versionField;
+        return logVersion.get();
     }
 
     @Override
-    public void setCurrentLogVersion( long version, CursorContext cursorContext )
+    public void setCurrentLogVersion( long version )
     {
-        synchronized ( logVersionLock )
-        {
-            try ( var cursor = openPageCursorForWriting( LOG_VERSION.id, cursorContext ) )
-            {
-                setRecord( Position.LOG_VERSION, version, cursor, cursorContext );
-            }
-            versionField = version;
-        }
+        logVersion.set( version );
     }
 
     @Override
-    public long incrementAndGetVersion( CursorContext cursorContext )
+    public long incrementAndGetVersion()
     {
-        long version = incrementAndGetVersion( cursorContext, logVersionLock, Position.LOG_VERSION );
-        versionField = version;
-        return version;
-    }
-
-    private long incrementAndGetVersion( CursorContext cursorContext, Object lock, Position position )
-    {
-        // This method can expect synchronisation at a higher level,
-        // and be effectively single-threaded.
-        long pageId = pageIdForRecord( position.id );
-        long version;
-        synchronized ( lock )
-        {
-            try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext ) )
-            {
-                if ( cursor.next() )
-                {
-                    version = incrementVersion( cursor, position );
-                }
-                else
-                {
-                    throw new IllegalStateException( "Filed " + position + "missing in metadata store. Page " + pageId + "not found." );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-        }
-        flush( cursorContext ); // make sure the new version value is persisted
-        return version;
-    }
-
-    private long incrementVersion( PageCursor cursor, Position position )
-    {
-        if ( !cursor.isWriteLocked() )
-        {
-            throw new IllegalArgumentException( "Cannot increment log version on page cursor that is not write-locked" );
-        }
-        // offsets plus one to skip the inUse byte
-        int offset = offsetForId( position.id ) + 1;
-        long value = cursor.getLong( offset ) + 1;
-        cursor.putLong( offset, value );
-        checkForDecodingErrors( cursor, position.id, NORMAL );
-        return value;
+        return logVersion.incrementAndGet();
     }
 
     public long getStoreVersion()
     {
         assertNotClosed();
-        return storeVersionField;
-    }
-
-    public void setStoreVersion( long version, CursorContext cursorContext )
-    {
-        synchronized ( storeVersionLock )
-        {
-            try ( var cursor = openPageCursorForWriting( STORE_VERSION.id, cursorContext ) )
-            {
-                setRecord( Position.STORE_VERSION, version, cursor, cursorContext );
-            }
-            storeVersionField = version;
-        }
+        return storeIdStoreVersion;
     }
 
     public long getLatestConstraintIntroducingTx()
     {
         assertNotClosed();
-        return latestConstraintIntroducingTxField;
+        return latestConstraintIntroducingTxId;
     }
 
-    public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx, CursorContext cursorContext )
+    public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTxId )
     {
-        synchronized ( lastConstraintIntroducingTxLock )
-        {
-            try ( var cursor = openPageCursorForWriting( LAST_CONSTRAINT_TRANSACTION.id, cursorContext ) )
-            {
-                setRecord( Position.LAST_CONSTRAINT_TRANSACTION, latestConstraintIntroducingTx, cursor, cursorContext );
-            }
-            latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
-        }
-    }
-
-    private void readAllFields( PageCursor cursor ) throws IOException
-    {
-        do
-        {
-            creationTimeField = getRecordValue( cursor, Position.TIME );
-            randomNumberField = getRecordValue( cursor, Position.RANDOM_NUMBER );
-            versionField = getRecordValue( cursor, Position.LOG_VERSION );
-            long lastCommittedTxId = getRecordValue( cursor, Position.LAST_TRANSACTION_ID );
-            lastCommittingTxField.set( lastCommittedTxId );
-            storeVersionField = getRecordValue( cursor, Position.STORE_VERSION );
-            getRecordValue( cursor, Position.FIRST_GRAPH_PROPERTY );
-            latestConstraintIntroducingTxField = getRecordValue( cursor, Position.LAST_CONSTRAINT_TRANSACTION );
-            upgradeTxIdField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_ID );
-            upgradeTxChecksumField = (int) getRecordValue( cursor, Position.UPGRADE_TRANSACTION_CHECKSUM );
-            upgradeTimeField = getRecordValue( cursor, Position.UPGRADE_TIME );
-            long lastClosedTransactionLogVersion = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
-            long lastClosedTransactionLogByteOffset = getRecordValue( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-            lastClosedTx.set( lastCommittedTxId, new long[]{lastClosedTransactionLogVersion, lastClosedTransactionLogByteOffset,
-                    (int) getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP )} );
-            highestCommittedTransaction.set( lastCommittedTxId,
-                    (int) getRecordValue( cursor, Position.LAST_TRANSACTION_CHECKSUM ),
-                    getRecordValue( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, UNKNOWN_TX_COMMIT_TIMESTAMP
-                    ) );
-            upgradeCommitTimestampField = getRecordValue( cursor, Position.UPGRADE_TRANSACTION_COMMIT_TIMESTAMP,
-                    BASE_TX_COMMIT_TIMESTAMP );
-
-            externalStoreUUID = readExternalStoreUUID( cursor );
-            databaseUUID = readDatabaseUUID( cursor );
-
-            upgradeTransaction = new TransactionId( upgradeTxIdField, upgradeTxChecksumField, upgradeCommitTimestampField );
-            checkpointLogVersionField = getRecordValue( cursor, CHECKPOINT_LOG_VERSION, 0 );
-            kernelVersion = getRecordValue( cursor, KERNEL_VERSION );
-        }
-        while ( cursor.shouldRetry() );
-        if ( cursor.checkAndClearBoundsFlag() )
-        {
-            throw new UnderlyingStorageException(
-                    "Out of page bounds when reading all meta-data fields. The page in question is page " +
-                    cursor.getCurrentPageId() + " of file " + storageFile.toAbsolutePath() + ", with payload size: " +
-                    pagedFile.payloadSize() + ", and total page size:" + pagedFile.pageSize() );
-        }
-    }
-
-    private UUID readExternalStoreUUID( PageCursor cursor )
-    {
-        long mostSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-        long leastSignificantBits = getRecordValue( cursor, EXTERNAL_STORE_UUID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-        return new UUID( mostSignificantBits, leastSignificantBits );
-    }
-
-    private UUID readDatabaseUUID( PageCursor cursor )
-    {
-        long mostSignificantBits = getRecordValue( cursor, DATABASE_ID_MOST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-        long leastSignificantBits = getRecordValue( cursor, DATABASE_ID_LEAST_SIGN_BITS, FIELD_NOT_INITIALIZED );
-        return new UUID( mostSignificantBits, leastSignificantBits );
-    }
-
-    long getRecordValue( PageCursor cursor, Position position )
-    {
-        return getRecordValue( cursor, position, FIELD_NOT_PRESENT );
-    }
-
-    private long getRecordValue( PageCursor cursor, Position position, long defaultValue )
-    {
-        MetaDataRecord record = newRecord();
-        try
-        {
-            record.setId( position.id );
-            recordFormat.read( record, cursor, ALWAYS, RECORD_SIZE, getRecordsPerPage() );
-            if ( record.inUse() )
-            {
-                return record.getValue();
-            }
-            return defaultValue;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    private void refreshFields()
-    {
-        scanAllFields( PF_SHARED_READ_LOCK, element ->
-        {
-            readAllFields( element );
-            return false;
-        } );
-    }
-
-    private void scanAllFields( int pf_flags, Visitor<PageCursor,IOException> visitor )
-    {
-        try ( var cursorContext = contextFactory.create( METADATA_REFRESH_TAG );
-              PageCursor cursor = pagedFile.io( 0, pf_flags, cursorContext ) )
-        {
-            if ( cursor.next() )
-            {
-                visitor.visit( cursor );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    private void setRecord( Position position, long value, PageCursor pageCursor, CursorContext cursorContext )
-    {
-        MetaDataRecord record = new MetaDataRecord();
-        record.initialize( true, value );
-        record.setId( position.id );
-        updateRecord( record, pageCursor, cursorContext, StoreCursors.NULL );
-    }
-
-    private void setRecord( PageCursor cursor, Position position, long value )
-    {
-        if ( !cursor.isWriteLocked() )
-        {
-            throw new IllegalArgumentException( "Cannot write record without a page cursor that is write-locked" );
-        }
-        int offset = offsetForId( position.id );
-        cursor.setOffset( offset );
-        cursor.putByte( Record.IN_USE.byteValue() );
-        cursor.putLong( value );
-        checkForDecodingErrors( cursor, position.id, NORMAL );
+        this.latestConstraintIntroducingTxId = latestConstraintIntroducingTxId;
     }
 
     @Override
     public long nextCommittingTransactionId()
     {
         assertNotClosed();
-        return lastCommittingTxField.incrementAndGet();
+        return lastCommittingTx.incrementAndGet();
     }
 
     @Override
     public long committingTransactionId()
     {
         assertNotClosed();
-        return lastCommittingTxField.get();
+        return lastCommittingTx.get();
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
         assertNotClosed();
-        if ( highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp ) )
-        {
-            // We need to synchronize here in order to guarantee that the three fields are written consistently
-            // together. Note that having a write lock on the page is not enough for 3 reasons:
-            // 1. page write locks are not exclusive
-            // 2. the records might be in different pages
-            // 3. some other thread might kick in while we have been written only one record
-            synchronized ( transactionCommittedLock )
-            {
-                // Double-check with highest tx id under the lock, so that there haven't been
-                // another higher transaction committed between our id being accepted and
-                // acquiring this monitor.
-                if ( highestCommittedTransaction.get().transactionId() == transactionId )
-                {
-                    long pageId = pageIdForRecord( Position.LAST_TRANSACTION_ID.id );
-                    assert pageId == pageIdForRecord( Position.LAST_TRANSACTION_CHECKSUM.id );
-                    try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext ) )
-                    {
-                        if ( cursor.next() )
-                        {
-                            setRecord( cursor, Position.LAST_TRANSACTION_ID, transactionId );
-                            setRecord( cursor, Position.LAST_TRANSACTION_CHECKSUM, checksum );
-                            setRecord( cursor, Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, commitTimestamp );
-                        }
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UnderlyingStorageException( e );
-                    }
-                }
-            }
-        }
+        highestCommittedTransaction.offer( transactionId, checksum, commitTimestamp );
     }
 
     @Override
@@ -906,13 +469,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         assertNotClosed();
         return highestCommittedTransaction.get();
-    }
-
-    @Override
-    public TransactionId getUpgradeTransaction()
-    {
-        assertNotClosed();
-        return upgradeTransaction;
     }
 
     @Override
@@ -931,81 +487,36 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
     {
-        if ( lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} ) )
-        {
-            long pageId = pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION.id );
-            assert pageId == pageIdForRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET.id );
-            synchronized ( transactionClosedLock )
-            {
-                try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK, cursorContext ) )
-                {
-                    if ( cursor.next() )
-                    {
-                        long[] lastClosedTransactionData = lastClosedTx.get();
-                        setRecord( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, lastClosedTransactionData[1] );
-                        setRecord( cursor, Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, lastClosedTransactionData[2] );
-                    }
-                }
-                catch ( IOException e )
-                {
-                    throw new UnderlyingStorageException( e );
-                }
-            }
-        }
+        lastClosedTx.offer( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
-            CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
     {
         assertNotClosed();
-        try ( var cursor = openPageCursorForWriting( LAST_TRANSACTION_ID.id, cursorContext ) )
-        {
-            setRecord( Position.LAST_TRANSACTION_ID, transactionId, cursor, cursorContext );
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion, cursor, cursorContext );
-            setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset, cursor, cursorContext );
-            if ( missingLogs )
-            {
-                setRecord( Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP, System.currentTimeMillis(), cursor, cursorContext );
-            }
-        }
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset, checksum, commitTimestamp} );
     }
 
     public void logRecords( final DiagnosticsLogger logger )
     {
-        scanAllFields( PF_SHARED_READ_LOCK, cursor ->
+        for ( Position position : Position.values() )
         {
-            for ( Position position : Position.values() )
-            {
-                long value;
-                do
-                {
-                    value = getRecordValue( cursor, position );
-                }
-                while ( cursor.shouldRetry() );
-
-                String additionalDescription = "";
-                try
-                {
-                    if ( position == Position.STORE_VERSION )
+            var logRecord = switch ( position )
                     {
-                        additionalDescription = " (" + StoreVersion.versionLongToString( value ) + ")";
-                    }
-                }
-                catch ( Exception e )
-                {
-                    // Something wrong with this value, but let's not let that hinder this logging
-                }
+                        case TIME -> new PositionLogRecord( creationTime );
+                        case RANDOM_NUMBER -> new PositionLogRecord( randomNumber );
+                        case STORE_VERSION -> new PositionLogRecord( valueOf( storeIdStoreVersion ),
+                                " (" + StoreVersion.versionLongToString( storeIdStoreVersion ) + ")" );
+                        case EXTERNAL_STORE_UUID_MOST_SIGN_BITS -> new PositionLogRecord( externalStoreUUID.getMostSignificantBits() );
+                        case EXTERNAL_STORE_UUID_LEAST_SIGN_BITS -> new PositionLogRecord( externalStoreUUID.getLeastSignificantBits() );
+                        case DATABASE_ID_MOST_SIGN_BITS -> new PositionLogRecord( databaseUUID.getMostSignificantBits() );
+                        case DATABASE_ID_LEAST_SIGN_BITS -> new PositionLogRecord( databaseUUID.getLeastSignificantBits() );
+                    };
 
-                boolean bounds = cursor.checkAndClearBoundsFlag();
-                logger.log( position.name() + " (" + position.description() + "): " + value + additionalDescription +
-                            (bounds ? " (out-of-bounds detected; value cannot be trusted)" : ""));
-            }
-            return false;
-        } );
+            logger.log( position.name() + " (" + position.description() + "): " + logRecord );
+        }
     }
 
     @Override
@@ -1042,6 +553,96 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         if ( closed )
         {
             throw new StoreFileClosedException( storageFile );
+        }
+    }
+
+    private void generateMetadataFile( StoreId storeId, UUID externalStoreUUID, UUID databaseUUID, CursorContext cursorContext )
+    {
+        try ( var cursor = openPageCursorForWriting( 0, cursorContext ) )
+        {
+            if ( cursor.next() )
+            {
+                writeLongRecord( cursor, externalStoreUUID.getMostSignificantBits() );
+                writeLongRecord( cursor, externalStoreUUID.getLeastSignificantBits() );
+                writeLongRecord( cursor, databaseUUID.getMostSignificantBits() );
+                writeLongRecord( cursor, databaseUUID.getLeastSignificantBits() );
+                writeLongRecord( cursor, storeId.getStoreVersion() );
+                writeLongRecord( cursor, storeId.getCreationTime() );
+                writeLongRecord( cursor, storeId.getRandomId() );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        flush( cursorContext );
+    }
+
+    private void writeLongRecord( PageCursor cursor, long value )
+    {
+        cursor.putByte( Record.IN_USE.byteValue() );
+        cursor.putLong( value );
+    }
+
+    private long readLongRecord( PageCursor cursor )
+    {
+        cursor.getByte();
+        return cursor.getLong();
+    }
+
+    private void readMetadataFile( CursorContext cursorContext )
+    {
+        try ( var cursor = openPageCursorForReading( 0, cursorContext ) )
+        {
+            if ( cursor.next() )
+            {
+                StoreId metadataStoreId;
+                UUID metadataExternalUUID;
+                UUID metadataDatabaseUUID;
+                do
+                {
+                    cursor.setOffset( 0 );
+                    metadataExternalUUID = new UUID( readLongRecord( cursor ), readLongRecord( cursor ) );
+                    metadataDatabaseUUID = new UUID( readLongRecord( cursor ), readLongRecord( cursor ) );
+                    long storeVersion = readLongRecord( cursor );
+                    metadataStoreId = new StoreId( readLongRecord( cursor ), readLongRecord( cursor ), storeVersion );
+                }
+                while ( cursor.shouldRetry() );
+
+                creationTime = metadataStoreId.getCreationTime();
+                randomNumber = metadataStoreId.getRandomId();
+                storeIdStoreVersion = metadataStoreId.getStoreVersion();
+                externalStoreUUID = metadataExternalUUID;
+                databaseUUID = metadataDatabaseUUID;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
+    private static Optional<UUID> wrapDatabaseIdUuid( UUID uuid )
+    {
+        return isNotInitializedUUID( uuid ) ? Optional.empty() : Optional.of( uuid );
+    }
+
+    private static boolean isNotInitializedUUID( UUID uuid )
+    {
+        return NOT_INITIALIZED_UUID.equals( uuid );
+    }
+
+    private record PositionLogRecord(String value, String additionalDescriptor)
+    {
+        private PositionLogRecord( long value )
+        {
+            this( valueOf( value ), EMPTY );
+        }
+
+        @Override
+        public String toString()
+        {
+            return value + additionalDescriptor;
         }
     }
 }

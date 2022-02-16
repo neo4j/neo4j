@@ -72,6 +72,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -149,13 +150,15 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private TokenHolders tokenHolders;
     private PageCacheFlusher flusher;
+    private final LogTailMetadata logTailMetadata;
     private boolean doubleRelationshipRecordUnits;
 
     private boolean successful;
 
     private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, RecordDatabaseLayout databaseLayout,
             Config neo4jConfig, Configuration importConfiguration, LogService logService,
-            AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
+            AdditionalInitialIds initialIds, LogTailMetadata logTailMetadata,
+            boolean externalPageCache, IoTracer ioTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         this.fileSystem = fileSystem;
         this.recordFormats = RecordFormatSelector.selectForStoreOrConfigForNewDbs( neo4jConfig, databaseLayout, fileSystem, pageCache,
@@ -175,6 +178,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.tempIdGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseName );
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
+        this.logTailMetadata = logTailMetadata;
     }
 
     private boolean databaseExistsAndContainsData()
@@ -304,8 +308,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             metaDataStore.setLastCommittedAndClosedTransactionId(
                     initialIds.lastCommittedTransactionId(), initialIds.lastCommittedTransactionChecksum(),
                     BASE_TX_COMMIT_TIMESTAMP, initialIds.lastCommittedTransactionLogByteOffset(),
-                    initialIds.lastCommittedTransactionLogVersion(), cursorContext );
-            metaDataStore.setCheckpointLogVersion( initialIds.checkpointLogVersion(), cursorContext );
+                    initialIds.lastCommittedTransactionLogVersion() );
+            metaDataStore.setCheckpointLogVersion( initialIds.checkpointLogVersion() );
         }
     }
 
@@ -316,24 +320,24 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
-            Configuration config, LogService logService, AdditionalInitialIds initialIds,
+            Configuration config, LogService logService, AdditionalInitialIds initialIds, LogTailMetadata logTailMetadata,
             Config dbConfig, JobScheduler jobScheduler, PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory, MemoryTracker memoryTracker )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker );
 
-        return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, neo4jConfig, config, logService,
-                initialIds, false, pageCacheTracer::bytesWritten, contextFactory, memoryTracker );
+        return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, neo4jConfig, config, logService, initialIds, logTailMetadata, false,
+                pageCacheTracer::bytesWritten, contextFactory, memoryTracker );
     }
 
-    public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
-            PageCache pageCache, PageCacheTracer tracer, CursorContextFactory contextFactory, RecordDatabaseLayout databaseLayout,
-            Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig, MemoryTracker memoryTracker )
+    public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem, PageCache pageCache, PageCacheTracer tracer,
+            CursorContextFactory contextFactory, RecordDatabaseLayout databaseLayout, Configuration config, LogService logService,
+            AdditionalInitialIds initialIds, LogTailMetadata logTailMetadata, Config dbConfig, MemoryTracker memoryTracker )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
 
         return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, neo4jConfig, config, logService,
-                initialIds, true, tracer::bytesWritten, contextFactory, memoryTracker );
+                initialIds, logTailMetadata, true, tracer::bytesWritten, contextFactory, memoryTracker );
     }
 
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )
@@ -362,7 +366,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             ImmutableSet<OpenOption> openOptions )
     {
         return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, internalLogProvider, contextFactory,
-                writable(), openOptions );
+                writable(), logTailMetadata, openOptions );
     }
 
     /**

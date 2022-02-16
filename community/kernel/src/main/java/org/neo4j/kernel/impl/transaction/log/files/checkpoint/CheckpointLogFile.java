@@ -27,8 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
@@ -36,7 +38,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppend
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
@@ -52,6 +53,7 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
+import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory.ofLogEntry;
 import static org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation.checkpointLogRotation;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
@@ -61,6 +63,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final DetachedLogTailScanner logTailScanner;
     private final TransactionLogFilesHelper fileHelper;
     private final TransactionLogChannelAllocator channelAllocator;
+    private final LogFiles logFiles;
     private final TransactionLogFilesContext context;
     private final InternalLog log;
     private final long rotationsSize;
@@ -70,6 +73,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public CheckpointLogFile( LogFiles logFiles, TransactionLogFilesContext context )
     {
         this.context = context;
+        this.logFiles = logFiles;
         this.rotationsSize = context.getConfig().get( checkpoint_logical_log_rotation_threshold );
         this.fileHelper = new TransactionLogFilesHelper( context.getFileSystem(), logFiles.logFilesDirectory(), CHECKPOINT_FILE_PREFIX );
         this.channelAllocator = new CheckpointLogChannelAllocator( context, fileHelper );
@@ -79,14 +83,14 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         var rotationMonitor = context.getMonitors().newMonitor( LogRotationMonitor.class );
         var checkpointRotation = checkpointLogRotation( this, logFiles.getLogFile(), context.getClock(),
                 context.getDatabaseHealth(), rotationMonitor );
-        this.checkpointAppender = new DetachedCheckpointAppender( channelAllocator, context, this, checkpointRotation, logTailScanner );
+        this.checkpointAppender = new DetachedCheckpointAppender( logFiles, channelAllocator, context, this, checkpointRotation, logTailScanner );
     }
 
     @Override
     public void start() throws Exception
     {
         checkpointAppender.start();
-        logVersionRepository = context.getLogVersionRepository();
+        logVersionRepository = context.getLogVersionRepositoryProvider().logVersionRepository( logFiles );
     }
 
     @Override
@@ -158,8 +162,8 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
     private CheckpointInfo createCheckpointInfo( CheckpointEntryInfo checkpointEntry, ReadAheadLogChannel reader ) throws IOException
     {
-        return CheckpointInfo.ofLogEntry( checkpointEntry.checkpoint, checkpointEntry.checkpointEntryPosition, checkpointEntry.channelPositionAfterCheckpoint,
-                reader.getCurrentPosition() );
+        return ofLogEntry( checkpointEntry.checkpoint, checkpointEntry.checkpointEntryPosition, checkpointEntry.channelPositionAfterCheckpoint,
+                reader.getCurrentPosition(), context, logFiles.getLogFile() );
     }
 
     @Override
@@ -192,7 +196,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     lastCheckpointLocation = lastLocation;
                     checkpoint = logEntryCursor.get();
                     lastLocation = reader.getCurrentPosition();
-                    checkpoints.add( CheckpointInfo.ofLogEntry( checkpoint, lastCheckpointLocation, lastLocation, lastLocation ) );
+                    checkpoints.add( ofLogEntry( checkpoint, lastCheckpointLocation, lastLocation, lastLocation, context, logFiles.getLogFile() ) );
                 }
                 currentVersion++;
             }
@@ -213,9 +217,9 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
-    public LogTailInformation getTailInformation()
+    public LogTailMetadata getTailMetadata()
     {
-        return logTailScanner.getTailInformation();
+        return logTailScanner.getTailMetadata();
     }
 
     @Override

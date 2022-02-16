@@ -239,9 +239,9 @@ class TransactionTracingIT
         @Override
         public void afterCommit( TransactionData data, Object state, GraphDatabaseService databaseService )
         {
-            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1003 );
-            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1003 );
-            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 1001 );
+            softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 1001 );
+            softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 1001 );
+            softly.assertThat( cursorContext.getCursorTracer().hits() ).as( "Number of cursor hits" ).isEqualTo( 999 );
             softly.assertThat( cursorContext.getCursorTracer().faults() ).as( "Number of cursor faults" ).isEqualTo( 2 );
             invoked = true;
         }

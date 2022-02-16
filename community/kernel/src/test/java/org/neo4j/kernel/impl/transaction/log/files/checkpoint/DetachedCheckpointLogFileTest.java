@@ -34,9 +34,11 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -90,7 +92,7 @@ class DetachedCheckpointLogFileTest
         LogPosition logPosition = new LogPosition( logVersionRepository.getCurrentLogVersion(), CURRENT_FORMAT_LOG_HEADER_SIZE );
         TransactionId transactionId = new TransactionId( 1, 2, 3 );
         checkpointFile.getCheckpointAppender().checkPoint( NULL, transactionId, logPosition, Instant.now(), "detached" );
-        CheckpointInfo lastCheckPoint = buildLogFiles().getTailInformation().lastCheckPoint;
+        CheckpointInfo lastCheckPoint = ((LogTailInformation) buildLogFiles().getTailMetadata()).lastCheckPoint;
         assertThat( lastCheckPoint.getTransactionLogPosition() ).isEqualTo( logPosition );
     }
 

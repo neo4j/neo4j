@@ -48,6 +48,7 @@ import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
@@ -55,6 +56,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 @EphemeralPageCacheExtension
 @EphemeralNeo4jLayoutExtension
@@ -91,7 +93,7 @@ class StoreFactoryTest
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         RecordFormats recordFormats = selectForStoreOrConfigForNewDbs( config, databaseLayout, fileSystem, pageCache, logProvider, contextFactory );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, contextFactory, writable(),
-                openOptions );
+                EMPTY_LOG_TAIL, openOptions );
     }
 
     @AfterEach
@@ -115,17 +117,6 @@ class StoreFactoryTest
     }
 
     @Test
-    void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup()
-    {
-        // When
-        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-
-        // Then
-        assertThat( metaDataStore.getUpgradeTime() ).isEqualTo( metaDataStore.getCreationTime() );
-    }
-
-    @Test
     void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
     {
         // When
@@ -133,7 +124,7 @@ class StoreFactoryTest
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
-        assertEquals( metaDataStore.getUpgradeTransaction(), metaDataStore.getLastCommittedTransaction() );
+        assertNotNull( metaDataStore.getLastCommittedTransaction() );
     }
 
     @Test

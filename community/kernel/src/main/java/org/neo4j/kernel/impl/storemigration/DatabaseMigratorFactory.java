@@ -29,10 +29,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -46,11 +46,11 @@ public class DatabaseMigratorFactory
     private final JobScheduler jobScheduler;
     private final NamedDatabaseId namedDatabaseId;
     private final MemoryTracker memoryTracker;
-    private final DatabaseHealth databaseHealth;
+    private final DatabaseTracers databaseTracers;
     private final CursorContextFactory contextFactory;
 
     public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, PageCacheTracer pageCacheTracer,
-            JobScheduler jobScheduler, NamedDatabaseId namedDatabaseId, MemoryTracker memoryTracker, DatabaseHealth databaseHealth,
+            JobScheduler jobScheduler, NamedDatabaseId namedDatabaseId, MemoryTracker memoryTracker, DatabaseTracers databaseTracers,
             CursorContextFactory contextFactory )
     {
         this.fs = fs;
@@ -61,7 +61,7 @@ public class DatabaseMigratorFactory
         this.jobScheduler = jobScheduler;
         this.namedDatabaseId = namedDatabaseId;
         this.memoryTracker = memoryTracker;
-        this.databaseHealth = databaseHealth;
+        this.databaseTracers = databaseTracers;
         this.contextFactory = contextFactory;
     }
 
@@ -70,6 +70,6 @@ public class DatabaseMigratorFactory
     {
         DatabaseConfig dbConfig = new DatabaseConfig( Collections.emptyMap(), config, namedDatabaseId );
         return new LegacyDatabaseMigrator( fs, dbConfig, logService, dependencies, pageCache, pageCacheTracer, jobScheduler, databaseLayout,
-                storageEngineFactory, contextFactory, memoryTracker, databaseHealth );
+                storageEngineFactory, contextFactory, memoryTracker, databaseTracers );
     }
 }

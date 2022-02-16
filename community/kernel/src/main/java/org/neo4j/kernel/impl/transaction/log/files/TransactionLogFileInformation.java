@@ -98,7 +98,7 @@ public class TransactionLogFileInformation implements LogFileInformation
     @Override
     public long getLastEntryId()
     {
-        return logFileContext.getLastCommittedTransactionId();
+        return logFileContext.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles );
     }
 
     @Override

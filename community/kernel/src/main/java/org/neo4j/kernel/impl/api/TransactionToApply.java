@@ -102,14 +102,14 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
 
     public void publishAsCommitted()
     {
-        commitment.publishAsCommitted( cursorContext );
+        commitment.publishAsCommitted();
     }
 
     public void publishAsClosed()
     {
         if ( commitment.markedAsCommitted() )
         {
-            commitment.publishAsClosed( cursorContext );
+            commitment.publishAsClosed();
         }
     }
 

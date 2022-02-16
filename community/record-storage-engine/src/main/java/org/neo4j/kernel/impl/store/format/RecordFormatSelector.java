@@ -38,6 +38,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV4_3;
 import org.neo4j.kernel.impl.store.format.aligned.PageAlignedV5_0;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -68,7 +69,7 @@ public class RecordFormatSelector
     private static final String STORE_SELECTION_TAG = "storeSelection";
 
     /** Default format here should be kept same as {@link GraphDatabaseSettings#record_format_created_db#defaultFormat()}. */
-    private static final RecordFormats DEFAULT_FORMAT = PageAlignedV4_3.RECORD_FORMATS;
+    private static final RecordFormats DEFAULT_FORMAT = PageAligned.LATEST_RECORD_FORMATS;
 
     private static final List<RecordFormats> KNOWN_FORMATS = asList(
             StandardV4_3.RECORD_FORMATS,

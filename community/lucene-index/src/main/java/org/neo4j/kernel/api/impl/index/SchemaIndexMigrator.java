@@ -32,6 +32,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -68,11 +69,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-                         String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
+            StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
     {
-        StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
-        StoreVersion toVersion = storageEngineFactory.versionInformation( versionToMigrateTo );
-
         deleteAllIndexes = checkIndexCapabilities && !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.INDEX );
         deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
     }

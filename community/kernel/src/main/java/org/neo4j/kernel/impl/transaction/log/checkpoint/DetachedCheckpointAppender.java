@@ -25,21 +25,20 @@ import java.time.Instant;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
+import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.DetachedCheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
@@ -59,13 +58,12 @@ import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
 public class DetachedCheckpointAppender extends LifecycleAdapter implements CheckpointAppender
 {
-    private static final String CHECKPOINT_LOG_FILE_ROTATION_TAG = "checkpointLogFileRotation";
+    private final LogFiles logFiles;
     private final CheckpointFile checkpointFile;
     private final TransactionLogChannelAllocator channelAllocator;
     private final TransactionLogFilesContext context;
     private final Health databaseHealth;
     private final LogRotation logRotation;
-    private final PageCacheTracer pageCacheTracer;
     private StoreId storeId;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private DetachedCheckpointLogEntryWriter checkpointWriter;
@@ -75,12 +73,12 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final InternalLog log;
     private final DetachedLogTailScanner logTailScanner;
 
-    public DetachedCheckpointAppender( TransactionLogChannelAllocator channelAllocator, TransactionLogFilesContext context, CheckpointFile checkpointFile,
-            LogRotation checkpointRotation, DetachedLogTailScanner logTailScanner )
+    public DetachedCheckpointAppender( LogFiles logFiles, TransactionLogChannelAllocator channelAllocator, TransactionLogFilesContext context,
+            CheckpointFile checkpointFile, LogRotation checkpointRotation, DetachedLogTailScanner logTailScanner )
     {
+        this.logFiles = logFiles;
         this.checkpointFile = requireNonNull( checkpointFile );
         this.context = requireNonNull( context );
-        this.pageCacheTracer = requireNonNull( context.getDatabaseTracers().getPageCacheTracer() );
         this.channelAllocator = requireNonNull( channelAllocator );
         this.databaseHealth = requireNonNull( context.getDatabaseHealth() );
         this.logRotation = requireNonNull( checkpointRotation );
@@ -92,9 +90,9 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     public void start() throws IOException
     {
         this.storeId = context.getStoreId();
-        logVersionRepository = requireNonNull( context.getLogVersionRepository() );
+        this.logVersionRepository = requireNonNull( context.getLogVersionRepositoryProvider().logVersionRepository( logFiles ) );
         long version = logVersionRepository.getCheckpointLogVersion();
-        channel = channelAllocator.createLogChannel( version, context::getLastCommittedTransactionId );
+        channel = channelAllocator.createLogChannel( version, () -> context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( logFiles ) );
         context.getMonitors().newMonitor( LogRotationMonitor.class ).started( channel.getPath(), version );
         seekCheckpointChannel( version );
         buffer = new NativeScopedBuffer( kibiBytes( 1 ), context.getMemoryTracker() );
@@ -104,13 +102,13 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     private void seekCheckpointChannel( long expectedVersion ) throws IOException
     {
-        LogTailInformation tailInformation = logTailScanner.getTailInformation();
-        if ( tailInformation.hasUnreadableBytesInCheckpointLogs() )
+        LogTailMetadata tailMetadata = logTailScanner.getTailMetadata();
+        if ( tailMetadata.hasUnreadableBytesInCheckpointLogs() )
         {
             // we have unreadable bytes in the tail and we can't find correct position anyway and will rotate this file away
             return;
         }
-        CheckpointInfo lastCheckPoint = tailInformation.getLastCheckPoint();
+        CheckpointInfo lastCheckPoint = tailMetadata.getLastCheckPoint();
         if ( lastCheckPoint == null )
         {
             channel.position( lastReadablePosition() );
@@ -192,17 +190,14 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
 
     public Path rotate() throws IOException
     {
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CHECKPOINT_LOG_FILE_ROTATION_TAG ) ) )
-        {
-            channel = rotateChannel( channel, cursorContext );
-            writer.setChannel( channel );
-            return channel.getPath();
-        }
+        channel = rotateChannel( channel );
+        writer.setChannel( channel );
+        return channel.getPath();
     }
 
-    private PhysicalLogVersionedStoreChannel rotateChannel( PhysicalLogVersionedStoreChannel channel, CursorContext cursorContext ) throws IOException
+    private PhysicalLogVersionedStoreChannel rotateChannel( PhysicalLogVersionedStoreChannel channel ) throws IOException
     {
-        long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion( cursorContext );
+        long newLogVersion = logVersionRepository.incrementAndGetCheckpointLogVersion();
         writer.prepareForFlush().flush();
         var newChannel = channelAllocator.createLogChannel( newLogVersion, context::committingTransactionId );
         channel.close();

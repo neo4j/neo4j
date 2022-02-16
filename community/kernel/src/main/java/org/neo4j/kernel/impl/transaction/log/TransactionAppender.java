@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -42,7 +41,7 @@ public interface TransactionAppender extends Lifecycle
      * <p>
      * Any failure happening inside this method will cause a {@link DatabaseHealth#panic(Throwable) kernel panic}.
      * Callers must make sure that successfully appended
-     * transactions exiting this method are {@link Commitment#publishAsClosed(CursorContext)}.
+     * transactions exiting this method are {@link Commitment#publishAsClosed()}.
      *
      * @param batch transactions to append to the log. These transaction instances provide both input arguments
      * as well as a place to provide output data, namely {@link TransactionToApply#commitment(Commitment, long)} and
@@ -50,8 +49,8 @@ public interface TransactionAppender extends Lifecycle
      * @param logAppendEvent A trace event for the given log append operation.
      * @return last committed transaction in this batch. The appended (i.e. committed) transactions
      * will have had their {@link TransactionToApply#commitment(Commitment, long)} available and caller is expected to
-     * {@link Commitment#publishAsClosed(CursorContext)} mark them as applied} after they have been applied to storage.
-     * Note that {@link Commitment commitments} must be {@link Commitment#publishAsCommitted(CursorContext)}  marked as committed}
+     * {@link Commitment#publishAsClosed()} mark them as applied} after they have been applied to storage.
+     * Note that {@link Commitment commitments} must be {@link Commitment#publishAsCommitted()}  marked as committed}
      * by this method.
      * @throws IOException if there was a problem appending the transaction. See method javadoc body for
      * how to handle exceptions in general thrown from this method.

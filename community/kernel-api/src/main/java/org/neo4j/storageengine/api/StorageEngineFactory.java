@@ -60,6 +60,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -123,7 +124,8 @@ public interface StorageEngineFactory
             SchemaState schemaState, ConstraintRuleAccessor constraintSemantics, IndexConfigCompleter indexConfigCompleter, LockService lockService,
             IdGeneratorFactory idGeneratorFactory, IdController idController, DatabaseHealth databaseHealth, InternalLogProvider internalLogProvider,
             InternalLogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
+            boolean createStoreIfNotExists, DatabaseReadOnlyChecker readOnlyChecker, LogTailMetadata logTailMetadata, MemoryTracker memoryTracker,
+            CursorContextFactory contextFactory )
             throws IOException;
 
     /**
@@ -149,15 +151,13 @@ public interface StorageEngineFactory
      * @return the read-only {@link TransactionIdStore}.
      * @throws IOException on I/O error or if the store doesn't exist.
      */
-    TransactionIdStore readOnlyTransactionIdStore( FileSystemAbstraction filySystem, DatabaseLayout databaseLayout,
-            PageCache pageCache, CursorContext cursorContext ) throws IOException;
+    TransactionIdStore readOnlyTransactionIdStore( LogTailMetadata logTailMetadata ) throws IOException;
 
     /**
      * Instantiates a read-only {@link LogVersionRepository} to be used outside of a {@link StorageEngine}.
      * @return the read-only {@link LogVersionRepository}.
-     * @throws IOException on I/O error or if the store doesn't exist.
      */
-    LogVersionRepository readOnlyLogVersionRepository( DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
+    LogVersionRepository readOnlyLogVersionRepository( LogTailMetadata logTailMetadata );
 
     /**
      * Instantiates a fully functional {@link MetadataProvider}, which is a union of {@link TransactionIdStore}
@@ -166,15 +166,12 @@ public interface StorageEngineFactory
      * @throws IOException on I/O error or if the store doesn't exist.
      */
     MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
-            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory ) throws IOException;
+            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, LogTailMetadata logTailMetadata ) throws IOException;
 
     StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
 
-    void setStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
-            StoreId storeId, long upgradeTxChecksum, long upgradeTxCommitTimestamp ) throws IOException;
-
-    void setExternalStoreUUID( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext,
-                               UUID externalStoreId ) throws IOException;
+    void resetMetadata( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, CursorContextFactory contextFactory,
+            StoreId storeId, UUID externalStoreId ) throws IOException;
 
     Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
 

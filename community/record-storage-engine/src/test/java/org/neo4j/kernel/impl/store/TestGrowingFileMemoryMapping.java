@@ -47,6 +47,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -70,7 +71,8 @@ class TestGrowingFileMemoryMapping
         DefaultIdGeneratorFactory idGeneratorFactory =
                 new DefaultIdGeneratorFactory( testDirectory.getFileSystem(), immediate(), databaseLayout.getDatabaseName() );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache,
-                testDirectory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable() );
+                testDirectory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(),
+                EMPTY_LOG_TAIL );
 
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true );
                var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT ) )

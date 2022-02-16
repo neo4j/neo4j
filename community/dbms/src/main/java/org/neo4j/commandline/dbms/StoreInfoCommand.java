@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -37,12 +38,13 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.internal.locker.FileLockException;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
@@ -150,17 +152,19 @@ public class StoreInfoCommand extends AbstractCommand
     {
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
         var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
+        try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout );
+                var cursorContext = contextFactory.create( "printInfo" ) )
         {
             var storageEngineFactory = storageEngineSelector.selectStorageEngine( fs, databaseLayout, pageCache ).orElseThrow();
             var storeVersionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, Config.defaults(), pageCache,
                     NullLogService.getInstance(), contextFactory );
-            var storeVersion = storeVersionCheck.storeVersion( CursorContext.NULL_CONTEXT )
+            var storeVersion = storeVersionCheck.storeVersion( cursorContext )
                     .orElseThrow( () ->
                             new CommandFailedException( format( "Could not find version metadata in store '%s'", databaseLayout.databaseDirectory() ) ) );
             var versionInformation = storageEngineFactory.versionInformation( storeVersion );
+            var logTail = getLogTail( fs, databaseLayout, pageCache, config, memoryTracker, storageEngineFactory );
             var recoveryRequired = checkRecoveryState( fs, pageCache, databaseLayout, config, memoryTracker, storageEngineFactory );
-            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( fs, databaseLayout, pageCache, CursorContext.NULL_CONTEXT );
+            var txIdStore = storageEngineFactory.readOnlyTransactionIdStore( logTail );
             var lastTxId = txIdStore.getLastCommittedTransactionId(); // Latest committed tx id found in metadata store. May be behind if recovery is required.
             var successorString = versionInformation.successorStoreVersion().map(
                     successor -> storageEngineFactory.versionInformation( successor ).introductionNeo4jVersion() ).orElse( null );
@@ -190,6 +194,13 @@ public class StoreInfoCommand extends AbstractCommand
         {
             throw new CommandFailedException( format( "Failed to execute command: '%s'.", e.getMessage() ), e );
         }
+    }
+
+    private LogTailMetadata getLogTail( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, Config config,
+            MemoryTracker memoryTracker, StorageEngineFactory storageEngineFactory ) throws IOException
+    {
+        LogTailExtractor logTailExtractor = new LogTailExtractor( fs, pageCache, config, storageEngineFactory, EMPTY );
+        return logTailExtractor.getTailMetadata( databaseLayout, memoryTracker );
     }
 
     private static boolean checkRecoveryState( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,

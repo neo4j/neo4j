@@ -62,6 +62,7 @@ import org.neo4j.token.api.TokenHolder;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -223,7 +224,7 @@ public class RecordStorageEngineSupport
         {
             super( databaseLayout, config, pageCache, fs, internalLogProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics,
                     indexConfigCompleter, lockService, databaseHealth, idGeneratorFactory, idController, RecoveryCleanupWorkCollector.immediate(),
-                     true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(),
+                     true, EmptyMemoryTracker.INSTANCE, DatabaseReadOnlyChecker.writable(), EMPTY_LOG_TAIL,
                     CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }

@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.lock.LockGroup;
@@ -177,6 +178,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             boolean createStoreIfNotExists,
             MemoryTracker otherMemoryTracker,
             DatabaseReadOnlyChecker readOnlyChecker,
+            LogTailMetadata logTailMetadata,
             CommandLockVerification.Factory commandLockVerificationFactory,
             LockVerificationMonitor.Factory lockVerificationFactory,
             CursorContextFactory contextFactory
@@ -197,7 +199,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.lockVerificationFactory = lockVerificationFactory;
 
         StoreFactory factory =
-                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, internalLogProvider, contextFactory, readOnlyChecker );
+                new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, internalLogProvider, contextFactory, readOnlyChecker,
+                        logTailMetadata );
         neoStores = factory.openAllNeoStores( createStoreIfNotExists );
         Stream.of( RecordIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
         Stream.of( SchemaIdType.values() ).forEach( idType -> idGeneratorWorkSyncs.add( idGeneratorFactory.get( idType ) ) );
@@ -357,7 +360,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
      * @throws ConstraintValidationException if this transaction was set to create a constraint and some data violates that constraint.
      */
-    @SuppressWarnings( "resource" )
     @Override
     public void createCommands(
             Collection<StorageCommand> commands,
@@ -421,14 +423,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 KernelVersion.V4_3_D4, KernelVersion.V4_2, currentVersion, versionToUpgradeTo );
         Preconditions.checkState( versionToUpgradeTo.isGreaterThan( currentVersion ), "Can not downgrade from %s to %s", currentVersion, versionToUpgradeTo );
 
-        int id = MetaDataStore.Position.KERNEL_VERSION.id();
-
         MetaDataRecord before = metaDataStore.newRecord();
-        before.setId( id );
         before.initialize( true, currentVersion.version() );
 
         MetaDataRecord after = metaDataStore.newRecord();
-        after.setId( id );
         after.initialize( true, versionToUpgradeTo.version() );
 
         //This command will be the first one in the "new" version, indicating the switch and writing it to the MetaDataStore

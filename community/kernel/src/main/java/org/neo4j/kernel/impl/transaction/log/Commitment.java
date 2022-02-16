@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
@@ -27,20 +26,20 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 /**
  * Represents a commitment that invoking {@link TransactionAppender#append(TransactionToApply, LogAppendEvent)}
  * means. As a transaction is carried through the {@link TransactionCommitProcess} this commitment is updated
- * when {@link #publishAsCommitted(CursorContext)}  committed} (which happens when appending to log), but also
- * when {@link #publishAsClosed(CursorContext)} closing}.
+ * when {@link #publishAsCommitted()}  committed} (which happens when appending to log), but also
+ * when {@link #publishAsClosed()} closing}.
  */
 public interface Commitment
 {
     Commitment NO_COMMITMENT = new Commitment()
     {
         @Override
-        public void publishAsCommitted( CursorContext cursorContext )
+        public void publishAsCommitted()
         {
         }
 
         @Override
-        public void publishAsClosed( CursorContext cursorContext )
+        public void publishAsClosed()
         {
         }
 
@@ -55,15 +54,15 @@ public interface Commitment
     /**
      * Marks the transaction as committed and makes this fact public.
      */
-    void publishAsCommitted( CursorContext cursorContext );
+    void publishAsCommitted();
 
     /**
      * Marks the transaction as closed and makes this fact public.
      */
-    void publishAsClosed( CursorContext cursorContext );
+    void publishAsClosed();
 
     /**
-     * @return whether or not {@link #publishAsCommitted(CursorContext)} have been called.
+     * @return whether or not {@link #publishAsCommitted()} have been called.
      */
     boolean markedAsCommitted();
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -73,6 +74,7 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @TestDirectoryExtension
+@Disabled // TODO: Disabled as agreed. Emma-Petr
 class RecoveryWithTokenIndexesIT
 {
     @RegisterExtension

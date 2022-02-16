@@ -62,6 +62,7 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 @TestDirectoryExtension
 class SchemaIndexMigratorTest
@@ -100,7 +101,8 @@ class SchemaIndexMigratorTest
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to", indexImporterFactory );
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, mock( StoreVersion.class ), mock( StoreVersion.class ), indexImporterFactory,
+                EMPTY_LOG_TAIL );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
         verify( fs ).deleteRecursively( indexProviderRootDirectory );
@@ -129,7 +131,8 @@ class SchemaIndexMigratorTest
                 contextFactory );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to", IndexImporterFactory.EMPTY );
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, mock( StoreVersion.class ), mock( StoreVersion.class ), IndexImporterFactory.EMPTY,
+                EMPTY_LOG_TAIL );
         migrator.moveMigratedFiles( databaseLayout, migrationLayout, "from", "to" );
 
         // then

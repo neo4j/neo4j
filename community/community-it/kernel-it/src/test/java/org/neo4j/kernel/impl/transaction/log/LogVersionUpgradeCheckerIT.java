@@ -117,7 +117,8 @@ class LogVersionUpgradeCheckerIT
     private void appendCheckpoint( byte logEntryVersion, boolean removeCheckpointFile ) throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
-                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() ).withStoreId( StoreId.UNKNOWN ).build();
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
+                .withStoreId( StoreId.UNKNOWN ).build();
 
         if ( removeCheckpointFile )
         {

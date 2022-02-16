@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -84,6 +85,7 @@ public class NeoStores implements AutoCloseable
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
     private final CommonAbstractStore[] stores;
+    private final LogTailMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
     private final DatabaseReadOnlyChecker readOnlyChecker;
 
@@ -98,6 +100,7 @@ public class NeoStores implements AutoCloseable
             boolean createIfNotExist,
             CursorContextFactory contextFactory,
             DatabaseReadOnlyChecker readOnlyChecker,
+            LogTailMetadata logTailMetadata,
             StoreType[] storeTypes,
             ImmutableSet<OpenOption> openOptions )
     {
@@ -111,6 +114,7 @@ public class NeoStores implements AutoCloseable
         this.createIfNotExist = createIfNotExist;
         this.contextFactory = contextFactory;
         this.readOnlyChecker = readOnlyChecker;
+        this.logTailMetadata = logTailMetadata;
         this.openOptions = openOptions;
 
         stores = new CommonAbstractStore[StoreType.values().length];
@@ -539,9 +543,8 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createMetadataStore()
     {
-        return initialize( new MetaDataStore( layout.metadataStore(), config, pageCache, logProvider,
-                        recordFormats.metaData(),
-                        recordFormats.storeVersion(), contextFactory, readOnlyChecker, layout.getDatabaseName(), openOptions ), contextFactory );
+        return initialize( new MetaDataStore( layout.metadataStore(), config, pageCache, logProvider, recordFormats.metaData(), recordFormats.storeVersion(),
+                readOnlyChecker, logTailMetadata, layout.getDatabaseName(), openOptions ), contextFactory );
     }
 
     private CommonAbstractStore createDynamicStringStore( Path storeFile, Path idFile )

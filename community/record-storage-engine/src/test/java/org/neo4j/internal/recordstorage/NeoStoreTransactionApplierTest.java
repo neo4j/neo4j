@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.set.MutableSet;
-import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +76,6 @@ import org.neo4j.token.api.NamedToken;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -802,7 +799,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ) );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -826,7 +823,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ) );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -848,7 +845,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ) );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -871,7 +868,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( eq( transactionId ) );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
@@ -892,7 +889,7 @@ class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( eq( transactionId ), any() );
+        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( eq( transactionId ) );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
@@ -914,7 +911,7 @@ class NeoStoreTransactionApplierTest
 
         verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
         verify( schemaStore ).updateRecord( eq( after ), any(), any(), any(), any() );
-        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId, NULL_CONTEXT );
+        verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
@@ -923,47 +920,22 @@ class NeoStoreTransactionApplierTest
     {
         //Given
         TransactionApplierFactory applier = newApplier( false );
-        Command.MetaDataCommand command = createMetaDataCommand( MetaDataStore.Position.KERNEL_VERSION, KernelVersion.LATEST
-                .version() );
+        Command.MetaDataCommand command = createMetaDataCommand( KernelVersion.LATEST.version() );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
 
         //then
         assertFalse( result );
-        verify( metaDataStore ).setKernelVersion( KernelVersion.LATEST, NULL_CONTEXT );
+        verify( metaDataStore ).setKernelVersion( KernelVersion.LATEST );
     }
 
-    @Test
-    void shouldOnlyAcceptKernelVersionMetaDataCommands()
+    private static Command.MetaDataCommand createMetaDataCommand( long toValue )
     {
-        //At the time of writing this test KernelVersion is the only accepted type, it might change in future versions
-        //Given
-        TransactionApplierFactory applier = newApplier( false );
-
-        MutableSet<MetaDataStore.Position> otherTypes = Sets.mutable.with( MetaDataStore.Position.values() ).without( MetaDataStore.Position.KERNEL_VERSION );
-        for ( MetaDataStore.Position type : otherTypes )
-        {
-            Command.MetaDataCommand command = createMetaDataCommand( type, 0 );
-
-            // when/then
-            assertThatThrownBy( () -> apply( applier, command::handle, transactionToApply ) )
-                    .isInstanceOf( UnsupportedOperationException.class )
-                    .hasMessageContaining( "Unexpected meta data update" );
-        }
-
-    }
-
-    private static Command.MetaDataCommand createMetaDataCommand( MetaDataStore.Position position, long toValue )
-    {
-        int id = position.id();
-
         MetaDataRecord before = new MetaDataRecord();
-        before.setId( id );
         before.initialize( true, 0 );
 
         MetaDataRecord after = new MetaDataRecord();
-        after.setId( id );
         after.initialize( true, toValue );
 
         return new Command.MetaDataCommand( before, after );

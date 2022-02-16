@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -66,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -152,7 +152,7 @@ class DetachedLogTailScannerTest
             fs.delete( matchedFile );
         }
 
-        var e = assertThrows( RuntimeException.class, testTogFiles::getTailInformation );
+        var e = assertThrows( RuntimeException.class, testTogFiles::getTailMetadata );
         assertThat( e ).getRootCause().hasMessageContaining( "LogPosition{logVersion=8," ).hasMessageContaining(
                 "checkpoint does not point to a valid location in transaction logs." );
     }
@@ -160,7 +160,7 @@ class DetachedLogTailScannerTest
     @Test
     void detectMissingLogFiles()
     {
-        LogTailInformation tailInformation = logFiles.getTailInformation();
+        LogTailMetadata tailInformation = logFiles.getTailMetadata();
         assertTrue( tailInformation.logsMissing() );
         assertTrue( tailInformation.isRecoveryRequired() );
     }
@@ -173,7 +173,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        LogTailMetadata logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, true, logTailInformation );
@@ -187,7 +187,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile() );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -203,7 +203,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, true, txId, false, logTailInformation );
@@ -217,7 +217,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile() );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -232,7 +232,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, true, txId, false, logTailInformation );
@@ -246,7 +246,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start() ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, false, logTailInformation );
@@ -261,7 +261,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, true, txId, false, logTailInformation );
@@ -280,7 +280,7 @@ class DetachedLogTailScannerTest
             logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -297,7 +297,7 @@ class DetachedLogTailScannerTest
             logFile( commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( false, true, 6, false, logTailInformation );
@@ -311,7 +311,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -325,7 +325,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -341,7 +341,7 @@ class DetachedLogTailScannerTest
         fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, false, logTailInformation );
@@ -358,7 +358,7 @@ class DetachedLogTailScannerTest
         fs.truncate( highestLogFile, fs.getFileSize( highestLogFile ) - 3 );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, firstTxId, false, logTailInformation );
@@ -374,7 +374,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( txId ), checkPoint( start ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -388,7 +388,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint(), start(), commit( 1 ), checkPoint() ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -403,7 +403,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -419,7 +419,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( checkPoint() ), logFile( start, commit( txId ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -434,7 +434,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( 1 ), checkPoint() ), logFile() );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -451,7 +451,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -468,7 +468,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start, position ), logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -484,7 +484,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, false, logTailInformation );
@@ -499,7 +499,7 @@ class DetachedLogTailScannerTest
         setupLogFiles( endLogVersion, logFile( start(), commit( 1 ), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
-        LogTailInformation logTailInformation = logFiles.getTailInformation();
+        var logTailInformation = logFiles.getTailMetadata();
 
         // then
         assertLatestCheckPoint( true, true, txId, false, logTailInformation );
@@ -518,7 +518,7 @@ class DetachedLogTailScannerTest
                        logFile( start(), commit( txId ) ) );
 
         // when
-        logFiles.getTailInformation();
+        logFiles.getTailMetadata();
 
         // then
         String message = "Scanning log file with version %d for checkpoint entries";
@@ -547,8 +547,8 @@ class DetachedLogTailScannerTest
             try
             {
                 AtomicLong lastTxId = new AtomicLong();
-                logVersionRepository.setCurrentLogVersion( logVersion, NULL_CONTEXT );
-                logVersionRepository.setCheckpointLogVersion( logVersion, NULL_CONTEXT );
+                logVersionRepository.setCurrentLogVersion( logVersion );
+                logVersionRepository.setCheckpointLogVersion( logVersion );
                 LifeSupport logFileLife = new LifeSupport();
                 logFileLife.start();
                 logFileLife.add( logFiles );
@@ -667,14 +667,15 @@ class DetachedLogTailScannerTest
     }
 
     private static void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
-        long firstTxIdAfterLastCheckPoint, boolean filesNotFound, LogTailInformation logTailInformation )
+        long firstTxIdAfterLastCheckPoint, boolean filesNotFound, LogTailMetadata logTailInformation )
     {
-        assertEquals( hasCheckPointEntry, logTailInformation.lastCheckPoint != null );
-        assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckpoint() );
+        var tail = (LogTailInformation) logTailInformation;
+        assertEquals( hasCheckPointEntry, tail.lastCheckPoint != null );
+        assertEquals( commitsAfterLastCheckPoint, tail.commitsAfterLastCheckpoint() );
         if ( commitsAfterLastCheckPoint )
         {
-            assertEquals( firstTxIdAfterLastCheckPoint, logTailInformation.firstTxIdAfterLastCheckPoint );
+            assertEquals( firstTxIdAfterLastCheckPoint, tail.firstTxIdAfterLastCheckPoint );
         }
-        assertEquals( filesNotFound, logTailInformation.filesNotFound );
+        assertEquals( filesNotFound, tail.filesNotFound );
     }
 }

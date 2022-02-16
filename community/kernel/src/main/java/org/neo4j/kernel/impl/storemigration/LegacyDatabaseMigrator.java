@@ -20,21 +20,25 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.function.Suppliers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -58,13 +62,13 @@ public class LegacyDatabaseMigrator
     private final DatabaseLayout databaseLayout;
     private final StorageEngineFactory storageEngineFactory;
     private final CursorContextFactory contextFactory;
+    private final DatabaseTracers databaseTracers;
     private final MemoryTracker memoryTracker;
-    private final DatabaseHealth databaseHealth;
 
     public LegacyDatabaseMigrator(
             FileSystemAbstraction fs, Config config, LogService logService, DependencyResolver dependencyResolver, PageCache pageCache,
             PageCacheTracer pageCacheTracer, JobScheduler jobScheduler, DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory,
-            CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseHealth databaseHealth )
+            CursorContextFactory contextFactory, MemoryTracker memoryTracker, DatabaseTracers databaseTracers )
     {
         this.fs = fs;
         this.config = config;
@@ -75,9 +79,9 @@ public class LegacyDatabaseMigrator
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
         this.contextFactory = contextFactory;
+        this.databaseTracers = databaseTracers;
         this.storageEngineFactory = storageEngineFactory;
         this.memoryTracker = memoryTracker;
-        this.databaseHealth = databaseHealth;
     }
 
     /**
@@ -89,12 +93,14 @@ public class LegacyDatabaseMigrator
     public void migrate( boolean forceUpgrade ) throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
-        var logsUpgrader = new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, databaseLayout, pageCache, config, dependencyResolver,
-                                                      memoryTracker, databaseHealth, contextFactory );
-        InternalLog userLog = logService.getUserLog( LegacyDatabaseMigrator.class );
+        var logTailSupplier = Suppliers.lazySingleton( () -> loadLogTail( databaseLayout ) );
+        var logsUpgrader =
+                new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier );
+        InternalLog userLog = logService.getUserLog( LogsMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         InternalLogProvider logProvider = logService.getInternalLogProvider();
-        StoreUpgrader storeUpgrader = new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, contextFactory );
+        StoreUpgrader storeUpgrader =
+                new StoreUpgrader( storageEngineFactory, versionCheck, progress, config, fs, logProvider, logsUpgrader, contextFactory, logTailSupplier );
 
         // Get all the participants from the storage engine and add them where they want to be
         var storeParticipants = storageEngineFactory.migrationParticipants(
@@ -117,4 +123,17 @@ public class LegacyDatabaseMigrator
             throw e;
         }
     }
+
+    private LogTailMetadata loadLogTail( DatabaseLayout layout )
+    {
+        try
+        {
+            return new LogTailExtractor( fs, pageCache, config, storageEngineFactory, databaseTracers ).getTailMetadata( layout, memoryTracker );
+        }
+        catch ( IOException ioe )
+        {
+            throw new UncheckedIOException( ioe );
+        }
+    }
+
 }

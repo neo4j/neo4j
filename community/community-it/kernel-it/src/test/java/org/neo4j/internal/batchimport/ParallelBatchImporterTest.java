@@ -104,6 +104,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -189,7 +190,7 @@ public class ParallelBatchImporterTest
         augmentConfig( dbConfig );
         IndexImporterFactoryImpl indexImporterFactory = new IndexImporterFactoryImpl( dbConfig );
         final BatchImporter inserter = new ParallelBatchImporter(
-                databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, dbConfig,
+                databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, EMPTY_LOG_TAIL, dbConfig,
                 Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,
                 contextFactory );
         LongAdder propertyCount = new LongAdder();

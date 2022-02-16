@@ -87,8 +87,8 @@ class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getCommandReaderFactory() );
         assertEquals( Long.MAX_VALUE, context.getRotationThreshold().get() );
-        assertEquals( TransactionIdStore.BASE_TX_ID, context.getLastCommittedTransactionId() );
-        assertEquals( 0, context.getLogVersionRepository().getCurrentLogVersion() );
+        assertEquals( TransactionIdStore.BASE_TX_ID, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( null ) );
+        assertEquals( 0, context.getLogVersionRepositoryProvider().logVersionRepository( null ).getCurrentLogVersion() );
     }
 
     @Test
@@ -111,8 +111,8 @@ class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
-        assertEquals( 1, context.getLastCommittedTransactionId() );
-        assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
+        assertEquals( 1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( null ) );
+        assertEquals( 2, context.getLogVersionRepositoryProvider().logVersionRepository( null ).getCurrentLogVersion() );
     }
 
     @Test
@@ -127,8 +127,8 @@ class LogFilesBuilderTest
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 1 ), context.getRotationThreshold().get() );
-        assertEquals( 1, context.getLastCommittedTransactionId() );
-        assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
+        assertEquals( 1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( null ) );
+        assertEquals( 2, context.getLogVersionRepositoryProvider().logVersionRepository( null ).getCurrentLogVersion() );
     }
 
     @Test
@@ -151,8 +151,8 @@ class LogFilesBuilderTest
         assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( databaseHealth, context.getDatabaseHealth() );
-        assertEquals( 1, context.getLastCommittedTransactionId() );
-        assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
+        assertEquals( 1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( null ) );
+        assertEquals( 2, context.getLogVersionRepositoryProvider().logVersionRepository( null ).getCurrentLogVersion() );
     }
 
     @Test
@@ -195,15 +195,14 @@ class LogFilesBuilderTest
     void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
     {
         assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withCommandReaderFactory(
-                new TestCommandReaderFactory() ).buildContext().getLastCommittedTransactionId() );
+                new TestCommandReaderFactory() ).buildContext().getLastCommittedTransactionIdProvider().getLastCommittedTransactionId( null ) );
     }
 
     @Test
     void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
     {
-        assertThrows( UnsupportedOperationException.class,
-                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withCommandReaderFactory( new TestCommandReaderFactory() )
-                                                                            .buildContext().getLogVersionRepository() );
+        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withCommandReaderFactory(
+                new TestCommandReaderFactory() ).buildContext().getLogVersionRepositoryProvider().logVersionRepository( null ) );
     }
 
     private static LogFilesBuilder builderWithTestCommandReaderFactory( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )

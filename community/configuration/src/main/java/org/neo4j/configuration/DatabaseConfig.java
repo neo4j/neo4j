@@ -29,9 +29,7 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLog;
 
-import static java.lang.Boolean.TRUE;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.select_specific_record_format;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.record_format;
 
 public class DatabaseConfig extends Config implements Lifecycle
@@ -47,7 +45,6 @@ public class DatabaseConfig extends Config implements Lifecycle
         this.globalConfig = globalConfig;
         overriddenSettings = !namedDatabaseId.isSystemDatabase() ? null : Map.of(
                 record_format, "", //Latest version of the format family it is currently on. Needs to work in rolling upgrade.
-                allow_upgrade, TRUE,
                 select_specific_record_format, ""
         );
     }

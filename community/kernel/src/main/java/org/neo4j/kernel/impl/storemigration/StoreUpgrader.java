@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.common.ProgressReporter;
@@ -38,7 +39,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -92,9 +93,11 @@ public class StoreUpgrader
     private final LogsMigrator logsUpgrader;
     private final String configuredFormat;
     private final CursorContextFactory contextFactory;
+    private final Supplier<LogTailMetadata> logTailSupplier;
 
     public StoreUpgrader( StorageEngineFactory storageEngineFactory, StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor,
-            Config config, FileSystemAbstraction fileSystem, InternalLogProvider logProvider, LogsMigrator logsMigrator, CursorContextFactory contextFactory )
+            Config config, FileSystemAbstraction fileSystem, InternalLogProvider logProvider, LogsMigrator logsMigrator, CursorContextFactory contextFactory,
+            Supplier<LogTailMetadata> logTailSupplier )
     {
         this.storageEngineFactory = storageEngineFactory;
         this.storeVersionCheck = storeVersionCheck;
@@ -105,6 +108,7 @@ public class StoreUpgrader
         this.log = logProvider.getLog( getClass() );
         this.configuredFormat = storeVersionCheck.configuredVersion();
         this.contextFactory = contextFactory;
+        this.logTailSupplier = logTailSupplier;
     }
 
     /**
@@ -172,7 +176,7 @@ public class StoreUpgrader
         }
     }
 
-    private static boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, CursorContext cursorContext )
+    private boolean hasCurrentVersion( StoreVersionCheck storeVersionCheck, CursorContext cursorContext )
     {
         String configuredVersion = storeVersionCheck.configuredVersion();
         StoreVersionCheck.Result versionResult = storeVersionCheck.checkUpgrade( configuredVersion, cursorContext );
@@ -185,6 +189,7 @@ public class StoreUpgrader
     }
 
     private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, Path migrationStateFile, CursorContext cursorContext )
+            throws IOException
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
@@ -197,7 +202,7 @@ public class StoreUpgrader
         {
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion(), cursorContext );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
-            logsUpgrader.assertCleanlyShutDown( dbDirectoryLayout );
+            logsUpgrader.assertCleanlyShutDown();
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
@@ -212,7 +217,7 @@ public class StoreUpgrader
         }
 
         progressMonitor.startTransactionLogsMigration();
-        logsUpgrader.migrate( dbDirectoryLayout );
+        logsUpgrader.upgrade( dbDirectoryLayout );
         progressMonitor.completeTransactionLogsMigration();
 
         cleanup( participants.values(), migrationLayout );
@@ -287,13 +292,14 @@ public class StoreUpgrader
     {
         try
         {
+            StoreVersion toVersion = storageEngineFactory.versionInformation( storeVersionCheck.configuredVersion() );
+            StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
             for ( Map.Entry<String, StoreMigrationParticipant> participantEntry : participants.entrySet() )
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participantEntry.getKey() );
-                String versionToMigrateTo = storeVersionCheck.configuredVersion();
                 IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
                 participantEntry.getValue().migrate(
-                        directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
+                        directoryLayout, migrationLayout, progressReporter, fromVersion, toVersion, indexImporterFactory, logTailSupplier.get() );
                 progressReporter.completed();
             }
         }
@@ -424,7 +430,7 @@ public class StoreUpgrader
             super( DEFAULT_MESSAGE );
         }
 
-        DatabaseNotCleanlyShutDownException( LogTailInformation logTail )
+        DatabaseNotCleanlyShutDownException( LogTailMetadata logTail )
         {
             super( DEFAULT_MESSAGE + " Log tail: " + logTail );
         }

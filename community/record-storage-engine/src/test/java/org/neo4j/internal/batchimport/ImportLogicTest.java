@@ -57,6 +57,7 @@ import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.internal.NullLogService.getInstance;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -83,7 +84,7 @@ class ImportLogicTest
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, defaults(), INSTANCE ) )
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( databaseLayout, stores, DEFAULT, defaults(), getInstance(), monitor,
@@ -158,7 +159,7 @@ class ImportLogicTest
         IndexImporterFactory factory = mock( IndexImporterFactory.class );
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL, CONTEXT_FACTORY,
-                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, defaults(), INSTANCE ) )
+                databaseLayout, DEFAULT, getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, defaults(), INSTANCE ) )
         {
             // when
             DataStatistics.RelationshipTypeCount[] relationshipTypeCounts = new DataStatistics.RelationshipTypeCount[]

@@ -25,6 +25,8 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 public class NameOverridingStoreMigrationParticipant implements StoreMigrationParticipant
@@ -39,10 +41,10 @@ public class NameOverridingStoreMigrationParticipant implements StoreMigrationPa
     }
 
     @Override
-    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
-                         String versionToMigrateTo, IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
+    public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, StoreVersion fromVersion,
+            StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata ) throws IOException, KernelException
     {
-        delegate.migrate( directoryLayout, migrationLayout, progress, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
+        delegate.migrate( directoryLayout, migrationLayout, progress, fromVersion, toVersion, indexImporterFactory, tailMetadata );
     }
 
     @Override

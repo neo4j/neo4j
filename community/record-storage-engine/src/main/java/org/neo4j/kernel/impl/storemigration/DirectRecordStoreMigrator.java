@@ -48,6 +48,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 /**
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for
@@ -77,11 +78,11 @@ class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new ScanOnOpenReadOnlyIdGeneratorFactory(),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), contextFactory, readOnly(), immutable.empty() )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), contextFactory, readOnly(), EMPTY_LOG_TAIL, immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
                         new DefaultIdGeneratorFactory( fs, immediate(), toDirectoryStructure.getDatabaseName() ), pageCache, fs, toFormat,
-                        NullLogProvider.getInstance(), contextFactory, writable(), immutable.empty() )
+                        NullLogProvider.getInstance(), contextFactory, writable(), EMPTY_LOG_TAIL, immutable.empty() )
                         .openNeoStores( true, storesToOpen );
                 var cursorContext = contextFactory.create( DIRECT_STORE_MIGRATOR_TAG );
                 var toStoreCursors = new CachedStoreCursors( toStores, cursorContext ) )

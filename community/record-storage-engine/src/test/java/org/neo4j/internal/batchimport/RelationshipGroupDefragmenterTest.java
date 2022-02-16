@@ -71,6 +71,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -106,7 +107,7 @@ class RelationshipGroupDefragmenterTest
         this.units = units;
         jobScheduler = new ThreadPoolJobScheduler();
         stores = BatchingNeoStores.batchingNeoStores( testDirectory.getFileSystem(), databaseLayout, CONFIG, NullLogService.getInstance(),
-            AdditionalInitialIds.EMPTY, config, jobScheduler, PageCacheTracer.NULL, CONTEXT_FACTORY,
+            AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, config, jobScheduler, PageCacheTracer.NULL, CONTEXT_FACTORY,
                 INSTANCE );
         stores.createNew();
         storeCursors = new CachedStoreCursors( stores.getNeoStores(), NULL_CONTEXT );

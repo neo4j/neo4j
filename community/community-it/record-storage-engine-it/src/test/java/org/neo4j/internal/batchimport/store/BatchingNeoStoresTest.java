@@ -111,6 +111,7 @@ import static org.neo4j.internal.batchimport.store.BatchingNeoStores.batchingNeo
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -144,7 +145,7 @@ class BatchingNeoStoresTest
             try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
                 try ( BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout, Configuration.DEFAULT,
-                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler, PageCacheTracer.NULL,
+                        NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, Config.defaults(), jobScheduler, PageCacheTracer.NULL,
                         CONTEXT_FACTORY,
                         INSTANCE ) )
                 {
@@ -169,7 +170,7 @@ class BatchingNeoStoresTest
         int headerSize = defaultFormat().dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
               BatchingNeoStores store = batchingNeoStores( fileSystem, databaseLayout,
-              Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler, PageCacheTracer.NULL,
+              Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, config, jobScheduler, PageCacheTracer.NULL,
                       CONTEXT_FACTORY,
                       INSTANCE ) )
         {
@@ -191,7 +192,7 @@ class BatchingNeoStoresTest
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, CONTEXT_FACTORY,
-                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.createNew();
@@ -204,7 +205,7 @@ class BatchingNeoStoresTest
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
                     PageCacheTracer.NULL, CONTEXT_FACTORY,
-                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY,
+                    databaseLayout, Configuration.DEFAULT, NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL,
                     Config.defaults(), INSTANCE ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -235,7 +236,7 @@ class BatchingNeoStoresTest
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
                 databaseLayout, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, config, INSTANCE ) )
+                NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, config, INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
@@ -257,7 +258,7 @@ class BatchingNeoStoresTest
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
                 databaseLayout, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, config, INSTANCE ) )
+                NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, config, INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
@@ -277,7 +278,7 @@ class BatchingNeoStoresTest
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY,
                 databaseLayout, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
+                NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             Input.Estimates estimates = Input.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
@@ -305,7 +306,7 @@ class BatchingNeoStoresTest
         // when
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
                 pageCache, PageCacheTracer.NULL, CONTEXT_FACTORY, databaseLayout, Configuration.DEFAULT,
-                NullLogService.getInstance(), EMPTY, Config.defaults(), INSTANCE ) )
+                NullLogService.getInstance(), EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             stores.buildCountsStore( new CountsBuilder()
@@ -409,7 +410,7 @@ class BatchingNeoStoresTest
                             new StandardConstraintSemantics(), indexConfigCompleter, LockService.NO_LOCK_SERVICE,
                             new DatabaseHealth( PanicEventGenerator.NO_OP, nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(),
-                            recoveryCleanupWorkCollector,  true, INSTANCE, writable(), CommandLockVerification.Factory.IGNORE,
+                            recoveryCleanupWorkCollector,  true, INSTANCE, writable(), EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE,
                             LockVerificationMonitor.Factory.IGNORE, CONTEXT_FACTORY ) );
             // Create the relationship type token
             TxState txState = new TxState();

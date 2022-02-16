@@ -19,26 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
-
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
-import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 
 public class ReadOnlyTransactionIdStore implements TransactionIdStore
 {
@@ -47,29 +32,13 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     private final long transactionCommitTimestamp;
     private final LogPosition logPosition;
 
-    public ReadOnlyTransactionIdStore( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, CursorContext cursorContext )
-            throws IOException
+    public ReadOnlyTransactionIdStore( LogTailMetadata logTailMetadata )
     {
-        long id = 0;
-        int checksum = 0;
-        long logVersion = 0;
-        long byteOffset = 0;
-        long commitTimestamp = 0;
-        if ( NeoStores.isStorePresent( fs, RecordDatabaseLayout.convert( databaseLayout ) ) )
-        {
-            Path neoStore = databaseLayout.metadataStore();
-            String databaseName = databaseLayout.getDatabaseName();
-            id = getRecord( pageCache, neoStore, LAST_TRANSACTION_ID, databaseName, cursorContext );
-            checksum = (int) getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM, databaseName, cursorContext );
-            commitTimestamp = getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, databaseName, cursorContext );
-            logVersion = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_VERSION, databaseName, cursorContext );
-            byteOffset = getRecord( pageCache, neoStore, LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, databaseName, cursorContext );
-        }
-
-        this.transactionId = id;
-        this.transactionChecksum = checksum;
-        this.transactionCommitTimestamp = commitTimestamp;
-        this.logPosition = new LogPosition( logVersion, byteOffset );
+        var lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
+        transactionId = lastCommittedTransaction.transactionId();
+        transactionChecksum = lastCommittedTransaction.checksum();
+        transactionCommitTimestamp = lastCommittedTransaction.commitTimestamp();
+        logPosition = logTailMetadata.getLastTransactionLogPosition();
     }
 
     @Override
@@ -85,7 +54,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
@@ -103,12 +72,6 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public TransactionId getUpgradeTransaction()
-    {
-        return getLastCommittedTransaction();
-    }
-
-    @Override
     public long getLastClosedTransactionId()
     {
         return transactionId;
@@ -121,27 +84,20 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion,
-            CursorContext cursorContext )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long logByteOffset, long logVersion )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long logByteOffset, int checksum, long commitTimestamp )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
-            CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
     {
         throw new UnsupportedOperationException( "Read-only transaction ID store" );
-    }
-
-    @Override
-    public void flush( CursorContext cursorContext )
-    {   // Nothing to flush
     }
 }

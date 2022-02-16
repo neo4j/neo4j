@@ -76,6 +76,11 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractLogEntry
         return logPosition;
     }
 
+    public String getReason()
+    {
+        return reason;
+    }
+
     @Override
     public String toString()
     {

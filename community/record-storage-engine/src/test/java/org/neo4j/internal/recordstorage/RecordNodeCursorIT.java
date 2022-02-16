@@ -52,6 +52,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @ExtendWith( RandomExtension.class )
@@ -77,7 +78,7 @@ class RecordNodeCursorIT
         neoStores = new StoreFactory( RecordDatabaseLayout.ofFlat( directory.homePath() ), Config.defaults(),
                 new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), "db" ), pageCache, directory.getFileSystem(),
                 NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                DatabaseReadOnlyChecker.writable() ).openAllNeoStores( true );
+                DatabaseReadOnlyChecker.writable(), EMPTY_LOG_TAIL ).openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }

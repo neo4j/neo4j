@@ -98,6 +98,7 @@ import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @Neo4jLayoutExtension
@@ -166,7 +167,7 @@ class CsvInputEstimateCalculationIT
         {
             PageCacheTracer cacheTracer = PageCacheTracer.NULL;
             new ParallelBatchImporter( databaseLayout, fs, cacheTracer, PBI_CONFIG, NullLogService.getInstance(),
-                    INVISIBLE, EMPTY, config, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    INVISIBLE, EMPTY, EMPTY_LOG_TAIL, config, Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY,
                     LogFilesInitializer.NULL, IndexImporterFactory.EMPTY, EmptyMemoryTracker.INSTANCE,
                     new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ) ).doImport( input );
 
@@ -177,7 +178,7 @@ class CsvInputEstimateCalculationIT
                     NeoStores stores = new StoreFactory( databaseLayout, config,
                             new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ), pageCache, fs,
                           NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY ),
-                            writable() ).openAllNeoStores() )
+                            writable(), EMPTY_LOG_TAIL ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

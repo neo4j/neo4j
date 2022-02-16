@@ -134,6 +134,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
@@ -483,10 +484,10 @@ class DatabaseRecoveryIT
                         jobScheduler, Clocks.nanoClock(), new MemoryPools() ).getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs1, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache1, fs1, logProvider, contextFactory, writable() ).openAllNeoStores();
+                        pageCache1, fs1, logProvider, contextFactory, writable(), EMPTY_LOG_TAIL ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(),
                         new DefaultIdGeneratorFactory( fs2, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCache2, fs2, logProvider, contextFactory, writable() ).openAllNeoStores()
+                        pageCache2, fs2, logProvider, contextFactory, writable(), EMPTY_LOG_TAIL ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )

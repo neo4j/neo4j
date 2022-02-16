@@ -88,12 +88,12 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
 
     private String readVersion( CursorContext cursorContext ) throws IOException
     {
-        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorContext );
-        if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
+        long version = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION, databaseName, cursorContext );
+        if ( version == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
             throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );
         }
-        return StoreVersion.versionLongToString( record );
+        return StoreVersion.versionLongToString( version );
     }
 
     @Override

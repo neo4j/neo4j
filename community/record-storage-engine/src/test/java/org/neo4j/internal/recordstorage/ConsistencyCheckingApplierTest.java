@@ -55,6 +55,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 @PageCacheExtension
 class ConsistencyCheckingApplierTest
@@ -84,7 +85,7 @@ class ConsistencyCheckingApplierTest
         RecordDatabaseLayout layout = RecordDatabaseLayout.of( config );
         neoStores = new StoreFactory( layout, config, new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), DEFAULT_DATABASE_NAME ), pageCache,
                 directory.getFileSystem(), NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable() ).openAllNeoStores( true );
+                writable(), EMPTY_LOG_TAIL ).openAllNeoStores( true );
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
         checker = new ConsistencyCheckingApplier( relationshipStore, CursorContext.NULL_CONTEXT );

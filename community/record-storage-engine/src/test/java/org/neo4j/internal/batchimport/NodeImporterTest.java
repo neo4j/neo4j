@@ -55,6 +55,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 @PageCacheExtension
@@ -80,7 +81,7 @@ class NodeImporterTest
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
               BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
-                      Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(), INSTANCE ) )
+                      Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
             try ( var storeCursors = new CachedStoreCursors( stores.getNeoStores(), CursorContext.NULL_CONTEXT ) )
@@ -116,7 +117,7 @@ class NodeImporterTest
         JobScheduler scheduler = new ThreadPoolJobScheduler();
         try ( Lifespan life = new Lifespan( scheduler );
                 BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fs, pageCache, NULL, CONTEXT_FACTORY, layout,
-                        Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, Config.defaults(), INSTANCE ) )
+                        Configuration.DEFAULT, NullLogService.getInstance(), AdditionalInitialIds.EMPTY, EMPTY_LOG_TAIL, Config.defaults(), INSTANCE ) )
         {
             stores.createNew();
 

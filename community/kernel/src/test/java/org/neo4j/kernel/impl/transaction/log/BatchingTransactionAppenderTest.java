@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.database.DbmsLogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -249,7 +248,7 @@ class BatchingTransactionAppenderTest
                 logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
-        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong() );
         verify( databaseHealth ).panic( failure );
     }
 
@@ -284,7 +283,7 @@ class BatchingTransactionAppenderTest
                 logAppendEvent ) );
         assertSame( failure, e );
         verify( transactionIdStore ).nextCommittingTransactionId();
-        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong(), any( CursorContext.class ) );
+        verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong(), anyInt(), anyLong() );
     }
 
     @Test

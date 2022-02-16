@@ -38,7 +38,7 @@ public class StandardV5_0 extends BaseRecordFormats
 {
     public static final String STORE_VERSION = StoreVersion.STANDARD_V5_0.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV5_0();
-    public static final String NAME = "standardV5_0";
+    public static final String NAME = FormatFamily.standard.name();
 
     public StandardV5_0()
     {

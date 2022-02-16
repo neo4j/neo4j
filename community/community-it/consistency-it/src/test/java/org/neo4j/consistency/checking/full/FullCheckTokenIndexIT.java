@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -81,6 +82,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @TestDirectoryExtension
+@Disabled // TODO: Disabled as agreed. Emma-Petr
 public class FullCheckTokenIndexIT
 {
     @Inject

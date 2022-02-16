@@ -111,15 +111,15 @@ public class DefaultRecoveryService implements RecoveryService
             long logVersion = lastClosedTransactionData.logPosition().getLogVersion();
             log.warn( "Recovery detected that transaction logs were missing. " +
                     "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
-            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.transactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE, true,
-                    lastClosedTransactionData.checksum(), lastClosedTransactionData.commitTimestamp(), cursorContext );
-            logVersionRepository.setCurrentLogVersion( logVersion, cursorContext );
+            transactionIdStore.resetLastClosedTransaction( lastClosedTransactionData.transactionId(), logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE,
+                    lastClosedTransactionData.checksum(), lastClosedTransactionData.commitTimestamp() );
+            logVersionRepository.setCurrentLogVersion( logVersion );
             long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
             if ( checkpointLogVersion < 0 )
             {
                 log.warn( "Recovery detected that checkpoint log version is invalid. " +
                         "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.", checkpointLogVersion );
-                logVersionRepository.setCheckpointLogVersion( INITIAL_LOG_VERSION, cursorContext );
+                logVersionRepository.setCheckpointLogVersion( INITIAL_LOG_VERSION );
             }
             return;
         }
@@ -127,8 +127,7 @@ public class DefaultRecoveryService implements RecoveryService
         {
             LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
             transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(),
-                    commitEntry.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion(),
-                    cursorContext );
+                    commitEntry.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion() );
         }
         else
         {
@@ -139,10 +138,10 @@ public class DefaultRecoveryService implements RecoveryService
             log.warn( "Recovery detected that transaction logs tail can't be trusted. " +
                     "Resetting offset of last closed transaction to point to the last recoverable log position: " + positionAfterLastRecoveredTransaction );
             transactionIdStore.resetLastClosedTransaction( lastClosedTransactionId, positionAfterLastRecoveredTransaction.getLogVersion(),
-                    positionAfterLastRecoveredTransaction.getByteOffset(), false, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, cursorContext );
+                    positionAfterLastRecoveredTransaction.getByteOffset(), BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP );
         }
 
-        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion(), cursorContext );
-        logVersionRepository.setCheckpointLogVersion( checkpointPosition.getLogVersion(), cursorContext );
+        logVersionRepository.setCurrentLogVersion( positionAfterLastRecoveredTransaction.getLogVersion() );
+        logVersionRepository.setCheckpointLogVersion( checkpointPosition.getLogVersion() );
     }
 }

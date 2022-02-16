@@ -58,7 +58,6 @@ import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -1372,13 +1371,13 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public void setCurrentLogVersion( long version, CursorContext cursorContext )
+        public void setCurrentLogVersion( long version )
         {
             this.version = version;
         }
 
         @Override
-        public long incrementAndGetVersion( CursorContext cursorContext )
+        public long incrementAndGetVersion()
         {
             version++;
             return version;
@@ -1391,13 +1390,13 @@ class RecoveryCorruptedTransactionLogIT
         }
 
         @Override
-        public void setCheckpointLogVersion( long version, CursorContext cursorContext )
+        public void setCheckpointLogVersion( long version )
         {
             checkpointVersion = version;
         }
 
         @Override
-        public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
+        public long incrementAndGetCheckpointLogVersion()
         {
             checkpointVersion++;
             return checkpointVersion;

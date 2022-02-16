@@ -110,7 +110,8 @@ class DetachedCheckpointAppenderTest
     void skipCheckpointOnAttemptToAppendCheckpointWhenNotStarted()
     {
         DetachedCheckpointAppender appender =
-                new DetachedCheckpointAppender( mock( TransactionLogChannelAllocator.class ), mock( TransactionLogFilesContext.class, RETURNS_MOCKS ),
+                new DetachedCheckpointAppender( mock(LogFiles.class),
+                        mock( TransactionLogChannelAllocator.class ), mock( TransactionLogFilesContext.class, RETURNS_MOCKS ),
                         logFiles.getCheckpointFile(), NO_ROTATION, mock( DetachedLogTailScanner.class ) );
         assertDoesNotThrow( () -> appender.checkPoint( LogCheckPointEvent.NULL, UNKNOWN_TRANSACTION_ID, UNSPECIFIED, Instant.now(), "test" ) );
     }

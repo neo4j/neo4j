@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,10 +30,9 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @Neo4jLayoutExtension
 class RunOutOfDiskSpaceIT
@@ -68,6 +67,15 @@ class RunOutOfDiskSpaceIT
                 .setFileSystem( limitedFs )
                 .build();
         database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        if ( managementService != null )
+        {
+            managementService.shutdown();
+        }
     }
 
     @Test
@@ -98,11 +106,17 @@ class RunOutOfDiskSpaceIT
         limitedFs.runOutOfDiskSpace( false ); // to help shutting down the db
         managementService.shutdown();
 
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( limitedFs ) )
+        limitedFs.runOutOfDiskSpace( false );
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( limitedFs ).build();
+        try
         {
-            assertEquals( logVersion,
-                    MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
-                            NULL_CONTEXT ) );
+            database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            var metadataProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+            assertEquals( logVersion, metadataProvider.getCurrentLogVersion() );
+        }
+        finally
+        {
+            managementService.shutdown();
         }
     }
 
@@ -142,12 +156,17 @@ class RunOutOfDiskSpaceIT
         limitedFs.runOutOfDiskSpace( false ); // to help shutting down the database
         managementService.shutdown();
 
-        try ( PageCache pageCache = pageCacheExtension.getPageCache( limitedFs ) )
+        limitedFs.runOutOfDiskSpace( false );
+        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setFileSystem( limitedFs ).build();
+        try
         {
-            assertEquals( logVersion,
-                    MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.LOG_VERSION, databaseLayout.getDatabaseName(),
-                            NULL_CONTEXT ) );
+            database = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
+            var metadataProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+            assertEquals( logVersion, metadataProvider.getCurrentLogVersion() );
+        }
+        finally
+        {
+            managementService.shutdown();
         }
     }
-
 }

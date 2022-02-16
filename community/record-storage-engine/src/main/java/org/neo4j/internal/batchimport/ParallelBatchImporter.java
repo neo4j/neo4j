@@ -31,6 +31,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
@@ -54,6 +55,7 @@ public class ParallelBatchImporter implements BatchImporter
     private final PageCacheTracer pageCacheTracer;
     private final Configuration config;
     private final LogService logService;
+    private final LogTailMetadata logTailMetadata;
     private final Config dbConfig;
     private final ExecutionMonitor executionMonitor;
     private final AdditionalInitialIds additionalInitialIds;
@@ -67,7 +69,7 @@ public class ParallelBatchImporter implements BatchImporter
 
     public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds, Config dbConfig, Monitor monitor,
+            AdditionalInitialIds additionalInitialIds, LogTailMetadata logTailMetadata, Config dbConfig, Monitor monitor,
             JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory, MemoryTracker memoryTracker, CursorContextFactory contextFactory )
     {
@@ -76,6 +78,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.pageCacheTracer = pageCacheTracer;
         this.config = config;
         this.logService = logService;
+        this.logTailMetadata = logTailMetadata;
         this.dbConfig = dbConfig;
         this.executionMonitor = executionMonitor;
         this.additionalInitialIds = additionalInitialIds;
@@ -92,7 +95,7 @@ public class ParallelBatchImporter implements BatchImporter
     public void doImport( Input input ) throws IOException
     {
         try ( BatchingNeoStores store = ImportLogic.instantiateNeoStores( fileSystem, databaseLayout, pageCacheTracer,
-                      config, logService, additionalInitialIds, dbConfig, jobScheduler, memoryTracker, contextFactory );
+                      config, logService, additionalInitialIds, logTailMetadata, dbConfig, jobScheduler, memoryTracker, contextFactory );
               ImportLogic logic = new ImportLogic(
                       databaseLayout, store, config, dbConfig, logService, executionMonitor, badCollector,
                       monitor, contextFactory, indexImporterFactory, memoryTracker ) )
@@ -106,8 +109,7 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
-            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT,
-                    contextFactory );
+            logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
             logic.success();
         }
     }

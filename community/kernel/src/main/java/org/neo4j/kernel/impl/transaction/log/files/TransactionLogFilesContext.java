@@ -26,10 +26,11 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -37,7 +38,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
 public class TransactionLogFilesContext
@@ -45,10 +45,10 @@ public class TransactionLogFilesContext
     private final AtomicLong rotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
-    private final LongSupplier lastCommittedTransactionIdSupplier;
+    private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
     private final LongSupplier committingTransactionIdSupplier;
-    private final Supplier<LogPosition> lastClosedPositionSupplier;
-    private final Supplier<LogVersionRepository> logVersionRepositorySupplier;
+    private final LastClosedPositionProvider lastClosedPositionProvider;
+    private final LogVersionRepositoryProvider logVersionRepositoryProvider;
     private final FileSystemAbstraction fileSystem;
     private final InternalLogProvider logProvider;
     private final DatabaseTracers databaseTracers;
@@ -62,25 +62,25 @@ public class TransactionLogFilesContext
     private final Clock clock;
     private final String databaseName;
     private final Config config;
-    private final LogTailInformation externalTailInfo;
+    private final LogTailMetadata externalTailInfo;
+    private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
-    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs,
-                                       CommandReaderFactory commandReaderFactory, LongSupplier lastCommittedTransactionIdSupplier,
-                                       LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
-                                       Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
-                                       InternalLogProvider logProvider,
-                                       DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
-                                       MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-                                       KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config,
-                                       LogTailInformation externalTailInfo )
+    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, CommandReaderFactory commandReaderFactory,
+            LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
+            LastClosedPositionProvider lastClosedPositionProvider,
+            LogVersionRepositoryProvider logVersionRepositoryProvider, FileSystemAbstraction fileSystem, InternalLogProvider logProvider,
+            DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
+            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
+            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailMetadata externalTailInfo,
+            DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
-        this.lastClosedPositionSupplier = lastClosedPositionSupplier;
-        this.logVersionRepositorySupplier = logVersionRepositorySupplier;
+        this.lastClosedPositionProvider = lastClosedPositionProvider;
+        this.logVersionRepositoryProvider = logVersionRepositoryProvider;
         this.fileSystem = fileSystem;
         this.logProvider = logProvider;
         this.databaseTracers = databaseTracers;
@@ -95,6 +95,7 @@ public class TransactionLogFilesContext
         this.databaseName = databaseName;
         this.config = config;
         this.externalTailInfo = externalTailInfo;
+        this.dbmsRuntimeRepository = dbmsRuntimeRepository;
     }
 
     AtomicLong getRotationThreshold()
@@ -107,14 +108,14 @@ public class TransactionLogFilesContext
         return commandReaderFactory;
     }
 
-    public LogVersionRepository getLogVersionRepository()
+    public LogVersionRepositoryProvider getLogVersionRepositoryProvider()
     {
-        return logVersionRepositorySupplier.get();
+        return logVersionRepositoryProvider;
     }
 
-    public long getLastCommittedTransactionId()
+    public LastCommittedTransactionIdProvider getLastCommittedTransactionIdProvider()
     {
-        return lastCommittedTransactionIdSupplier.getAsLong();
+        return lastCommittedTransactionIdSupplier;
     }
 
     public long committingTransactionId()
@@ -122,9 +123,9 @@ public class TransactionLogFilesContext
         return committingTransactionIdSupplier.getAsLong();
     }
 
-    LogPosition getLastClosedTransactionPosition()
+    LastClosedPositionProvider getLastClosedTransactionPositionProvider()
     {
-        return lastClosedPositionSupplier.get();
+        return lastClosedPositionProvider;
     }
 
     public FileSystemAbstraction getFileSystem()
@@ -197,8 +198,13 @@ public class TransactionLogFilesContext
         return config;
     }
 
-    public LogTailInformation getExternalTailInfo()
+    public LogTailMetadata getExternalTailInfo()
     {
         return externalTailInfo;
+    }
+
+    public DbmsRuntimeRepository getDbmsRuntimeRepository()
+    {
+        return dbmsRuntimeRepository;
     }
 }

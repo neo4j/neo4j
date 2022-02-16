@@ -28,9 +28,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
@@ -60,15 +61,14 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.logging.NullLog;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.monitoring.Monitors;
-import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -151,10 +151,10 @@ public class StoreUpgraderInterruptionTestIT
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
-                    ProgressReporter progressReporter, String versionToMigrateFrom, String versionToMigrateTo,
-                    IndexImporterFactory indexImporterFactory ) throws IOException, KernelException
+                    ProgressReporter progressReporter, StoreVersion fromVersion, StoreVersion toVersion,
+                    IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata ) throws IOException, KernelException
             {
-                super.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo, indexImporterFactory );
+                super.migrate( directoryLayout, migrationLayout, progressReporter, fromVersion, toVersion, indexImporterFactory, tailMetadata );
                 throw new RuntimeException( "This upgrade is failing" );
             }
         };
@@ -273,24 +273,29 @@ public class StoreUpgraderInterruptionTestIT
     }
 
     private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, MigrationProgressMonitor progressMonitor, StoreMigrationParticipant... participants )
+            throws IOException
     {
         Config config = Config.defaults( allow_upgrade, true );
 
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( new Monitors() );
         RecordStorageEngineFactory storageEngineFactory = new RecordStorageEngineFactory();
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
-        var databaseHealth = new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() );
-        LogsMigrator logsMigrator = new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, workingDatabaseLayout, pageCache,
-                config, dependencies, INSTANCE, databaseHealth, contextFactory );
+        var logTail = loadLogTail( workingDatabaseLayout, config, storageEngineFactory );
+        Supplier<LogTailMetadata> logTailSupplier = () -> logTail;
+        LogsMigrator logsUpgrader =
+                new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, workingDatabaseLayout, pageCache, config, contextFactory, logTailSupplier );
         StoreUpgrader upgrader =
-                new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsMigrator,
-                        contextFactory );
+                new StoreUpgrader( storageEngineFactory, versionCheck, progressMonitor, config, fs, NullLogProvider.getInstance(), logsUpgrader,
+                        contextFactory, logTailSupplier );
         for ( StoreMigrationParticipant participant : participants )
         {
             upgrader.addParticipant( participant );
         }
         return upgrader;
+    }
+
+    private LogTailMetadata loadLogTail( DatabaseLayout layout, Config config, StorageEngineFactory engineFactory ) throws IOException
+    {
+        return new LogTailExtractor( fs, pageCache, config, engineFactory, DatabaseTracers.EMPTY ).getTailMetadata( layout, INSTANCE );
     }
 
     private static void startStopDatabase( Path storeDir )

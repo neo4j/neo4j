@@ -55,15 +55,15 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setCurrentLogVersion( long version, CursorContext cursorContext )
+    public void setCurrentLogVersion( long version )
     {
-        logVersionRepository.setCurrentLogVersion( version, cursorContext );
+        logVersionRepository.setCurrentLogVersion( version );
     }
 
     @Override
-    public long incrementAndGetVersion( CursorContext cursorContext )
+    public long incrementAndGetVersion()
     {
-        return logVersionRepository.incrementAndGetVersion( cursorContext );
+        return logVersionRepository.incrementAndGetVersion();
     }
 
     @Override
@@ -73,15 +73,15 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setCheckpointLogVersion( long version, CursorContext cursorContext )
+    public void setCheckpointLogVersion( long version )
     {
-        logVersionRepository.setCheckpointLogVersion( version, cursorContext );
+        logVersionRepository.setCheckpointLogVersion( version );
     }
 
     @Override
-    public long incrementAndGetCheckpointLogVersion( CursorContext cursorContext )
+    public long incrementAndGetCheckpointLogVersion()
     {
-        return logVersionRepository.incrementAndGetCheckpointLogVersion( cursorContext );
+        return logVersionRepository.incrementAndGetCheckpointLogVersion();
     }
 
     @Override
@@ -109,9 +109,9 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionCommitted( long transactionId, int checksum, long commitTimestamp )
     {
-        transactionIdStore.transactionCommitted( transactionId, checksum, commitTimestamp, cursorContext );
+        transactionIdStore.transactionCommitted( transactionId, checksum, commitTimestamp );
     }
 
     @Override
@@ -127,12 +127,6 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public TransactionId getUpgradeTransaction()
-    {
-        return transactionIdStore.getUpgradeTransaction();
-    }
-
-    @Override
     public long getLastClosedTransactionId()
     {
         return transactionIdStore.getLastClosedTransactionId();
@@ -145,29 +139,21 @@ public class SimpleMetaDataProvider implements MetadataProvider
     }
 
     @Override
-    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion,
-            CursorContext cursorContext )
+    public void setLastCommittedAndClosedTransactionId( long transactionId, int checksum, long commitTimestamp, long byteOffset, long logVersion )
     {
-        transactionIdStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion, cursorContext );
+        transactionIdStore.setLastCommittedAndClosedTransactionId( transactionId, checksum, commitTimestamp, byteOffset, logVersion );
     }
 
     @Override
-    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp, CursorContext cursorContext )
+    public void transactionClosed( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
     {
-        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, checksum, commitTimestamp, cursorContext );
+        transactionIdStore.transactionClosed( transactionId, logVersion, byteOffset, checksum, commitTimestamp );
     }
 
     @Override
-    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, boolean missingLogs, int checksum, long commitTimestamp,
-            CursorContext cursorContext )
+    public void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset, int checksum, long commitTimestamp )
     {
-        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, missingLogs, checksum, commitTimestamp, cursorContext );
-    }
-
-    @Override
-    public void flush( CursorContext cursorContext )
-    {
-        transactionIdStore.flush( cursorContext );
+        transactionIdStore.resetLastClosedTransaction( transactionId, logVersion, byteOffset, checksum, commitTimestamp );
     }
 
     @Override
@@ -186,5 +172,11 @@ public class SimpleMetaDataProvider implements MetadataProvider
     public void setDatabaseIdUuid( UUID uuid, CursorContext cursorContext )
     {
         throw new IllegalStateException( "Not supported" );
+    }
+
+    @Override
+    public void regenerateMetadata( StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext )
+    {
+        throw new UnsupportedOperationException( "RegenerateMetadata is not supported." );
     }
 }

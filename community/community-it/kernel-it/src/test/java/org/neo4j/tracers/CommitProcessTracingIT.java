@@ -49,7 +49,6 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
@@ -109,22 +108,6 @@ public class CommitProcessTracingIT
     }
 
     @Test
-    void tracePageCacheAccessOnEmptyTransactionApply() throws TransactionFailureException
-    {
-        var transaction = new PhysicalTransactionRepresentation( emptyList(), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
-        var pageCacheTracer = new DefaultPageCacheTracer();
-        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
-        try ( var cursorContext = contextFactory.create( "tracePageCacheAccessOnEmptyTransactionApply" ) )
-        {
-            assertZeroCursor( cursorContext );
-
-            commitProcess.commit( new TransactionToApply( transaction, cursorContext, StoreCursors.NULL ), NULL, EXTERNAL );
-
-            assertCursor( cursorContext, 2 );
-        }
-    }
-
-    @Test
     void tracePageCacheAccessOnTransactionApply() throws TransactionFailureException
     {
         var transaction = new PhysicalTransactionRepresentation( List.of( new Command.NodeCountsCommand( 1, 2 ) ), EMPTY_BYTE_ARRAY, 0, 0, 0, 0, ANONYMOUS );
@@ -136,7 +119,7 @@ public class CommitProcessTracingIT
 
             commitProcess.commit( new TransactionToApply( transaction, cursorContext, StoreCursors.NULL ), NULL, EXTERNAL );
 
-            assertCursor( cursorContext, 3 );
+            assertCursor( cursorContext, 1 );
         }
     }
 

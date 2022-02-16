@@ -58,7 +58,7 @@ import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
 public class PageAlignedV5_0 extends BaseRecordFormats
 {
     public static final RecordFormats RECORD_FORMATS = new PageAlignedV5_0();
-    public static final String NAME = "alignedV5_0";
+    public static final String NAME = FormatFamily.aligned.name();
 
     private PageAlignedV5_0()
     {

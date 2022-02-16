@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfo;
 
 /**
  * Accessor of transactions and meta data information about transactions.

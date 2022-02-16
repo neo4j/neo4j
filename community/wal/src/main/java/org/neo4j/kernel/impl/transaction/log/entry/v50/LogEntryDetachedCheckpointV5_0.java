@@ -85,6 +85,11 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractLogEntry
         return transactionId;
     }
 
+    public String getReason()
+    {
+        return reason;
+    }
+
     @Override
     public String toString()
     {

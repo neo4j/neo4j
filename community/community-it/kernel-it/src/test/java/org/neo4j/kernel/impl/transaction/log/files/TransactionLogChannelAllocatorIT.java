@@ -42,6 +42,7 @@ import org.neo4j.internal.nativeimpl.NativeCallResult;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -54,7 +55,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -223,12 +223,10 @@ class TransactionLogChannelAllocatorIT
     private TransactionLogFilesContext createLogFileContext( long rotationThreshold, NativeAccess nativeAccess )
     {
         return new TransactionLogFilesContext( new AtomicLong( rotationThreshold ), new AtomicBoolean( true ),
-                new TestCommandReaderFactory(), () -> 1L,
-                () -> 1L, () -> new LogPosition( 0, 1 ),
-                SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
-                nativeAccess, INSTANCE, new Monitors(), true,
-                new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), KernelVersionRepository.LATEST,
-                Clock.systemUTC(), DEFAULT_DATABASE_NAME, config, null );
+                new TestCommandReaderFactory(), any -> 1L, () -> 1L, any -> new LogPosition( 0, 1 ),
+                any -> new SimpleLogVersionRepository(), fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN, nativeAccess, INSTANCE,
+                new Monitors(), true, new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST, Clock.systemUTC(),
+                DEFAULT_DATABASE_NAME, config, null, null );
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor

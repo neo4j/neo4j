@@ -75,6 +75,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
@@ -103,7 +104,7 @@ public class RecordPropertyCursorTest
     {
         idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() );
         neoStores = new StoreFactory( databaseLayout, Config.defaults(), idGeneratorFactory, pageCache, fs, getRecordFormats(), NullLogProvider.getInstance(),
-                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), Sets.immutable.empty() ).openAllNeoStores( true );
+                new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), writable(), EMPTY_LOG_TAIL, Sets.immutable.empty() ).openAllNeoStores( true );
         owner = neoStores.getNodeStore().newRecord();
         storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );
     }

@@ -60,6 +60,7 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
@@ -183,7 +184,7 @@ class BatchingTokenRepositoryTest
     {
         return new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ),
                 pageCache, fileSystem, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
-                writable() ).openNeoStores( true, storeTypes );
+                writable(), EMPTY_LOG_TAIL ).openNeoStores( true, storeTypes );
     }
 
     public static boolean areOrdered( long[] labelIds )

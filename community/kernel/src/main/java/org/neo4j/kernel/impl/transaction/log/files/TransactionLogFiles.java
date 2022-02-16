@@ -25,6 +25,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -98,9 +99,9 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     }
 
     @Override
-    public LogTailInformation getTailInformation()
+    public LogTailMetadata getTailMetadata()
     {
-        return checkpointLogFile.getTailInformation();
+        return checkpointLogFile.getTailMetadata();
     }
 
     @Override

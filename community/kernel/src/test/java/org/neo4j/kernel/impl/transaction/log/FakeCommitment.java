@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.TransactionIdStore;
-
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 public class FakeCommitment implements Commitment
 {
@@ -45,16 +42,16 @@ public class FakeCommitment implements Commitment
     }
 
     @Override
-    public void publishAsCommitted( CursorContext cursorContext )
+    public void publishAsCommitted()
     {
         committed = true;
-        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP, NULL_CONTEXT );
+        transactionIdStore.transactionCommitted( id, CHECKSUM, TIMESTAMP );
     }
 
     @Override
-    public void publishAsClosed( CursorContext cursorContext )
+    public void publishAsClosed()
     {
-        transactionIdStore.transactionClosed( id, 1, 2, CHECKSUM, TIMESTAMP, cursorContext );
+        transactionIdStore.transactionClosed( id, 1, 2, CHECKSUM, TIMESTAMP );
     }
 
     @Override

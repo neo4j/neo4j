@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -110,8 +108,9 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
-import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
+import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
@@ -125,7 +124,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -410,30 +408,34 @@ public class Database extends LifecycleAdapter
         init(); // Ensure we're initialized
         try
         {
-            // Upgrade the store before we begin
-            upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
-
-            // Check the tail of transaction logs and validate version
-            LogFiles logFiles = getLogFiles();
-            cursorContextFactory.init( () -> -1 );
-
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( DetachedLogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
 
-            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
-            validateStoreAndTxLogs( logFiles, cursorContextFactory, storageExists );
+            // Upgrade the store before we begin
+            upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
 
-            Recovery.performRecovery( context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
+            // Check the tail of transaction logs and validate version
+            LogTailMetadata tailMetadata = getLogTail();
+            cursorContextFactory.init( () -> -1 );
+
+            boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
+            validateStoreAndTxLogs( tailMetadata, cursorContextFactory, storageExists );
+
+            if ( Recovery.performRecovery( context( fs, databasePageCache, tracers, databaseConfig, databaseLayout, otherDatabaseMemoryTracker, ioController )
                             .storageEngineFactory( storageEngineFactory )
                             .log( internalLogProvider )
                             .recoveryPredicate( RecoveryPredicate.ALL )
                             .monitors( databaseMonitors )
                             .extensionFactories( extensionFactories )
-                            .logFiles( logFiles )
+                            .logTail( tailMetadata )
                             .startupChecker( new RecoveryStartupChecker( startupController, namedDatabaseId ) )
-                            .clock( clock ) );
+                            .clock( clock ) ) )
+            {
+                // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the latest info
+                tailMetadata = getLogTail();
+            }
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -442,7 +444,7 @@ public class Database extends LifecycleAdapter
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, idController, databaseHealth, internalLogProvider,
-                    userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, otherDatabaseMemoryTracker,
+                    userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, tailMetadata, otherDatabaseMemoryTracker,
                     cursorContextFactory );
 
             elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
@@ -450,7 +452,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( metadataProvider );
 
             //Recreate the logFiles after storage engine to get access to dependencies
-            logFiles = getLogFiles();
+            var logFiles = getLogFiles();
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -555,6 +557,11 @@ public class Database extends LifecycleAdapter
         tx.schemaWrite().indexCreate( prototype );
     }
 
+    private LogTailMetadata getLogTail() throws IOException
+    {
+        return getLogFiles().getTailMetadata();
+    }
+
     private LogFiles getLogFiles() throws IOException
     {
         return LogFilesBuilder.builder( databaseLayout, fs )
@@ -594,22 +601,22 @@ public class Database extends LifecycleAdapter
 
     }
 
-    private void validateStoreAndTxLogs( LogFiles logFiles, CursorContextFactory contextFactory, boolean storageExists )
+    private void validateStoreAndTxLogs( LogTailMetadata logTail, CursorContextFactory contextFactory, boolean storageExists )
             throws IOException
     {
         if ( storageExists )
         {
-            checkStoreId( logFiles.getTailInformation(), contextFactory );
+            checkStoreId( logTail, contextFactory );
         }
         else
         {
-            validateLogsAndStoreAbsence( logFiles );
+            validateLogsAndStoreAbsence( logTail );
         }
     }
 
-    private void validateLogsAndStoreAbsence( LogFiles logFiles ) throws IOException
+    private void validateLogsAndStoreAbsence( LogTailMetadata logTail )
     {
-        if ( ArrayUtils.isNotEmpty( logFiles.logFiles() ) )
+        if ( !logTail.logsMissing() )
         {
             throw new RuntimeException( format( "Fail to start '%s' since transaction logs were found, while database " +
                     "files are missing.", namedDatabaseId ) );
@@ -632,11 +639,11 @@ public class Database extends LifecycleAdapter
         throw new RuntimeException( e );
     }
 
-    private void checkStoreId( LogTailInformation logTailInfo, CursorContextFactory contextFactory ) throws IOException
+    private void checkStoreId( LogTailMetadata tailMetadata, CursorContextFactory contextFactory ) throws IOException
     {
         try ( var cursorContext = contextFactory.create( STORE_ID_VALIDATOR_TAG ) )
         {
-            validateStoreId( logTailInfo, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
+            validateStoreId( tailMetadata, storageEngineFactory.storeId( fs, databaseLayout, databasePageCache, cursorContext ) );
         }
     }
 
@@ -678,7 +685,7 @@ public class Database extends LifecycleAdapter
     private LegacyDatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
     {
         var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
-                namedDatabaseId, memoryTracker, databaseHealth, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ) );
+                namedDatabaseId, memoryTracker, tracers, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ) );
         return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
     }
 
@@ -1025,6 +1032,16 @@ public class Database extends LifecycleAdapter
     public GraphDatabaseFacade getDatabaseFacade()
     {
         return databaseFacade;
+    }
+
+    public DatabaseTracers getTracers()
+    {
+        return tracers;
+    }
+
+    public MemoryTracker getOtherDatabaseMemoryTracker()
+    {
+        return otherDatabaseMemoryTracker;
     }
 
     public DatabaseHealth getDatabaseHealth()

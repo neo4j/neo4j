@@ -58,7 +58,9 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
@@ -84,10 +86,9 @@ import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.storageengine.api.StoreVersion.versionStringToLong;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
@@ -106,6 +107,7 @@ class MetaDataStoreTest
     private PageCache pageCache;
     private boolean fakePageCursorOverflow;
     private PageCache pageCacheWithFakeOverflow;
+    private final CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
 
     @BeforeEach
     void setUp()
@@ -216,22 +218,6 @@ class MetaDataStoreTest
     }
 
     @Test
-    void getUpgradeTimeShouldFailWhenStoreIsClosed()
-    {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, metaDataStore::getUpgradeTime );
-    }
-
-    @Test
-    void getUpgradeTransactionShouldFailWhenStoreIsClosed()
-    {
-        MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, metaDataStore::getUpgradeTransaction );
-    }
-
-    @Test
     void nextCommittingTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
@@ -262,7 +248,7 @@ class MetaDataStoreTest
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
         assertThrows( StoreFileClosedException.class,
-                () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4, NULL_CONTEXT ) );
+                () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
     }
 
     @Test
@@ -270,7 +256,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, true, 4, 5, NULL_CONTEXT ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3, 4, 5 ) );
     }
 
     @Test
@@ -278,34 +264,10 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            metaDataStore.resetLastClosedTransaction( 3, 4, 5, true, 6, 7, NULL_CONTEXT );
+            metaDataStore.resetLastClosedTransaction( 3, 4, 5,  6, 7 );
 
             assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
             assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ), 6, 7 ), metaDataStore.getLastClosedTransaction() );
-            try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
-            {
-                MetaDataRecord record =
-                        metaDataStore.getRecordByCursor( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, cursor );
-                assertThat( record.getValue() ).isGreaterThan( 0L );
-            }
-        }
-    }
-
-    @Test
-    void setLastClosedTransactionOverridesLastClosedTransactionInformationWithoutMissingLogsUpdate()
-    {
-        try ( MetaDataStore metaDataStore = newMetaDataStore() )
-        {
-            metaDataStore.resetLastClosedTransaction( 3, 4, 5, false, 6, 7, NULL_CONTEXT );
-
-            assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
-            assertEquals( new ClosedTransactionMetadata( 3, new LogPosition( 4, 5 ), 6, 7 ), metaDataStore.getLastClosedTransaction() );
-            try ( var cursor = metaDataStore.openPageCursorForReading( 0, NULL_CONTEXT ) )
-            {
-                MetaDataRecord record =
-                        metaDataStore.getRecordByCursor( LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP.id(), new MetaDataRecord(), FORCE, cursor );
-                assertEquals( -1, record.getValue() );
-            }
         }
     }
 
@@ -314,7 +276,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP, NULL_CONTEXT ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP ) );
     }
 
     @Test
@@ -325,12 +287,13 @@ class MetaDataStoreTest
         long byteOffset = 777L;
         int checksum = 5252;
         long timestamp = 1234;
+        long transactionId;
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            long transactionId = metaDataStore.getLastClosedTransaction().transactionId() + 1;
+            transactionId = metaDataStore.getLastClosedTransaction().transactionId() + 1;
 
             // WHEN
-            metaDataStore.transactionClosed( transactionId, version, byteOffset, checksum, timestamp, NULL_CONTEXT );
+            metaDataStore.transactionClosed( transactionId, version, byteOffset, checksum, timestamp );
             // long[] with the highest offered gap-free number and its meta data.
             var closedTransaction = metaDataStore.getLastClosedTransaction();
 
@@ -338,13 +301,25 @@ class MetaDataStoreTest
             LogPosition logPosition = closedTransaction.logPosition();
             assertEquals( version, logPosition.getLogVersion() );
             assertEquals( byteOffset, logPosition.getByteOffset() );
-
-            // WHEN
         }
 
-        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        var tail = new EmptyLogTailMetadata()
         {
-            // EXPECT
+            @Override
+            public LogPosition getLastTransactionLogPosition()
+            {
+                return new LogPosition( version, byteOffset );
+            }
+
+            @Override
+            public TransactionId getLastCommittedTransaction()
+            {
+                return new TransactionId( transactionId, checksum, timestamp );
+            }
+        };
+
+        try ( MetaDataStore metaDataStore = newMetaDataStore( tail ) )
+        {
             var lastClosedTransaction = metaDataStore.getLastClosedTransaction();
             LogPosition logPosition = lastClosedTransaction.logPosition();
             assertEquals( version, logPosition.getLogVersion() );
@@ -353,76 +328,11 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setUpgradeTransactionMustBeAtomic() throws Throwable
-    {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            PagedFile pf = store.pagedFile;
-            store.setUpgradeTransaction( 0, 0, 0, NULL_CONTEXT );
-            AtomicLong writeCount = new AtomicLong();
-            AtomicLong fileReadCount = new AtomicLong();
-            AtomicLong apiReadCount = new AtomicLong();
-            int upperLimit = 10_000;
-            int lowerLimit = 100;
-            long endTime = currentTimeMillis() + SECONDS.toMillis( 10 );
-
-            Race race = new Race();
-            race.withEndCondition( () -> writeCount.get() >= upperLimit &&
-                    fileReadCount.get() >= upperLimit && apiReadCount.get() >= upperLimit );
-            race.withEndCondition( () -> writeCount.get() >= lowerLimit &&
-                    fileReadCount.get() >= lowerLimit && apiReadCount.get() >= lowerLimit &&
-                    currentTimeMillis() >= endTime );
-            // writers
-            race.addContestants( 3, () ->
-            {
-                long count = writeCount.incrementAndGet();
-                store.setUpgradeTransaction( count, (int) count, count, NULL_CONTEXT );
-            } );
-
-            // file readers
-            race.addContestants( 3, throwing( () ->
-            {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
-                {
-                    assertTrue( cursor.next() );
-                    long id;
-                    long checksum;
-                    do
-                    {
-                        id = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_ID );
-                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.UPGRADE_TRANSACTION_CHECKSUM );
-                    }
-                    while ( cursor.shouldRetry() );
-                    assertIdEqualsChecksum( id, checksum, "file" );
-                    fileReadCount.incrementAndGet();
-                }
-            } ) );
-
-            race.addContestants( 3, () ->
-            {
-                TransactionId transaction = store.getUpgradeTransaction();
-                assertIdEqualsChecksum( transaction.transactionId(), transaction.checksum(), "API" );
-                apiReadCount.incrementAndGet();
-            } );
-            race.go();
-        }
-    }
-
-    private static void assertIdEqualsChecksum( long id, long checksum, String source )
-    {
-        if ( id != checksum )
-        {
-            throw new AssertionError(
-                    "id (" + id + ") and checksum (" + checksum + ") from " + source + " should be identical" );
-        }
-    }
-
-    @Test
     void incrementAndGetVersionMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            long initialVersion = store.incrementAndGetVersion( NULL_CONTEXT );
+            long initialVersion = store.incrementAndGetVersion();
             int threads = Runtime.getRuntime().availableProcessors();
             int iterations = 500;
             Race race = new Race();
@@ -430,11 +340,11 @@ class MetaDataStoreTest
             {
                 for ( int i = 0; i < iterations; i++ )
                 {
-                    store.incrementAndGetVersion( NULL_CONTEXT );
+                    store.incrementAndGetVersion();
                 }
             } );
             race.go();
-            assertThat( store.incrementAndGetVersion( NULL_CONTEXT ) ).isEqualTo( initialVersion + (threads * iterations) + 1 );
+            assertThat( store.incrementAndGetVersion() ).isEqualTo( initialVersion + (threads * iterations) + 1 );
         }
     }
 
@@ -443,8 +353,7 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            PagedFile pf = store.pagedFile;
-            store.transactionCommitted( 2, 2, 2, NULL_CONTEXT );
+            store.transactionCommitted( 2, 2, 2 );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -461,25 +370,16 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, (int) count, count, NULL_CONTEXT );
+                store.transactionCommitted( count, (int) count, count );
             } );
 
             race.addContestants( 3, throwing( () ->
             {
-                try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
-                {
-                    assertTrue( cursor.next() );
-                    long id;
-                    long checksum;
-                    do
-                    {
-                        id = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_ID );
-                        checksum = store.getRecordValue( cursor, MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM );
-                    }
-                    while ( cursor.shouldRetry() );
-                    assertIdEqualsChecksum( id, checksum, "file" );
-                    fileReadCount.incrementAndGet();
-                }
+                TransactionId transactionId = store.getLastCommittedTransaction();
+                long id = transactionId.transactionId();
+                long checksum = transactionId.checksum();
+                assertIdEqualsChecksum( id, checksum, "file" );
+                fileReadCount.incrementAndGet();
             } ) );
 
             race.addContestants( 3, () ->
@@ -500,7 +400,7 @@ class MetaDataStoreTest
         {
             PagedFile pf = store.pagedFile;
             int initialValue = 2;
-            store.transactionClosed( initialValue, initialValue, initialValue, initialValue, initialValue, NULL_CONTEXT );
+            store.transactionClosed( initialValue, initialValue, initialValue, initialValue, initialValue );
             AtomicLong writeCount = new AtomicLong();
             AtomicLong fileReadCount = new AtomicLong();
             AtomicLong apiReadCount = new AtomicLong();
@@ -517,7 +417,7 @@ class MetaDataStoreTest
             race.addContestants( 3, () ->
             {
                 long count = writeCount.incrementAndGet();
-                store.transactionCommitted( count, (int) count, count, NULL_CONTEXT );
+                store.transactionCommitted( count, (int) count, count );
             } );
 
             race.addContestants( 3, throwing( () ->
@@ -525,16 +425,9 @@ class MetaDataStoreTest
                 try ( PageCursor cursor = pf.io( 0, PagedFile.PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
                 {
                     assertTrue( cursor.next() );
-                    long logVersion;
-                    long byteOffset;
-                    do
-                    {
-                        logVersion = store.getRecordValue( cursor,
-                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION );
-                        byteOffset = store.getRecordValue( cursor,
-                                MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET );
-                    }
-                    while ( cursor.shouldRetry() );
+                    LogPosition logPosition = store.getLastClosedTransaction().logPosition();
+                    long logVersion = logPosition.getLogVersion();
+                    long byteOffset = logPosition.getByteOffset();
                     assertLogVersionEqualsByteOffset( logVersion, byteOffset, "file" );
                     fileReadCount.incrementAndGet();
                 }
@@ -547,16 +440,6 @@ class MetaDataStoreTest
                 apiReadCount.incrementAndGet();
             } );
             race.go();
-        }
-    }
-
-    private static void assertLogVersionEqualsByteOffset( long logVersion, long byteOffset, String source )
-    {
-        if ( logVersion != byteOffset )
-        {
-            throw new AssertionError(
-                    "logVersion (" + logVersion + ") and byteOffset (" + byteOffset + ") from " + source +
-                    " should be identical" );
         }
     }
 
@@ -689,17 +572,6 @@ class MetaDataStoreTest
     }
 
     @Test
-    void incrementVersionMustThrowOnPageOverflow()
-    {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            fakePageCursorOverflow = true;
-            assertThrows( UnderlyingStorageException.class, () -> store.incrementAndGetVersion( NULL_CONTEXT ) );
-            fakePageCursorOverflow = false;
-        }
-    }
-
-    @Test
     void lastTxCommitTimestampShouldBeBaseInNewStore()
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
@@ -718,24 +590,6 @@ class MetaDataStoreTest
             var externalUUID = externalStoreId.orElseThrow().getId();
             assertThat( externalUUID.getLeastSignificantBits() ).isNotZero();
             assertThat( externalUUID.getMostSignificantBits() ).isNotZero();
-        }
-    }
-
-    @Test
-    void readAllFieldsMustThrowOnPageOverflow()
-    {
-        fakePageCursorOverflow = true;
-        assertThrows( UnderlyingStorageException.class, this::newMetaDataStore );
-    }
-
-    @Test
-    void setRecordMustThrowOnPageOverflow()
-    {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            fakePageCursorOverflow = true;
-            assertThrows( UnderlyingStorageException.class, () -> store.setUpgradeTransaction( 13, 42, 42, NULL_CONTEXT ) );
-            fakePageCursorOverflow = false;
         }
     }
 
@@ -759,22 +613,18 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setStoreIdShouldSetAllRelatedFields() throws IOException
+    void setStoreIdShouldSetAllRelatedFields()
     {
         // given
         int creationTime = 1;
         int randomId = 2;
         long storeVersion = versionStringToLong( defaultFormat().storeVersion() );
-        int upgradeTxChecksum = 6;
-        long upgradeTxCommitTimestamp = 7;
 
         StoreId storeId = new StoreId( creationTime, randomId, storeVersion );
-
-        // when
+        UUID externalStoreUUID = UUID.randomUUID();
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            MetaDataStore.setStoreId( pageCache, store.getStorageFile(), storeId, upgradeTxChecksum, upgradeTxCommitTimestamp, databaseLayout.getDatabaseName(),
-                    NULL_CONTEXT );
+            store.regenerateMetadata( storeId, externalStoreUUID, NULL_CONTEXT );
         }
 
         // then
@@ -787,18 +637,14 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setExternalStoreIdShouldSetAllRelatedFields() throws IOException
+    void setExternalStoreIdShouldSetAllRelatedFields()
     {
-        // given
         UUID externalStoreId = UUID.randomUUID();
-
-        // when
         try ( MetaDataStore store = newMetaDataStore() )
         {
-            MetaDataStore.setExternalStoreUUID( pageCache, store.getStorageFile(), externalStoreId, databaseLayout.getDatabaseName(), NULL_CONTEXT );
+            store.regenerateMetadata( store.getStoreId(), externalStoreId, NULL_CONTEXT );
         }
 
-        // then
         try ( MetaDataStore store = newMetaDataStore() )
         {
             Optional<ExternalStoreId> retrievedExternalStoreIdOptional = store.getExternalStoreId();
@@ -816,9 +662,9 @@ class MetaDataStoreTest
         try ( MetaDataStore ignored = newMetaDataStore( contextFactory ) )
         {
             assertThat( pageCacheTracer.faults() ).isOne();
-            assertThat( pageCacheTracer.pins() ).isEqualTo( 13 );
-            assertThat( pageCacheTracer.unpins() ).isEqualTo( 13 );
-            assertThat( pageCacheTracer.hits() ).isEqualTo( 12 );
+            assertThat( pageCacheTracer.pins() ).isEqualTo( 2 );
+            assertThat( pageCacheTracer.unpins() ).isEqualTo( 2 );
+            assertThat( pageCacheTracer.hits() ).isEqualTo( 1 );
         }
     }
 
@@ -873,50 +719,18 @@ class MetaDataStoreTest
     }
 
     @Test
-    void tracePageCacheAssessOnSetStoreId() throws IOException
+    void tracePageCacheAssessOnRegenerate()
     {
         var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
         var cursorContext = contextFactory.create( "tracePageCacheAssessOnSetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
             var storeId = new StoreId( 1, 2, 3 );
-            MetaDataStore.setStoreId( pageCache, metaDataStore.getStorageFile(), storeId, 6, 7, databaseLayout.getDatabaseName(), cursorContext );
-
+            metaDataStore.regenerateMetadata( storeId, metaDataStore.getExternalStoreId().orElseThrow().getId(), cursorContext );
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isEqualTo( 7 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 7 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 7 );
-        }
-    }
-
-    @Test
-    void tracePageCacheAssessOnUpgradeTransactionSet()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCacheAssessOnUpgradeTransactionSet" );
-        try ( var metaDataStore = newMetaDataStore() )
-        {
-            metaDataStore.setUpgradeTransaction( 1, 2, 3, cursorContext );
-
-            assertThat( cursorContext.getCursorTracer().pins() ).isEqualTo( 1 );
-            assertThat( cursorContext.getCursorTracer().unpins() ).isEqualTo( 1 );
-            assertThat( cursorContext.getCursorTracer().hits() ).isEqualTo( 1 );
-        }
-    }
-
-    @Test
-    void tracePageCacheAssessOnIncrementAndGetVersion()
-    {
-        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EMPTY );
-        var cursorContext = contextFactory.create( "tracePageCacheAssessOnIncrementAndGetVersion" );
-        try ( var metaDataStore = newMetaDataStore() )
-        {
-            metaDataStore.incrementAndGetVersion( cursorContext );
-
-            PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
-            assertThat( cursorTracer.pins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.unpins() ).isEqualTo( 1 );
-            assertThat( cursorTracer.hits() ).isEqualTo( 1 );
+            assertThat( cursorTracer.pins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.unpins() ).isEqualTo( 2 );
+            assertThat( cursorTracer.hits() ).isEqualTo( 2 );
         }
     }
 
@@ -926,11 +740,11 @@ class MetaDataStoreTest
         try ( var dataStore = newMetaDataStore() )
         {
             assertEquals( 0, dataStore.getCheckpointLogVersion() );
-            assertEquals( 1, dataStore.incrementAndGetCheckpointLogVersion( NULL_CONTEXT ) );
-            assertEquals( 2, dataStore.incrementAndGetCheckpointLogVersion( NULL_CONTEXT ) );
-            assertEquals( 3, dataStore.incrementAndGetCheckpointLogVersion( NULL_CONTEXT ) );
-            assertEquals( 4, dataStore.incrementAndGetCheckpointLogVersion( NULL_CONTEXT ) );
-            assertEquals( 5, dataStore.incrementAndGetCheckpointLogVersion( NULL_CONTEXT ) );
+            assertEquals( 1, dataStore.incrementAndGetCheckpointLogVersion() );
+            assertEquals( 2, dataStore.incrementAndGetCheckpointLogVersion() );
+            assertEquals( 3, dataStore.incrementAndGetCheckpointLogVersion() );
+            assertEquals( 4, dataStore.incrementAndGetCheckpointLogVersion() );
+            assertEquals( 5, dataStore.incrementAndGetCheckpointLogVersion() );
             assertEquals( 5, dataStore.getCheckpointLogVersion() );
             assertEquals( 0, dataStore.getCurrentLogVersion() );
         }
@@ -942,10 +756,10 @@ class MetaDataStoreTest
         try ( var dataStore = newMetaDataStore() )
         {
             assertEquals( 0, dataStore.getCheckpointLogVersion() );
-            dataStore.setCheckpointLogVersion( 123, NULL_CONTEXT );
+            dataStore.setCheckpointLogVersion( 123 );
             assertEquals( 123, dataStore.getCheckpointLogVersion() );
 
-            dataStore.setCheckpointLogVersion( 321, NULL_CONTEXT );
+            dataStore.setCheckpointLogVersion( 321 );
             assertEquals( 321, dataStore.getCheckpointLogVersion() );
             assertEquals( 0, dataStore.getCurrentLogVersion() );
         }
@@ -958,10 +772,19 @@ class MetaDataStoreTest
         {
             assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.LATEST ); //new store should have latest
             assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.V4_2 ); //that is not 4.0
-            metaDataStore.setKernelVersion( KernelVersion.V4_2, NULL_CONTEXT ); //so we set it
+            metaDataStore.setKernelVersion( KernelVersion.V4_2 ); //so we set it
+            assertEquals( KernelVersion.V4_2, metaDataStore.kernelVersion() );
         }
 
-        try ( MetaDataStore metaDataStore = newMetaDataStore() )
+        var logTail = new EmptyLogTailMetadata()
+        {
+            @Override
+            public KernelVersion getKernelVersion()
+            {
+                return KernelVersion.V4_2;
+            }
+        };
+        try ( MetaDataStore metaDataStore = newMetaDataStore( logTail ) )
         {
             assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_2 ); //and can read it after a restart
 
@@ -1020,9 +843,7 @@ class MetaDataStoreTest
     private void readAllFields( MetaDataStore store )
     {
         store.getStoreVersion();
-        store.getUpgradeTransaction();
         store.getLastCommittedTransaction();
-        store.getUpgradeTime();
         store.getLastClosedTransaction();
         store.getCreationTime();
         store.getCheckpointLogVersion();
@@ -1038,10 +859,10 @@ class MetaDataStoreTest
     void shouldGenerateCorrectTransactionIdSequenceWhenConcurrentlyReadingOtherFields() throws IOException
     {
         // given an existing meta data store with its external store ID UUID set to uninitialized (as if the db was from an older version)
-        newMetaDataStore().close();
-        MetaDataStore.setExternalStoreUUID( pageCache, databaseLayout.metadataStore(), MetaDataStore.NOT_INITIALIZED_UUID, databaseLayout.getDatabaseName(),
-                NULL_CONTEXT );
-
+        try ( var metaDataStore = newMetaDataStore() )
+        {
+            metaDataStore.regenerateMetadata( metaDataStore.getStoreId(), MetaDataStore.NOT_INITIALIZED_UUID, NULL_CONTEXT );
+        }
         try ( var store = newMetaDataStore() )
         {
             var numCommitted = new AtomicLong();
@@ -1072,17 +893,45 @@ class MetaDataStoreTest
         }
     }
 
+    private static void assertLogVersionEqualsByteOffset( long logVersion, long byteOffset, String source )
+    {
+        if ( logVersion != byteOffset )
+        {
+            throw new AssertionError(
+                    "logVersion (" + logVersion + ") and byteOffset (" + byteOffset + ") from " + source +
+                            " should be identical" );
+        }
+    }
+
+    private static void assertIdEqualsChecksum( long id, long checksum, String source )
+    {
+        if ( id != checksum )
+        {
+            throw new AssertionError( "id (" + id + ") and checksum (" + checksum + ") from " + source + " should be identical" );
+        }
+    }
+
     private MetaDataStore newMetaDataStore()
     {
-        return newMetaDataStore( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+        return newMetaDataStore( contextFactory );
     }
 
     private MetaDataStore newMetaDataStore( CursorContextFactory contextFactory )
     {
+        return newMetaDataStore( contextFactory, EMPTY_LOG_TAIL );
+    }
+
+    private MetaDataStore newMetaDataStore( LogTailMetadata logTail )
+    {
+        return newMetaDataStore( contextFactory, logTail );
+    }
+
+    private MetaDataStore newMetaDataStore( CursorContextFactory contextFactory, LogTailMetadata logTail )
+    {
         InternalLogProvider logProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fs, immediate(), databaseLayout.getDatabaseName() ),
-                        pageCacheWithFakeOverflow, fs, logProvider, contextFactory, writable() );
+                        pageCacheWithFakeOverflow, fs, logProvider, contextFactory, writable(), logTail );
         return storeFactory.openNeoStores( true, StoreType.META_DATA ).getMetaDataStore();
     }
 }

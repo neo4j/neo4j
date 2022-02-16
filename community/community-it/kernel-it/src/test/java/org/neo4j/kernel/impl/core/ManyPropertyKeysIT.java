@@ -63,6 +63,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 /**
@@ -139,7 +140,7 @@ class ManyPropertyKeysIT
         var cursorContext = contextFactory.create( "databaseWithManyPropertyKeys" );
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(),
                 new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), contextFactory, writable() );
+                NullLogProvider.getInstance(), contextFactory, writable(), EMPTY_LOG_TAIL );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         try ( var storeCursors = new CachedStoreCursors( neoStores, NULL_CONTEXT );

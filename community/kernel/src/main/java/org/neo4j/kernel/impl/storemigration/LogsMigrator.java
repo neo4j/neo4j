@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
-import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -30,14 +30,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
@@ -54,10 +50,8 @@ public class LogsMigrator
     private final DatabaseLayout databaseLayout;
     private final PageCache pageCache;
     private final Config config;
-    private final DependencyResolver dependencyResolver;
-    private final MemoryTracker memoryTracker;
-    private final DatabaseHealth databaseHealth;
     private final CursorContextFactory contextFactory;
+    private final Supplier<LogTailMetadata> logTailSupplier;
 
     public LogsMigrator(
             FileSystemAbstraction fs,
@@ -66,10 +60,8 @@ public class LogsMigrator
             DatabaseLayout databaseLayout,
             PageCache pageCache,
             Config config,
-            DependencyResolver dependencyResolver,
-            MemoryTracker memoryTracker,
-            DatabaseHealth databaseHealth,
-            CursorContextFactory contextFactory )
+            CursorContextFactory contextFactory,
+            Supplier<LogTailMetadata> logTailSupplier )
     {
         this.fs = fs;
         this.storageEngineFactoryToMigrateFrom = storageEngineFactoryToMigrateFrom;
@@ -77,43 +69,25 @@ public class LogsMigrator
         this.databaseLayout = databaseLayout;
         this.pageCache = pageCache;
         this.config = config;
-        this.dependencyResolver = dependencyResolver;
-        this.memoryTracker = memoryTracker;
-        this.databaseHealth = databaseHealth;
         this.contextFactory = contextFactory;
+        this.logTailSupplier = logTailSupplier;
     }
 
-    public void assertCleanlyShutDown( DatabaseLayout layout )
+    public void assertCleanlyShutDown()
     {
         Throwable suppressibleException = null;
-        LogTailInformation tail = null;
+        var logTail = logTailSupplier.get();
         try
         {
-            LogFiles logFiles = buildLogFiles( layout );
-
-            tail = logFiles.getTailInformation();
-            if ( !tail.isRecoveryRequired() )
+            if ( !logTail.isRecoveryRequired() )
             {
                 // All good
                 return;
             }
-            if ( tail.logsMissing() )
+            if ( logTail.logsMissing() && !config.get( fail_on_missing_files ) )
             {
-                // There are no log files in the legacy logs location.
-                // Either log files are missing entirely, or they are already in their correct place.
-                logFiles = buildLogFiles( layout );
-                tail = logFiles.getTailInformation();
-
-                if ( !tail.isRecoveryRequired() )
-                {
-                    // Log file is already in its new location, and looks good.
-                    return;
-                }
-                if ( tail.logsMissing() && !config.get( fail_on_missing_files ) )
-                {
-                    // We don't have any log files, but we were told to ignore this.
-                    return;
-                }
+                // We don't have any log files, but we were told to ignore this.
+                return;
             }
         }
         catch ( Throwable throwable )
@@ -121,7 +95,7 @@ public class LogsMigrator
             // ignore exception and throw db not cleanly shutdown
             suppressibleException = throwable;
         }
-        DatabaseNotCleanlyShutDownException exception = upgradeException( tail );
+        DatabaseNotCleanlyShutDownException exception = upgradeException( logTail );
         if ( suppressibleException != null )
         {
             exception.addSuppressed( suppressibleException );
@@ -129,41 +103,19 @@ public class LogsMigrator
         throw exception;
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout layout )
-    {
-        final LogFiles logFiles;
-        try
-        {
-            logFiles = LogFilesBuilder.builder( layout, fs )
-                                      .withStorageEngineFactory( storageEngineFactoryToMigrateFrom )
-                                      .withConfig( config )
-                                      .withMemoryTracker( memoryTracker )
-                                      .withDatabaseHealth( databaseHealth )
-                                      .withDependencies( dependencyResolver ).build();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        return logFiles;
-    }
-
-    public void migrate( DatabaseLayout layout )
+    public void upgrade( DatabaseLayout layout ) throws IOException
     {
         try ( MetadataProvider store = getMetaDataStore() )
         {
-            TransactionLogInitializer logInitializer = new TransactionLogInitializer(
-                    fs, store, storageEngineFactoryToMigrateTo, contextFactory );
+            TransactionLogInitializer logInitializer = new TransactionLogInitializer( fs, store, storageEngineFactoryToMigrateTo );
 
             Path transactionLogsDirectory = layout.getTransactionLogsDirectory();
-
-            // we have to check if the log files are already present in the intended location and try to initialize them there.
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).build();
+            LogFiles logFiles =
+                    LogFilesBuilder.logFilesBasedOnlyBuilder( transactionLogsDirectory, fs ).withExternalLogTailMetadata( logTailSupplier.get() ).build();
             var files = logFiles.logFiles();
             if ( files != null && files.length > 0 )
             {
-                // The log files are already at their intended location, so initialize them there.
-                logInitializer.initializeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
+                logInitializer.upgradeExistingLogFiles( layout, transactionLogsDirectory, UPGRADE_CHECKPOINT );
             }
             else if ( config.get( fail_on_missing_files ) )
             {
@@ -189,10 +141,10 @@ public class LogsMigrator
     private MetadataProvider getMetaDataStore() throws IOException
     {
         return storageEngineFactoryToMigrateTo.transactionMetaDataStore( fs, databaseLayout, config, pageCache, DatabaseReadOnlyChecker.readOnly(),
-                contextFactory );
+                contextFactory, logTailSupplier.get() );
     }
 
-    private static DatabaseNotCleanlyShutDownException upgradeException( LogTailInformation tail )
+    private static DatabaseNotCleanlyShutDownException upgradeException( LogTailMetadata tail )
     {
         return tail == null ? new DatabaseNotCleanlyShutDownException() : new DatabaseNotCleanlyShutDownException( tail );
     }

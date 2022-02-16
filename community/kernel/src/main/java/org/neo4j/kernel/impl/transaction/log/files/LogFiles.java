@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -43,5 +44,5 @@ public interface LogFiles extends Lifecycle
 
     boolean isLogFile( Path path );
 
-    LogTailInformation getTailInformation();
+    LogTailMetadata getTailMetadata();
 }

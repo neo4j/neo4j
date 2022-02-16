@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -70,10 +71,8 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-            String versionToMigrateFrom, String versionToMigrateTo, IndexImporterFactory indexImporterFactory )
+            StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
     {
-        StoreVersion fromVersion = storageEngineFactory.versionInformation( versionToMigrateFrom );
-        StoreVersion toVersion = storageEngineFactory.versionInformation( versionToMigrateTo );
         deleteRelationshipTokenIndex = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
         // Token indexes were stored at a different location before 5.0
         // This migrator will take them to the 5.0+ location

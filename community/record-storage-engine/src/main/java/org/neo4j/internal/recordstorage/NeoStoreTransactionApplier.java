@@ -19,15 +19,12 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.IOException;
-
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockGroup;
@@ -170,17 +167,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitMetaDataCommand( Command.MetaDataCommand command ) throws IOException
+    public boolean visitMetaDataCommand( Command.MetaDataCommand command )
     {
-        if ( command.getAfter().getId() == MetaDataStore.Position.KERNEL_VERSION.id() )
-        {
-            KernelVersion kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( command.getAfter().getValue() ) );
-            neoStores.getMetaDataStore().setKernelVersion( kernelVersion, cursorContext );
-        }
-        else
-        {
-            throw new UnsupportedOperationException( "Unexpected meta data update " + command );
-        }
+        KernelVersion kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( command.getAfter().getValue() ) );
+        neoStores.getMetaDataStore().setKernelVersion( kernelVersion );
         return false;
     }
 
@@ -192,7 +182,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             {
             case UPDATE:
             case CREATE:
-                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId, cursorContext );
+                neoStores.getMetaDataStore().setLatestConstraintIntroducingTx( transactionId );
                 break;
             case DELETE:
                 break;
@@ -221,14 +211,10 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
 
     private <RECORD extends AbstractBaseRecord> RECORD selectRecordByCommandVersion( BaseCommand<RECORD> command )
     {
-        switch ( version )
-        {
-        case BEFORE:
-            return command.getBefore();
-        case AFTER:
-            return command.getAfter();
-        default:
-            throw new IllegalArgumentException( "Unexpected command version " + version );
-        }
+        return switch ( version )
+                {
+                    case BEFORE -> command.getBefore();
+                    case AFTER -> command.getAfter();
+                };
     }
 }

@@ -72,6 +72,7 @@ class StoreInfoCommandTest
     private Path homeDir;
     private StorageEngineFactory storageEngineFactory;
     private StorageEngineFactory.Selector storageEngineSelector;
+    private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
     @BeforeEach
     void setUp() throws Exception
@@ -83,6 +84,7 @@ class StoreInfoCommandTest
 
         out = mock( PrintStream.class );
         storageEngineFactory = mock( StorageEngineFactory.class );
+        doReturn( transactionIdStore ).when( storageEngineFactory ).readOnlyTransactionIdStore( any() );
         storageEngineSelector = mock( StorageEngineFactory.Selector.class );
         when( storageEngineSelector.selectStorageEngine( any(), any(), any() ) ).thenReturn( Optional.empty() );
         command = new StoreInfoCommand( new ExecutionContext( homeDir, homeDir, out, mock( PrintStream.class ), testDirectory.getFileSystem() ),
@@ -139,7 +141,7 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void readsLatestStoreVersionCorrectly() throws Exception
+    void readsLatestStoreVersionCorrectly()
     {
         prepareStore( fooDbLayout, "A", "v1", null, null, 5 );
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
@@ -152,7 +154,7 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void readsOlderStoreVersionCorrectly() throws Exception
+    void readsOlderStoreVersionCorrectly()
     {
         prepareStore( fooDbLayout, "A", "v1", "B", "v2", 5 );
         CommandLine.populateCommand( command, fooDbDirectory.toAbsolutePath().toString() );
@@ -166,7 +168,7 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void throwsOnUnknownVersion() throws Exception
+    void throwsOnUnknownVersion()
     {
         prepareStore( fooDbLayout, "unknown", "v1", null, null, 3 );
         when( storageEngineFactory.versionInformation( "unknown" ) ).thenThrow( IllegalArgumentException.class );
@@ -227,12 +229,13 @@ class StoreInfoCommandTest
         fileSystem.mkdirs( barDbDirectory );
 
         prepareStore( fooDbLayout, "A", "v1", null, null, 9 );
-        prepareStore( barDbLayout, "A", "v1", null, null, 10 );
-        var databasesRoot = homeDir.resolve( "data/databases" );
+        var expectedFoo = expectedPrettyResult( "foo", false, "A", "v1", null, 9 );
 
+        prepareStore( barDbLayout, "A", "v1", null, null, 10 );
         var expectedBar = expectedPrettyResult( "bar", false, "A", "v1", null, 10 );
 
-        var expectedFoo = expectedPrettyResult( "foo", false, "A", "v1", null, 9 );
+        var databasesRoot = homeDir.resolve( "data/databases" );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 10L, 9L );
 
         var expected = expectedBar +
                 System.lineSeparator() +
@@ -248,7 +251,7 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void returnsInfoStructuredAsJson() throws IOException
+    void returnsInfoStructuredAsJson()
     {
         //given
         prepareStore( fooDbLayout, "A", "v1", null, null, 13 );
@@ -271,12 +274,11 @@ class StoreInfoCommandTest
         fileSystem.mkdirs( barDbDirectory );
 
         prepareStore( fooDbLayout, "B", "v2", null, null, 2 );
-        prepareStore( barDbLayout, "B", "v2", null, null, 3 );
-        var databasesRoot = homeDir.resolve( "data/databases" );
-
-        var expectedBar = expectedPrettyResult( "bar", false, "B", "v2", null, 3 );
-
         var expectedFoo = expectedPrettyResult( "foo", false, "B", "v2", null, 2 );
+        prepareStore( barDbLayout, "B", "v2", null, null, 3 );
+        var expectedBar = expectedPrettyResult( "bar", false, "B", "v2", null, 3 );
+        var databasesRoot = homeDir.resolve( "data/databases" );
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 3L, 2L );
 
         var expectedMulti = expectedBar +
                 System.lineSeparator() +
@@ -292,7 +294,7 @@ class StoreInfoCommandTest
     }
 
     @Test
-    void prettySingleStoreInfoResultHasTrailingLineSeparator() throws IOException
+    void prettySingleStoreInfoResultHasTrailingLineSeparator()
     {
         // given
         prepareStore( fooDbLayout, "B", "v2", null, null, 8 );
@@ -339,7 +341,7 @@ class StoreInfoCommandTest
     }
 
     private void prepareStore( DatabaseLayout databaseLayout, String storeVersion, String introducedInVersion, String successorStoreVersion,
-            String successorNeo4jVersion, long lastCommittedTxId ) throws IOException
+            String successorNeo4jVersion, long lastCommittedTxId )
     {
         doReturn( Optional.of( storageEngineFactory ) ).when( storageEngineSelector ).selectStorageEngine( any(),
                 argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any() );
@@ -357,12 +359,9 @@ class StoreInfoCommandTest
             StoreVersion version2 = mockedStoreVersion( successorStoreVersion, successorNeo4jVersion, null );
             when( storageEngineFactory.versionInformation( successorStoreVersion ) ).thenReturn( version2 );
         }
+        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( lastCommittedTxId );
         doReturn( storeVersionCheck ).when( storageEngineFactory ).versionCheck( any(),
                 argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any(), any(), any(), any() );
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        doReturn( transactionIdStore ).when( storageEngineFactory ).readOnlyTransactionIdStore( any(),
-                argThat( dbLayout -> dbLayout.databaseDirectory().equals( databaseLayout.databaseDirectory() ) ), any(), any() );
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( lastCommittedTxId );
     }
 
     private StoreVersion mockedStoreVersion( String storeVersion, String introducedInVersion, String supersededByStoreVersion )

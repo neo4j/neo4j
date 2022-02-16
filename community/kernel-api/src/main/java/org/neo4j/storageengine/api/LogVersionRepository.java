@@ -19,8 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.io.pagecache.context.CursorContext;
-
 public interface LogVersionRepository
 {
     long INITIAL_LOG_VERSION = 0;
@@ -36,15 +34,13 @@ public interface LogVersionRepository
      * Set current log version
      * @param version new current log version
      */
-    void setCurrentLogVersion( long version, CursorContext cursorContext );
+    void setCurrentLogVersion( long version );
 
     /**
-     * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
-     * It does so atomically and can potentially block.
-     * @param cursorContext underlying page cursor context.
+     * Increments and returns the latest log version for this repository.
      * @return the latest log version for this repository.
      */
-    long incrementAndGetVersion( CursorContext cursorContext );
+    long incrementAndGetVersion();
 
     /*
      * Returns the current checkpoint log version.
@@ -55,13 +51,11 @@ public interface LogVersionRepository
      * Set checkpoint log version
      * @param version new current log version
      */
-    void setCheckpointLogVersion( long version, CursorContext cursorContext );
+    void setCheckpointLogVersion( long version );
 
     /**
-     * Increments (making sure it is persisted on disk) and returns the latest checkpoint log version for this repository.
-     * It does so atomically and can potentially block.
-     * @param cursorContext underlying page cursor context.
+     * Increments and returns the latest checkpoint log version for this repository.
      * @return the latest checkpoint log version for this repository.
      */
-    long incrementAndGetCheckpointLogVersion( CursorContext cursorContext );
+    long incrementAndGetCheckpointLogVersion();
 }

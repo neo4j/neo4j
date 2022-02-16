@@ -27,16 +27,10 @@ import java.util.Collections;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -53,7 +47,6 @@ import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -62,12 +55,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
  */
 public class TransactionLogInitializer
 {
-    private static final String LOGS_UPGRADER_TRACER_TAG = "LogsUpgrader";
-    private static final String RESET_TRANSACTION_OFFSET_TAG = "ResetTransactionOffset";
     private final FileSystemAbstraction fs;
     private final MetadataProvider store;
     private final StorageEngineFactory storageEngineFactory;
-    private final CursorContextFactory contextFactory;
 
     /**
      * Get a {@link LogFilesInitializer} implementation, suitable for e.g. passing to a batch importer.
@@ -75,13 +65,12 @@ public class TransactionLogInitializer
      */
     public static LogFilesInitializer getLogFilesInitializer()
     {
-        return ( databaseLayout, store, fileSystem, checkpointReason, contextFactory ) ->
+        return ( databaseLayout, store, fileSystem, checkpointReason ) ->
         {
             try
             {
                 TransactionLogInitializer initializer = new TransactionLogInitializer(
-                        fileSystem, store, StorageEngineFactory.defaultStorageEngine(),
-                        contextFactory );
+                        fileSystem, store, StorageEngineFactory.defaultStorageEngine() );
                 initializer.initializeEmptyLogFile( databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason );
             }
             catch ( IOException e )
@@ -91,61 +80,48 @@ public class TransactionLogInitializer
         };
     }
 
-    public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, StorageEngineFactory storageEngineFactory,
-                                      CursorContextFactory contextFactory )
+    public TransactionLogInitializer( FileSystemAbstraction fs, MetadataProvider store, StorageEngineFactory storageEngineFactory )
     {
         this.fs = fs;
         this.store = store;
         this.storageEngineFactory = storageEngineFactory;
-        this.contextFactory = contextFactory;
     }
 
     /**
      * Create new empty log files in the given transaction logs directory, for a database that doesn't have any already.
      */
-    public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws IOException
+    public void initializeEmptyLogFile( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason )
+            throws IOException
     {
-        try ( var cursorContext = contextFactory.create( RESET_TRANSACTION_OFFSET_TAG ) )
-        {
-            // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
-            // log files will be started since on start we will try position writer on the last known good location
-            store.resetLastClosedTransaction( store.getLastCommittedTransactionId(), store.getLastClosedTransactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE, true,
-                    store.getLastClosedTransaction().checksum(), store.getLastClosedTransaction().commitTimestamp(), cursorContext );
-        }
-        try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
+        // since we reset transaction log file, we can't trust old log file offset anymore from metadata store and we need to reset it before
+        // log files will be started since on start we will try position writer on the last known good location
+        store.resetLastClosedTransaction( store.getLastCommittedTransactionId(), store.getLastClosedTransactionId(), CURRENT_FORMAT_LOG_HEADER_SIZE,
+                store.getLastClosedTransaction().checksum(), store.getLastClosedTransaction().commitTimestamp() );
+        try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory) )
         {
             LogFiles logFiles = span.getLogFiles();
             appendEmptyTransactionAndCheckPoint( logFiles, checkpointReason );
         }
     }
 
-    /**
-     * Make sure that any existing log files in the given transaction logs directory are initialised.
-     * This is done when we migrate 3.x stores into a 4.x world.
-     */
-    public void initializeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason ) throws Exception
+    public void upgradeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason )
+            throws Exception
     {
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
         {
             LogFiles logFiles = span.getLogFiles();
             LogFile logFile = logFiles.getLogFile();
-            LogHeader logHeader = logFile.extractHeader( logFile.getLowestLogVersion() );
-            VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory(), false );
-            try ( var readableChannel = logFile.getReader( logHeader.getStartPosition() );
-                  var cursor = new LogEntryCursor( entryReader, readableChannel ) )
+            for ( long version = logFile.getLowestLogVersion(); version <= logFile.getHighestLogVersion() ; version++ )
             {
-                while ( cursor.next() )
-                {
-                    LogEntry entry = cursor.get();
-                    if ( entry.getType() == LogEntryTypeCodes.TX_COMMIT )
-                    {
-                        // The log files already contain a transaction, so we can only append checkpoint for the end of the log files.
-                        appendCheckpoint( logFiles, checkpointReason, logFile.getTransactionLogWriter().getCurrentPosition() );
-                        return;
-                    }
-                }
+                fs.deleteFile( logFile.getLogFileForVersion( version ) );
             }
-
+            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+            for ( long version = checkpointFile.getLowestLogVersion(); version <= checkpointFile.getHighestLogVersion() ; version++ )
+            {
+                fs.deleteFile( checkpointFile.getDetachedCheckpointFileForVersion( version ) );
+            }
+            logFile.rotate();
+            checkpointFile.rotate();
             appendEmptyTransactionAndCheckPoint( logFiles, checkpointReason );
         }
     }
@@ -167,30 +143,26 @@ public class TransactionLogInitializer
     {
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
-        long transactionId = committedTx.transactionId();
+        long upgradeTransactionId = committedTx.transactionId() + 1;
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
-        PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp );
+        PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp, upgradeTransactionId );
         int checksum = transactionLogWriter.append( emptyTx, BASE_TX_ID, BASE_TX_CHECKSUM );
         logFile.forceAfterAppend( LogAppendEvent.NULL );
         LogPosition position = transactionLogWriter.getCurrentPosition();
-        appendCheckpoint( logFiles, reason, position );
-        try ( CursorContext cursorContext = contextFactory.create( LOGS_UPGRADER_TRACER_TAG ) )
-        {
-            store.setLastCommittedAndClosedTransactionId(
-                    transactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion(), cursorContext );
-        }
+        appendCheckpoint( logFiles, reason, position, new TransactionId( upgradeTransactionId, checksum, timestamp ) );
+        store.setLastCommittedAndClosedTransactionId( upgradeTransactionId, checksum, timestamp, position.getByteOffset(), position.getLogVersion() );
     }
 
-    private static PhysicalTransactionRepresentation emptyTransaction( long timestamp )
+    private static PhysicalTransactionRepresentation emptyTransaction( long timestamp, long txId )
     {
-        return new PhysicalTransactionRepresentation( Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, BASE_TX_ID, timestamp, NO_LEASE, ANONYMOUS );
+        return new PhysicalTransactionRepresentation( Collections.emptyList(), EMPTY_BYTE_ARRAY, timestamp, txId, timestamp, NO_LEASE, ANONYMOUS );
     }
 
-    private static void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position ) throws IOException
+    private static void appendCheckpoint( LogFiles logFiles, String reason, LogPosition position, TransactionId transactionId ) throws IOException
     {
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
-        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, new TransactionId( BASE_TX_ID, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP ), position,
+        checkpointAppender.checkPoint( LogCheckPointEvent.NULL, transactionId, position,
                 Instant.now(), reason );
     }
 }

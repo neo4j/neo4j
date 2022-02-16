@@ -32,15 +32,11 @@ import java.time.Clock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.rotation.FileLogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
-import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -69,31 +65,6 @@ class TransactionLogFileIT
     private LogVersionRepository logVersionRepository;
     @Inject
     private TransactionIdStore transactionIdStore;
-
-    @Test
-    void tracePageCacheAccessOnRotate() throws IOException
-    {
-        var cacheTracer = new DefaultPageCacheTracer();
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
-                .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository )
-                .withStoreId( StoreId.UNKNOWN )
-                .withDatabaseTracers( new DatabaseTracers( DatabaseTracer.NULL, LockTracer.NONE, cacheTracer ) )
-                .build();
-        life.add( logFiles );
-        life.start();
-
-        assertThat( cacheTracer.pins() ).isZero();
-        assertThat( cacheTracer.unpins() ).isZero();
-        assertThat( cacheTracer.pins() ).isZero();
-
-        var logFile = logFiles.getLogFile();
-        logFile.rotate();
-
-        assertThat( cacheTracer.pins() ).isEqualTo( 1 );
-        assertThat( cacheTracer.unpins() ).isEqualTo( 1 );
-        assertThat( cacheTracer.hits() ).isEqualTo( 1 );
-    }
 
     @Test
     @EnabledOnOs( OS.LINUX )

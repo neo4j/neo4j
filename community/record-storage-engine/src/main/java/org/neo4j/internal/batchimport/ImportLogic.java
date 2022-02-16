@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
@@ -531,11 +532,12 @@ public class ImportLogic implements Closeable
 
     public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, RecordDatabaseLayout databaseLayout,
             PageCacheTracer cacheTracer, Configuration config,
-            LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig, JobScheduler scheduler, MemoryTracker memoryTracker,
+            LogService logService, AdditionalInitialIds additionalInitialIds, LogTailMetadata logTailMetadata,
+            Config dbConfig, JobScheduler scheduler, MemoryTracker memoryTracker,
             CursorContextFactory contextFactory )
     {
         return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, config, logService,
-                additionalInitialIds, dbConfig, scheduler, cacheTracer, contextFactory, memoryTracker );
+                additionalInitialIds, logTailMetadata, dbConfig, scheduler, cacheTracer, contextFactory, memoryTracker );
     }
 
     private static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )

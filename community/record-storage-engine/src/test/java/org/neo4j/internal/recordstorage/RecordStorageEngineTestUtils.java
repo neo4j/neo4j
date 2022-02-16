@@ -59,6 +59,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHolder;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 public class RecordStorageEngineTestUtils
@@ -72,7 +73,7 @@ public class RecordStorageEngineTestUtils
         return new RecordStorageEngine( layout, config, pageCache, fs, NullLogProvider.getInstance(), NullLogProvider.getInstance(), tokenHolders,
                 mock( SchemaState.class ), new StandardConstraintRuleAccessor(), c -> c, NO_LOCK_SERVICE, mock( Health.class ),
                 new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ), new DefaultIdController(), immediate(),  true,
-                EmptyMemoryTracker.INSTANCE, writable(), CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE,
+                EmptyMemoryTracker.INSTANCE, writable(), EMPTY_LOG_TAIL, CommandLockVerification.Factory.IGNORE, LockVerificationMonitor.Factory.IGNORE,
                 new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
     }
 
