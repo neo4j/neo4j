@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.UnsafeDirectByteBufferAllocator;
 import org.neo4j.memory.MemoryTracker;
@@ -55,7 +54,6 @@ public class IndexPopulationJob implements Runnable
 {
     private static final String INDEX_POPULATION_TAG = "indexPopulationJob";
     private final IndexMonitor monitor;
-    private final boolean verifyBeforeFlipping;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final ByteBufferFactory bufferFactory;
@@ -79,13 +77,12 @@ public class IndexPopulationJob implements Runnable
      */
     private volatile JobHandle<?> jobHandle;
 
-    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexMonitor monitor, boolean verifyBeforeFlipping,
+    public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexMonitor monitor,
             CursorContextFactory contextFactory, MemoryTracker memoryTracker, String databaseName, Subject subject, EntityType populatedEntityType,
             Config config )
     {
         this.multiPopulator = multiPopulator;
         this.monitor = monitor;
-        this.verifyBeforeFlipping = verifyBeforeFlipping;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
         this.memoryAllocationTracker = new ThreadSafePeakMemoryTracker();
@@ -144,7 +141,7 @@ public class IndexPopulationJob implements Runnable
                     // We remain in POPULATING state
                     return;
                 }
-                multiPopulator.flipAfterStoreScan( verifyBeforeFlipping, cursorContext );
+                multiPopulator.flipAfterStoreScan( cursorContext );
             }
             catch ( Throwable t )
             {
@@ -162,7 +159,7 @@ public class IndexPopulationJob implements Runnable
         }
     }
 
-    private void indexAllEntities( CursorContextFactory contextFactory ) throws IndexPopulationFailedKernelException
+    private void indexAllEntities( CursorContextFactory contextFactory )
     {
         storeScan = multiPopulator.createStoreScan( contextFactory );
         storeScan.run( multiPopulator );

@@ -83,7 +83,7 @@ class IndexPopulationTest
             multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY ).run( StoreScan.NO_EXTERNAL_UPDATES );
 
             // when
-            indexPopulation.flip( false, CursorContext.NULL_CONTEXT );
+            indexPopulation.flip( CursorContext.NULL_CONTEXT );
 
             // then
             assertSame( InternalIndexState.FAILED, flipper.getState(), "flipper should have flipped to failing proxy" );

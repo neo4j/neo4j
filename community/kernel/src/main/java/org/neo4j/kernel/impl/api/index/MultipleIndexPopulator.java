@@ -97,7 +97,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>Call to {@link #create(CursorContext)} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #createStoreScan(CursorContextFactory)} and {@link StoreScan#run(StoreScan.ExternalUpdatesCheck)}(blocking call).</li>
  * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
- * <li>Call to {@link #flipAfterStoreScan(boolean, CursorContext)} after successful population, or {@link #cancel(Throwable, CursorContext)} if not</li>
+ * <li>Call to {@link #flipAfterStoreScan(CursorContext)} after successful population, or {@link #cancel(Throwable, CursorContext)} if not</li>
  * </ol>
  * <p>
  * It is possible for concurrent updates from transactions to arrive while index population is in progress. Such
@@ -105,7 +105,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * queue size has reached {@link #queueThreshold} then it drains all batched updates and waits for all job scheduler
  * tasks to complete and flushes updates from the queue using {@link MultipleIndexUpdater}. If queue size never reaches
  * {@link #queueThreshold} than all queued concurrent updates are flushed after the store scan in
- * {@link MultipleIndexPopulator#flipAfterStoreScan(boolean, CursorContext)}.
+ * {@link #flipAfterStoreScan(CursorContext)}.
  * <p>
  */
 public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, AutoCloseable
@@ -320,7 +320,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      * This means population job has finished, successfully or unsuccessfully and resources can be released.
      *
      * Note that {@link IndexPopulation index populations} cannot be closed. Instead, the underlying
-     * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(boolean, CursorContext)},
+     * {@link IndexPopulator index populator} is closed by {@link #flipAfterStoreScan(CursorContext)},
      * {@link #cancel(IndexPopulation, Throwable, CursorContext)} or {@link #stop(IndexPopulation, CursorContext)}.
      */
     @Override
@@ -351,16 +351,15 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
      * {@link IndexProxy index proxy} will be {@link FlippableIndexProxy#flip(Callable, FailedIndexProxyFactory) flipped}
      * to {@link OnlineIndexProxy online}, given that nothing goes wrong.
      *
-     * @param verifyBeforeFlipping Whether to verify deferred constraints before flipping index proxy. This is used by batch inserter.
      */
-    void flipAfterStoreScan( boolean verifyBeforeFlipping, CursorContext cursorContext )
+    void flipAfterStoreScan( CursorContext cursorContext )
     {
         for ( IndexPopulation population : populations )
         {
             try
             {
                 population.scanCompleted( cursorContext );
-                population.flip( verifyBeforeFlipping, cursorContext );
+                population.flip( cursorContext );
             }
             catch ( Throwable t )
             {
@@ -670,7 +669,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
             }
         }
 
-        void flip( boolean verifyBeforeFlipping, CursorContext cursorContext ) throws FlipFailedKernelException
+        void flip( CursorContext cursorContext ) throws FlipFailedKernelException
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
             flipper.flip( () ->
@@ -683,10 +682,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                         applyExternalUpdates( Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
-                            if ( verifyBeforeFlipping )
-                            {
-                                populator.verifyDeferredConstraints( propertyAccessor );
-                            }
                             if ( indexProxyStrategy.getIndexDescriptor().getIndexType() != IndexType.LOOKUP )
                             {
                                 IndexSample sample = populator.sample( cursorContext );

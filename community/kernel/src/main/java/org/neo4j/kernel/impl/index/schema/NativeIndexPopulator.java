@@ -131,12 +131,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-    {
-        // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
-    }
-
-    @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         return newPopulatingUpdater( cursorContext );

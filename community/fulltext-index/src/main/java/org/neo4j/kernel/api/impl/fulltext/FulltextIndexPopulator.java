@@ -76,12 +76,6 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor )
-    {
-        //Fulltext index does not care about constraints.
-    }
-
-    @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         return new PopulatingFulltextIndexUpdater();

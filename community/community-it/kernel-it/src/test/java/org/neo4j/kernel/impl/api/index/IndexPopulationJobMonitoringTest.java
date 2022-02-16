@@ -60,7 +60,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.single( 999, 1000 ),
                 PopulationProgress.DONE
         );
-        var job = new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, memoryTracker, "Test DB",
+        var job = new IndexPopulationJob( populator, NO_MONITOR, CONTEXT_FACTORY, memoryTracker, "Test DB",
                 new Subject( "Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "the ONE" );
@@ -94,7 +94,7 @@ class IndexPopulationJobMonitoringTest
                 PopulationProgress.single( 999, 1000 ),
                 PopulationProgress.DONE
         );
-        var job = new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, memoryTracker, "Another Test DB",
+        var job = new IndexPopulationJob( populator, NO_MONITOR, CONTEXT_FACTORY, memoryTracker, "Another Test DB",
                 new Subject( "Another Test User" ), NODE, Config.defaults() );
 
         addIndex( job, "index 1" );

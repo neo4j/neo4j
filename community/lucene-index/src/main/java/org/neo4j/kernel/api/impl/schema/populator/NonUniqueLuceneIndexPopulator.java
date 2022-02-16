@@ -42,12 +42,6 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor accessor )
-    {
-        // no constraints to verify so do nothing
-    }
-
-    @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, ignoreStrategy );

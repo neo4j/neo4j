@@ -140,7 +140,7 @@ class MultipleIndexPopulatorTest
 
         indexPopulation.disconnectAndStop( NULL_CONTEXT );
 
-        indexPopulation.flip( false, NULL_CONTEXT );
+        indexPopulation.flip( NULL_CONTEXT );
 
         verify( indexPopulation.populator, never() ).sample( NULL_CONTEXT );
     }
@@ -151,7 +151,7 @@ class MultipleIndexPopulatorTest
         IndexPopulator populator = createIndexPopulator();
         IndexPopulation indexPopulation = addPopulator( populator, 1 );
 
-        indexPopulation.flip( false, NULL_CONTEXT );
+        indexPopulation.flip( NULL_CONTEXT );
 
         indexPopulation.disconnectAndStop( NULL_CONTEXT );
 
@@ -233,7 +233,7 @@ class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         verify( populationToKeepActive.flipper ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -255,7 +255,7 @@ class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         verify( populationToCancel.flipper, never() ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
     }
@@ -345,7 +345,7 @@ class MultipleIndexPopulatorTest
         FlippableIndexProxy flipper1 = addPopulator( indexPopulator1, 1 ).flipper;
         FlippableIndexProxy flipper2 = addPopulator( indexPopulator2, 2 ).flipper;
 
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         verify( flipper1 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
         verify( flipper2 ).flip( any( Callable.class ), any( FailedIndexProxyFactory.class ) );
@@ -362,7 +362,7 @@ class MultipleIndexPopulatorTest
 
         assertTrue( multipleIndexPopulator.hasPopulators() );
 
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         assertFalse( multipleIndexPopulator.hasPopulators() );
     }
@@ -399,7 +399,7 @@ class MultipleIndexPopulatorTest
         when( indexPopulator1.sample( any( CursorContext.class ) ) ).thenThrow( getSampleError() );
 
         multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         verify( indexPopulator1 ).close( false, NULL_CONTEXT );
         verify( failedIndexProxyFactory ).create( any( RuntimeException.class ) );
@@ -494,27 +494,6 @@ class MultipleIndexPopulatorTest
     }
 
     @Test
-    void shouldVerifyConstraintsBeforeFlippingIfToldTo() throws IndexEntryConflictException
-    {
-        // given
-        IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
-        FailedIndexProxyFactory failedIndexProxyFactory = mock( FailedIndexProxyFactory.class );
-        FlippableIndexProxy flipper = new FlippableIndexProxy();
-        flipper.setFlipTarget( indexProxyFactory );
-        IndexPopulator indexPopulator = createIndexPopulator();
-        addPopulator( indexPopulator, 1, flipper, failedIndexProxyFactory );
-        when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
-
-        // when
-        multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
-        multipleIndexPopulator.flipAfterStoreScan( true, NULL_CONTEXT );
-
-        // then
-        verify( indexPopulator ).verifyDeferredConstraints( any( NodePropertyAccessor.class ) );
-        verify( indexPopulator ).close( true, NULL_CONTEXT );
-    }
-
-    @Test
     void shouldIncludeIndexSampleUpdatesInStatsOnFlip()
     {
         IndexProxyFactory indexProxyFactory = mock( IndexProxyFactory.class );
@@ -533,7 +512,7 @@ class MultipleIndexPopulatorTest
         when( indexPopulator.sample( any( CursorContext.class ) ) ).thenReturn( sample );
 
         multipleIndexPopulator.createStoreScan( CONTEXT_FACTORY );
-        multipleIndexPopulator.flipAfterStoreScan( false, NULL_CONTEXT );
+        multipleIndexPopulator.flipAfterStoreScan( NULL_CONTEXT );
 
         verify( indexPopulator ).close( true, NULL_CONTEXT );
 

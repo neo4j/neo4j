@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
@@ -481,20 +480,6 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
         if ( closed )
         {
             throw new IndexProxyAlreadyClosedKernelException( this.getClass() );
-        }
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
-    {
-        lock.readLock().lock();
-        try
-        {
-            delegate.verifyDeferredConstraints( accessor );
-        }
-        finally
-        {
-            lock.readLock().unlock();
         }
     }
 

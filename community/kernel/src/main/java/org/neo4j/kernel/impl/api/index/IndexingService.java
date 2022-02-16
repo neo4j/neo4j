@@ -63,7 +63,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -76,7 +75,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
@@ -357,7 +355,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         for ( Map.Entry<EntityType,MutableLongObjectMap<IndexDescriptor>> descriptorToPopulate : rebuildingDescriptorsByType.entrySet() )
         {
-            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), false, SYSTEM );
+            IndexPopulationJob populationJob = newIndexPopulationJob( descriptorToPopulate.getKey(), SYSTEM );
             populate( descriptorToPopulate.getValue(), indexMap, populationJob );
         }
     }
@@ -550,32 +548,14 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
      *
-     * {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)} will not be called as part of populating these indexes,
-     * instead that will be done by code that activates the indexes later.
-     *
      * @param subject subject that triggered the index creation.
      * This is used for monitoring purposes, so work related to index creation and population can be linked to its originator.
      */
     @Override
     public void createIndexes( Subject subject, IndexDescriptor... rules )
     {
-        createIndexes( false, subject, rules );
-    }
-
-    /**
-     * Creates one or more indexes. They will all be populated by one and the same store scan.
-     *
-     * This code is called from the transaction infrastructure during transaction commits, which means that
-     * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
-     * will shut down.
-     *
-     * @param verifyBeforeFlipping whether or not to call {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)}
-     * as part of population, before flipping to a successful state.
-     */
-    public void createIndexes( boolean verifyBeforeFlipping, Subject subject, IndexDescriptor... rules )
-    {
         IndexDescriptor[] newlyCreated = filterOutAndHandleInjectedTokenIndex( rules );
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, subject, newlyCreated );
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter( subject, newlyCreated );
         indexMapRef.modify( populationStarter );
         populationStarter.startPopulation();
     }
@@ -825,11 +805,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         return monitor;
     }
 
-    private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping, Subject subject )
+    private IndexPopulationJob newIndexPopulationJob( EntityType type, Subject subject )
     {
         MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, internalLogProvider, type, schemaState,
                 jobScheduler, tokenNameLookup, contextFactory, memoryTracker, databaseName, subject, config );
-        return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping, contextFactory, memoryTracker, databaseName, subject, NODE, config );
+        return new IndexPopulationJob( multiPopulator, monitor, contextFactory, memoryTracker, databaseName, subject, NODE, config );
     }
 
     private void startIndexPopulation( IndexPopulationJob job, CursorContext cursorContext )
@@ -883,15 +863,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     private final class IndexPopulationStarter implements UnaryOperator<IndexMap>
     {
-        private final boolean verifyBeforeFlipping;
         private final Subject subject;
         private final IndexDescriptor[] descriptors;
         private IndexPopulationJob nodePopulationJob;
         private IndexPopulationJob relationshipPopulationJob;
 
-        IndexPopulationStarter( boolean verifyBeforeFlipping, Subject subject, IndexDescriptor[] descriptors )
+        IndexPopulationStarter( Subject subject, IndexDescriptor[] descriptors )
         {
-            this.verifyBeforeFlipping = verifyBeforeFlipping;
             this.subject = subject;
             this.descriptors = descriptors;
         }
@@ -913,14 +891,14 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     if ( descriptor.schema().entityType() == NODE )
                     {
                         nodePopulationJob =
-                                nodePopulationJob == null ? newIndexPopulationJob( NODE, verifyBeforeFlipping, subject ) : nodePopulationJob;
+                                nodePopulationJob == null ? newIndexPopulationJob( NODE, subject ) : nodePopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 nodePopulationJob );
                         index.start();
                     }
                     else
                     {
-                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( RELATIONSHIP, verifyBeforeFlipping, subject )
+                        relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( RELATIONSHIP, subject )
                                                                                       : relationshipPopulationJob;
                         index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
                                 relationshipPopulationJob );

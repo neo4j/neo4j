@@ -85,6 +85,11 @@ class IndexProxyCreator
             OnlineIndexProxy onlineProxy = new OnlineIndexProxy( indexProxyStrategy, accessor, true );
             if ( flipToTentative )
             {
+                // This TentativeConstraintIndexProxy will exist between flipping the index to online and the constraint transaction
+                // activating the index - which flips to a regular OnlineIndexProxy. The index is activated in the BatchContext#close,
+                // at the closing of the committing constraint transaction.
+                // The index is added among those that need activation when updating the schemaRule with owningConstraintId,
+                // see IndexTransactionApplierFactory#processSchemaCommand in UPDATE.
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy, tokenNameLookup );
             }
             return onlineProxy;

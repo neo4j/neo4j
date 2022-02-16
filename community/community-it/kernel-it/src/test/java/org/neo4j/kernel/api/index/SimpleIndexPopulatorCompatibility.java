@@ -398,11 +398,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor, value ),
                             add( nodeId2, descriptor, value ) ), CursorContext.NULL_CONTEXT );
-                    TestNodePropertyAccessor propertyAccessor =
-                            new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value );
-                    propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
                     p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-                    p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );
                 }

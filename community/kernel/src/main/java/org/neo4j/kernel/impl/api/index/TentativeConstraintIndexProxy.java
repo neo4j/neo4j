@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.common.TokenNameLookup;
@@ -40,7 +38,6 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.updater.DelegatingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.DeferredConflictCheckingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /**
  * What is a tentative constraint index proxy? Well, the way we build uniqueness constraints is as follows:
@@ -148,22 +145,6 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
     public IndexProxy getDelegate()
     {
         return target;
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor accessor ) throws IndexEntryConflictException, IOException
-    {
-        // If we've seen constraint violation failures in here when updates came in then fail immediately with those
-        if ( !failures.isEmpty() )
-        {
-            Iterator<IndexEntryConflictException> failureIterator = failures.iterator();
-            IndexEntryConflictException conflict = failureIterator.next();
-            failureIterator.forEachRemaining( conflict::addSuppressed );
-            throw conflict;
-        }
-
-        // Otherwise consolidate the usual verification
-        super.verifyDeferredConstraints( accessor );
     }
 
     @Override

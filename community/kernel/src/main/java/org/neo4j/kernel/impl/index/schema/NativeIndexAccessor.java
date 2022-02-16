@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntriesReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
@@ -128,11 +127,6 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     public ResourceIterator<Path> snapshotFiles()
     {
         return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-    {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 
     @Override

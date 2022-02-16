@@ -58,31 +58,17 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Called when initially populating an index over existing data. Can be called concurrently by multiple threads.
      * All data coming in here is guaranteed to not
      * have been added to this index previously, so no checks needs to be performed before applying it.
-     * Implementations may verify constraints at this time, or defer them until the first verification
-     * of {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
+     * Implementations verify constraints at this time.
      *
      * @param updates batch of index updates (entity property updates or entity token updates) that needs to be inserted.
      * Depending on the type of index the updates will be  {@link ValueIndexEntryUpdate property value index updates}
      * or {@link TokenIndexEntryUpdate token index updates}.
      * @param cursorContext underlying page cache events tracer
      * @throws IndexEntryConflictException if this is a uniqueness index and any of the updates are detected
-     * to violate that constraint. Implementations may choose to not detect in this call, but instead do one efficient
-     * pass over the index in {@link #verifyDeferredConstraints(NodePropertyAccessor)}.
+     * to violate that constraint.
      * @throws UncheckedIOException on I/O error.
      */
     void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException;
-
-    /**
-     * Verifies that each value in this index is unique.
-     * This method is called after the index has been fully populated and is guaranteed to not have
-     * concurrent changes while executing.
-     *
-     * @param nodePropertyAccessor {@link NodePropertyAccessor} for accessing properties from database storage
-     * in the event of conflicting values.
-     * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
-     * @throws UncheckedIOException on error reading from source files.
-     */
-    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException;
 
     /**
      * Return an updater for applying a set of changes to this index, generally this will be a set of changes from a
@@ -241,11 +227,6 @@ public interface IndexPopulator extends MinimalIndexAccessor
         {
             return new IndexSample();
         }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-        {
-        }
     }
 
     class Delegating implements IndexPopulator
@@ -273,12 +254,6 @@ public interface IndexPopulator extends MinimalIndexAccessor
         public void add( Collection<? extends IndexEntryUpdate<?>> updates, CursorContext cursorContext ) throws IndexEntryConflictException
         {
             delegate.add( updates, cursorContext );
-        }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-        {
-            delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
 
         @Override

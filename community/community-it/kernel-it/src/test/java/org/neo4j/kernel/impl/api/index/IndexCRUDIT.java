@@ -220,11 +220,6 @@ class IndexCRUDIT
         }
 
         @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-        {
-        }
-
-        @Override
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
         {
             return newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -46,11 +45,9 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
@@ -139,11 +136,8 @@ public class ConstraintIndexCreator
             locks.acquireExclusive( transaction.lockTracer(), keyType, lockingKeys );
             reacquiredLabelLock = true;
 
-            try ( NodePropertyAccessor propertyAccessor = new DefaultNodePropertyAccessor( transaction.newStorageReader(), transaction.cursorContext(),
-                    transaction.storeCursors(), transaction.memoryTracker() ) )
-            {
-                indexingService.getIndexProxy( index ).verifyDeferredConstraints( propertyAccessor );
-            }
+            indexingService.getIndexProxy( index ).validate();
+
             log.debug( "Constraint %s verified.", constraintString );
             success = true;
             return index;
@@ -153,11 +147,7 @@ public class ConstraintIndexCreator
             String indexString = index.userDescription( transaction.tokenRead() );
             throw new TransactionFailureException( format( "Index (%s) that we just created does not exist.", indexString ), e );
         }
-        catch ( IndexEntryConflictException e )
-        {
-            throw new UniquePropertyValueValidationException( constraint, VERIFICATION, e, transaction.tokenRead() );
-        }
-        catch ( InterruptedException | IOException e )
+        catch ( InterruptedException | IndexPopulationFailedKernelException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }

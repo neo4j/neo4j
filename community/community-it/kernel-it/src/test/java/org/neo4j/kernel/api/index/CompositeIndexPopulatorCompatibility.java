@@ -109,11 +109,7 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                     p.add( Arrays.asList(
                             add( nodeId1, descriptor, value1, value2 ),
                             add( nodeId2, descriptor, value1, value2 ) ), CursorContext.NULL_CONTEXT );
-                    TestNodePropertyAccessor propertyAccessor =
-                            new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
-                    propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
                     p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
-                    p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );
                 }
@@ -134,17 +130,10 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
             withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
             {
-                // when
                 p.add( Arrays.asList(
                         add( nodeId1, descriptor, value1, value2 ),
                         add( nodeId2, descriptor, value1, value3 ) ), CursorContext.NULL_CONTEXT );
-
-                TestNodePropertyAccessor propertyAccessor =
-                        new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
-                propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value3 );
-
-                // then this should pass fine
-                p.verifyDeferredConstraints( propertyAccessor );
+                p.scanCompleted( PhaseTracker.nullInstance, populationWorkScheduler, CursorContext.NULL_CONTEXT );
             } );
         }
     }

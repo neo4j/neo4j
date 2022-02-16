@@ -95,12 +95,6 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-    {
-        // No-op, token indexes don't have any uniqueness constraints.
-    }
-
-    @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
     {
         try

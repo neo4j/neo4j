@@ -613,7 +613,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
-                new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( populator, NO_MONITOR, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
         // when
         populationJob.run();
@@ -658,7 +658,7 @@ class IndexPopulationJobTest
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
                 new DatabaseSchemaState( logProvider ), jobScheduler, tokens );
         IndexPopulationJob populationJob =
-                new IndexPopulationJob( populator, NO_MONITOR, false, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( populator, NO_MONITOR, CONTEXT_FACTORY, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
 
         // when
         populationJob.run();
@@ -876,7 +876,7 @@ class IndexPopulationJobTest
                 new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, jobScheduler, tokens, contextFactory, INSTANCE,
                         "", AUTH_DISABLED, Config.defaults() );
         IndexPopulationJob job =
-                new IndexPopulationJob( multiPopulator, NO_MONITOR, false, contextFactory, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
+                new IndexPopulationJob( multiPopulator, NO_MONITOR, contextFactory, INSTANCE, "", AUTH_DISABLED, EntityType.NODE, Config.defaults() );
         IndexDescriptor descriptor = prototype.withName( "index_" + indexId ).materialise( indexId );
         IndexProxyStrategy indexProxyStrategy = new ValueIndexProxyStrategy( descriptor, indexStatisticsStore, tokens );
         job.addPopulator( populator, indexProxyStrategy, flipper, failureDelegateFactory );

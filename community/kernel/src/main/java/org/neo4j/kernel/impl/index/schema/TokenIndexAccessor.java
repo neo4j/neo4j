@@ -25,20 +25,17 @@ import java.nio.file.Path;
 import java.util.function.IntFunction;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
@@ -156,12 +153,6 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     public ResourceIterator<Path> snapshotFiles()
     {
         return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-    {
-        //Not needed since constraints are not based on token indexes.
     }
 
     @Override

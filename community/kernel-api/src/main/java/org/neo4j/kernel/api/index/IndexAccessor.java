@@ -30,12 +30,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
@@ -184,17 +182,6 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
     ResourceIterator<Path> snapshotFiles();
 
     /**
-     * Verifies that each value in this index is unique.
-     * Index is guaranteed to not change while this call executes.
-     *
-     * @param nodePropertyAccessor {@link NodePropertyAccessor} for accessing properties from database storage
-     * in the event of conflicting values.
-     * @throws IndexEntryConflictException for first detected uniqueness conflict, if any.
-     * @throws UncheckedIOException on error reading from source files.
-     */
-    void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException;
-
-    /**
      * Validates the {@link Value value tuple} before transaction determines that it can commit.
      */
     default void validateBeforeCommit( long entityId, Value[] tuple )
@@ -271,11 +258,6 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         public ResourceIterator<Path> snapshotFiles()
         {
             return emptyResourceIterator();
-        }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
-        {
         }
 
         @Override
@@ -364,12 +346,6 @@ public interface IndexAccessor extends Closeable, ConsistencyCheckable, MinimalI
         public String toString()
         {
             return delegate.toString();
-        }
-
-        @Override
-        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-        {
-            delegate.verifyDeferredConstraints( nodePropertyAccessor );
         }
 
         @Override
