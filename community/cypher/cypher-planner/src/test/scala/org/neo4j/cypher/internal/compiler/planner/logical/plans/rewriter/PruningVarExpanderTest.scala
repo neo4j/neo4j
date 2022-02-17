@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Distinct
 import org.neo4j.cypher.internal.logical.plans.Expand
@@ -49,8 +50,43 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("simplest possible query that can use PruningVarExpand") {
     // Simplest query:
+    // match (a)-[*2..3]->(b) return distinct b
+
+    val fromId = "from"
+    val allNodes = AllNodesScan(fromId, Set.empty)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(2, Some(3))
+    val toId = "to"
+    val relId = "r"
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
+    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+
+    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
+    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("simplest possible query that can use DistinctBFSPruningVarExpand") {
+    // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
 
+    val fromId = "from"
+    val allNodes = AllNodesScan(fromId, Set.empty)
+    val dir = SemanticDirection.OUTGOING
+    val length = VarPatternLength(1, Some(3))
+    val toId = "to"
+    val relId = "r"
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
+    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
+    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("do not use DistinctBFSPruningVarExpand for undirected search") {
     val fromId = "from"
     val allNodes = AllNodesScan(fromId, Set.empty)
     val dir = SemanticDirection.BOTH
@@ -66,7 +102,23 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("ordered distinct") {
+  test("ordered distinct with pruningVarExpand") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("a"), "a AS a")
+      .expandAll("(a)-[*2..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .orderedDistinct(Seq("a"), "a AS a")
+      .pruningVarExpand("(a)-[*2..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("ordered distinct with DistinctBFSPruningVarExpand") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("a"), "a AS a")
       .expandAll("(a)-[*1..3]->(b)")
@@ -75,7 +127,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("a"), "a AS a")
-      .pruningVarExpand("(a)-[*1..3]->(b)")
+      .bfsPruningVarExpand("(a)-[*1..3]->(b)")
       .allNodeScan("a")
       .build()
 
@@ -84,11 +136,31 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("query with distinct aggregation") {
     // Simplest query:
-    // match (from)-[*1..3]->(to) return count(distinct to)
+    // match (from)-[2..3]->(to) return count(distinct to)
 
     val fromId = "from"
     val allNodes = AllNodesScan(fromId, Set.empty)
     val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(2, Some(3))
+    val toId = "to"
+    val relId = "r"
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
+    val aggregatingExpression = distinctFunction("count", varFor("to"))
+    val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))
+
+    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
+    val expectedOutput = Aggregation(rewrittenExpand, Map.empty, Map("x" -> aggregatingExpression))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("query with distinct aggregation and DistinctBFSPruningVarExpand") {
+    // Simplest query:
+    // match (from)-[1..3]->(to) return count(distinct to)
+
+    val fromId = "from"
+    val allNodes = AllNodesScan(fromId, Set.empty)
+    val dir = SemanticDirection.INCOMING
     val length = VarPatternLength(1, Some(3))
     val toId = "to"
     val relId = "r"
@@ -96,7 +168,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val aggregatingExpression = distinctFunction("count", varFor("to"))
     val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
     val expectedOutput = Aggregation(rewrittenExpand, Map.empty, Map("x" -> aggregatingExpression))
 
     rewrite(input) should equal(expectedOutput)
@@ -105,13 +177,13 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("ordered grouping aggregation") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("a AS a"), Seq("count(distinct b) AS c"), Seq("a"))
-      .expand("(a)-[*1..3]->(b)")
+      .expand("(a)-[*2..3]->(b)")
       .allNodeScan("a")
       .build()
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("a AS a"), Seq("count(distinct b) AS c"), Seq("a"))
-      .pruningVarExpand("(a)-[*1..3]->(b)")
+      .pruningVarExpand("(a)-[*2..3]->(b)")
       .allNodeScan("a")
       .build()
 
@@ -120,12 +192,12 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("Simple query that filters between expand and distinct") {
     // Simplest query:
-    // match (a)-[*1..3]->(b:X) return distinct b
+    // match (a)-[*2..3]->(b:X) return distinct b
 
     val fromId = "from"
     val allNodes = AllNodesScan(fromId, Set.empty)
     val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
+    val length = VarPatternLength(2, Some(3))
     val toId = "to"
     val relId = "r"
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
@@ -133,7 +205,29 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val filter = Selection(Seq(predicate), originalExpand)
     val input = Distinct(filter, Map("to" -> varFor("to")))
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)
+    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
+    val filterAfterRewrite = Selection(Seq(predicate), rewrittenExpand)
+    val expectedOutput = Distinct(filterAfterRewrite, Map("to" -> varFor("to")))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("Simple query that filters between expand and distinct and DistinctBFSPruningVarExpand") {
+    // Simplest query:
+    // match (a)-[*1..3]->(b:X) return distinct b
+
+    val fromId = "from"
+    val allNodes = AllNodesScan(fromId, Set.empty)
+    val dir = SemanticDirection.OUTGOING
+    val length = VarPatternLength(0, Some(3))
+    val toId = "to"
+    val relId = "r"
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
+    val predicate = hasLabels("to", "X")
+    val filter = Selection(Seq(predicate), originalExpand)
+    val input = Distinct(filter, Map("to" -> varFor("to")))
+
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = true, 3)
     val filterAfterRewrite = Selection(Seq(predicate), rewrittenExpand)
     val expectedOutput = Distinct(filterAfterRewrite, Map("to" -> varFor("to")))
 
@@ -159,6 +253,29 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("Double var expand with distinct result") {
     // Simplest query:
+    // match (a)-[:R*2..3]->(b)-[:T*2..3]->(c) return distinct c
+
+    val aId = "a"
+    val relRId = "r"
+    val bId = "b"
+    val relTId = "t"
+    val cId = "c"
+    val allNodes = AllNodesScan(aId, Set.empty)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(2, Some(3))
+    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
+    val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll)
+    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+
+    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
+    val rewrittenExpand2 = PruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, 2, 3)
+    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("Double var expand with distinct result with DistinctBFSPruningVarExpand") {
+    // Simplest query:
     // match (a)-[:R*1..3]->(b)-[:T*1..3]->(c) return distinct c
 
     val aId = "a"
@@ -167,14 +284,14 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val relTId = "t"
     val cId = "c"
     val allNodes = AllNodesScan(aId, Set.empty)
-    val dir = SemanticDirection.BOTH
+    val dir = SemanticDirection.OUTGOING
     val length = VarPatternLength(1, Some(3))
     val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
     val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll)
     val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
 
-    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)
-    val rewrittenExpand2 = PruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, 1, 3)
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
+    val rewrittenExpand2 = BFSPruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, includeStartNode = false, 3)
     val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
 
     rewrite(input) should equal(expectedOutput)
@@ -182,7 +299,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("var expand followed by normal expand") {
     // Simplest query:
-    // match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
+    // match (a)-[:R*2..3]->(b)-[:T]->(c) return distinct c
 
     val aId = "a"
     val relRId = "r"
@@ -191,12 +308,35 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val cId = "c"
     val allNodes = AllNodesScan(aId, Set.empty)
     val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(2, Some(3))
+    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
+    val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
+    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+
+    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
+    val rewrittenExpand2 = Expand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
+    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+
+    rewrite(input) should equal(expectedOutput)
+  }
+
+  test("var expand followed by normal expand with DistinctBFSPruningVarExpand") {
+    // Simplest query:
+    // match (a)-[:R*..3]->(b)-[:T]->(c) return distinct c
+
+    val aId = "a"
+    val relRId = "r"
+    val bId = "b"
+    val relTId = "t"
+    val cId = "c"
+    val allNodes = AllNodesScan(aId, Set.empty)
+    val dir = SemanticDirection.INCOMING
     val length = VarPatternLength(1, Some(3))
     val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
     val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
     val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
 
-    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
     val rewrittenExpand2 = Expand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
     val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
 
@@ -223,6 +363,43 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val relRId = "r"
     val bId = "b"
     val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(2, Some(3))
+
+    val allNodes = AllNodesScan(aId, Set.empty)
+    val argument = Argument(Set(aId))
+    val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
+    val optional1 = Optional(originalExpand, Set(aId))
+    val apply1 = Apply(allNodes, optional1)
+    val distinct1 = Distinct(apply1, Map("c" -> varFor("c")))
+
+    val rewrittenExpand = PruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
+    val optional2 = Optional(rewrittenExpand, Set(aId))
+    val apply2 = Apply(allNodes, optional2)
+    val distinct2 = Distinct(apply2, Map("c" -> varFor("c")))
+
+    rewrite(distinct1) should equal(distinct2)
+  }
+
+  test("optional match can be solved with PruningVarExpand with DistinctBFSPruningVarExpand") {
+    /* Simplest query:
+       match (a) optional match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
+       in logical plans:
+
+              distinct1                            distinct2
+                 |                                    |
+               apply1                               apply2
+               /   \                                /   \
+       all-nodes   optional1      ===>       all-nodes  optional2
+                     \                                    \
+                     var-length-expand                   pruning-var-expand
+                       \                                    \
+                       argument                            argument
+    */
+
+    val aId = "a"
+    val relRId = "r"
+    val bId = "b"
+    val dir = SemanticDirection.OUTGOING
     val length = VarPatternLength(1, Some(3))
 
     val allNodes = AllNodesScan(aId, Set.empty)
@@ -232,7 +409,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val apply1 = Apply(allNodes, optional1)
     val distinct1 = Distinct(apply1, Map("c" -> varFor("c")))
 
-    val rewrittenExpand = PruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)
+    val rewrittenExpand = BFSPruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
     val optional2 = Optional(rewrittenExpand, Set(aId))
     val apply2 = Apply(allNodes, optional2)
     val distinct2 = Distinct(apply2, Map("c" -> varFor("c")))

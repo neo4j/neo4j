@@ -183,6 +183,21 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("bfsPruningVarExpand",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .bfsPruningVarExpand("(x)-[*0..0]->(y)")
+      .bfsPruningVarExpand("(x)<-[*0..1]-(y)")
+      .bfsPruningVarExpand("(x)-[*1..5]->(y)")
+      .bfsPruningVarExpand("(x)-[:REL*1..2]->(y)")
+      .bfsPruningVarExpand("(x)<-[:REL|LER*1..2]-(y)")
+      .bfsPruningVarExpand("(x)-[*1..2]->(y)")
+      .bfsPruningVarExpand("(x)-[*1..2]->(y)")
+      .bfsPruningVarExpand("(x)-[*1..2]->(y)", nodePredicate = Predicate("n", "id(n) <> 5"))
+      .bfsPruningVarExpand("(x)-[*1..3]->(y)", relationshipPredicate = Predicate("r", "id(r) <> 5"))
+      .argument()
+      .build())
+
   testPlan("expandInto",
     new TestPlanBuilder()
       .produceResults("x")

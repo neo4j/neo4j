@@ -136,6 +136,7 @@ object LogicalPlanToPlanBuilderString {
       case _:AllNodesScan => "allNodeScan"
       case e:Expand => if(e.mode == ExpandAll) "expandAll" else "expandInto"
       case _:VarExpand => "expand"
+      case _:BFSPruningVarExpand => "bfsPruningVarExpand"
       case e:OptionalExpand => if(e.mode == ExpandAll) "optionalExpandAll" else "optionalExpandInto"
       case _:Selection => "filter"
       case _:UnwindCollection => "unwind"
@@ -250,6 +251,14 @@ object LogicalPlanToPlanBuilderString {
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicate, relationshipPredicate) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
+        val lenStr = s"$minLength..$maxLength"
+        val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
+        val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")
+        s""" "($from)$dirStrA[$typeStr*$lenStr]$dirStrB($to)"$nPredStr$rPredStr """.trim
+      case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, maxLength, nodePredicate, relationshipPredicate) =>
+        val (dirStrA, dirStrB) = arrows(dir)
+        val typeStr = relTypeStr(types)
+        val minLength = if (includeStartNode) 0 else 1
         val lenStr = s"$minLength..$maxLength"
         val nPredStr = variablePredicate(nodePredicate, "nodePredicate")
         val rPredStr = variablePredicate(relationshipPredicate, "relationshipPredicate")

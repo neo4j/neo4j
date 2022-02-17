@@ -22,12 +22,19 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -40,8 +47,12 @@ import scala.collection.mutable
 
 case object pruningVarExpander extends Rewriter {
 
-  private def findDistinctSet(plan: LogicalPlan): Set[LogicalPlan] = {
+  private def findDistinctSet(plan: LogicalPlan): Set[VarExpand] = {
     val distinctSet = mutable.Set[VarExpand]()
+
+    def variablesInTheDistinctSet(aggPlan: AggregatingPlan): Set[String] =
+      (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
+        aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
 
     def collectDistinctSet(plan: LogicalPlan,
                            dependencies: Option[Set[String]]): Option[Set[String]] = {
@@ -49,12 +60,10 @@ case object pruningVarExpander extends Rewriter {
       val lowerDistinctLand: Option[Set[String]] = plan match {
 
         case aggPlan: AggregatingPlan if aggPlan.aggregationExpressions.values.forall(isDistinct) =>
-          val variablesInTheDistinctSet = (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
-            aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
-          Some(variablesInTheDistinctSet)
+          Some(variablesInTheDistinctSet(aggPlan))
 
         case expand: VarExpand
-          if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && expand.length.max.nonEmpty =>
+          if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && validLength(expand) =>
           distinctSet += expand
           dependencies
 
@@ -80,7 +89,7 @@ case object pruningVarExpander extends Rewriter {
     val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
     planStack.push((plan, None))
 
-    while(planStack.nonEmpty) {
+    while (planStack.nonEmpty) {
       val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
       val newDeps = collectDistinctSet(plan, deps)
 
@@ -89,17 +98,6 @@ case object pruningVarExpander extends Rewriter {
     }
 
     distinctSet.toSet
-  }
-
-  // When the distinct horizon needs the path that includes the var length relationship,
-  // we can't use DistinctVarExpand - we need all the paths
-  def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
-    inDistinctLand.forall(vars => vars(expand.relName))
-  }
-
-  private def isDistinct(e: Expression) = e match {
-    case f: FunctionInvocation => f.distinct
-    case _ => false
   }
 
   override def apply(input: AnyRef): AnyRef = {
@@ -119,21 +117,50 @@ case object pruningVarExpander extends Rewriter {
                                 ExpandAll,
                                 nodePredicate,
                                 relationshipPredicate) if distinctSet(expand) =>
-            if (length.max.get > 1)
+            if (isDistinctVarExpand(expand)) {
+              BFSPruningVarExpand(lhs,
+                fromId,
+                dir,
+                relTypes,
+                toId,
+                length.min == 0,
+                length.max.get,
+                nodePredicate,
+                relationshipPredicate)(SameId(expand.id))
+            } else {
               PruningVarExpand(lhs,
-                               fromId,
-                               dir,
-                               relTypes,
-                               toId,
-                               length.min,
-                               length.max.get,
-                               nodePredicate,
-                               relationshipPredicate)(SameId(expand.id))
-            else expand
+                fromId,
+                dir,
+                relTypes,
+                toId,
+                length.min,
+                length.max.get,
+                nodePredicate,
+                relationshipPredicate)(SameId(expand.id))
+
+            }
         })
         plan.endoRewrite(innerRewriter)
 
       case _ => input
     }
   }
+
+  // When the distinct horizon needs the path that includes the var length relationship,
+  // we can't use DistinctVarExpand - we need all the paths
+  private def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
+    inDistinctLand.forall(vars => vars(expand.relName))
+  }
+
+  private def validLength(expand: VarExpand): Boolean = expand.length.max match {
+    case Some(i) => i > 1
+    case _ => false
+  }
+
+  private def isDistinct(e: Expression) = e match {
+    case f: FunctionInvocation => f.distinct
+    case _ => false
+  }
+
+  private def isDistinctVarExpand(expand: VarExpand): Boolean = expand.length.min <= 1 && expand.dir != SemanticDirection.BOTH
 }

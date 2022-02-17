@@ -113,6 +113,31 @@ case class PruningVarExpand(override val source: LogicalPlan,
   override val availableSymbols: Set[String] = source.availableSymbols + to
 }
 
+/**
+ * In essence a VarExpand, where some paths are not explored if they could not produce an unseen
+ * end node. Used to serve DISTINCT VarExpands where the individual paths are not of interest. This
+ * operator does guarantee unique end nodes for a given input, and it will produce less of them than the regular
+ * VarExpand.
+ *
+ * Only the end node is added to produced rows.
+ */
+case class BFSPruningVarExpand(override val source: LogicalPlan,
+                               from: String,
+                               dir: SemanticDirection,
+                               types: Seq[RelTypeName],
+                               to: String,
+                               includeStartNode: Boolean,
+                               maxLength: Int,
+                               nodePredicate: Option[VariablePredicate] = None,
+                               relationshipPredicate: Option[VariablePredicate] = None)
+                              (implicit idGen: IdGen)
+  extends LogicalUnaryPlan(idGen) {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[String] = source.availableSymbols + to
+}
+
 sealed trait ExpansionMode
 
 /**

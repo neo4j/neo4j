@@ -85,6 +85,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
@@ -466,6 +467,31 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         )(_)))
       case _ =>
         throw new IllegalArgumentException("This pattern is not compatible with pruning var expand")
+    }
+    self
+  }
+
+  def bfsPruningVarExpand(pattern: String,
+                          nodePredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE,
+                          relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE): IMPL = {
+    val p = patternParser.parse(pattern)
+    require(p.dir != SemanticDirection.BOTH, "BFSPruningVarExpand only supports directed patterns")
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.to))
+    p.length match {
+      case VarPatternLength(min, Some(max)) if min <= 1 =>
+        appendAtCurrentIndent(UnaryOperator(lp => BFSPruningVarExpand(lp,
+          p.from,
+          p.dir,
+          p.relTypes,
+          p.to,
+          min == 0,
+          max,
+          nodePredicate.asVariablePredicate,
+          relationshipPredicate.asVariablePredicate
+        )(_)))
+      case _ =>
+        throw new IllegalArgumentException("This pattern is not compatible with a bfs pruning var expand")
     }
     self
   }
