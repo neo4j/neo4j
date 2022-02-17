@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.parser.javacc.ParseException
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -119,6 +120,23 @@ trait JavaccParserTestBase[T, J] extends CypherFunSuite {
       }
       ResultCheck(Seq(converted), input)
 
-    case Failure(exception) => fail(s"'$input' failed with: $exception")
+    case Failure(exception) => fail(generateErrorMessage(input, exception))
+  }
+
+  private def generateErrorMessage(input: String, exception: Throwable): String = {
+    val defaultMessage = s"'$input' failed with: $exception"
+    exception match {
+      case e: ParseException => if (input.contains("\n")) {
+        defaultMessage
+      } else {
+        val pos = e.currentToken.beginOffset
+        val indentation = " ".repeat(pos)
+        s"""
+           |'$input'
+           | $indentation^
+           |failed with $exception""".stripMargin
+      }
+      case _ => defaultMessage
+    }
   }
 }
