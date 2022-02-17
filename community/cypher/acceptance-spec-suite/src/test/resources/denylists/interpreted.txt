@@ -1,7 +1,3 @@
-Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for LIMIT should fail"
-Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for LIMIT with ORDER BY should fail"
-Feature "SkipLimitAcceptanceTest": Scenario "Floating point parameter for SKIP should fail"
-
 // Relationship type expression not implemented yet
 Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "3"
 Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "4"

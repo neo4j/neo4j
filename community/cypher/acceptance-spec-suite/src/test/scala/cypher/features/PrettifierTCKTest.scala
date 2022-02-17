@@ -78,6 +78,37 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "ExplainAcceptance": Scenario "Explanation of query with return columns"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of query ending in unit subquery call"""",
+
+    // Relationship type expression not implemented yet
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "3"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "4"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "5"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "6"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "7"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "8"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "9"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "10"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "11"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "12"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "13"""",
+
+    // Label expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
+    """Feature "LabelExpressionAcceptance": Scenario "Label expression in WHERE clause"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Label expression in RETURN clause"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Label expression in CASE expression"""",
+
+    // Relationship type expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
+    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
+    """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
+
+    // Failing with M17 TCK - Not yet implemented
+    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested simple existential subquery"""",
+    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery"""",
+    """Feature "ExistentialSubquery3 - Nested existential subquery": Scenario "Nested full existential subquery with pattern predicate"""",
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery"""",
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with aggregation"""",
+    """Feature "ExistentialSubquery2 - Full existential subquery": Scenario "Full existential subquery with update clause should fail"""",
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail
@@ -106,7 +137,7 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
    */
   private def canonicalizeUnaliasedReturnItem(statement: Statement): Statement = {
     statement.endoRewrite(bottomUp(Rewriter.lift {
-      case x:UnaliasedReturnItem => x.copy(inputText = "")(x.position)
+      case x: UnaliasedReturnItem => x.copy(inputText = "")(x.position)
     }))
   }
 }
