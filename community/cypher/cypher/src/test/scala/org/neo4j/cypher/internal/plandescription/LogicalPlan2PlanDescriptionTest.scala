@@ -175,6 +175,7 @@ import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExists
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
@@ -1478,6 +1479,20 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // Without predicates, without relationship type
     assertGood(attach(PruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", 2, 4, None, None), 1.0),
       planDescription(id, "VarLengthExpand(Pruning)", SingleChild(lhsPD), Seq(details("(a)-[*2..4]->(y)")), Set("a", "y")))
+
+    // -- BFSPruningVarExpand --
+
+    // With nodePredicate and relationshipPredicate
+    assertGood(attach(BFSPruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(relType("R")), "y", includeStartNode = false, maxLength = 4, nodePredicate = Some(nodePredicate), relationshipPredicate = Some(relationshipPredicate)), 1.0),
+      planDescription(id, "VarLengthExpand(Pruning,BFS)", SingleChild(lhsPD), Seq(details("(a)-[r:R*..4]->(y) WHERE x.prop = $autodouble_1 AND r.prop = $autodouble_1")), Set("a", "y")))
+
+    // With nodePredicate, without relationshipPredicate
+    assertGood(attach(BFSPruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(relType("R")), "y", includeStartNode = true, 4, Some(nodePredicate), None), 1.0),
+      planDescription(id, "VarLengthExpand(Pruning,BFS)", SingleChild(lhsPD), Seq(details("(a)-[:R*0..4]->(y) WHERE x.prop = $autodouble_1")), Set("a", "y")))
+
+    // Without predicates, without relationship type
+    assertGood(attach(BFSPruningVarExpand(lhsLP, "a", SemanticDirection.OUTGOING, Seq(), "y", includeStartNode = false, 4, None, None), 1.0),
+      planDescription(id, "VarLengthExpand(Pruning,BFS)", SingleChild(lhsPD), Seq(details("(a)-[*..4]->(y)")), Set("a", "y")))
 
     // -- VarExpand --
 

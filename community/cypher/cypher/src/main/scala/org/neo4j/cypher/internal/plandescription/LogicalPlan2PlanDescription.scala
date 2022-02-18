@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.logical.plans.ArgumentTracker
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertingMultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Bound
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -677,6 +678,15 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
           case _ => pretty""
         }
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(Details(pretty"$expandInfo$predicatesDescription")), variables, withRawCardinalities)
+
+      case BFSPruningVarExpand(_, fromName, dir, types, toName, includeStartNode, max, maybeNodePredicate, maybeRelationshipPredicate) =>
+        val maybeRelName = maybeRelationshipPredicate.map(_.variable.name)
+        val expandInfo = expandExpressionDescription(fromName, maybeRelName, types.map(_.name), toName, dir, minLength = if (includeStartNode) 0 else 1, maxLength = Some(max), maybeProperties = None)
+        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate) match {
+          case Some(predicateInfo) => pretty" WHERE $predicateInfo"
+          case _ => pretty""
+        }
+        PlanDescriptionImpl(id, s"VarLengthExpand(Pruning,BFS)", children, Seq(Details(pretty"$expandInfo$predicatesDescription")), variables, withRawCardinalities)
 
       case RemoveLabels(_, idName, labelNames) =>
         val prettyId = asPrettyString(idName)
