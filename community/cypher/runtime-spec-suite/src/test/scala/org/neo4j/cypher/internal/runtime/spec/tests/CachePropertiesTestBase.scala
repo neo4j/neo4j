@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
+import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.GetValue
+import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -427,10 +429,46 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  test("should handle token being created") {
+    val node = given { nodePropertyGraph(1, {case _ => Map("x1" -> "1") }) }.head
+
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x1", "x2", "x3")
+      .projection(s"cache[n.x1] AS x1", "cache[n.x2] AS x2", "cache[n.x3] AS x3")
+      .cacheProperties("cache[n.x1]", "cache[n.x2]", "cache[n.x3]")
+      .allNodeScan("n")
+      .build()
+
+    // when
+    val executablePlan: ExecutionPlan = buildPlan(logicalQuery.copy(doProfile = true), runtime)
+    val result1 = profile(executablePlan, NoInput, readOnly = true)
+
+    // then
+    result1 should beColumns("x1", "x2", "x3").withSingleRow("1", null, null)
+    val profileResult1 = result1.runtimeResult.queryProfile()
+    profileResult1.operatorProfile(1).dbHits() shouldBe 2 * tokenLookupDbHits // projection
+    assert(profileResult1.operatorProfile(2).dbHits() >= (1 + 2 * tokenLookupDbHits)) // cache properties
+
+    // when
+    given {
+      node.setProperty("x2", "2")
+    }
+    val result2 = profile(executablePlan, NoInput, readOnly = true)
+
+    // then
+    result2 should beColumns("x1", "x2", "x3").withSingleRow("1", "2", null)
+    val profileResult2 = result2.runtimeResult.queryProfile()
+
+    profileResult2.operatorProfile(1).dbHits() shouldBe 2 * tokenLookupDbHits // projection
+    assert(profileResult2.operatorProfile(2).dbHits() >= (2 + 2 * tokenLookupDbHits)) // cache properties
+  }
+
   test("should handle mix of missing and existing property tokens") {
     // given
     val numProps = 100
     val numStoreProperties = 51
+    val numUnresolvedPropertyTokens = numProps - numStoreProperties
     val node = given { nodePropertyGraph(1, {case _ => Map((0 until numStoreProperties).map(i => "p"+i -> i):_*) }) }.head
     val random = new Random()
     def inAnyOrder[T](f: Int => T) =
@@ -447,34 +485,47 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     // when
-    val result1 = profile(logicalQuery, runtime)
+    val executionPlan = buildPlan(logicalQuery.copy(doProfile = true), runtime)
+    val resultNoTokenUpdates = profile(executionPlan, NoInput, readOnly = true)
 
     // then
-    result1 should beColumns(resultColumnNames:_*).withSingleRow(resultColumns.map(i => if (i < numStoreProperties) i else null):_*)
-    result1.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits * (numProps - numStoreProperties)
-    val dbHitsOp2 = result1.runtimeResult.queryProfile().operatorProfile(2).dbHits()
-   if (tokenLookupDbHits == 1) {
-     dbHitsOp2 shouldBe numProps // Slotted and interpreted count one db hit even if property does not exist
-   } else {
-     dbHitsOp2 should be >= 0L
-   }
+    resultNoTokenUpdates should beColumns(resultColumnNames: _*).withSingleRow(resultColumns.map(i => if (i < numStoreProperties) i else null): _*)
 
-    // when
+    // DB hits in projection
+    resultNoTokenUpdates.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
+
+    // DB hits in cache properties
+    val cachePropsDBHits1 = resultNoTokenUpdates.runtimeResult.queryProfile().operatorProfile(2).dbHits()
+    if (tokenLookupDbHits == 1) {
+      // For existing properties: one db to get property value.
+      // For properties which doesn't have a resolved token: 1 db hit to resolve token
+      cachePropsDBHits1 shouldBe  numStoreProperties + numUnresolvedPropertyTokens
+    } else {
+      cachePropsDBHits1 should be >= 0L
+    }
+
+    // when creating new properties
     val numTxProperties = 25
     val numExistingProperties = numStoreProperties + numTxProperties
     given {
       (numStoreProperties until numExistingProperties).map(i => node.setProperty("p"+i, i))
     }
-    val result2 = profile(logicalQuery, runtime)
+    val resultTokenWithUpdates = profile(executionPlan, NoInput, readOnly = true)
 
     // then
-    result2 should beColumns(resultColumnNames:_*).withSingleRow(resultColumns.map(i => if (i < numExistingProperties) i else null):_*)
-    result2.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe(tokenLookupDbHits * (numProps - numExistingProperties))
-    val result2DbHitsOp2 = result2.runtimeResult.queryProfile().operatorProfile(2).dbHits()
+    resultTokenWithUpdates should beColumns(resultColumnNames:_*).withSingleRow(resultColumns.map(i => if (i < numExistingProperties) i else null):_*)
+
+    // DB hits in projection
+    resultTokenWithUpdates.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits * numUnresolvedPropertyTokens
+
+    // DB hits in cache properties
+    val cachePropsDBHits2 = resultTokenWithUpdates.runtimeResult.queryProfile().operatorProfile(2).dbHits()
     if (tokenLookupDbHits == 1) {
-      result2DbHitsOp2 shouldBe numProps // Slotted and interpreted count one db hit even if property does not exist
+      // For existing properties: one db to get property value.
+      // For properties which doesn't have a resolved token: 1 db hit to resolve token
+      cachePropsDBHits2 shouldBe numExistingProperties + numUnresolvedPropertyTokens
     } else {
-      result2DbHitsOp2 should be >= dbHitsOp2
+      cachePropsDBHits2 should be >= cachePropsDBHits1
     }
   }
 

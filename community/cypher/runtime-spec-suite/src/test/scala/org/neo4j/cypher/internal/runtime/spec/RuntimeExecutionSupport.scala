@@ -139,6 +139,10 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
               runtime: CypherRuntime[CONTEXT],
               inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult
 
+  def profile(executionPlan: ExecutionPlan,
+              inputDataStream: InputDataStream,
+              readOnly: Boolean): RecordingRuntimeResult
+
   /**
    * Profile a Logical query with some input stream without recording the result.
    */

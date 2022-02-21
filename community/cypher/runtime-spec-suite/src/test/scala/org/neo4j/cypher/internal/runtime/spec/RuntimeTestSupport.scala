@@ -207,6 +207,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     RecordingRuntimeResult(result, subscriber)
   }
 
+  override def profile(executionPlan: ExecutionPlan,
+                       inputDataStream: InputDataStream,
+                       readOnly: Boolean): RecordingRuntimeResult = {
+    val subscriber = new RecordingQuerySubscriber
+    val result = run(executionPlan, inputDataStream, (_, result) => result, subscriber, profile = true, readOnly)
+    RecordingRuntimeResult(result, subscriber)
+  }
+
   override def profileNonRecording(logicalQuery: LogicalQuery,
                                    runtime: CypherRuntime[CONTEXT],
                                    inputDataStream: InputDataStream = NoInput): NonRecordingRuntimeResult = {
