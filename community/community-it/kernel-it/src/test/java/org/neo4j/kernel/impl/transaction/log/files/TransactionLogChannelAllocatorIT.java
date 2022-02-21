@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -224,7 +223,7 @@ class TransactionLogChannelAllocatorIT
     private TransactionLogFilesContext createLogFileContext( long rotationThreshold, NativeAccess nativeAccess )
     {
         return new TransactionLogFilesContext( new AtomicLong( rotationThreshold ), new AtomicBoolean( true ),
-                new VersionAwareLogEntryReader( new TestCommandReaderFactory() ), () -> 1L,
+                new TestCommandReaderFactory(), () -> 1L,
                 () -> 1L, () -> new LogPosition( 0, 1 ),
                 SimpleLogVersionRepository::new, fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN,
                 nativeAccess, INSTANCE, new Monitors(), true,

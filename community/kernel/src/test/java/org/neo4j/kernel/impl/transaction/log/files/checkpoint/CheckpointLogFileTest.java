@@ -30,6 +30,7 @@ import java.time.Instant;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -187,7 +188,7 @@ class CheckpointLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withDatabaseHealth( databaseHealth )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }

@@ -140,8 +140,7 @@ class TransactionLogFileInformationTest
         var logEntryReader = mock( LogEntryReader.class );
         var readableLogChannel = mock( ReadableLogChannel.class );
         when( logEntryReader.readLogEntry( readableLogChannel ) ).thenReturn( new LogEntryStart( 1, 1, 1, new byte[]{}, LogPosition.UNSPECIFIED ) );
-        when( context.getLogEntryReader() ).thenReturn( logEntryReader );
-        var fileInfo = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
+        var fileInfo = new TransactionLogFileInformation( logFiles, logHeaderCache, context, () -> logEntryReader );
 
         var expectedHeader = new LogHeader( (byte) 1, 2, 3, 4 );
         when( logFile.extractHeader( anyLong() ) ).thenReturn( expectedHeader );

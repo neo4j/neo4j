@@ -38,7 +38,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -80,11 +79,11 @@ public class LogFilesBuilder
     private boolean readOnly;
     private PageCache pageCache;
     private StorageEngineFactory storageEngineFactory;
+    private CommandReaderFactory commandReaderFactory;
     private DatabaseLayout databaseLayout;
     private Path logsDirectory;
     private Config config;
     private Long rotationThreshold;
-    private LogEntryReader logEntryReader;
     private InternalLogProvider logProvider = NullLogProvider.getInstance();
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
@@ -198,12 +197,6 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withLogEntryReader( LogEntryReader logEntryReader )
-    {
-        this.logEntryReader = logEntryReader;
-        return this;
-    }
-
     public LogFilesBuilder withConfig( Config config )
     {
         this.config = config;
@@ -270,6 +263,12 @@ public class LogFilesBuilder
         return this;
     }
 
+    public LogFilesBuilder withCommandReaderFactory( CommandReaderFactory commandReaderFactory )
+    {
+        this.commandReaderFactory = commandReaderFactory;
+        return this;
+    }
+
     public LogFilesBuilder withLogsDirectory( Path logsDirectory )
     {
         this.logsDirectory = logsDirectory;
@@ -291,12 +290,6 @@ public class LogFilesBuilder
 
     TransactionLogFilesContext buildContext() throws IOException
     {
-        if ( logEntryReader == null )
-        {
-            logEntryReader = new VersionAwareLogEntryReader(
-                    storageEngineFactory == null && fileBasedOperationsOnly ? CommandReaderFactory.NO_COMMANDS
-                                                                            : storageEngineFactory().commandReaderFactory() );
-        }
         if ( config == null )
         {
             config = Config.defaults();
@@ -330,10 +323,25 @@ public class LogFilesBuilder
             }
         }
 
-        return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, logEntryReader, lastCommittedIdSupplier,
-                committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
-                fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors, config.get( fail_on_corrupted_log_files ),
-                health, kernelVersionRepository, clock, databaseLayout.getDatabaseName(), config, externalLogTail );
+        return new TransactionLogFilesContext( rotationThreshold, tryPreallocateTransactionLogs, commandReaderFactory(),
+                                               lastCommittedIdSupplier,
+                                               committingTransactionIdSupplier, lastClosedTransactionPositionSupplier, logVersionRepositorySupplier,
+                                               fileSystem, logProvider, databaseTracers, storeIdSupplier, nativeAccess, memoryTracker, monitors,
+                                               config.get( fail_on_corrupted_log_files ),
+                                               health, kernelVersionRepository, clock, databaseLayout.getDatabaseName(), config, externalLogTail );
+    }
+
+    private CommandReaderFactory commandReaderFactory()
+    {
+        if ( commandReaderFactory != null )
+        {
+            return commandReaderFactory;
+        }
+        if ( fileBasedOperationsOnly )
+        {
+            return CommandReaderFactory.NO_COMMANDS;
+        }
+        return storageEngineFactory().commandReaderFactory();
     }
 
     private StorageEngineFactory storageEngineFactory()

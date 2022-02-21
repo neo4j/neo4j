@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.internal.helpers.collection.LfuCache;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
@@ -30,20 +31,30 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogFileInformation implements LogFileInformation
 {
     private final LogFiles logFiles;
     private final LogHeaderCache logHeaderCache;
-    private final TransactionLogFileTimestampMapper logFileTimestampMapper;
     private final TransactionLogFilesContext logFileContext;
+    private final TransactionLogFileTimestampMapper logFileTimestampMapper;
 
     TransactionLogFileInformation( LogFiles logFiles, LogHeaderCache logHeaderCache, TransactionLogFilesContext context )
+    {
+        this( logFiles, logHeaderCache, context, () -> new VersionAwareLogEntryReader( context.getCommandReaderFactory() ) );
+    }
+
+    @VisibleForTesting
+    TransactionLogFileInformation( LogFiles logFiles, LogHeaderCache logHeaderCache,
+                                   TransactionLogFilesContext context,
+                                   Supplier<LogEntryReader> logEntryReaderFactory )
     {
         this.logFiles = logFiles;
         this.logHeaderCache = logHeaderCache;
         this.logFileContext = context;
-        this.logFileTimestampMapper = new TransactionLogFileTimestampMapper( logFiles, context.getLogEntryReader() );
+        this.logFileTimestampMapper = new TransactionLogFileTimestampMapper( logFiles, logEntryReaderFactory );
     }
 
     @Override
@@ -106,13 +117,13 @@ public class TransactionLogFileInformation implements LogFileInformation
     {
         private static final String FIRST_TRANSACTION_TIME = "First Transaction Time";
         private final LogFiles logFiles;
-        private final LogEntryReader logEntryReader;
+        private final Supplier<LogEntryReader> logEntryReaderFactory;
         private final LfuCache<Long,Long> logFileTimeStamp = new LfuCache<>( FIRST_TRANSACTION_TIME, 10_000 );
 
-        TransactionLogFileTimestampMapper( LogFiles logFiles, LogEntryReader logEntryReader )
+        TransactionLogFileTimestampMapper( LogFiles logFiles, Supplier<LogEntryReader> logEntryReaderFactory )
         {
             this.logFiles = logFiles;
-            this.logEntryReader = logEntryReader;
+            this.logEntryReaderFactory = logEntryReaderFactory;
         }
 
         long getTimestampForVersion( long version ) throws IOException
@@ -126,12 +137,13 @@ public class TransactionLogFileInformation implements LogFileInformation
             LogPosition position = logFile.extractHeader( version ).getStartPosition();
             try ( ReadableLogChannel channel = logFile.getRawReader( position ) )
             {
+                var logEntryReader = logEntryReaderFactory.get();
                 LogEntry entry;
                 while ( (entry = logEntryReader.readLogEntry( channel )) != null )
                 {
-                    if ( entry instanceof LogEntryStart )
+                    if ( entry instanceof LogEntryStart logEntryStart )
                     {
-                        long timeWritten = ((LogEntryStart) entry).getTimeWritten();
+                        long timeWritten = logEntryStart.getTimeWritten();
                         logFileTimeStamp.put( version, timeWritten );
                         return timeWritten;
                     }

@@ -46,6 +46,7 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseStartupController;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -60,7 +61,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -217,11 +217,10 @@ class TransactionLogsRecoveryTest
             life.add( recoveryLogFiles );
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
-            final LogEntryReader reader = logEntryReader();
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( recoveryLogFiles, metadataCache, reader,
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( recoveryLogFiles, metadataCache, new TestCommandReaderFactory(),
                                                                                    monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, recoveryLogFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
@@ -313,11 +312,10 @@ class TransactionLogsRecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader reader = logEntryReader();
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, new TestCommandReaderFactory(),
                                                                                    monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( new RecoveryMonitor()
@@ -586,11 +584,11 @@ class TransactionLogsRecoveryTest
             life.add( logFiles );
             StorageEngine storageEngine = mock( StorageEngine.class );
             when( storageEngine.createStorageCursors( any() ) ).thenReturn( mock( StoreCursors.class ) );
-            final LogEntryReader reader = logEntryReader();
             Config config = Config.defaults();
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false, config );
+            LogicalTransactionStore txStore =
+                    new PhysicalLogicalTransactionStore( logFiles, metadataCache, new TestCommandReaderFactory(), monitors, false, config );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem, INSTANCE );
             monitors.addMonitorListener( monitor );
             life.add( new TransactionLogsRecovery(
@@ -642,7 +640,7 @@ class TransactionLogsRecoveryTest
         return LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
                 .build();

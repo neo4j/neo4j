@@ -60,19 +60,18 @@ class RecoveryRequiredChecker
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
-        LogEntryReader reader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-        LogFiles logFiles = buildLogFiles( databaseLayout, reader, memoryTracker );
+        LogFiles logFiles = buildLogFiles( databaseLayout, memoryTracker );
         return isRecoveryRequiredAt( databaseLayout, logFiles );
     }
 
-    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, LogEntryReader reader, MemoryTracker memoryTracker ) throws IOException
+    private LogFiles buildLogFiles( DatabaseLayout databaseLayout, MemoryTracker memoryTracker ) throws IOException
     {
         return LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
                     .withConfig( config )
                     .withMemoryTracker( memoryTracker )
                     .withDatabaseTracers( databaseTracers )
                     .withStorageEngineFactory( storageEngineFactory )
-                    .withLogEntryReader( reader ).build();
+                    .build();
     }
 
     boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogFiles logFiles )

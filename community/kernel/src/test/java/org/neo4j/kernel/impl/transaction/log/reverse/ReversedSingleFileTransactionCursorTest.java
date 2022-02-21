@@ -34,6 +34,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.LogEntryWriterFactory;
 import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -98,7 +99,7 @@ class ReversedSingleFileTransactionCursorTest
                 .withRotationThreshold( ByteUnit.mebiBytes( 10 ) )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );

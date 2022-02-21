@@ -282,7 +282,7 @@ class TransactionLogFilesTest
                 .builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         files.init();

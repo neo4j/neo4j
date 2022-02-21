@@ -28,12 +28,14 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogHeaderVisitor;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.pre_sketch_transaction_logs;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
@@ -43,19 +45,19 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final LogEntryReader logEntryReader;
+    private final CommandReaderFactory commandReaderFactory;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
     private final boolean presketchLogFiles;
 
     public PhysicalLogicalTransactionStore( LogFiles logFiles,
                                             TransactionMetadataCache transactionMetadataCache,
-                                            LogEntryReader logEntryReader, Monitors monitors,
+                                            CommandReaderFactory commandReaderFactory, Monitors monitors,
                                             boolean failOnCorruptedLogFiles, Config config )
     {
         this.logFile = logFiles.getLogFile();
         this.transactionMetadataCache = transactionMetadataCache;
-        this.logEntryReader = logEntryReader;
+        this.commandReaderFactory = commandReaderFactory;
         this.monitors = monitors;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.presketchLogFiles = config.get( pre_sketch_transaction_logs );
@@ -64,14 +66,14 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     @Override
     public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
-        return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
+        return new PhysicalTransactionCursor( logFile.getReader( position ), new VersionAwareLogEntryReader( commandReaderFactory ) );
     }
 
     @Override
     public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition )
     {
         return ReversedMultiFileTransactionCursor
-                .fromLogFile( logFile, backToPosition, logEntryReader, failOnCorruptedLogFiles,
+                .fromLogFile( logFile, backToPosition, new VersionAwareLogEntryReader( commandReaderFactory ), failOnCorruptedLogFiles,
                         monitors.newMonitor( ReversedTransactionCursorMonitor.class ), presketchLogFiles );
     }
 
@@ -81,22 +83,23 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
         // look up in position cache
         try
         {
+            var logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
             TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom );
             if ( transactionMetadata != null )
             {
                 // we're good
-                ReadableLogChannel channel = logFile.getReader( transactionMetadata.getStartPosition() );
+                var channel = logFile.getReader( transactionMetadata.getStartPosition() );
                 return new PhysicalTransactionCursor( channel, logEntryReader );
             }
 
             // ask logFiles about the version it may be in
-            LogVersionLocator headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
+            var headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
             logFile.accept( headerVisitor );
 
             // ask LogFile
-            TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
+            var transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
             logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
-            LogPosition position = transactionPositionLocator.getLogPosition();
+            var position = transactionPositionLocator.getLogPosition();
             transactionMetadataCache.cacheTransactionMetadata( transactionIdToStartFrom, position );
             return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         }

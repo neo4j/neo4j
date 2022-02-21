@@ -34,7 +34,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointAppender;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -117,9 +116,8 @@ class LogVersionUpgradeCheckerIT
 
     private void appendCheckpoint( byte logEntryVersion, boolean removeCheckpointFile ) throws IOException
     {
-        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( StorageEngineFactory.defaultStorageEngine().commandReaderFactory() );
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache )
-                .withLogEntryReader( logEntryReader ).withStoreId( StoreId.UNKNOWN ).build();
+                .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() ).withStoreId( StoreId.UNKNOWN ).build();
 
         if ( removeCheckpointFile )
         {

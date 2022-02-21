@@ -38,6 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -120,7 +121,7 @@ class TransactionLogAppendAndRotateIT
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withMonitors( monitors )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         life.add( logFiles );

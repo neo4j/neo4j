@@ -40,6 +40,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
@@ -100,7 +101,7 @@ class CorruptedLogsTruncatorTest
                 .withRotationThreshold( SINGLE_LOG_FILE_SIZE )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withConfig( Config.newBuilder()
                         .set( GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold, ROTATION_THRESHOLD )

@@ -50,6 +50,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -157,7 +158,7 @@ class TransactionLogFileTest
         LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withNativeAccess( capturingNativeAccess )
                 .build();
@@ -199,7 +200,7 @@ class TransactionLogFileTest
 
         // THEN
         Path file =  LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .build().getLogFile().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fileSystem, file, INSTANCE );
         assertEquals( 1L, header.getLogVersion() );
@@ -313,7 +314,7 @@ class TransactionLogFileTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .build();
         int logVersion = 0;
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
@@ -335,7 +336,7 @@ class TransactionLogFileTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .build();
         int logVersion = 0;
         Path logFile = logFiles.getLogFile().getLogFileForVersion( logVersion );
@@ -657,7 +658,7 @@ class TransactionLogFileTest
                 .withRotationThreshold( rotationThreshold )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }
@@ -677,7 +678,7 @@ class TransactionLogFileTest
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                             .withTransactionIdStore( transactionIdStore )
                             .withLogVersionRepository( logVersionRepository )
-                            .withLogEntryReader( logEntryReader() )
+                            .withCommandReaderFactory( new TestCommandReaderFactory() )
                             .withStoreId( StoreId.UNKNOWN )
                             .withNativeAccess( capturingNativeAccess ).build();
 

@@ -153,7 +153,7 @@ class TransactionAppenderRotationIT
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }

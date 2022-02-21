@@ -338,7 +338,7 @@ class DbmsDiagnosticsManagerTest
         databaseDependencies.satisfyDependency( storageEngineFactory );
         databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         databaseDependencies.satisfyDependency(
-                logFilesBasedOnlyBuilder( directory.homePath(), directory.getFileSystem() ).withLogEntryReader( mock( LogEntryReader.class ) ).build() );
+                logFilesBasedOnlyBuilder( directory.homePath(), directory.getFileSystem() ).build() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
         when( database.getNamedDatabaseId() ).thenReturn( databaseId );
         when( database.isStarted() ).thenReturn( true );

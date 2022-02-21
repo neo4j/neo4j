@@ -35,6 +35,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
@@ -43,7 +44,7 @@ public class TransactionLogFilesContext
 {
     private final AtomicLong rotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
-    private final LogEntryReader logEntryReader;
+    private final CommandReaderFactory commandReaderFactory;
     private final LongSupplier lastCommittedTransactionIdSupplier;
     private final LongSupplier committingTransactionIdSupplier;
     private final Supplier<LogPosition> lastClosedPositionSupplier;
@@ -63,16 +64,19 @@ public class TransactionLogFilesContext
     private final Config config;
     private final LogTailInformation externalTailInfo;
 
-    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs, LogEntryReader logEntryReader,
-            LongSupplier lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
-            Supplier<LogVersionRepository> logVersionRepositorySupplier,FileSystemAbstraction fileSystem, InternalLogProvider logProvider,
-            DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
-            MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
-            KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailInformation externalTailInfo )
+    public TransactionLogFilesContext( AtomicLong rotationThreshold, AtomicBoolean tryPreallocateTransactionLogs,
+                                       CommandReaderFactory commandReaderFactory, LongSupplier lastCommittedTransactionIdSupplier,
+                                       LongSupplier committingTransactionIdSupplier, Supplier<LogPosition> lastClosedPositionSupplier,
+                                       Supplier<LogVersionRepository> logVersionRepositorySupplier, FileSystemAbstraction fileSystem,
+                                       InternalLogProvider logProvider,
+                                       DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
+                                       MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
+                                       KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config,
+                                       LogTailInformation externalTailInfo )
     {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
-        this.logEntryReader = logEntryReader;
+        this.commandReaderFactory = commandReaderFactory;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
         this.committingTransactionIdSupplier = committingTransactionIdSupplier;
         this.lastClosedPositionSupplier = lastClosedPositionSupplier;
@@ -98,9 +102,9 @@ public class TransactionLogFilesContext
         return rotationThreshold;
     }
 
-    public LogEntryReader getLogEntryReader()
+    public CommandReaderFactory getCommandReaderFactory()
     {
-        return logEntryReader;
+        return commandReaderFactory;
     }
 
     public LogVersionRepository getLogVersionRepository()

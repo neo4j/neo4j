@@ -123,8 +123,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
@@ -165,6 +163,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -415,17 +414,13 @@ public class Database extends LifecycleAdapter
             upgradeStore( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
 
             // Check the tail of transaction logs and validate version
-            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
-
-            LogFiles logFiles = getLogFiles( logEntryReader );
+            LogFiles logFiles = getLogFiles();
             cursorContextFactory.init( () -> -1 );
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( internalLogProvider.getLog( DetachedLogTailScanner.class ) ) );
             databaseMonitors.addMonitorListener(
                     new ReverseTransactionCursorLoggingMonitor( internalLogProvider.getLog( ReversedSingleFileTransactionCursor.class ) ) );
-
-            var pageCacheTracer = tracers.getPageCacheTracer();
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( logFiles, cursorContextFactory, storageExists );
@@ -455,7 +450,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( metadataProvider );
 
             //Recreate the logFiles after storage engine to get access to dependencies
-            logFiles = getLogFiles( logEntryReader );
+            logFiles = getLogFiles();
 
             life.add( storageEngine );
             life.add( storageEngine.schemaAndTokensLifecycle() );
@@ -482,8 +477,8 @@ public class Database extends LifecycleAdapter
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation, logEntryReader, metadataProvider,
-                            databaseMonitors, databaseDependencies, cursorContextFactory );
+                    buildTransactionLogs( logFiles, databaseConfig, internalLogProvider, scheduler, forceOperation, metadataProvider,
+                                          databaseMonitors, databaseDependencies, cursorContextFactory, storageEngineFactory.commandReaderFactory() );
 
             databaseTransactionEventListeners = new DatabaseTransactionEventListeners( databaseFacade, transactionEventListeners, namedDatabaseId );
             life.add( databaseTransactionEventListeners );
@@ -498,7 +493,6 @@ public class Database extends LifecycleAdapter
             this.kernelModule = kernelModule;
 
             databaseDependencies.satisfyDependency( databaseSchemaState );
-            databaseDependencies.satisfyDependency( logEntryReader );
             databaseDependencies.satisfyDependency( storageEngine );
             databaseDependencies.satisfyDependency( indexingService );
             databaseDependencies.satisfyDependency( indexStoreViewFactory );
@@ -561,9 +555,9 @@ public class Database extends LifecycleAdapter
         tx.schemaWrite().indexCreate( prototype );
     }
 
-    private LogFiles getLogFiles( LogEntryReader logEntryReader ) throws IOException
+    private LogFiles getLogFiles() throws IOException
     {
-        return LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader )
+        return LogFilesBuilder.builder( databaseLayout, fs )
                 .withConfig( databaseConfig )
                 .withDependencies( databaseDependencies )
                 .withLogProvider( internalLogProvider )
@@ -735,8 +729,10 @@ public class Database extends LifecycleAdapter
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config, InternalLogProvider logProvider, JobScheduler scheduler,
-            CheckPointerImpl.ForceOperation forceOperation, LogEntryReader logEntryReader, MetadataProvider metadataProvider, Monitors monitors,
-            Dependencies databaseDependencies, CursorContextFactory cursorContextFactory )
+                                                               CheckPointerImpl.ForceOperation forceOperation,
+                                                               MetadataProvider metadataProvider, Monitors monitors,
+                                                               Dependencies databaseDependencies, CursorContextFactory cursorContextFactory,
+                                                               CommandReaderFactory commandReaderFactory )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
@@ -749,7 +745,7 @@ public class Database extends LifecycleAdapter
         life.add( transactionAppender );
 
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true, config );
+                new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, commandReaderFactory, monitors, true, config );
 
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 

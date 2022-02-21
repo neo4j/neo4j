@@ -38,6 +38,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -60,6 +61,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -142,7 +144,8 @@ class PhysicalLogicalTransactionStoreTest
         fileSystem.write( logFile.getLogFileForVersion( logFile.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true, config );
+        final LogicalTransactionStore store =
+                new PhysicalLogicalTransactionStore( logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config );
         verifyTransaction( positionCache, additionalHeader, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store );
     }
 
@@ -202,7 +205,7 @@ class PhysicalLogicalTransactionStoreTest
         FakeRecoveryVisitor visitor = new FakeRecoveryVisitor( additionalHeader, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, positionCache,
-                                                                               logEntryReader(), monitors, true, config );
+                                                                               new TestCommandReaderFactory(), monitors, true, config );
 
         life.add( createTransactionAppender( transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler ) );
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem, INSTANCE );
@@ -252,7 +255,8 @@ class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         life.add( logFiles );
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true, config );
+        final LogicalTransactionStore store =
+                new PhysicalLogicalTransactionStore( logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config );
 
         // WHEN
         life.start();
@@ -282,7 +286,7 @@ class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true, config );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, new TestCommandReaderFactory(), monitors, true, config );
 
         try
         {
@@ -304,7 +308,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }

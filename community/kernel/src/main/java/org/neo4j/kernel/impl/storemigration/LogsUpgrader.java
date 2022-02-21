@@ -127,12 +127,11 @@ public class LogsUpgrader
 
     private LogFiles buildLogFiles( DatabaseLayout layout )
     {
-        final LogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         final LogFiles logFiles;
         try
         {
             logFiles = LogFilesBuilder.builder( layout, fs )
-                                      .withLogEntryReader( logEntryReader )
+                                      .withStorageEngineFactory( storageEngineFactory )
                                       .withConfig( config )
                                       .withMemoryTracker( memoryTracker )
                                       .withDatabaseHealth( databaseHealth )

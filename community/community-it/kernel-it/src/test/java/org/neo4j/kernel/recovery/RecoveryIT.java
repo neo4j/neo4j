@@ -1538,7 +1538,7 @@ class RecoveryIT
     {
         return LogFilesBuilder
                 .logFilesBasedOnlyBuilder( databaseLayout.getTransactionLogsDirectory(), fileSystem )
-                .withStorageEngineFactory( defaultStorageEngine() )
+                .withCommandReaderFactory( defaultStorageEngine().commandReaderFactory() )
                 .withDatabaseTracers( databaseTracers )
                 .build();
     }

@@ -46,12 +46,12 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
             Monitors monitors, CommandReaderFactory commandReaderFactory ) throws IOException
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        LogEntryReader logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
         LogFiles logFiles = LogFilesBuilder
-                .activeFilesBuilder( fromDatabaseLayout, fs, pageCache ).withLogEntryReader( logEntryReader )
+                .activeFilesBuilder( fromDatabaseLayout, fs, pageCache )
+                .withCommandReaderFactory( commandReaderFactory )
                 .withConfig( config )
                 .build();
-        physicalStore = new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader,
+        physicalStore = new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, commandReaderFactory,
                                                              monitors, true, config );
     }
 

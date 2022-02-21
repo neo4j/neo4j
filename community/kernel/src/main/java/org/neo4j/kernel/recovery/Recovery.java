@@ -368,7 +368,6 @@ public final class Recovery
         Monitors monitors = new Monitors( globalMonitors, logProvider );
         DatabasePageCache databasePageCache = new DatabasePageCache( pageCache, ioController );
         SimpleLogService logService = new SimpleLogService( logProvider );
-        VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         DatabaseReadOnlyChecker readOnlyChecker = writable();
 
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
@@ -422,9 +421,14 @@ public final class Recovery
                 NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs, recoveryCleanupCollector, databaseLayout.getDatabaseName() ),
                 new DefaultIdController(), readOnlyChecker, cursorContextFactory, logService, metadataProvider );
 
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withConfig( config ).withDatabaseTracers(
-                tracers ).withExternalLogTailInfo( providedLogFiles.map( LogFiles::getTailInformation ).orElse( null ) ).withDependencies(
-                dependencies ).withMemoryTracker( memoryTracker ).build();
+        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
+                                           .withStorageEngineFactory( storageEngineFactory )
+                                           .withConfig( config )
+                                           .withDatabaseTracers( tracers )
+                                           .withExternalLogTailInfo( providedLogFiles.map( LogFiles::getTailInformation ).orElse( null ) )
+                                           .withDependencies( dependencies )
+                                           .withMemoryTracker( memoryTracker )
+                                           .build();
         var logTailInfo = logFiles.getTailInformation();
 
         boolean failOnCorruptedLogFiles = config.get( GraphDatabaseInternalSettings.fail_on_corrupted_log_files );
@@ -432,7 +436,8 @@ public final class Recovery
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore =
-                new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors, failOnCorruptedLogFiles, config );
+                new PhysicalLogicalTransactionStore( logFiles, metadataCache, storageEngineFactory.commandReaderFactory(),
+                                                     monitors, failOnCorruptedLogFiles, config );
 
         var transactionAppender = createTransactionAppender( logFiles, metadataProvider, metadataCache, config, databaseHealth, scheduler, logProvider );
 

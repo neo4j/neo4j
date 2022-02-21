@@ -161,7 +161,6 @@ class ReaderLogVersionBridgeTest
     private LogFiles prepareLogFiles() throws IOException
     {
         return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.homePath(), fs )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
                 .build();
     }
 }

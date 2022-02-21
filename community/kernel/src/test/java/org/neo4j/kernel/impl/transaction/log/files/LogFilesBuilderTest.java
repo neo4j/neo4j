@@ -31,11 +31,13 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
@@ -48,7 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
@@ -78,13 +79,13 @@ class LogFilesBuilderTest
     void buildActiveFilesOnlyContext() throws IOException
     {
         TransactionLogFilesContext context = activeFilesBuilder( databaseLayout, fileSystem, pageCache )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .buildContext();
 
         assertEquals( fileSystem, context.getFileSystem() );
-        assertNotNull( context.getLogEntryReader() );
+        assertNotNull( context.getCommandReaderFactory() );
         assertEquals( Long.MAX_VALUE, context.getRotationThreshold().get() );
         assertEquals( TransactionIdStore.BASE_TX_ID, context.getLastCommittedTransactionId() );
         assertEquals( 0, context.getLogVersionRepository().getCurrentLogVersion() );
@@ -94,7 +95,7 @@ class LogFilesBuilderTest
     void buildFilesBasedContext() throws IOException
     {
         TransactionLogFilesContext context = logFilesBasedOnlyBuilder( storeDirectory, fileSystem )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
     }
@@ -105,10 +106,10 @@ class LogFilesBuilderTest
         TransactionLogFilesContext context = builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
-        assertNotNull( context.getLogEntryReader() );
+        assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
@@ -120,11 +121,11 @@ class LogFilesBuilderTest
         TransactionLogFilesContext context = builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
-        assertNotNull( context.getLogEntryReader() );
+        assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 1 ), context.getRotationThreshold().get() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
         assertEquals( 2, context.getLogVersionRepository().getCurrentLogVersion() );
@@ -143,11 +144,11 @@ class LogFilesBuilderTest
 
         TransactionLogFilesContext context = builder( databaseLayout, fileSystem )
                 .withDependencies( dependencies )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .buildContext();
 
         assertEquals( fileSystem, context.getFileSystem() );
-        assertNotNull( context.getLogEntryReader() );
+        assertNotNull( context.getCommandReaderFactory() );
         assertEquals( ByteUnit.mebiBytes( 250 ), context.getRotationThreshold().get() );
         assertEquals( databaseHealth, context.getDatabaseHealth() );
         assertEquals( 1, context.getLastCommittedTransactionId() );
@@ -166,7 +167,7 @@ class LogFilesBuilderTest
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( CommandReaderFactory.NO_COMMANDS )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         logFiles.init();
@@ -179,33 +180,34 @@ class LogFilesBuilderTest
     @Test
     void failToBuildFullContextWithoutLogVersionRepo()
     {
-        assertThrows( NullPointerException.class, () -> builderWithTestLogReader( databaseLayout, fileSystem ).withTransactionIdStore(
+        assertThrows( NullPointerException.class, () -> builderWithTestCommandReaderFactory( databaseLayout, fileSystem ).withTransactionIdStore(
                 new SimpleTransactionIdStore() ).buildContext() );
     }
 
     @Test
     void failToBuildFullContextWithoutTransactionIdStore()
     {
-        assertThrows( NullPointerException.class, () -> builderWithTestLogReader( databaseLayout, fileSystem ).withLogVersionRepository(
+        assertThrows( NullPointerException.class, () -> builderWithTestCommandReaderFactory( databaseLayout, fileSystem ).withLogVersionRepository(
                 new SimpleLogVersionRepository( 2 ) ).buildContext() );
     }
 
     @Test
     void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
     {
-        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withLogEntryReader(
-                logEntryReader() ).buildContext().getLastCommittedTransactionId() );
+        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withCommandReaderFactory(
+                new TestCommandReaderFactory() ).buildContext().getLastCommittedTransactionId() );
     }
 
     @Test
     void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
     {
         assertThrows( UnsupportedOperationException.class,
-                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withLogEntryReader( logEntryReader() ).buildContext().getLogVersionRepository() );
+                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withCommandReaderFactory( new TestCommandReaderFactory() )
+                                                                            .buildContext().getLogVersionRepository() );
     }
 
-    private static LogFilesBuilder builderWithTestLogReader( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    private static LogFilesBuilder builderWithTestCommandReaderFactory( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
     {
-        return builder( databaseLayout, fileSystem ).withLogEntryReader( logEntryReader() );
+        return builder( databaseLayout, fileSystem ).withCommandReaderFactory( new TestCommandReaderFactory() );
     }
 }

@@ -124,7 +124,7 @@ public class Runner implements Callable<Long>
         return LogFilesBuilder.builder( databaseLayout, fileSystemAbstraction )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory() ) )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
     }

@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -714,7 +715,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile
         // scroll all over possible checkpoints
         try ( ReadAheadLogChannel readAheadLogChannel = new ReadAheadLogChannel( new UnclosableChannel( channel ), memoryTracker ) )
         {
-            LogEntryReader logEntryReader = context.getLogEntryReader();
+            LogEntryReader logEntryReader = new VersionAwareLogEntryReader( context.getCommandReaderFactory() );
             LogEntry entry;
             do
             {

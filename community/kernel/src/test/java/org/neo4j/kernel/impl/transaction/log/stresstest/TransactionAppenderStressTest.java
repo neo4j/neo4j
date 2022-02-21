@@ -29,6 +29,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -138,7 +139,7 @@ public class TransactionAppenderStressTest
         private ReadableLogChannel openLogFile( FileSystemAbstraction fs, int version ) throws IOException
         {
             LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fs )
-                    .withLogEntryReader( logEntryReader() )
+                    .withCommandReaderFactory( new TestCommandReaderFactory() )
                     .build();
             LogFile logFile = logFiles.getLogFile();
             PhysicalLogVersionedStoreChannel channel = logFile.openForVersion( version );

@@ -38,6 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -112,7 +113,7 @@ class DetachedLogTailScannerTest
                 .activeFilesBuilder( databaseLayout, fs, pageCache )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withLogProvider( logProvider )
                 .withConfig( Config.defaults( fail_on_corrupted_log_files, false ) )
@@ -131,7 +132,7 @@ class DetachedLogTailScannerTest
                 .activeFilesBuilder( databaseLayout, fs, pageCache )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogEntryReader( logEntryReader() )
+                .withCommandReaderFactory( new TestCommandReaderFactory() )
                 .withStoreId( StoreId.UNKNOWN )
                 .withLogProvider( logProvider )
                 .withConfig( Config.defaults( fail_on_corrupted_log_files, true ) )

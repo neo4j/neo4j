@@ -64,6 +64,7 @@ class VersionAwareLogEntryReaderIT
     private DatabaseManagementService managementService;
     private DatabaseLayout databaseLayout;
     private VersionAwareLogEntryReader entryReader;
+    private StorageEngineFactory storageEngineFactory;
 
     @BeforeEach
     void setUp()
@@ -72,7 +73,8 @@ class VersionAwareLogEntryReaderIT
         createNode( database );
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) database;
         databaseLayout = dbApi.databaseLayout();
-        entryReader = new VersionAwareLogEntryReader( dbApi.getDependencyResolver().resolveDependency( StorageEngineFactory.class ).commandReaderFactory() );
+        storageEngineFactory = dbApi.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
+        entryReader = new VersionAwareLogEntryReader( storageEngineFactory.commandReaderFactory() );
         managementService.shutdown();
     }
 
@@ -81,13 +83,14 @@ class VersionAwareLogEntryReaderIT
     void readOnlyLogFilesWhileCommandsAreAvailable() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogEntryReader( entryReader )
+                .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
+            getLastReadablePosition( logFiles );
             assertEquals( kibiBytes( 128 ), Files.size( logFiles.getLogFile().getHighestLogFile() ) );
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
@@ -100,17 +103,13 @@ class VersionAwareLogEntryReaderIT
     void correctlyResetPositionWhenEndOfCommandsReached() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogEntryReader( entryReader )
+                .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
-            LogPosition logPosition = entryReader.lastPosition();
-            assertEquals( 0L, logPosition.getLogVersion() );
-            // this position in a log file before 0's are actually starting
-            assertEquals( END_OF_DATA_OFFSET, logPosition.getByteOffset() );
 
             for ( int i = 0; i < 10; i++ )
             {
@@ -124,13 +123,14 @@ class VersionAwareLogEntryReaderIT
     void readTillTheEndOfNotPreallocatedFile() throws IOException
     {
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogEntryReader( entryReader )
+                .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withStoreId( StoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
+            getLastReadablePosition( logFiles );
             LogPosition logPosition = entryReader.lastPosition();
             assertEquals( 0L, logPosition.getLogVersion() );
             assertEquals( Files.size( logFiles.getLogFile().getHighestLogFile() ), logPosition.getByteOffset() );

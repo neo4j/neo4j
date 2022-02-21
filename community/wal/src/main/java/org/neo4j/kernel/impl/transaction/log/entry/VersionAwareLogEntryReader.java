@@ -61,86 +61,82 @@ public class VersionAwareLogEntryReader implements LogEntryReader
     {
         try
         {
-            while ( true )
-            {
-                channel.getCurrentPosition( positionMarker );
+            channel.getCurrentPosition( positionMarker );
 
-                byte versionCode = channel.get();
-                if ( versionCode == 0 )
+            byte versionCode = channel.get();
+            if ( versionCode == 0 )
+            {
+                // we reached the end of available records but still have space available in pre-allocated file
+                // we reset channel position to restore last read byte in case someone would like to re-read or check it again if possible
+                // and we report that we reach end of record stream from our point of view
+                if ( channel instanceof PositionableChannel )
                 {
-                    // we reached the end of available records but still have space available in pre-allocated file
-                    // we reset channel position to restore last read byte in case someone would like to re-read or check it again if possible
-                    // and we report that we reach end of record stream from our point of view
-                    if ( channel instanceof PositionableChannel )
+                    resetChannelPosition( channel );
+                }
+                else
+                {
+                    throw new IllegalStateException( "Log reader expects positionable channel to be able to reset offset. Current channel: " + channel );
+                }
+                return null;
+            }
+            if ( parserSet == null || parserSet.getIntroductionVersion().version() != versionCode )
+            {
+                try
+                {
+                    parserSet = LogEntryParserSets.parserSet( KernelVersion.getForVersion( versionCode ) );
+                }
+                catch ( IllegalArgumentException e )
+                {
+                    String msg;
+                    if ( versionCode > KernelVersion.LATEST.version() )
                     {
-                        resetChannelPosition( channel );
+                        msg = String.format( "Log file contains entries with prefix %d, and the highest supported prefix is %s. This " +
+                                             "indicates that the log files originates from an newer version of neo4j, which we don't support " +
+                                             "downgrading from.", versionCode, KernelVersion.LATEST );
                     }
                     else
                     {
-                        throw new IllegalStateException( "Log reader expects positionable channel to be able to reset offset. Current channel: " + channel );
+                        msg = String.format( "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
+                                             "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                                             "migrations from.", versionCode, KernelVersion.EARLIEST );
                     }
-                    return null;
+                    throw new UnsupportedLogVersionException( msg );
                 }
-                if ( parserSet == null || parserSet.getIntroductionVersion().version() != versionCode )
+                // Since checksum is calculated over the whole entry we need to rewind and begin
+                // a new checksum segment if we change version parser.
+                if ( channel instanceof PositionableChannel )
                 {
-                    try
-                    {
-                        parserSet = LogEntryParserSets.parserSet( KernelVersion.getForVersion( versionCode ) );
-                    }
-                    catch ( IllegalArgumentException e )
-                    {
-                        String msg;
-                        if ( versionCode > KernelVersion.LATEST.version() )
-                        {
-                            msg = String.format( "Log file contains entries with prefix %d, and the highest supported prefix is %s. This " +
-                                                 "indicates that the log files originates from an newer version of neo4j, which we don't support " +
-                                                 "downgrading from.", versionCode, KernelVersion.LATEST );
-                        }
-                        else
-                        {
-                            msg = String.format( "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This " +
-                                                 "indicates that the log files originates from an older version of neo4j, which we don't support " +
-                                                 "migrations from.", versionCode, KernelVersion.EARLIEST );
-                        }
-                        throw new UnsupportedLogVersionException( msg );
-                    }
-                    // Since checksum is calculated over the whole entry we need to rewind and begin
-                    // a new checksum segment if we change version parser.
-                    if ( channel instanceof PositionableChannel )
-                    {
-                        resetChannelPosition( channel );
-                        channel.beginChecksum();
-                        channel.get();
-                    }
+                    resetChannelPosition( channel );
+                    channel.beginChecksum();
+                    channel.get();
                 }
-
-                byte typeCode = channel.get();
-
-                LogEntryParser entryReader;
-                LogEntry entry;
-                try
-                {
-                    entryReader = parserSet.select( typeCode );
-                    entry = entryReader.parse( parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory );
-                }
-                catch ( ReadPastEndException e )
-                {   // Make these exceptions slip by straight out to the outer handler
-                    throw e;
-                }
-                catch ( Exception e )
-                {   // Tag all other exceptions with log position and other useful information
-                    LogPosition position = positionMarker.newPosition();
-                    var message = e.getMessage() + ". At position " + position + " and entry version " + versionCode;
-                    if ( e instanceof UnsupportedLogVersionException )
-                    {
-                        throw new UnsupportedLogVersionException( message, e );
-                    }
-                    throw new IOException( message, e );
-                }
-
-                verifyChecksumChain( entry );
-                return entry;
             }
+
+            byte typeCode = channel.get();
+
+            LogEntry entry;
+            try
+            {
+                var entryReader = parserSet.select( typeCode );
+                entry = entryReader.parse( parserSet.getIntroductionVersion(), channel, positionMarker, commandReaderFactory );
+            }
+            catch ( ReadPastEndException e )
+            {   // Make these exceptions slip by straight out to the outer handler
+                throw e;
+            }
+            catch ( Exception e )
+            {   // Tag all other exceptions with log position and other useful information
+                LogPosition position = positionMarker.newPosition();
+                var message = e.getMessage() + ". At position " + position + " and entry version " + versionCode;
+                if ( e instanceof UnsupportedLogVersionException )
+                {
+                    throw new UnsupportedLogVersionException( message, e );
+                }
+                throw new IOException( message, e );
+            }
+
+            verifyChecksumChain( entry );
+            return entry;
         }
         catch ( ReadPastEndException e )
         {

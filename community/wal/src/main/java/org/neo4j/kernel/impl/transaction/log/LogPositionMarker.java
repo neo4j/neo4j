@@ -24,9 +24,9 @@ package org.neo4j.kernel.impl.transaction.log;
  */
 public class LogPositionMarker
 {
-    private volatile long logVersion;
-    private volatile long byteOffset;
-    private volatile boolean specified;
+    private long logVersion;
+    private long byteOffset;
+    private boolean specified;
 
     public void mark( long logVersion, long byteOffset )
     {

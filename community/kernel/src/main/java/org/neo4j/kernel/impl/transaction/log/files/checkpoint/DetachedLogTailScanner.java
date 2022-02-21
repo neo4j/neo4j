@@ -36,15 +36,16 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.Math.min;
@@ -63,7 +64,7 @@ public class DetachedLogTailScanner
     private static final String TRANSACTION_LOG_NAME = "Transaction";
     private static final String CHECKPOINT_LOG_NAME = "Checkpoint";
     private final LogFiles logFiles;
-    private final LogEntryReader logEntryReader;
+    private final CommandReaderFactory commandReaderFactory;
     private final LogTailScannerMonitor monitor;
     private final MemoryTracker memoryTracker;
     private final CheckpointFile checkpointFile;
@@ -75,7 +76,7 @@ public class DetachedLogTailScanner
     public DetachedLogTailScanner( LogFiles logFiles, TransactionLogFilesContext context, CheckpointFile checkpointFile, LogTailScannerMonitor monitor )
     {
         this.logFiles = logFiles;
-        this.logEntryReader = context.getLogEntryReader();
+        this.commandReaderFactory = context.getCommandReaderFactory();
         this.memoryTracker = context.getMemoryTracker();
         this.checkpointFile = checkpointFile;
         this.fileSystem = context.getFileSystem();
@@ -186,6 +187,7 @@ public class DetachedLogTailScanner
             {
                 lookupPosition = lookupPosition == null ? logPosition : logFile.extractHeader( logVersion ).getStartPosition();
 
+                var logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
                 try ( var reader = logFile.getReader( lookupPosition, NO_MORE_CHANNELS );
                         var cursor = new LogEntryCursor( logEntryReader, reader ) )
                 {
