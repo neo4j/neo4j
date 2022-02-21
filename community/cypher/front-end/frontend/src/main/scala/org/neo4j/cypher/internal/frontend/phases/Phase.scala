@@ -31,10 +31,12 @@ trait Phase[-C <: BaseContext, FROM, TO] extends Transformer[C, FROM, TO] {
 
   def description: String
 
-  override def transform(from: FROM, context: C): TO =
+  override def transform(from: FROM, context: C): TO = {
+    context.cancellationChecker.throwIfCancelled()
     closing(context.tracer.beginPhase(phase)) {
       process(from, context)
     }
+  }
 
   def process(from: FROM, context: C): TO
 

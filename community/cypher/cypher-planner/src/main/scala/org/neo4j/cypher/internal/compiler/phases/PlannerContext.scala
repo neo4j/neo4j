@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -59,7 +60,8 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val logicalPlanIdGen: IdGen,
                      val innerVariableNamer: InnerVariableNamer,
                      val params: MapValue,
-                     val executionModel: ExecutionModel) extends BaseContext {
+                     val executionModel: ExecutionModel,
+                     cancellationChecker: CancellationChecker) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
@@ -87,8 +89,8 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       logicalPlanIdGen: IdGen,
                       evaluator: ExpressionEvaluator,
                       innerVariableNamer: InnerVariableNamer,
-                      params: MapValue
-                     ): PlannerContext = {
+                      params: MapValue,
+                      cancellationChecker: CancellationChecker): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
@@ -97,6 +99,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params, executionModel)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer, params, executionModel, cancellationChecker)
   }
 }

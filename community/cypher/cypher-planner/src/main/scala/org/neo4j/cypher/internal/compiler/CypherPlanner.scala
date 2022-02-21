@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.values.virtual.MapValue
@@ -73,7 +74,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  tracer: CompilationPhaseTracer,
                  innerVariableNamer: InnerVariableNamer,
                  params: MapValue,
-                 compatibilityMode: CypherCompatibilityVersion): BaseState = {
+                 compatibilityMode: CypherCompatibilityVersion,
+                 cancellationChecker: CancellationChecker): BaseState = {
 
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)

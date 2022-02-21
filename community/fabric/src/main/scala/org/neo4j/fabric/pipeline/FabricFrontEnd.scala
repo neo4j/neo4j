@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
@@ -62,7 +63,6 @@ import org.neo4j.fabric.util.Errors
 import org.neo4j.graphdb.Notification
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
-
 
 case class FabricFrontEnd(
   cypherConfig: CypherConfiguration,
@@ -120,6 +120,7 @@ case class FabricFrontEnd(
 
       val errorHandler: Seq[SemanticErrorDef] => Unit = (errors: Seq[SemanticErrorDef]) =>
         errors.foreach(e => throw cypherExceptionFactory.syntaxException(e.msg, e.position))
+      val cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
     }
 
     private val compatibilityMode =

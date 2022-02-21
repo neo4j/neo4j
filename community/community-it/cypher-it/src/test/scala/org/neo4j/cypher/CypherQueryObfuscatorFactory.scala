@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -84,7 +85,8 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      cancellationChecker = CancellationChecker.NeverCancelled)
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
 
