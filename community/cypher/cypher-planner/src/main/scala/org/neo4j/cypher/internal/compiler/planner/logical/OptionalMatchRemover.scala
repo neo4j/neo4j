@@ -329,13 +329,13 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         l = expand(qg, l)
         val matches = hasExpandedInto(l, r)
         if (matches.nonEmpty)
-          return matches.head
+          return matches.minBy(_.size)
       }
       else {
         r = expand(qg, r)
         val matches = hasExpandedInto(r, l)
         if (matches.nonEmpty)
-          return matches.head
+          return matches.minBy(_.size)
       }
     }
 
