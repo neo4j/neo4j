@@ -146,12 +146,30 @@ object inSequence {
     }
   }
 
-  def apply(rewriters: Rewriter*): Rewriter = new InSequenceRewriter(rewriters)
+  private class InSequenceRewriterWithCancel(rewriters: Seq[Rewriter], cancellation: CancellationChecker) extends Rewriter {
+    override def apply(that: AnyRef): AnyRef = {
+      val it = rewriters.iterator
+      var result = that
+      while (it.hasNext) {
+        cancellation.throwIfCancelled()
+        result = result.rewrite(it.next())
+      }
+
+      result
+    }
+  }
+
+  def apply(rewriters: Rewriter*): Rewriter =
+    new InSequenceRewriter(rewriters)
+
+  def apply(cancellation: CancellationChecker)(rewriters: Rewriter*): Rewriter =
+    new InSequenceRewriterWithCancel(rewriters, cancellation)
 }
 
 object topDown {
-  private class TopDownRewriter(rewriter: Rewriter, val stopper: AnyRef => Boolean)
-      extends Rewriter {
+  private class TopDownRewriter(rewriter: Rewriter,
+                                stopper: AnyRef => Boolean,
+                                cancellation: CancellationChecker) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -161,6 +179,7 @@ object topDown {
 
     @tailrec
     private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      cancellation.throwIfCancelled()
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -186,16 +205,19 @@ object topDown {
     }
   }
 
-  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false): Rewriter =
-    new TopDownRewriter(rewriter, stopper)
+  def apply(rewriter: Rewriter,
+            stopper: AnyRef => Boolean = _ => false,
+            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+    new TopDownRewriter(rewriter, stopper, cancellation)
 }
 
 /**
  * Top-down rewriter that also lets the rules see the parent of each node as additional context
  */
 object topDownWithParent {
-  private class TopDownWithParentRewriter(rewriter: RewriterWithParent, val stopper: AnyRef => Boolean)
-    extends Rewriter {
+  private class TopDownWithParentRewriter(rewriter: RewriterWithParent,
+                                          stopper: AnyRef => Boolean,
+                                          cancellation: CancellationChecker) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -205,6 +227,7 @@ object topDownWithParent {
 
     @tailrec
     private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      cancellation.throwIfCancelled()
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -238,14 +261,17 @@ object topDownWithParent {
     }
   }
 
-  def apply(rewriter: RewriterWithParent, stopper: AnyRef => Boolean = _ => false): Rewriter =
-    new TopDownWithParentRewriter(rewriter, stopper)
+  def apply(rewriter: RewriterWithParent,
+            stopper: AnyRef => Boolean = _ => false,
+            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+    new TopDownWithParentRewriter(rewriter, stopper, cancellation)
 }
 
 object bottomUp {
 
-  private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean)
-      extends Rewriter {
+  private class BottomUpRewriter(rewriter: Rewriter,
+                                 stopper: AnyRef => Boolean,
+                                 cancellation: CancellationChecker) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -255,6 +281,7 @@ object bottomUp {
 
     @tailrec
     private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      cancellation.throwIfCancelled()
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -280,14 +307,18 @@ object bottomUp {
     }
   }
 
-  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false): Rewriter =
-    new BottomUpRewriter(rewriter, stopper)
+  def apply(rewriter: Rewriter,
+            stopper: AnyRef => Boolean = _ => false,
+            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+    new BottomUpRewriter(rewriter, stopper, cancellation)
 }
 
 object bottomUpWithRecorder {
 
-  private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean, val recorder: (AnyRef, AnyRef) => Unit)
-    extends Rewriter {
+  private class BottomUpRewriter(rewriter: Rewriter,
+                                 stopper: AnyRef => Boolean,
+                                 recorder: (AnyRef, AnyRef) => Unit,
+                                 cancellation: CancellationChecker) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
       val result = rec(initialStack)
@@ -297,6 +328,7 @@ object bottomUpWithRecorder {
 
     @tailrec
     private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+      cancellation.throwIfCancelled()
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -324,6 +356,9 @@ object bottomUpWithRecorder {
     }
   }
 
-  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false, recorder: (AnyRef, AnyRef) => Unit = (_, _) => ()): Rewriter =
-    new BottomUpRewriter(rewriter, stopper, recorder)
+  def apply(rewriter: Rewriter,
+            stopper: AnyRef => Boolean = _ => false,
+            recorder: (AnyRef, AnyRef) => Unit = (_, _) => (),
+            cancellation: CancellationChecker = CancellationChecker.NeverCancelled): Rewriter =
+    new BottomUpRewriter(rewriter, stopper, recorder, cancellation)
 }
