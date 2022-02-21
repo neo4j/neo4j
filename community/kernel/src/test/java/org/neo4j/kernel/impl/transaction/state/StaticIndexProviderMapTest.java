@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 
 import org.neo4j.collection.Dependencies;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -58,7 +56,6 @@ class StaticIndexProviderMapTest
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
                                               pointIndexProvider,
-                                              Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
 
@@ -85,7 +82,6 @@ class StaticIndexProviderMapTest
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
                                               pointIndexProvider,
-                                              Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
 
@@ -114,7 +110,6 @@ class StaticIndexProviderMapTest
                                               fulltextIndexProvider,
                                               rangeIndexProvider,
                                               pointIndexProvider,
-                                              Config.newBuilder().build(),
                                               new Dependencies() );
         map.init();
 
@@ -131,9 +126,6 @@ class StaticIndexProviderMapTest
         var extension = mockProvider( IndexProvider.class );
         var dependencies = new Dependencies();
         dependencies.satisfyDependency( extension );
-        var config = Config.newBuilder()
-                           .set( GraphDatabaseSettings.default_schema_provider, extension.getProviderDescriptor().name() )
-                           .build();
         RangeIndexProvider rangeIndexProvider = mockProvider( RangeIndexProvider.class );
         var map = new StaticIndexProviderMap( mockProvider( TokenIndexProvider.class ),
                                               mockProvider( GenericNativeIndexProvider.class ),
@@ -141,12 +133,9 @@ class StaticIndexProviderMapTest
                                               mockProvider( FulltextIndexProvider.class ),
                                               rangeIndexProvider,
                                               mockProvider( PointIndexProvider.class ),
-                                              config,
                                               dependencies );
         map.init();
 
-        assertThat( map.getDefaultProvider() ).isEqualTo( rangeIndexProvider );
-        assertThat( map.getBtreeIndexProvider() ).isEqualTo( extension );
         assertThat( map.lookup( extension.getProviderDescriptor() ) ).isEqualTo( extension );
         assertThat( map.lookup( extension.getProviderDescriptor().name() ) ).isEqualTo( extension );
         var accepted = new ArrayList<>();

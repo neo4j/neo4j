@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.impl.fulltext.FulltextIndexProvider;
@@ -39,7 +37,6 @@ import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TokenIndexProvider;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class StaticIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
@@ -52,13 +49,11 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final IndexProvider fulltextIndexProvider;
     private final IndexProvider rangeIndexProvider;
     private final IndexProvider pointIndexProvider;
-    private final Config config;
     private final DependencyResolver dependencies;
-    private volatile IndexProvider btreeDefaultIndexProvider;
 
     public StaticIndexProviderMap( TokenIndexProvider tokenIndexProvider, GenericNativeIndexProvider btreeIndexProvider, TextIndexProvider textIndexProvider,
                                    FulltextIndexProvider fulltextIndexProvider, RangeIndexProvider rangeIndexProvider,
-                                   PointIndexProvider pointIndexProvider, Config config, DependencyResolver dependencies )
+                                   PointIndexProvider pointIndexProvider, DependencyResolver dependencies )
     {
         this.tokenIndexProvider = tokenIndexProvider;
         this.btreeIndexProvider = btreeIndexProvider;
@@ -66,7 +61,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         this.fulltextIndexProvider = fulltextIndexProvider;
         this.rangeIndexProvider = rangeIndexProvider;
         this.pointIndexProvider = pointIndexProvider;
-        this.config = config;
         this.dependencies = dependencies;
     }
 
@@ -80,7 +74,6 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         add( rangeIndexProvider );
         add( pointIndexProvider );
         dependencies.resolveTypeDependencies( IndexProvider.class ).forEach( this::add );
-        this.btreeDefaultIndexProvider = selectBtreeDefaultProvider( config );
     }
 
     @Override
@@ -110,7 +103,7 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     @Override
     public IndexProvider getBtreeIndexProvider()
     {
-        return btreeDefaultIndexProvider;
+        return btreeIndexProvider;
     }
 
     @Override
@@ -170,19 +163,5 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
                                                 providerDescriptor + ". First loaded " + existing + " then " + provider );
         }
         indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
-    }
-
-    private IndexProvider selectBtreeDefaultProvider( Config config )
-    {
-        if ( config.isExplicitlySet( GraphDatabaseSettings.default_schema_provider ) )
-        {
-            var providerName = config.get( GraphDatabaseSettings.default_schema_provider );
-            var configuredDefaultProvider = indexProvidersByName.get( providerName );
-            requireNonNull( configuredDefaultProvider,
-                            () -> format( "Configured default provider: `%s` not found. Available index providers: %s.", providerName,
-                                          indexProvidersByName.keySet() ) );
-            return configuredDefaultProvider;
-        }
-        return btreeIndexProvider;
     }
 }

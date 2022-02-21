@@ -88,6 +88,6 @@ public class StaticIndexProviderMapFactory
                 recoveryCleanupWorkCollector, databaseLayout, tokenHolders, scheduler, contextFactory ) );
 
         return new StaticIndexProviderMap( tokenIndexProvider, nativeIndexProvider, textIndexProvider, fulltextIndexProvider,
-                                           rangeIndexProvider, pointIndexProvider, databaseConfig, dependencies );
+                                           rangeIndexProvider, pointIndexProvider, dependencies );
     }
 }

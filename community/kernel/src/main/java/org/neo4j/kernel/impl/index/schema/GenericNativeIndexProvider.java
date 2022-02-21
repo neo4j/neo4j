@@ -53,7 +53,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration;
 
 /**
@@ -116,8 +115,8 @@ import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSetting
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,GenericLayout>
 {
-    public static final String KEY = NATIVE_BTREE10.providerKey();
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
+    public static final String KEY = "native-btree";
+    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, "1.0" );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
 
     /**

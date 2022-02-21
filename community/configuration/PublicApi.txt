@@ -47,16 +47,6 @@ org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::CLIENT org.neo4j.conf
 org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::SERVER org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static final
 org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.RoutingMode public static
 org.neo4j.configuration.GraphDatabaseSettings.RoutingMode::values() org.neo4j.configuration.GraphDatabaseSettings.RoutingMode[] public static
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex>
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::NATIVE30 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::NATIVE_BTREE10 org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static final
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::deprecated() boolean public
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::providerKey() java.lang.String public
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::providerName() java.lang.String public
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::providerVersion() java.lang.String public
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::toString() java.lang.String public
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex public static
-org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex::values() org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex[] public static
 org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation>
 org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation::OFF_HEAP org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation public static final
 org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation::ON_HEAP org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation public static final
@@ -112,7 +102,6 @@ org.neo4j.configuration.GraphDatabaseSettings::default_advertised_address org.ne
 org.neo4j.configuration.GraphDatabaseSettings::default_database org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_listen_address org.neo4j.graphdb.config.Setting<org.neo4j.configuration.helpers.SocketAddress> public static final
 org.neo4j.configuration.GraphDatabaseSettings::default_log_format org.neo4j.graphdb.config.Setting<org.neo4j.logging.FormattedLogFormat> public static final
-org.neo4j.configuration.GraphDatabaseSettings::default_schema_provider org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::dense_node_threshold org.neo4j.graphdb.config.Setting<java.lang.Integer> public static final
 org.neo4j.configuration.GraphDatabaseSettings::enable_clustering_in_standalone org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final
 org.neo4j.configuration.GraphDatabaseSettings::fail_on_missing_files org.neo4j.graphdb.config.Setting<java.lang.Boolean> public static final

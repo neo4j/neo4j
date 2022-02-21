@@ -42,7 +42,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.IndexType.BTREE;
@@ -61,7 +60,7 @@ class SchemaStoreMapificationTest
     private RelationTypeSchemaDescriptor relTypeSchema = SchemaDescriptors.forRelType( 1, 2, 3 );
     private FulltextSchemaDescriptor fulltextNodeSchema = SchemaDescriptors.fulltext( NODE, new int[]{1, 2}, new int[]{1, 2} );
     private FulltextSchemaDescriptor fulltextRelSchema = SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2}, new int[]{1, 2} );
-    private IndexProviderDescriptor tree = new IndexProviderDescriptor( NATIVE_BTREE10.providerKey(), NATIVE_BTREE10.providerVersion() );
+    private IndexProviderDescriptor tree = new IndexProviderDescriptor( "range", "1.0" );
     private IndexProviderDescriptor fts = new IndexProviderDescriptor( "fulltext", "1.0" );
     private IndexDescriptor labelIndex = forSchema( labelSchema, tree ).withName( "labelIndex" ).materialise( 1 );
     private IndexDescriptor labelUniqueIndex = uniqueForSchema( labelSchema, tree ).withName( "labelUniqueIndex" ).materialise( 1 );
@@ -97,12 +96,12 @@ class SchemaStoreMapificationTest
     @Test
     void labelIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'labelIndex', GENERAL RANGE, :label[1](property[2], property[3]), native-btree-1.0 )
+        // Index( 1, 'labelIndex', GENERAL RANGE, :label[1](property[2], property[3]), range-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "labelIndex" ),
                 "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue( "COMPLETE_ALL_TOKENS" ),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "native-btree" ),
+                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "range" ),
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
@@ -116,12 +115,12 @@ class SchemaStoreMapificationTest
     @Test
     void labelUniqueIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'labelUniqueIndex', UNIQUE RANGE, :label[1](property[2], property[3]), native-btree-1.0 )
+        // Index( 1, 'labelUniqueIndex', UNIQUE RANGE, :label[1](property[2], property[3]), range-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "NODE" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "labelUniqueIndex" ),
                 "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue( "COMPLETE_ALL_TOKENS" ),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "native-btree" ),
+                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "range" ),
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
@@ -135,12 +134,12 @@ class SchemaStoreMapificationTest
     @Test
     void relTypeIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'relTypeIndex', GENERAL RANGE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
+        // Index( 1, 'relTypeIndex', GENERAL RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "RELATIONSHIP" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "relTypeIndex" ),
                 "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue( "COMPLETE_ALL_TOKENS" ),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "native-btree" ),
+                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "range" ),
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
@@ -154,12 +153,12 @@ class SchemaStoreMapificationTest
     @Test
     void relTypeUniqueIndexDeterministicUnmapification() throws Exception
     {
-        // Index( 1, 'relTypeUniqueIndex', UNIQUE RANGE, -[:relType[1](property[2], property[3])]-, native-btree-1.0 )
+        // Index( 1, 'relTypeUniqueIndex', UNIQUE RANGE, -[:relType[1](property[2], property[3])]-, range-1.0 )
         Map<String,Value> mapified = Map.of(
                 "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue( "RELATIONSHIP" ),
                 "__org.neo4j.SchemaRule.name", Values.stringValue( "relTypeUniqueIndex" ),
                 "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue( "COMPLETE_ALL_TOKENS" ),
-                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "native-btree" ),
+                "__org.neo4j.SchemaRule.indexProviderName", Values.stringValue( "range" ),
                 "__org.neo4j.SchemaRule.indexProviderVersion", Values.stringValue( "1.0" ),
                 "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray( new int[] {2,3} ),
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue( "INDEX" ),
