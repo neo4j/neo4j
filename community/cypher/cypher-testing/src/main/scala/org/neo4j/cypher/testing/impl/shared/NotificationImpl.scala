@@ -43,12 +43,19 @@ object NotificationImpl {
     title: String,
     description: String,
     severity: String,
+    position: InputPosition,
+  ): NotificationImpl =
+    NotificationImpl(code, title, description, SeverityLevel.valueOf(severity), position)
+
+
+  def fromRaw(
+    code: String,
+    title: String,
+    description: String,
+    severity: String,
     posOffset: Int,
     posLine: Int,
     posColumn: Int,
   ): NotificationImpl =
-    NotificationImpl(
-      code, title, description, SeverityLevel.valueOf(severity),
-      new InputPosition(posOffset, posLine, posColumn)
-    )
+    fromRaw(code, title, description, severity, new InputPosition(posOffset, posLine, posColumn))
 }

@@ -31,6 +31,7 @@ import org.neo4j.cypher.testing.impl.http.HttpStatementResult.Result
 import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.graphdb
+import org.neo4j.graphdb.InputPosition
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.server.HTTP
 
@@ -48,7 +49,14 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
 
   override def getNotifications(): List[graphdb.Notification] =
     notifications
-      .map(n => NotificationImpl.fromRaw(n.code, n.title, n.description, n.severity, n.position.offset, n.position.line, n.position.column))
+      .map(n => NotificationImpl.fromRaw(
+        n.code,
+        n.title,
+        n.description,
+        n.severity,
+        Option(n.position)
+          .map(pos => new InputPosition(pos.offset, pos.line, pos.column))
+          .getOrElse(InputPosition.empty)))
       .toList
 }
 
