@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
@@ -55,7 +56,6 @@ import org.neo4j.fabric.util.Errors
 import org.neo4j.graphdb.Notification
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
-
 
 case class FabricFrontEnd(
   cypherConfig: CypherConfiguration,
@@ -104,7 +104,8 @@ case class FabricFrontEnd(
       new RecordingNotificationLogger(Some(query.options.offset)),
       query.rawStatement,
       Some(query.options.offset),
-      WrappedMonitors(kernelMonitors)
+      WrappedMonitors(kernelMonitors),
+      CancellationChecker.NeverCancelled,
     )
 
     private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -45,7 +46,8 @@ import java.time.Clock
 class BaseContextImpl(val cypherExceptionFactory: CypherExceptionFactory,
                       val tracer: CompilationPhaseTracer,
                       val notificationLogger: InternalNotificationLogger,
-                      val monitors: Monitors) extends BaseContext {
+                      val monitors: Monitors,
+                      val cancellationChecker: CancellationChecker) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)
@@ -56,9 +58,10 @@ object BaseContextImpl {
             notificationLogger: InternalNotificationLogger,
             queryText: String,
             offset: Option[InputPosition],
-            monitors: Monitors): BaseContextImpl = {
+            monitors: Monitors,
+            cancellationChecker: CancellationChecker): BaseContextImpl = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
-    new BaseContextImpl(exceptionFactory, tracer, notificationLogger, monitors)
+    new BaseContextImpl(exceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
   }
 }
 
@@ -75,7 +78,8 @@ class PlannerContext(cypherExceptionFactory: CypherExceptionFactory,
                      val clock: Clock,
                      val logicalPlanIdGen: IdGen,
                      val params: MapValue,
-                     val executionModel: ExecutionModel) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors)
+                     val executionModel: ExecutionModel,
+                     cancellationChecker: CancellationChecker) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
   def apply(tracer: CompilationPhaseTracer,
@@ -93,12 +97,13 @@ object PlannerContext {
             clock: Clock,
             logicalPlanIdGen: IdGen,
             evaluator: ExpressionEvaluator,
-            params: MapValue): PlannerContext = {
+            params: MapValue,
+            cancellationChecker: CancellationChecker): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, evaluator, config, executionModel)
 
     new PlannerContext(exceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker)
   }
 }

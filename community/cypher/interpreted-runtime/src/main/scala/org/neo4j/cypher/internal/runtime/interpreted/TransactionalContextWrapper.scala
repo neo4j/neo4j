@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.graphdb.Entity
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.SchemaRead
@@ -77,4 +79,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
   }
 
   override def rollback(): Unit = tc.rollback()
+
+  val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 }

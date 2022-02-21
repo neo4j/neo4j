@@ -14,19 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.phases
+package org.neo4j.cypher.internal.util
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
-import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.CypherExceptionFactory
-import org.neo4j.cypher.internal.util.InternalNotificationLogger
+/**
+ * For use in potentially long-running computations that might need to be cancelled
+ */
+trait CancellationChecker {
+  def throwIfCancelled(): Unit
+}
 
-trait BaseContext {
-  def tracer: CompilationPhaseTracer
-  def notificationLogger: InternalNotificationLogger
-  def cypherExceptionFactory: CypherExceptionFactory
-  def monitors: Monitors
-  def errorHandler: Seq[SemanticErrorDef] => Unit
+object CancellationChecker {
 
-  def cancellationChecker: CancellationChecker
+  /**
+   * A CancellationChecker that never throws
+   */
+  object NeverCancelled extends CancellationChecker {
+    override def throwIfCancelled(): Unit = ()
+  }
+
 }

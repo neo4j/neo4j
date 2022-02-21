@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.Rewriter
@@ -141,4 +142,6 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
   override def cypherExceptionFactory: CypherExceptionFactory = ???
 
   override def errorHandler: Seq[SemanticErrorDef] => Unit = ???
+
+  override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 }
