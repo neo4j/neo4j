@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACI
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.planner.spi.PlanContext
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -56,9 +57,10 @@ object ContextHelper extends MockitoSugar {
              clock: Clock = Clock.systemUTC(),
              logicalPlanIdGen: IdGen = new SequentialIdGen(),
              params: MapValue = MapValue.EMPTY,
-             executionModel: ExecutionModel = ExecutionModel.default
+             executionModel: ExecutionModel = ExecutionModel.default,
+             cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
             ): PlannerContext = {
     new PlannerContext(cypherExceptionFactory, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, params, executionModel, cancellationChecker)
   }
 }
