@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util.helpers
 
+import org.neo4j.cypher.internal.util.CancellationChecker
+
 import scala.annotation.tailrec
 
 object fixedPoint {
@@ -29,5 +31,17 @@ object fixedPoint {
       t
     else
       inner(f, t)
+  }
+
+  def apply[A](cancellation: CancellationChecker)(f: A => A): A => A = innerWithCancel(f, _, cancellation)
+
+  @tailrec
+  private def innerWithCancel[A](f: A => A, that: A, cancellation: CancellationChecker): A = {
+    cancellation.throwIfCancelled()
+    val t = f(that)
+    if (t == that)
+      t
+    else
+      innerWithCancel(f, t, cancellation)
   }
 }
