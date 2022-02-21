@@ -36,14 +36,18 @@ public class RecentQueryBuffer
 
     private static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance( RecentQueryBuffer.class ) +
                                              HeapEstimator.shallowSizeOfInstance( Consumer.class );
+    private final int bufferSize;
 
     public RecentQueryBuffer( int maxRecentQueryCount, MemoryTracker memoryTracker )
     {
         this.memoryTracker = memoryTracker;
         // Round down to the nearest power of 2
-        int queryBufferSize = Integer.highestOneBit( maxRecentQueryCount );
-        queries = new RingRecentBuffer<>( queryBufferSize, discarded -> memoryTracker.releaseHeap( discarded.estimatedHeap ) );
-        memoryTracker.allocateHeap( queries.estimatedHeapUsage() + SHALLOW_SIZE );
+        bufferSize = Integer.highestOneBit( maxRecentQueryCount );
+        queries = new RingRecentBuffer<>( bufferSize, discarded -> memoryTracker.releaseHeap( discarded.estimatedHeap ) );
+        if ( bufferSize > 0 )
+        {
+            memoryTracker.allocateHeap( queries.estimatedHeapUsage() + SHALLOW_SIZE );
+        }
     }
 
     public long numSilentQueryDrops()
@@ -58,7 +62,10 @@ public class RecentQueryBuffer
     {
         Preconditions.checkArgument( query.databaseId != null,
                                      "Only queries targeting a specific database are expected in the recent query buffer." );
-
+        if ( bufferSize == 0 )
+        {
+            return;
+        }
         memoryTracker.allocateHeap( query.estimatedHeap );
         queries.produce( query );
     }
