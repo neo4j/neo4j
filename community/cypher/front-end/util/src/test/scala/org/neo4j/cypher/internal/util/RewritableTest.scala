@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.util.RewritableTest.Exp
 import org.neo4j.cypher.internal.util.RewritableTest.ExpList
 import org.neo4j.cypher.internal.util.RewritableTest.Options
 import org.neo4j.cypher.internal.util.RewritableTest.Pos
+import org.neo4j.cypher.internal.util.RewritableTest.Sum
 import org.neo4j.cypher.internal.util.RewritableTest.Val
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -341,5 +342,76 @@ class RewritableTest extends CypherFunSuite {
     }))
 
     rewritten should be theSameInstanceAs thing
+  }
+
+
+  class TestCancellationChecker extends CancellationChecker {
+    var cancelNext = false
+    val message = "my exception"
+    override def throwIfCancelled(): Unit = if (cancelNext) throw new RuntimeException(message)
+  }
+
+  test(s"topDown should support cancellation") {
+    val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
+
+    val cancellation = new TestCancellationChecker
+
+    val rewriter = Rewriter.lift({
+      case Val(2) =>
+        cancellation.cancelNext = true
+        Val(99)
+    })
+
+    val e = the[RuntimeException].thrownBy(ast.rewrite(topDown(rewriter, cancellation = cancellation)))
+
+    assert(e.getMessage === cancellation.message)
+  }
+
+  test(s"topDownWithParent should support cancellation") {
+    val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
+
+    val cancellation = new TestCancellationChecker
+
+    val rewriter = RewriterWithParent.lift({
+      case (Val(2), _) =>
+        cancellation.cancelNext = true
+        Val(99)
+    })
+
+    val e = the[RuntimeException].thrownBy(ast.rewrite(topDownWithParent(rewriter, cancellation = cancellation)))
+
+    assert(e.getMessage === cancellation.message)
+  }
+
+  test(s"bottomUp should support cancellation") {
+    val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
+
+    val cancellation = new TestCancellationChecker
+
+    val rewriter = Rewriter.lift({
+      case Val(2) =>
+        cancellation.cancelNext = true
+        Val(99)
+    })
+
+    val e = the[RuntimeException].thrownBy(ast.rewrite(bottomUp(rewriter, cancellation = cancellation)))
+
+    assert(e.getMessage === cancellation.message)
+  }
+
+  test(s"bottomUpWithRecorder should support cancellation") {
+    val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
+
+    val cancellation = new TestCancellationChecker
+
+    val rewriter = Rewriter.lift({
+      case Val(2) =>
+        cancellation.cancelNext = true
+        Val(99)
+    })
+
+    val e = the[RuntimeException].thrownBy(ast.rewrite(bottomUpWithRecorder(rewriter, cancellation = cancellation)))
+
+    assert(e.getMessage === cancellation.message)
   }
 }
