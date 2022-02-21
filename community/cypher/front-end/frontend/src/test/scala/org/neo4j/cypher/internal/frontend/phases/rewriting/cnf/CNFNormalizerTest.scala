@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
@@ -252,4 +253,6 @@ class TestContext(override val monitors: Monitors) extends BaseContext {
   override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
 
   override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
+
+  override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 }

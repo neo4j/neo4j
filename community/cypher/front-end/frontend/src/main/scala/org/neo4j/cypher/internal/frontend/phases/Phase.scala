@@ -30,13 +30,15 @@ trait Phase[-C <: BaseContext, FROM, +TO] extends Transformer[C, FROM, TO] {
 
   def phase: CompilationPhase
 
-  override def transform(from: FROM, context: C): TO =
+  override def transform(from: FROM, context: C): TO = {
+    context.cancellationChecker.throwIfCancelled()
     closing(context.tracer.beginPhase(phase)) {
       val result = process(from, context)
       // Checking conditions inside assert so they are not run in production
       checkOnlyWhenAssertionsAreEnabled(checkConditions(result, postConditions))
       result
     }
+  }
 
   def process(from: FROM, context: C): TO
 

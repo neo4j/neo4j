@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
@@ -41,6 +42,8 @@ class ErrorCollectingContext extends BaseContext {
     errors = errs
 
   override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
+
+  override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
 }
 
 object ErrorCollectingContext {

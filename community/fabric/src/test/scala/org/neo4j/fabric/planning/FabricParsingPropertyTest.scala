@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
@@ -109,6 +110,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
           // Ignore semantic errors
           override def errorHandler: Seq[SemanticErrorDef] => Unit = _ => ()
           override val errorMessageProvider: ErrorMessageProvider = MessageUtilProvider
+          override def cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled
         }
 
         try {
