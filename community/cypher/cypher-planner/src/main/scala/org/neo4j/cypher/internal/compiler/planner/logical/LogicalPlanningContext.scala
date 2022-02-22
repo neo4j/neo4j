@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
@@ -58,7 +59,9 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   innerVariableNamer: InnerVariableNamer,
                                   indexCompatiblePredicatesProviderContext: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default,
                                   idGen: IdGen,
-                                  executionModel: ExecutionModel) {
+                                  executionModel: ExecutionModel,
+                                  cancellationChecker: CancellationChecker,
+                                 ) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
 

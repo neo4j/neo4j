@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler
 
 import java.time.Clock
-
 import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -51,5 +51,6 @@ trait ContextCreator[Context <: BaseContext] {
              logicalPlanIdGen: IdGen,
              evaluator: ExpressionEvaluator,
              innerVariableNamer: InnerVariableNamer,
-             params: MapValue ): Context
+             params: MapValue,
+             cancellationChecker: CancellationChecker): Context
 }

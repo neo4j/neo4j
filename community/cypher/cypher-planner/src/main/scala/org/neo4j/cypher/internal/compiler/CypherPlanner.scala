@@ -96,7 +96,8 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                                          logicalPlanIdGen = null,
                                          evaluator = null,
                                          innerVariableNamer = innerVariableNamer,
-                                         params )
+                                         params,
+                                         cancellationChecker)
     CompilationPhases.parsing(ParsingConfig(
       sequencer,
       context.innerVariableNamer,

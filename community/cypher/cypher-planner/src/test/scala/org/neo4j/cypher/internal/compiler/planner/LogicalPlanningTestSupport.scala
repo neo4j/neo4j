@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
@@ -224,7 +225,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      cancellationChecker = CancellationChecker.NeverCancelled,
+    )
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -244,7 +247,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes = planningAttributes,
       innerVariableNamer = innerVariableNamer,
       idGen = idGen,
-      executionModel = ExecutionModel.default)
+      executionModel = ExecutionModel.default,
+      cancellationChecker = CancellationChecker.NeverCancelled,
+    )
   }
 
   def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]

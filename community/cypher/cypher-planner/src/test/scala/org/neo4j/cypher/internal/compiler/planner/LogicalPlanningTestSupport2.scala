@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.rewriting.ValidatingRewriterStepSequencer
 import org.neo4j.cypher.internal.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -312,7 +313,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
-        executionModel = ExecutionModel.default
+        executionModel = ExecutionModel.default,
+        cancellationChecker = CancellationChecker.NeverCancelled,
       )
       f(config, ctx)
     }
@@ -334,7 +336,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         planningAttributes = planningAttributes,
         innerVariableNamer = innerVariableNamer,
         idGen = idGen,
-        executionModel = ExecutionModel.default
+        executionModel = ExecutionModel.default,
+        cancellationChecker = CancellationChecker.NeverCancelled,
       )
       f(config, ctx)
     }

@@ -61,7 +61,7 @@ class PlannerContext(val cypherExceptionFactory: CypherExceptionFactory,
                      val innerVariableNamer: InnerVariableNamer,
                      val params: MapValue,
                      val executionModel: ExecutionModel,
-                     cancellationChecker: CancellationChecker) extends BaseContext {
+                     val cancellationChecker: CancellationChecker) extends BaseContext {
 
   override val errorHandler: Seq[SemanticErrorDef] => Unit =
     SyntaxExceptionCreator.throwOnError(cypherExceptionFactory)

@@ -82,7 +82,8 @@ case object QueryPlanner
       planningAttributes = planningAttributes,
       innerVariableNamer = context.innerVariableNamer,
       idGen = context.logicalPlanIdGen,
-      executionModel = context.executionModel
+      executionModel = context.executionModel,
+      cancellationChecker = context.cancellationChecker,
     )
 
     // Not using from.returnColumns, since they are the original ones given by the user,
