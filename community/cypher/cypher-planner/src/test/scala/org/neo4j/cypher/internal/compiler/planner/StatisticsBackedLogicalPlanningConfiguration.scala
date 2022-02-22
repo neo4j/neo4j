@@ -646,6 +646,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         rangeIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
       }
 
+      override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean = {
+        pointIndexGetForLabelAndProperties(labelName, propertyKeys).nonEmpty
+      }
+
       override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
         btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
@@ -656,6 +660,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
 
       override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
         rangeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
+      }
+
+      override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean = {
+        pointIndexGetForRelTypeAndProperties(relTypeName, propertyKeys).nonEmpty
       }
 
       override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
@@ -673,6 +681,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
       }
 
+      override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Node(labelName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.POINT)
+      }
+
       override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.BTREE)
@@ -686,6 +699,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private(
       override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
         val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
         indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.RANGE)
+      }
+
+      override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+        val entityType = IndexDefinition.EntityType.Relationship(relTypeName)
+        indexGetForEntityTypePropertiesAndIndexType(entityType, propertyKeys, graphdb.schema.IndexType.POINT)
       }
 
       private def indexGetForEntityTypePropertiesAndIndexType(entityType: IndexDefinition.EntityType,

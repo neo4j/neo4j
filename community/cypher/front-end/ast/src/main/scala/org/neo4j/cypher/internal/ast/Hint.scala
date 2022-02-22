@@ -64,6 +64,7 @@ case object UsingAnyIndexType extends UsingIndexHintType
 case object UsingBtreeIndexType extends UsingIndexHintType
 case object UsingRangeIndexType extends UsingIndexHintType
 case object UsingTextIndexType extends UsingIndexHintType
+case object UsingPointIndexType extends UsingIndexHintType
 
 case class UsingIndexHint(
                            variable: Variable,

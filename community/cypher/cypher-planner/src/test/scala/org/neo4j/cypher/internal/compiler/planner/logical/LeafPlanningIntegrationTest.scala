@@ -28,9 +28,14 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -693,6 +698,29 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
          |RETURN a""".stripMargin
   }
 
+  private object nodePointIndexHints {
+    val pointQueryExpression = Some(SingleQueryExpression(
+      FunctionInvocation(
+        FunctionName("point")(pos),
+        MapExpression(Seq(
+          PropertyKeyName("x")(pos) -> DecimalDoubleLiteral("22.0")(pos),
+          PropertyKeyName("y")(pos) -> DecimalDoubleLiteral("44.0")(pos),
+        ))(pos)
+      )(pos)
+    ))
+
+    def nodeQuery(hint: String): String =
+      s"""MATCH (a:A)-[r:R]->(b:B) $hint
+         |WHERE b.prop = point({x:22.0, y:44.0})
+         |RETURN a""".stripMargin
+
+
+    def relQuery(hint:String): String =
+      s"""MATCH (a)-[r:R]->(b) $hint
+         |WHERE r.prop = point({x:22.0, y:44.0})
+         |RETURN a""".stripMargin
+  }
+
   test("should not plan node index for this query without hints") {
 
     val planner = nodeIndexHints.config
@@ -761,6 +789,27 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .filter("a:A")
           .expandAll("(b)<-[r:R]-(a)")
           .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.RANGE)
+          .build()
+      )
+  }
+
+  test("should plan point node index when index hint has point type") {
+
+    val planner = nodeIndexHints.config
+      .enablePlanningPointIndexes()
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.POINT)
+      .build()
+
+    planner.plan(nodePointIndexHints.nodeQuery("USING POINT INDEX b:B(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .filter("a:A")
+          .expandAll("(b)<-[r:R]-(a)")
+          .nodeIndexOperator("b:B(prop)", indexType = IndexType.POINT,
+            customQueryExpression = nodePointIndexHints.pointQueryExpression
+          )
           .build()
       )
   }
@@ -912,6 +961,25 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planner.planBuilder()
           .produceResults("a")
           .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.RANGE)
+          .build()
+      )
+  }
+
+  test("should plan point relationship index when index hint has point type") {
+
+    val planner = relIndexHints.config
+      .enablePlanningPointIndexes()
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.POINT)
+      .build()
+
+    planner.plan(nodePointIndexHints.relQuery("USING POINT INDEX r:R(prop)"))
+      .shouldEqual(
+        planner.planBuilder()
+          .produceResults("a")
+          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.POINT,
+          customQueryExpression = nodePointIndexHints.pointQueryExpression
+        )
           .build()
       )
   }

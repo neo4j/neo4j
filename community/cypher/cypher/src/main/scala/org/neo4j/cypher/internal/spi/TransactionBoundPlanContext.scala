@@ -206,6 +206,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexGetForLabelAndProperties(schema.IndexType.RANGE, labelName, propertyKeys)
   }
 
+  override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    indexGetForLabelAndProperties(schema.IndexType.POINT, labelName, propertyKeys)
+  }
+
   override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     indexGetForRelTypeAndProperties(schema.IndexType.BTREE, relTypeName, propertyKeys)
   }
@@ -216,6 +220,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     indexGetForRelTypeAndProperties(schema.IndexType.RANGE, relTypeName, propertyKeys)
+  }
+
+  override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
+    indexGetForRelTypeAndProperties(schema.IndexType.POINT, relTypeName, propertyKeys)
   }
 
   private def indexGetForLabelAndProperties(indexType: schema.IndexType, labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
@@ -247,6 +255,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     rangeIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
 
+  override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
+    pointIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
+  }
+
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
     btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
@@ -257,6 +269,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
     rangeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
+  }
+
+  override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
+    pointIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
   private def getOnlineIndex(reference: schema.IndexDescriptor): Option[IndexDescriptor] = {

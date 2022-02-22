@@ -84,6 +84,15 @@ public interface NotificationDetail
             return createNotificationDetail( "index", indexFormatString, true );
         }
 
+        public static NotificationDetail nodePointIndex( final String variableName, final String labelName, final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             labelName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.NODE,
+                                                                             IndexHintIndexType.POINT );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
         public static NotificationDetail relationshipAnyIndex( final String variableName, final String relationshipTypeName, final String... propertyKeyNames )
         {
             String indexFormatString = IndexHintException.indexFormatString( variableName,
@@ -123,6 +132,17 @@ public interface NotificationDetail
                                                                              Arrays.asList( propertyKeyNames ),
                                                                              EntityType.RELATIONSHIP,
                                                                              IndexHintIndexType.RANGE );
+            return createNotificationDetail( "index", indexFormatString, true );
+        }
+
+        public static NotificationDetail relationshipPointIndex( final String variableName, final String relationshipTypeName,
+                                                                 final String... propertyKeyNames )
+        {
+            String indexFormatString = IndexHintException.indexFormatString( variableName,
+                                                                             relationshipTypeName,
+                                                                             Arrays.asList( propertyKeyNames ),
+                                                                             EntityType.RELATIONSHIP,
+                                                                             IndexHintIndexType.POINT );
             return createNotificationDetail( "index", indexFormatString, true );
         }
 

@@ -67,6 +67,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.rangeIndexGetForLabelAndProperties(labelName, propertyKeys))
 
+  override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.pointIndexGetForLabelAndProperties(labelName, propertyKeys))
+
   override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
@@ -75,6 +78,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
     translateException(tokenNameLookup, inner.rangeIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
+
+  override def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(tokenNameLookup, inner.pointIndexGetForRelTypeAndProperties(relTypeName, propertyKeys))
 
   override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.btreeIndexExistsForLabelAndProperties(labelName, propertyKey))
@@ -85,6 +91,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.rangeIndexExistsForLabelAndProperties(labelName, propertyKey))
 
+  override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.pointIndexExistsForLabelAndProperties(labelName, propertyKey))
+
   override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyKey))
 
@@ -93,6 +102,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean =
     translateException(tokenNameLookup, inner.rangeIndexExistsForRelTypeAndProperties(relTypeName, propertyKeys))
+
+  override def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean =
+    translateException(tokenNameLookup, inner.pointIndexExistsForRelTypeAndProperties(relTypeName, propertyKeys))
 
   override def statistics: InstrumentedGraphStatistics =
     translateException(tokenNameLookup, inner.statistics)

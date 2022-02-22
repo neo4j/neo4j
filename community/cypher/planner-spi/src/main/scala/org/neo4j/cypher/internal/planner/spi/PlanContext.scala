@@ -100,6 +100,10 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    */
   def rangeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
+  /**
+   * Gets a POINT index if it exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
    * Gets a BTREE index if it exists for a given relationship type and properties, without taking any schema locks.
@@ -117,6 +121,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def rangeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
+   * Gets a POINT index if it exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
+
+  /**
    * Checks if a BTREE index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
@@ -132,6 +141,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def rangeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
 
   /**
+   * Checks if a POINT index exists (general or unique) for a given label and properties, without taking any schema locks.
+   */
+  def pointIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
    * Checks if a BTREE exists for a given relationship type and properties, without taking any schema locks.
    */
   def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
@@ -145,6 +159,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Checks if a RANGE index exists for a given relationship type and properties, without taking any schema locks.
    */
   def rangeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
+
+  /**
+   * Checks if a POINT index exists for a given relationship type and properties, without taking any schema locks.
+   */
+  def pointIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 
   /**
    * Checks if it is possible to lookup nodes by their labels (either through the scan store or a lookup index). Does not take any schema locks.

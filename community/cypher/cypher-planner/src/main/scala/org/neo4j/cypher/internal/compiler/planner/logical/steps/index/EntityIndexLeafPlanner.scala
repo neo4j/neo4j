@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -288,6 +289,7 @@ trait PredicateSet {
     case (UsingBtreeIndexType, IndexType.Btree) => true
     case (UsingTextIndexType, IndexType.Text)   => true
     case (UsingRangeIndexType, IndexType.Range) => true
+    case (UsingPointIndexType, IndexType.Point) => true
     case _                                      => false
   }
 
