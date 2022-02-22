@@ -97,6 +97,7 @@ case object QueryPlanner
       executionModel = context.executionModel,
       debugOptions = context.debugOptions,
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+      cancellationChecker = context.cancellationChecker,
       planningTextIndexesEnabled = context.config.planningTextIndexesEnabled,
       planningRangeIndexesEnabled = context.config.planningRangeIndexesEnabled,
       planningPointIndexesEnabled = context.config.planningPointIndexesEnabled,
