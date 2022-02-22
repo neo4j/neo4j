@@ -40,35 +40,38 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
 case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
   case class InValue(lhs: Expression, expr: Expression)
 
-  override def instance(from: BaseState, ignored: BaseContext): Rewriter = bottomUp(Rewriter.lift {
-    case predicate@Ors(booleanExpressions) =>
-      val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
-        case In(_, _: ListLiteral) => true
-        case _ => false
-      }
+  override def instance(from: BaseState, context: BaseContext): Rewriter = bottomUp(
+    rewriter = Rewriter.lift {
+      case predicate@Ors(booleanExpressions) =>
+        val (expressionsToRewrite: Seq[Expression], nonRewritable: Seq[Expression]) = booleanExpressions.partition {
+          case In(_, _: ListLiteral) => true
+          case _                     => false
+        }
 
-      // We regroup the expressions by their left hand side
-      val insByLhs = expressionsToRewrite.flatMap {
-        case In(lhs, rhs: ListLiteral) =>
-          rhs.expressions.map(expr => InValue(lhs, expr))
-      }.groupBy(_.lhs)
+        // We regroup the expressions by their left hand side
+        val insByLhs = expressionsToRewrite.flatMap {
+          case In(lhs, rhs: ListLiteral) =>
+            rhs.expressions.map(expr => InValue(lhs, expr))
+        }.groupBy(_.lhs)
 
-      // Find all IN-expressions with the same left hand side and rebuild the expressions
-      val reorderedInExpressions: Iterable[In] = insByLhs.map {
-        case (lhs, values) =>
-          val pos = lhs.position
-          In(lhs, ListLiteral(values.map(_.expr).toIndexedSeq)(pos))(pos)
-      }
+        // Find all IN-expressions with the same left hand side and rebuild the expressions
+        val reorderedInExpressions: Iterable[In] = insByLhs.map {
+          case (lhs, values) =>
+            val pos = lhs.position
+            In(lhs, ListLiteral(values.map(_.expr).toIndexedSeq)(pos))(pos)
+        }
 
-      // Return the original non-rewritten expressions together with our new ones
-      val allNewExpressions = nonRewritable ++ reorderedInExpressions
-      allNewExpressions match {
-        case head :: Nil if !reorderedInExpressions.isEmpty =>
-          // we only have one element from reorderedInExpressions
-          head
-        case l => Ors(l)(predicate.position)
-      }
-  })
+        // Return the original non-rewritten expressions together with our new ones
+        val allNewExpressions = nonRewritable ++ reorderedInExpressions
+        allNewExpressions match {
+          case head :: Nil if !reorderedInExpressions.isEmpty =>
+            // we only have one element from reorderedInExpressions
+            head
+          case l                                              => Ors(l)(predicate.position)
+        }
+    },
+    cancellation = context.cancellationChecker
+  )
 
   override def preConditions: Set[StepSequencer.Condition] = Set(EqualityRewrittenToIn) ++ PredicatesInCNF
 

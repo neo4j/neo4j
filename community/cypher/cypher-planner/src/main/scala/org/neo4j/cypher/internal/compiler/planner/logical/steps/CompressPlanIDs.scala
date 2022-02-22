@@ -53,26 +53,29 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
     val newAttributes = PlanningAttributes.newAttributes
 
     val newIdGen = new SequentialIdGen()
-    val newPlan = from.logicalPlan.endoRewrite(topDown(Rewriter.lift {
-      case lp: LogicalPlan =>
-        val newLP = lp.copyPlanWithIdGen(newIdGen)
-        oldAttributes.solveds.getOption(lp.id).foreach {
-          newAttributes.solveds.set(newLP.id, _)
-        }
-        oldAttributes.cardinalities.getOption(lp.id).foreach {
-          newAttributes.cardinalities.set(newLP.id, _)
-        }
-        oldAttributes.effectiveCardinalities.getOption(lp.id).foreach {
-          newAttributes.effectiveCardinalities.set(newLP.id, _)
-        }
-        oldAttributes.providedOrders.getOption(lp.id).foreach {
-          newAttributes.providedOrders.set(newLP.id, _)
-        }
-        oldAttributes.leveragedOrders.getOption(lp.id).foreach {
-          newAttributes.leveragedOrders.set(newLP.id, _)
-        }
-        newLP
-    }))
+    val newPlan = from.logicalPlan.endoRewrite(topDown(
+      rewriter = Rewriter.lift {
+        case lp: LogicalPlan =>
+          val newLP = lp.copyPlanWithIdGen(newIdGen)
+          oldAttributes.solveds.getOption(lp.id).foreach {
+            newAttributes.solveds.set(newLP.id, _)
+          }
+          oldAttributes.cardinalities.getOption(lp.id).foreach {
+            newAttributes.cardinalities.set(newLP.id, _)
+          }
+          oldAttributes.effectiveCardinalities.getOption(lp.id).foreach {
+            newAttributes.effectiveCardinalities.set(newLP.id, _)
+          }
+          oldAttributes.providedOrders.getOption(lp.id).foreach {
+            newAttributes.providedOrders.set(newLP.id, _)
+          }
+          oldAttributes.leveragedOrders.getOption(lp.id).foreach {
+            newAttributes.leveragedOrders.set(newLP.id, _)
+          }
+          newLP
+      },
+      cancellation = context.cancellationChecker
+    ))
 
     from
       .withMaybeLogicalPlan(Some(newPlan))

@@ -55,22 +55,25 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
                         cardinalities: Cardinalities,
                         effectiveCardinalities: EffectiveCardinalities,
                         providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]): Rewriter = fixedPoint(inSequence(
-    fuseSelections,
-    unnestApply(solveds, cardinalities, providedOrders, otherAttributes.withAlso(effectiveCardinalities)),
-    unnestCartesianProduct,
-    cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
-    simplifyPredicates,
-    unnestOptional,
-    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(effectiveCardinalities, providedOrders)),
-    removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
-    pruningVarExpander,
-    useTop,
-    skipInPartialSort,
-    simplifySelections,
-    limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)),
-    combineHasLabels
-  ))
+                        otherAttributes: Attributes[LogicalPlan]): Rewriter =
+    fixedPoint(context.cancellationChecker)(
+      inSequence(context.cancellationChecker)(
+        fuseSelections,
+        unnestApply(solveds, cardinalities, providedOrders, otherAttributes.withAlso(effectiveCardinalities)),
+        unnestCartesianProduct,
+        cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
+        simplifyPredicates,
+        unnestOptional,
+        predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(effectiveCardinalities, providedOrders)),
+        removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
+        pruningVarExpander,
+        useTop,
+        skipInPartialSort,
+        simplifySelections,
+        limitNestedPlanExpressions(cardinalities, otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)),
+        combineHasLabels
+      )
+    )
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
