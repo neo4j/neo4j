@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CoerceTo
@@ -544,6 +545,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def pointDistance(fromPoint: Expression, toPoint: Expression): Expression =
     function(Seq("point"), "distance", fromPoint, toPoint)
+
+  def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos, isAutoAliased = false)

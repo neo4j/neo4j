@@ -48,7 +48,8 @@ case class PlanHead(planPart: MatchPlanner = planMatch,
         // We take all plans solving the MATCH part. This could be two, if we have a required order.
         val plansWithInput: BestResults[LogicalPlan] = matchPlans.map(planUpdatesAndInput(_, headQuery, updatedContext))
 
-        planEventHorizon.planHorizon(headQuery, plansWithInput, None, updatedContext)
+        val plansWithHorizon = planEventHorizon.planHorizon(headQuery, plansWithInput, None, updatedContext)
+        plansWithHorizon.map(context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(_, headQuery, updatedContext))
       }
 
     val contextForTail = updatedContext.withUpdatedLabelInfo(plans.bestResult) // cardinality should be the same for all plans, let's use the first one

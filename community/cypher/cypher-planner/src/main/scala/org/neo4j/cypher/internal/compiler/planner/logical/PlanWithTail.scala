@@ -47,7 +47,8 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
 
   private def planRhs(tailQuery: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val rhsPlan = planPart(tailQuery, context, rhsPart = true).result // always expecting a single plan currently
-    planUpdates(tailQuery, rhsPlan, firstPlannerQuery = false, context)
+    val rhsPlanWithUpdates = planUpdates(tailQuery, rhsPlan, firstPlannerQuery = false, context)
+    context.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(rhsPlanWithUpdates, tailQuery, context)
   }
 
   private def planApply(lhsPlans: BestPlans,

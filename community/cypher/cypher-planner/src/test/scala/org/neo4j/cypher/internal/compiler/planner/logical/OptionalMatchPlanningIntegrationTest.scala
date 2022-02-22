@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -182,10 +180,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should allow MATCH after OPTIONAL MATCH on same node") {
-    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._1 should equal(
-      Selection(Seq(HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos)),
-        Optional(AllNodesScan("a", Set.empty)))
-    )
+    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._1 shouldEqual
+      new LogicalPlanBuilder(wholePlan = false)
+      .filterExpression(assertIsNode("a"), hasLabels("a", "A"))
+      .optional()
+      .allNodeScan("a")
+      .build()
   }
 
   test("should build simple optional expand") {
@@ -472,9 +472,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |USING JOIN ON a
         |RETURN a.name, b.name""".stripMargin
     val tailQuery =
-      s"""MATCH (a:A)
-         |WITH a, 1 AS foo
-         |MATCH (a)
+      s"""MATCH (x:A)
+         |WITH x, 1 AS foo
+         |MATCH (a:A)
          |OPTIONAL MATCH (a)-[r]->(b:B)
          |USING JOIN ON a
          |RETURN a.name, b.name""".stripMargin
@@ -515,6 +515,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.filterExpression(assertIsNode("n1"))
       .|.nodeByLabelScan("anon_1", "L0", IndexOrderNone, "n0", "n1")
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -546,6 +547,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.filterExpression(assertIsNode("n1"))
       .|.nodeIndexOperator("anon_1:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -559,7 +561,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
-      .|.filter("anon_1.prop = 42")
+      .|.filterExpression(propEquality("anon_1", "prop", 42), assertIsNode("n1"))
       .|.nodeIndexOperator("anon_1:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -600,6 +602,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.filterExpression(assertIsNode("n1"))
       .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -614,7 +617,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
-      .|.filter("anon_2.prop = 42")
+      .|.filterExpression(propEquality("anon_2", "prop", 42), assertIsNode("n1"))
       .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -647,7 +650,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filter("n0 = anon_2")
+      .|.filterExpression(equals(varFor("n0"), varFor("anon_2")), assertIsNode("n1"))
       .|.relationshipTypeScan("(anon_2)-[anon_0:REL]-(anon_1)", IndexOrderNone, "n0", "n1")
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -680,7 +683,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filter("n0 = anon_2")
+      .|.filterExpression(equals(varFor("n0"), varFor("anon_2")), assertIsNode("n1"))
       .|.relationshipTypeScan("(anon_2)-[anon_0:REL]->(anon_1)", IndexOrderNone, "n0", "n1")
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -712,6 +715,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(x)")
+      .|.filterExpression(assertIsNode("n1"))
       .|.nodeByIdSeek("x", Set("n0", "n1"), 0)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -742,7 +746,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filter("n0 = anon_1")
+      .|.filterExpression(equals(varFor("n0"), varFor("anon_1")), assertIsNode("n1"))
       .|.undirectedRelationshipByIdSeek("r", "anon_1", "anon_0", Set("n0", "n1"), 0)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -773,7 +777,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filter("n0 = anon_1")
+      .|.filterExpression(equals(varFor("n0"), varFor("anon_1")), assertIsNode("n1"))
       .|.directedRelationshipByIdSeek("r", "anon_0", "anon_1", Set("n0", "n1"), 42)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -781,5 +785,32 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .build()
 
     plan should equal(expected)
+  }
+
+  test("should solve an optional match followed by a regular match on the same variable, label scan in tail") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(30)
+      .setLabelCardinality("L0", 10)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .setRelationshipCardinality("(:L0)-[]->()", 20)
+      .build()
+
+    val query =
+      """
+        |OPTIONAL MATCH (n0)-[r1]->(n1)
+        |MATCH (a:L0)-[r2]->(n1), (n0)
+        |RETURN *
+        |""".stripMargin
+
+    planner.plan(query).stripProduceResults shouldEqual
+      new LogicalPlanBuilder(wholePlan = false)
+        .expandInto("(a)-[r2]->(n1)")
+        .filterExpression(assertIsNode("n0"))
+        .apply()
+        .|.nodeByLabelScan("a", "L0", "n0", "n1", "r1")
+        .optional()
+        .expandAll("(n0)-[r1]->(n1)")
+        .allNodeScan("n0")
+        .build()
   }
 }
