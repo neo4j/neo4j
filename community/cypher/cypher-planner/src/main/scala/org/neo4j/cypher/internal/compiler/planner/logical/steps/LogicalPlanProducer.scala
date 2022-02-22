@@ -1677,6 +1677,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     produceResult
   }
 
+  def addMissingStandaloneArgumentPatternNodes(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(plan.id).asSinglePlannerQuery
+    val missingNodes = query.queryGraph.standaloneArgumentPatternNodes diff solved.queryGraph.patternNodes
+    if (missingNodes.isEmpty) {
+      plan
+    } else {
+      val newSolved = solved.amendQueryGraph(_.addPatternNodes(missingNodes.toSeq: _*))
+      val providedOrder = providedOrders.get(plan.id)
+      annotate(plan.copyPlanWithIdGen(idGen), newSolved, providedOrder, context)
+    }
+  }
+
   /**
    * Updates may make the current provided order invalid since the order may depend on something that gets mutated.
    * If this is the case, this method returns an empty provided order, otherwise it forwards the provided order from the left.

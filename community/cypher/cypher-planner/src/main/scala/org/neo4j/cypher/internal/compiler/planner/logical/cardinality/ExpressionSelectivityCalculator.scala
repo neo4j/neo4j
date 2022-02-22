@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeS
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
@@ -177,6 +178,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE <expr> >= <expr>
     case _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
       DEFAULT_RANGE_SELECTIVITY
+
+    case _: AssertIsNode =>
+      Selectivity.ONE
 
     case _ =>
       DEFAULT_PREDICATE_SELECTIVITY
