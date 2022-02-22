@@ -113,7 +113,7 @@ class ForsetiLockManagerTest
     {
         //Given
         try ( Locks.Client client1 = manager.newClient();
-              Locks.Client client2 = manager.newClient(); )
+              Locks.Client client2 = manager.newClient() )
         {
             client1.initialize( LeaseService.NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, config );
             client2.initialize( LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config );
@@ -199,7 +199,7 @@ class ForsetiLockManagerTest
         try ( Locks.Client client = manager.newClient() )
         {
             client.initialize( LeaseService.NoLeaseClient.INSTANCE, 0, EmptyMemoryTracker.INSTANCE, config );
-            takeAndAssertActiveLocks( client );
+            takeAndAssertActiveLocks( client, false );
         }
     }
 
@@ -239,7 +239,7 @@ class ForsetiLockManagerTest
         {
             client.initialize( LeaseService.NoLeaseClient.INSTANCE, tx.incrementAndGet(), EmptyMemoryTracker.INSTANCE, config );
             start.await();
-            takeAndAssertActiveLocks( client );
+            takeAndAssertActiveLocks( client, true );
         }
         finally
         {
@@ -248,10 +248,11 @@ class ForsetiLockManagerTest
         async.await( 1, TimeUnit.MINUTES );
     }
 
-    private void takeAndAssertActiveLocks( Locks.Client client )
+    private void takeAndAssertActiveLocks( Locks.Client client, boolean allowedToDeadlock )
     {
         Map<Long,Integer> exclusiveLocks = new HashMap<>();
         Map<Long,Integer> sharedLocks = new HashMap<>();
+        int deadlocks = 0;
         for ( int i = 0; i < 10000; i++ )
         {
             boolean takeLock = exclusiveLocks.isEmpty() && sharedLocks.isEmpty() || random.nextBoolean();
@@ -260,8 +261,26 @@ class ForsetiLockManagerTest
                 long id = random.nextLong( 10 );
                 if ( random.nextBoolean() )
                 {
-                    client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
-                    exclusiveLocks.compute( id, ( key, count ) -> count == null ? 1 : count + 1 );
+                    try
+                    {
+                        client.acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, id );
+                        exclusiveLocks.compute( id, ( key, count ) -> count == null ? 1 : count + 1 );
+                    }
+                    catch ( DeadlockDetectedException e )
+                    {
+                        // Never okay if we get here for a single-threaded test
+                        if ( !allowedToDeadlock )
+                        {
+                            throw e;
+                        }
+
+                        // If we are unlucky we can get a deadlock.
+                        // 1. We have taken a shared lock on this id
+                        // 2. One of the race contestants tries to acquire an exclusive lock on this id and is waiting for the shared lock to be released.
+                        // 3. We try to acquire an exclusive lock on this id
+                        // This is expected locking behavior and not of interest in this test, let's ignore it unless we've seen loads of these deadlocks
+                        assertThat( deadlocks++ ).isLessThanOrEqualTo( 100 );
+                    }
                 }
                 else
                 {
