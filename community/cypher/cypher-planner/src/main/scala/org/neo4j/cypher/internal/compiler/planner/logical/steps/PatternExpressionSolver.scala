@@ -264,18 +264,22 @@ object PatternExpressionSolver {
            * c) inside an expression that accessed only part of the list. Otherwise we do too much work. To avoid that we inject a Limit into the
            * NestedPlanExpression.
            */
-          val rewriter = topDown(inner, stopper = {
-            case _: PatternComprehension => false
-            case _: PatternExpression => false
-            // Loops
-            case _: ScopeExpression => true
-            // Conditionals & List accesses
-            case _: CaseExpression => true
-            case _: ContainerIndex => true
-            case _: ListSlice => true
-            case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
-            case _ => false
-          })
+          val rewriter = topDown(
+            rewriter = inner,
+            stopper = {
+              case _: PatternComprehension => false
+              case _: PatternExpression    => false
+              // Loops
+              case _: ScopeExpression => true
+              // Conditionals & List accesses
+              case _: CaseExpression     => true
+              case _: ContainerIndex     => true
+              case _: ListSlice          => true
+              case f: FunctionInvocation => f.function == Exists || f.function == Coalesce || f.function == Head
+              case _                     => false
+            },
+            cancellation = context.cancellationChecker,
+          )
           val rewrittenExpression = currentExpression.endoRewrite(rewriter)
 
           if (rewrittenExpression == currentExpression) {

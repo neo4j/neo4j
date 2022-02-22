@@ -63,16 +63,18 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(ignored: PlannerContext): Rewriter = topDown(Rewriter.lift {
-    case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
-      if validAggregations(aggregations) =>
-      val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
+  override def instance(ignored: PlannerContext): Rewriter = topDown(
+    rewriter = Rewriter.lift {
+      case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
+        if validAggregations(aggregations) =>
+        val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
+        rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
 
-    case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
-      val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
-      rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
-  })
+      case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _), tail, queryInput) =>
+        val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
+        rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput)
+    },
+    cancellation = context.cancellationChecker)
 
   private def rewrite(projectionDeps: Iterable[LogicalVariable], graph: QueryGraph, interestingOrder: InterestingOrder, proj: QueryProjection, tail: Option[SinglePlannerQuery], queryInput: Option[Seq[String]]): RegularSinglePlannerQuery = {
     val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)

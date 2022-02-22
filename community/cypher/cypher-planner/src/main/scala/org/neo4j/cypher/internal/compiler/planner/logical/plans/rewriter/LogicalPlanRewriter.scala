@@ -48,20 +48,23 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
                         solveds: Solveds,
                         cardinalities: Cardinalities,
                         providedOrders: ProvidedOrders,
-                        otherAttributes: Attributes[LogicalPlan]) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
-    unnestCartesianProduct,
-    cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
-    simplifyPredicates,
-    unnestOptional,
-    predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(providedOrders)),
-    removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds, providedOrders)),
-    pruningVarExpander,
-    useTop,
-    simplifySelections,
-    limitNestedPlanExpressions(context.logicalPlanIdGen)
-  ).rewriter)
+                        otherAttributes: Attributes[LogicalPlan]) =
+    fixedPoint(context.cancellationChecker)(
+      rewriterSequencer("LogicalPlanRewriter")(
+        fuseSelections,
+        unnestApply(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
+        unnestCartesianProduct,
+        cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, providedOrders)),
+        simplifyPredicates,
+        unnestOptional,
+        predicateRemovalThroughJoins(solveds, cardinalities, otherAttributes.withAlso(providedOrders)),
+        removeIdenticalPlans(otherAttributes.withAlso(cardinalities, solveds, providedOrders)),
+        pruningVarExpander,
+        useTop,
+        simplifySelections,
+        limitNestedPlanExpressions(context.logicalPlanIdGen)
+      ).rewriter
+    )
 }
 
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
