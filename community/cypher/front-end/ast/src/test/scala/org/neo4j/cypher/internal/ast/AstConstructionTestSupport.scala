@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -469,6 +470,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def length3_5(argument: Expression): Length3_5 =
     Length3_5(argument)(pos)
+
+  def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
 
   implicit class ExpressionOps(expr: Expression) {
     def as(name: String): ReturnItem = AliasedReturnItem(expr, varFor(name))(pos)

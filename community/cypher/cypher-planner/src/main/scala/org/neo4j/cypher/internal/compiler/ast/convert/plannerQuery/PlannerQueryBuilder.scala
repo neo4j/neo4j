@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.inlineRelationshipTypePredicates
 import org.neo4j.cypher.internal.compiler.helpers.ListSupport
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -37,6 +38,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 
 case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable)
@@ -154,11 +156,24 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
         .updateTail(groupInequalities)
     }
 
+    def fixStandaloneArgumentPatternNodes(part: SinglePlannerQuery): SinglePlannerQuery = {
+
+      def addPredicates(qg: QueryGraph): QueryGraph = {
+        val preds = qg.standaloneArgumentPatternNodes.map { n => AssertIsNode(Variable(n)(InputPosition.NONE))(InputPosition.NONE) }
+        qg.addPredicates(preds.toSeq: _*)
+      }
+
+      val newOptionalMatches = part.queryGraph.optionalMatches.map(addPredicates)
+      part
+        .amendQueryGraph(qg => addPredicates(qg).withOptionalMatches(newOptionalMatches))
+        .updateTail(fixStandaloneArgumentPatternNodes)
+    }
+
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
     val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
     val withInlinedTypePredicates = inlineRelationshipTypePredicates(groupedInequalities)
-    withInlinedTypePredicates
+    fixStandaloneArgumentPatternNodes(withInlinedTypePredicates)
   }
 }
 
