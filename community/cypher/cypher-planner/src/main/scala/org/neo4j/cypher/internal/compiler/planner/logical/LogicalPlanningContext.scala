@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
@@ -75,6 +76,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   executionModel: ExecutionModel,
                                   debugOptions: CypherDebugOptions,
                                   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+                                  cancellationChecker: CancellationChecker,
                                   planningTextIndexesEnabled: Boolean = true,
                                  ) {
 

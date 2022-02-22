@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
@@ -248,6 +249,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      cancellationChecker = CancellationChecker.NeverCancelled,
     )
   }
 
@@ -274,6 +276,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       executionModel = ExecutionModel.default,
       debugOptions = CypherDebugOptions.default,
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+      cancellationChecker = CancellationChecker.NeverCancelled,
     )
   }
 
