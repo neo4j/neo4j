@@ -99,6 +99,7 @@ case object QueryPlanner
       debugOptions = context.debugOptions,
       enablePlanningRelationshipIndexes = context.config.enablePlanningRelationshipIndexes,
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+      cancellationChecker = context.cancellationChecker,
     )
   }
 

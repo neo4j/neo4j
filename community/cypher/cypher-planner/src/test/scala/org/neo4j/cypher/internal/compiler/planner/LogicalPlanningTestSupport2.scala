@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -371,6 +372,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         debugOptions = CypherDebugOptions.default,
         enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+        cancellationChecker = CancellationChecker.NeverCancelled,
       )
       f(config, ctx)
     }
@@ -395,6 +397,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         debugOptions = CypherDebugOptions.default,
         enablePlanningRelationshipIndexes = cypherCompilerConfig.enablePlanningRelationshipIndexes,
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
+        cancellationChecker = CancellationChecker.NeverCancelled,
       )
       f(config, ctx)
     }
