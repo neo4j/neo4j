@@ -259,6 +259,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.relTypesById.get(relTypeId).toIterator.flatMap(relType => indexesForRelType(relType, IndexType.Text))
       }
 
+      override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+        config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Point))
+      }
+
+      override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
+        config.relTypesById.get(relTypeId).toIterator.flatMap(relType => indexesForRelType(relType, IndexType.Point))
+      }
+
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = config.indexes.map {
         case (indexDef: IndexDef, indexAttributes: IndexAttributes) => newIndexDescriptor(indexDef, indexAttributes)
       }.toIterator
