@@ -758,7 +758,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Feature flag to enable/disable planning use of point indexes." )
     public static final Setting<Boolean> planning_point_indexes_enabled =
-            newBuilder( "unsupported.cypher.planning_point_indexes_enabled", BOOL, false ).build();
+            newBuilder( "unsupported.cypher.planning_point_indexes_enabled", BOOL, true ).build();
 
     @Internal
     @Description( "Limits the maximum amount of off-heap memory the consistency checker will allocate. The value is given as a factor between 0.1 .. 1 " +
