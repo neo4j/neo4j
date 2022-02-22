@@ -148,7 +148,7 @@ public final class CertificateChainFactory
                                                                                                                      GeneralName.uniformResourceIdentifier,
                                                                                                                      ocspURL + "/" + certName ) ) ) );
         X509Certificate certificate =
-                new JcaX509CertificateConverter().getCertificate( builder.build( new JcaContentSignerBuilder( "SHA1withRSA" )
+                new JcaX509CertificateConverter().getCertificate( builder.build( new JcaContentSignerBuilder( "SHA256withRSA" )
                                                                                          .setProvider( bouncyCastleProvider ).
                         build( issuingPrivateKey == null ? certKeyPair.getPrivate() : issuingPrivateKey ) ) ); // self sign if root cert
 

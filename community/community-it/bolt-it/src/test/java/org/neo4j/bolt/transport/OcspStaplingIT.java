@@ -82,8 +82,6 @@ class OcspStaplingIT
     private static Path rootCertFile;
     private static Path rootKeyFile;
 
-    private static TransportTestUtil util;
-
     @Inject
     private Neo4jWithSocket server;
 
@@ -115,7 +113,7 @@ class OcspStaplingIT
 
         // When
         connection.connect( server.lookupConnector( BoltConnector.NAME ) )
-                  .send( util.defaultAcceptedVersions() );
+                  .send( TransportTestUtil.defaultAcceptedVersions() );
 
         // Then
         Set<X509Certificate> certificatesSeen = connection.getServerCertificatesSeen();
@@ -165,8 +163,6 @@ class OcspStaplingIT
         var bouncyCastleProvider = new BouncyCastleProvider();
         CertificateChainFactory.createCertificateChain( endUserCertFile, endUserKeyFile, intCertFile, intKeyFile,
                                             rootCertFile, rootKeyFile, jettyServerPortNo, bouncyCastleProvider );
-
-        util = new TransportTestUtil();
     }
 
     private static int startOcspMock() throws Exception
