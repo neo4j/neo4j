@@ -20,17 +20,26 @@
 package org.neo4j.dbms.systemgraph;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.logging.Level;
+import org.neo4j.values.storable.DurationValue;
 
+import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.values.storable.DurationValue.duration;
 
 public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsModelTest
 {
@@ -48,9 +57,9 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
         // given
         var fooDb = newDatabase( b -> b.withDatabase( "foo" ) );
         var barDb = newDatabase( b -> b.withDatabase( "bar" ) );
-        createLocalAliasForDatabase( tx, "fooAlias", false, fooDb  );
-        createLocalAliasForDatabase( tx, "fooOtherAlias", false, fooDb  );
-        createLocalAliasForDatabase( tx, "barAlias", false, barDb );
+        createInternalReferenceForDatabase( tx, "fooAlias", false, fooDb  );
+        createInternalReferenceForDatabase( tx, "fooOtherAlias", false, fooDb  );
+        createInternalReferenceForDatabase( tx, "barAlias", false, barDb );
 
         var expected = Set.of(
                 new DatabaseReference.Internal( new NormalizedDatabaseName( "foo" ), fooDb ),
@@ -73,9 +82,9 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
         // given
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        createRemoteAliasForDatabase( tx, "fooAlias", "foo", remoteNeo4j );
-        createRemoteAliasForDatabase( tx, "fooOtherAlias", "foo", remoteNeo4j );
-        createRemoteAliasForDatabase( tx, "barAlias", "bar", remoteNeo4j );
+        createExternalReferenceForDatabase( tx, "fooAlias", "foo", remoteNeo4j );
+        createExternalReferenceForDatabase( tx, "fooOtherAlias", "foo", remoteNeo4j );
+        createExternalReferenceForDatabase( tx, "barAlias", "bar", remoteNeo4j );
 
         var expected = Set.of(
                 new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "fooAlias" ), remoteNeo4j ),
@@ -92,13 +101,12 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
     @Test
     void canReturnAllDatabaseReferences()
     {
-
         // given
         var fooDb = newDatabase( b -> b.withDatabase( "foo" ) );
-        createLocalAliasForDatabase( tx, "fooAlias", false, fooDb  );
+        createInternalReferenceForDatabase( tx, "fooAlias", false, fooDb  );
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        createRemoteAliasForDatabase( tx, "bar", "foo", remoteNeo4j );
+        createExternalReferenceForDatabase( tx, "bar", "foo", remoteNeo4j );
 
         var expected = Set.of(
                 new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "bar" ), remoteNeo4j ),
@@ -110,5 +118,70 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
 
         // then
         assertThat( aliases ).isEqualTo( expected );
+    }
+
+    @Test
+    void shouldReturnEmptyForDriverSettingsIfNoneExist()
+    {
+        // given
+        var aliasName = "fooAlias";
+        var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
+        var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
+        createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j );
+
+        // when
+        var result = dbmsModel.getDriverSettings( aliasName );
+
+        // then
+        assertThat( result ).isEmpty();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "driverSettings" )
+    void canReturnDriverSettingsForExternalDatabaseReference( DriverSettings driverSettings )
+    {
+        // given
+        var aliasName = "fooAlias";
+        var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
+        var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
+        var aliasNode = createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j );
+
+        createDriverSettingsForExternalAlias( tx, aliasNode, driverSettings );
+
+        // when
+        var result = dbmsModel.getDriverSettings( aliasName );
+
+        // then
+        assertThat( result ).isPresent();
+        assertThat( result.get() ).isEqualTo( driverSettings );
+    }
+
+    static Stream<Arguments> driverSettings()
+    {
+        var completeSettings = DriverSettings.builder()
+                                             .withSSlEnabled( true )
+                                             .withConnectionTimeout( duration( ofSeconds( 10 ) ) )
+                                             .withConnectionPoolAcquisitionTimeout( duration( ofSeconds( 1 ) ) )
+                                             .withConnectionMaxLifeTime( duration( ofSeconds( 300 ) ) )
+                                             .withConnectionPoolIdleTest( duration( ofSeconds( 1 ) ) )
+                                             .withConnectionPoolMaxSize( 0 )
+                                             .withLoggingLevel( Level.INFO )
+                                             .build();
+
+        var missingSettings = DriverSettings.builder()
+                                            .withSSlEnabled( false )
+                                            .withLoggingLevel( Level.DEBUG )
+                                            .build();
+
+        var missingOtherSettings = DriverSettings.builder()
+                                                 .withConnectionTimeout( duration( ofSeconds( 10 ) ) )
+                                                 .withConnectionPoolAcquisitionTimeout( duration( ofSeconds( 1 ) ) )
+                                                 .withConnectionMaxLifeTime( duration( ofSeconds( 300 ) ) )
+                                                 .withConnectionPoolIdleTest( duration( ofSeconds( 1 ) ) )
+                                                 .build();
+
+        return Stream.of( Arguments.of( completeSettings ),
+                          Arguments.of( missingSettings ),
+                          Arguments.of( missingOtherSettings ) );
     }
 }

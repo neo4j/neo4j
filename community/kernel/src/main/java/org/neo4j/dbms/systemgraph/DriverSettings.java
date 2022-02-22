@@ -20,8 +20,13 @@
 package org.neo4j.dbms.systemgraph;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 import org.neo4j.logging.Level;
+import org.neo4j.values.storable.DurationValue;
 
 public final class DriverSettings
 {
@@ -42,16 +47,16 @@ public final class DriverSettings
         }
     }
 
-    private final boolean sslEnabled;
+    private final Boolean sslEnabled;
     private final Duration connectionTimeout;
     private final Duration connectionMaxLifetime;
     private final Duration connectionPoolAcquisitionTimeout;
     private final Duration connectionPoolIdleTest;
-    private final int connectionPoolMaxSize;
+    private final Integer connectionPoolMaxSize;
     private final Level loggingLevel;
 
-    DriverSettings( boolean sslEnabled, Duration connectionTimeout, Duration connectionMaxLifetime, Duration connectionPoolAcquisitionTimeout,
-            Duration connectionPoolIdleTest, int connectionPoolMaxSize, Level loggingLevel )
+    private DriverSettings( Boolean sslEnabled, Duration connectionTimeout, Duration connectionMaxLifetime, Duration connectionPoolAcquisitionTimeout,
+            Duration connectionPoolIdleTest, Integer connectionPoolMaxSize, Level loggingLevel )
     {
         this.sslEnabled = sslEnabled;
         this.connectionTimeout = connectionTimeout;
@@ -62,38 +67,148 @@ public final class DriverSettings
         this.loggingLevel = loggingLevel;
     }
 
-    public boolean isSslEnabled()
+    public static Builder builder()
     {
-        return sslEnabled;
+        return new Builder();
     }
 
-    public Duration connectionTimeout()
+    public Optional<Boolean> isSslEnabled()
     {
-        return connectionTimeout;
+        return Optional.ofNullable( sslEnabled );
     }
 
-    public Duration connectionMaxLifetime()
+    public Optional<Duration> connectionTimeout()
     {
-        return connectionMaxLifetime;
+        return Optional.ofNullable( connectionTimeout );
     }
 
-    public Duration connectionPoolAcquisitionTimeout()
+    public Optional<Duration> connectionMaxLifetime()
     {
-        return connectionPoolAcquisitionTimeout;
+        return Optional.ofNullable( connectionMaxLifetime );
     }
 
-    public Duration connectionPoolIdleTest()
+    public Optional<Duration> connectionPoolAcquisitionTimeout()
     {
-        return connectionPoolIdleTest;
+        return Optional.ofNullable( connectionPoolAcquisitionTimeout );
     }
 
-    public int connectionPoolMaxSize()
+    public Optional<Duration> connectionPoolIdleTest()
     {
-        return connectionPoolMaxSize;
+        return Optional.ofNullable( connectionPoolIdleTest );
     }
 
-    public Level loggingLevel()
+    public Optional<Integer> connectionPoolMaxSize()
     {
-        return loggingLevel;
+        return Optional.ofNullable( connectionPoolMaxSize );
+    }
+
+    public Optional<Level> loggingLevel()
+    {
+        return Optional.ofNullable( loggingLevel );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        DriverSettings that = (DriverSettings) o;
+        return Objects.equals( sslEnabled, that.sslEnabled ) && Objects.equals( connectionTimeout, that.connectionTimeout ) &&
+               Objects.equals( connectionMaxLifetime, that.connectionMaxLifetime ) &&
+               Objects.equals( connectionPoolAcquisitionTimeout, that.connectionPoolAcquisitionTimeout ) &&
+               Objects.equals( connectionPoolIdleTest, that.connectionPoolIdleTest ) &&
+               Objects.equals( connectionPoolMaxSize, that.connectionPoolMaxSize ) && loggingLevel == that.loggingLevel;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
+                             connectionPoolMaxSize,
+                             loggingLevel );
+    }
+
+    static class Builder
+    {
+        private Boolean sslEnabled;
+        private Duration connectionTimeout;
+        private Duration connectionMaxLifetime;
+        private Duration connectionPoolAcquisitionTimeout;
+        private Duration connectionPoolIdleTest;
+        private Integer connectionPoolMaxSize;
+        private Level loggingLevel;
+
+        private Builder()
+        {
+        }
+
+        Builder withSSlEnabled( boolean sslEnabled )
+        {
+            this.sslEnabled = sslEnabled;
+            return this;
+        }
+
+        Builder withConnectionTimeout( DurationValue connectionTimeout )
+        {
+            this.connectionTimeout = convertDurationValue( connectionTimeout, Keys.CONNECTION_TIMEOUT.toString() );
+            return this;
+        }
+
+        Builder withConnectionMaxLifeTime( DurationValue connectionMaxLifetime )
+        {
+            this.connectionMaxLifetime = convertDurationValue( connectionMaxLifetime, Keys.CONNECTION_MAX_LIFETIME.toString() );
+            return this;
+        }
+
+        Builder withConnectionPoolAcquisitionTimeout( DurationValue connectionPoolAcquisitionTimeout )
+        {
+            this.connectionPoolAcquisitionTimeout = convertDurationValue( connectionPoolAcquisitionTimeout,
+                                                                          Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT.toString() );
+            return this;
+        }
+
+        Builder withConnectionPoolIdleTest( DurationValue connectionPoolIdleTest )
+        {
+            this.connectionPoolIdleTest = convertDurationValue( connectionPoolIdleTest, Keys.CONNECTION_POOL_IDLE_TEST.toString() );
+            return this;
+        }
+
+        Builder withConnectionPoolMaxSize( int connectionPoolMaxSize )
+        {
+            this.connectionPoolMaxSize = connectionPoolMaxSize;
+            return this;
+        }
+
+        Builder withLoggingLevel( Level loggingLevel )
+        {
+            this.loggingLevel = loggingLevel;
+            return this;
+        }
+
+        DriverSettings build()
+        {
+            return new DriverSettings( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout,
+                                       connectionPoolIdleTest, connectionPoolMaxSize, loggingLevel );
+        }
+
+        private Duration convertDurationValue( DurationValue durationValue, String durationName )
+        {
+            // Need a max value which is guaranteed not to be estimated (i.e. not have months or years in the duration)
+            //  in order to safely convert to java duration.
+            if ( durationValue.compareTo( DurationValue.duration( Duration.ofHours( 24 ) ) ) > 0 )
+            {
+                throw new IllegalStateException( String.format( "Driver setting %s is a duration of %s. " +
+                                                                "This is greater than the max of 24 hours! Please reduce it.",
+                                                                durationName, durationValue.prettyPrint() ) );
+            }
+            var seconds = durationValue.get( ChronoUnit.SECONDS );
+            return Duration.ofSeconds( seconds );
+        }
     }
 }

@@ -21,8 +21,10 @@ package org.neo4j.dbms.systemgraph;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.Level;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.StringValue;
 
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
@@ -278,18 +281,24 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     private static DriverSettings createDriverSettings( Node driverSettingsNode )
     {
-        var sslEnabled = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, SSL_ENABLED.toString(), boolean.class );
-        var connectionTimeout = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_TIMEOUT.toString(), Duration.class );
-        var connectionMaxLifetime = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_MAX_LIFETIME.toString(), Duration.class );
-        var connectionPoolAcquisitionTimeout = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode,
-                                                                  CONNECTION_POOL_ACQUISITION_TIMEOUT.toString(), Duration.class );
-        var connectionPoolIdleTest = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_IDLE_TEST.toString(), Duration.class );
-        var connectionPoolMaxSize = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_MAX_SIZE.toString(), int.class );
-        var loggingLevelString = getPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, LOGGING_LEVEL.toString(), String.class );
-        var loggingLevel = Level.valueOf( loggingLevelString );
+        var builder = DriverSettings.builder();
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, SSL_ENABLED.toString(), Boolean.class )
+                .map( builder::withSSlEnabled );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_TIMEOUT.toString(), DurationValue.class )
+                .map( builder::withConnectionTimeout );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_MAX_LIFETIME.toString(), DurationValue.class )
+                .map( builder::withConnectionMaxLifeTime );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_ACQUISITION_TIMEOUT.toString(), DurationValue.class )
+                .map( builder::withConnectionPoolAcquisitionTimeout );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_IDLE_TEST.toString(), DurationValue.class )
+                .map( builder::withConnectionPoolIdleTest );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_POOL_MAX_SIZE.toString(), Integer.class )
+                .map( builder::withConnectionPoolMaxSize );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, LOGGING_LEVEL.toString(), String.class )
+                .map( Level::valueOf )
+                .map( builder::withLoggingLevel );
 
-        return new DriverSettings( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
-                                   connectionPoolMaxSize, loggingLevel );
+        return builder.build();
     }
 
     private static NamedDatabaseId getDatabaseId( Node databaseNode )
@@ -297,6 +306,31 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
         var name = (String) databaseNode.getProperty( DATABASE_NAME_PROPERTY );
         var uuid = UUID.fromString( (String) databaseNode.getProperty( DATABASE_UUID_PROPERTY ) );
         return DatabaseIdFactory.from( name, uuid );
+    }
+
+    private static <T> Optional<T> getOptionalPropertyOnNode( String labelName, Node node, String key, Class<T> type )
+    {
+        Object value;
+        try
+        {
+            value = node.getProperty( key );
+        }
+        catch ( NotFoundException e )
+        {
+            return Optional.empty();
+        }
+
+        if ( value == null )
+        {
+           return Optional.empty();
+        }
+
+        if ( !type.isInstance( value ) )
+        {
+            throw new IllegalStateException( String.format( "%s has non %s property %s.", labelName, type.getSimpleName(), key ) );
+        }
+
+        return Optional.of( type.cast( value ) );
     }
 
     private static <T> T getPropertyOnNode( String labelName, Node node, String key, Class<T> type )
