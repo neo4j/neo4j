@@ -887,8 +887,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planner.planBuilder()
           .produceResults("a")
           .filter("r.prop STARTS WITH ''")
-          .expandAll("(b)<-[r:R]-(a)")
-          .allNodeScan("b")
+          .expandAll("(a)-[r:R]->(b)")
+          .allNodeScan("a")
           .build()
       )
   }

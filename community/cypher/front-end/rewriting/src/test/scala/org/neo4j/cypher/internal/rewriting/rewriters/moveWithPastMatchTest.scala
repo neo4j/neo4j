@@ -78,7 +78,7 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
   test("moves single WITH past MATCH") {
     assertRewrite(
       "WITH 1 AS foo MATCH (a)-[r1]->(b)-[r2*0..1]->(c) RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WITH 1 AS foo, r1 AS r1, r2 AS r2, a AS a, b AS b, c AS c RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *")
   }
 
   test("moves single WITH past multiple MATCHes") {
@@ -89,7 +89,7 @@ class moveWithPastMatchTest extends CypherFunSuite with RewriteTest  {
   test("moves single WITH past MATCH, WHERE") {
     assertRewrite(
       "WITH 1 AS foo MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE a.prop = 2 RETURN *",
-      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c)  WHERE a.prop = 2 WITH 1 AS foo, r1 AS r1, r2 AS r2, a AS a, b AS b, c AS c RETURN *")
+      "MATCH (a)-[r1]->(b)-[r2*0..1]->(c) WHERE a.prop = 2 WITH 1 AS foo, a AS a, b AS b, r1 AS r1, c AS c, r2 AS r2 RETURN *")
   }
 
   test("moves two WITHs past MATCH") {

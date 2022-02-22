@@ -447,11 +447,15 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin) {
     assert_that(testName).is_rewritten_to(
       """OPTIONAL MATCH (a)-[r:R]->(b)-[r2:R2]->(c)
-        |WHERE a:A AND b:B AND c:C
-        | AND a.prop = 0 AND b.prop = 1 AND c.prop = 2
-        | AND (a)-[`  UNNAMED0`:R3]-(`  UNNAMED1`:D)
-        | AND (b)-[`  UNNAMED4`:R4]-(`  UNNAMED5`:E)
-        | AND (c)-[`  UNNAMED8`:R5]-(`  UNNAMED9`:F)
+        |WHERE a:A
+        | AND (b)-[`  UNNAMED8`:R4]-(`  UNNAMED9`:E)
+        | AND c.prop = 2
+        | AND a.prop = 0
+        | AND (a)-[`  UNNAMED4`:R3]-(`  UNNAMED5`:D)
+        | AND (c)-[`  UNNAMED0`:R5]-(`  UNNAMED1`:F)
+        | AND b.prop = 1
+        | AND c:C
+        | AND b:B
         |RETURN COUNT(DISTINCT a) as countA, COUNT(DISTINCT b) as countB, COUNT(DISTINCT c) as countC""".stripMargin
     )
   }
