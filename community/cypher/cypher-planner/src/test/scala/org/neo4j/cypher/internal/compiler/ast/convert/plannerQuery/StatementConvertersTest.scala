@@ -1096,5 +1096,55 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     optionalMatch.argumentIds should equal(Set("a", "p"))
   }
 
+  test("WITH/WHERE-separated OPTIONAL MATCHes should not be built into the same SinglePlannerQuery") {
+    val query = buildSinglePlannerQuery(
+      """MATCH (a)
+        |OPTIONAL MATCH (a)-[r]-(b)
+        |WITH a, b WHERE a.prop > b.prop // WHERE clauses prevents the building into the same SinglePlannerQuery
+        |OPTIONAL MATCH (a)-[s]-(c)
+        |RETURN a, b, c
+        |""".stripMargin)
+
+    query should equal(RegularSinglePlannerQuery(
+      QueryGraph(
+        patternNodes = Set("a"),
+        optionalMatches = IndexedSeq(
+          QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "b"), patternRelationships = Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength))),
+        )
+      ),
+      horizon = RegularQueryProjection(
+        Map("a" -> varFor("a"), "b" -> varFor("b")),
+        selections = Selections.from(greaterThan(prop("a", "prop"), prop("b", "prop")))
+      ),
+      tail = Some(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set("a", "b"),
+            optionalMatches = IndexedSeq(
+              QueryGraph(argumentIds = Set("a"), patternNodes = Set("a", "c"), patternRelationships = Set(PatternRelationship("s", ("a", "c"), BOTH, Seq.empty, SimplePatternLength))),
+            )
+          ),
+          horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> varFor("b"), "c" -> varFor("c")))
+        )
+      )
+    ))
+  }
+
+  test("should insert an extra predicate when matching on the same standalone node") {
+    val query = buildSinglePlannerQuery(
+      """
+        |MATCH (a)-[r1]->(b)
+        |WITH *, 1 AS ignore
+        |MATCH (a), (b)-[r2]->(c)
+        |RETURN a, b, c
+        |""".stripMargin
+    )
+
+    query.allPlannerQueries.map(q => q.queryGraph.patternNodes -> q.queryGraph.selections) shouldBe Seq(
+      Set("a", "b") -> Selections(),
+      Set("a", "b", "c") ->  Selections.from(assertIsNode("a"))
+    )
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

@@ -138,7 +138,6 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -535,16 +534,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(NodeByIdSeek(n, input, args)(_)))
   }
@@ -552,16 +546,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def directedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(DirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }
@@ -569,16 +558,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def undirectedRelationshipByIdSeek(relationship: String, from: String, to: String, args: Set[String], ids: AnyVal*): IMPL = {
     newRelationship(varFor(relationship))
     val idExpressions = ids.map {
-      case x@(_:Long|_:Int) => UnsignedDecimalIntegerLiteral(x.toString)(pos)
+      case x@(_:Long|_:Int) => SignedDecimalIntegerLiteral(x.toString)(pos)
       case x@(_:Float|_:Double) =>  DecimalDoubleLiteral(x.toString)(pos)
       case x => throw new IllegalArgumentException(s"$x is not a supported value for ID")
     }
-    val input =
-      if (idExpressions.length == 1) {
-        SingleSeekableArg(idExpressions.head)
-      } else {
-        ManySeekableArgs(ListLiteral(idExpressions)(pos))
-      }
+    val input = ManySeekableArgs(ListLiteral(idExpressions)(pos))
 
     appendAtCurrentIndent(LeafOperator(UndirectedRelationshipByIdSeek(relationship, input, from, to, args)(_)))
   }

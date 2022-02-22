@@ -277,4 +277,4 @@ case class HasDegree(node: Expression,
                      degree: Expression
                     )(val position: InputPosition) extends Expression
 
-case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends BooleanExpression
+case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends Expression

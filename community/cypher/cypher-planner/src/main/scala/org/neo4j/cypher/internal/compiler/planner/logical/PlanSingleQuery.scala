@@ -60,7 +60,8 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 
           val projectedPlan = planEventHorizon(in, planWithInput, None, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
-          (projectedPlan, projectedContext)
+          (projectedContext.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(projectedPlan, in, projectedContext),
+            projectedContext)
       }
 
     planWithTail(completePlan, in, ctx.withLastSolvedQueryPart(in))

@@ -38,7 +38,11 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
 
         val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true)
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+        val (planWithUpdates, newContext) =  {
+          val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+          (newContext.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(planWithUpdates, plannerQuery, newContext),
+            newContext)
+        }
 
         val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
 

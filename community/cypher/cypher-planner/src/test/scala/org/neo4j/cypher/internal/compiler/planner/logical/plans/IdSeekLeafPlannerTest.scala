@@ -304,7 +304,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple directed relationship by id seek with a collection of relationship ids, start node already bound") {
     // given
     val rel = varFor("r")
-    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val expr = in(id(rel), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -339,7 +339,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple directed relationship by id seek with a collection of relationship ids, start and end nodes already bound") {
     // given
     val rel = varFor("r")
-    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val expr = in(id(rel), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -375,7 +375,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("self-loop directed relationship by id seek single relationship id, start and end node already bound") {
     // given
     val rel = varFor("r")
-    val expr = equals(id(varFor("r")), literalUnsignedInt(42))
+    val expr = in(id(varFor("r")), listOfInt(42))
     val from = "n"
     val to = from
     val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -414,7 +414,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("self-loop directed relationship by id seek with a collections of relationship ids, start and end node already bound") {
     // given
     val rel = varFor("r")
-    val expr = in(id(rel), listOf(Seq(42, 43, 43).map(literalUnsignedInt):_*))
+    val expr = in(id(rel), listOfInt(42, 43, 43))
     val from = "n"
     val to = from
     val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)

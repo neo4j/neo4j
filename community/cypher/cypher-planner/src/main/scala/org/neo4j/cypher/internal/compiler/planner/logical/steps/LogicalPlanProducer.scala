@@ -82,10 +82,9 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.ir.ordering
-import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -604,11 +603,32 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AssertSameNode(node, left, right), solved, providedOrders.get(left.id).fromLeft, context)
   }
 
-  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext, optionalQG: QueryGraph): LogicalPlan = {
+    val patternNodes =
+      optionalQG
+        .patternNodes
+        .intersect(ids)
+        .toSeq
+
+    val patternRelationships =
+      optionalQG
+        .patternRelationships
+        .filter(rel => ids(rel.name))
+        .toSeq
+
+    val optionalMatchQG =
+      solveds
+        .get(inputPlan.id)
+        .asSinglePlannerQuery
+        .queryGraph
+        .addPatternNodes(patternNodes: _*)
+        .addPatternRelationships(patternRelationships)
+
     val solved = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty
-      .withAddedOptionalMatch(solveds.get(inputPlan.id).asSinglePlannerQuery.queryGraph)
+      .withAddedOptionalMatch(optionalMatchQG)
       .withArgumentIds(ids)
     )
+
     annotate(Optional(inputPlan, ids), solved, providedOrders.get(inputPlan.id).fromLeft, context)
   }
 
@@ -1261,6 +1281,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
 
     produceResult
+  }
+
+  def addMissingStandaloneArgumentPatternNodes(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(plan.id).asSinglePlannerQuery
+    val missingNodes = query.queryGraph.standaloneArgumentPatternNodes diff solved.queryGraph.patternNodes
+    if (missingNodes.isEmpty) {
+      plan
+    } else {
+      val newSolved = solved.amendQueryGraph(_.addPatternNodes(missingNodes.toSeq: _*))
+      val providedOrder = providedOrders.get(plan.id)
+      annotate(plan.copyPlanWithIdGen(idGen), newSolved, providedOrder, context)
+    }
   }
 
   /**

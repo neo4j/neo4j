@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -88,6 +89,7 @@ object PredicateHelper {
       case _:ExistsSubClause => true
       case _:CoerceToPredicate => true
       case _: HasDegreeGreaterThan | _: HasDegreeGreaterThanOrEqual | _: HasDegree | _: HasDegreeLessThan | _: HasDegreeLessThanOrEqual => true
+      case _: AssertIsNode => true
       case _ => false
     }
   }

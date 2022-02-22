@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
+import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.HasLabels
-import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -53,7 +55,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 import org.scalatest.Inside
 
-class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with Inside {
+class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with Inside with LogicalPlanningIntegrationTestSupport {
 
   test("should build plans containing left outer joins") {
     (new given {
@@ -168,10 +170,12 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should allow MATCH after OPTIONAL MATCH on same node") {
-    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._2 should equal(
-      Selection(Seq(HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos)),
-        Optional(AllNodesScan("a", Set.empty)))
-    )
+    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._2 shouldEqual
+      new LogicalPlanBuilder(wholePlan = false)
+      .filterExpression(assertIsNode("a"), hasLabels("a", "A"))
+      .optional()
+      .allNodeScan("a")
+      .build()
   }
 
   test("should build simple optional expand") {
@@ -396,9 +400,191 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       case Aggregation(Apply(_, rhs), _, _) =>
         rhs.leaves.foreach( leaf => leaf shouldBe an [Argument])
     }
+  }
 
+  test("should produce a valid plan for optional match with solved arguments passed to node by label scan") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100000.0
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |OPTIONAL MATCH (n0)-[r]-(x:L0), (n1) USING SCAN x:L0
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1")
+      .|.expandInto("(n0)-[r]-(x)")
+      .|.filterExpression(assertIsNode("n1"))
+      .|.nodeByLabelScan("x", "L0", IndexOrderNone, "n0", "n1")
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to node index scan") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100.0
+      }
+      indexOn("L0", "prop")
+      cost = {
+        case (_: RightOuterHashJoin, _, _) => 999999.9
+        case (_: LeftOuterHashJoin, _, _) => 999999.9
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |WITH n0, n1, 1 AS horizon
+        |OPTIONAL MATCH (n0)-[r]-(x:L0 {prop: 42}), (n1)
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1", "horizon")
+      .|.expandInto("(n0)-[r]-(x)")
+      .|.filterExpression(assertIsNode("n1"))
+      .|.nodeIndexOperator("x:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .projection("1 AS horizon")
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    // due to effective cardinality being zero, filtering on `prop` inside the index operator or separately leads to the same cost – both are valid plans
+    val otherwiseExpected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1", "horizon")
+      .|.expandInto("(n0)-[r]-(x)")
+      .|.filterExpression(propEquality("x", "prop", 42), assertIsNode("n1"))
+      .|.nodeIndexOperator("x:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .projection("1 AS horizon")
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should (equal(expected) or equal(otherwiseExpected))
   }
 
 
+  test("should produce a valid plan for optional match with solved arguments passed to a node by id seek") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100.0
+        cost = {
+          case (_: RightOuterHashJoin, _, _) => 9999999.0
+          case (_: LeftOuterHashJoin, _, _)  => 9999999.0
+        }
+      }
+    }
 
+    val query =
+      """MATCH (n0), (n1)
+        |WITH *, 1 AS horizon
+        |OPTIONAL MATCH (n0)-[r]-(x),(n1)
+        |WHERE id(x) = 0
+        |RETURN n0
+        |LIMIT 0""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n0")
+      .limit(0)
+      .apply()
+      .|.optional("n0", "n1", "horizon")
+      .|.expandInto("(n0)-[r]-(x)")
+      .|.filterExpression(assertIsNode("n1"))
+      .|.nodeByIdSeek("x", Set("n0", "n1"), 0)
+      .projection("1 AS horizon")
+      .cartesianProduct()
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    plan should equal(expected)
+  }
+
+  test("should produce a valid plan for optional match with solved arguments passed to a directed relationship by id seek") {
+    val config = new given {
+      statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
+        override def nodesAllCardinality(): Cardinality = 100.0
+        cost = {
+          case (_: RightOuterHashJoin, _, _) => 9999999.0
+          case (_: LeftOuterHashJoin, _, _)  => 9999999.0
+        }
+      }
+    }
+
+    val query =
+      """MATCH (n0), (n1)
+        |WITH *, 1 AS horizon
+        |OPTIONAL MATCH (n0)<-[r]-(x),(n1)
+        |WHERE id(r) = 42
+        |RETURN n0
+        |""".stripMargin
+
+    val plan = config.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case
+        Apply
+          (Projection(CartesianProduct(_: AllNodesScan, _: AllNodesScan), _),
+          Optional
+            (Selection
+              (Ands(predicates),
+              _: DirectedRelationshipByIdSeek),
+            _)
+          ) if predicates.contains(assertIsNode("n1")) =>
+    }
+  }
+
+  test("should solve an optional match followed by a regular match on the same variable, label scan in tail") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(30)
+      .setLabelCardinality("L0", 10)
+      .setLabelCardinality("Start", 10)
+      .setRelationshipCardinality("()-[]->()", 10000)
+      .setRelationshipCardinality("(:Start)-[]->()", 50)
+      .setRelationshipCardinality("(:L0)-[]->()", 20)
+      .build()
+
+    val query =
+      """
+        |OPTIONAL MATCH (n0:Start)-[r1]->(n1)
+        |MATCH (a:L0)-[r2]->(n1), (n0) USING SCAN a:L0
+        |RETURN *
+        |""".stripMargin
+
+    planner.plan(query).stripProduceResults shouldEqual
+      new LogicalPlanBuilder(wholePlan = false)
+        .expandInto("(a)-[r2]->(n1)")
+        .filterExpression(assertIsNode("n0"))
+        .apply()
+        .|.nodeByLabelScan("a", "L0", "n0", "n1", "r1")
+        .optional()
+        .expandAll("(n0)-[r1]->(n1)")
+        .nodeByLabelScan("n0", "Start")
+        .build()
+  }
 }
