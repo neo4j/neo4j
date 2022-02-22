@@ -142,6 +142,50 @@ class DiagnosticsReportCommandIT
         }
     }
 
+        @Test
+    void shouldBeAbleToAttachToPidAndRunHeapDump() throws IOException
+    {
+        long pid = getPID();
+        assertThat( pid ).isNotEqualTo( 0 );
+
+        // Write config file
+        Files.createFile( testDirectory.file( "neo4j.conf" ) );
+
+        // write neo4j.pid file
+        Path run = testDirectory.directory( "run" );
+        Files.write( run.resolve( "neo4j.pid" ), String.valueOf( pid ).getBytes() );
+
+        // Run command, should detect running instance
+        try
+        {
+            String[] args = {"heap", "--to=" + testDirectory.absolutePath() + "/reports"};
+            Path homeDir = testDirectory.homePath();
+            var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+            DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
+            CommandLine.populateCommand( diagnosticsReportCommand, args );
+            diagnosticsReportCommand.execute();
+        }
+        catch ( CommandFailedException e )
+        {
+            if ( e.getMessage().equals( "Unknown classifier: heap" ) )
+            {
+                return; // If we get attach API is not available for example in some IBM jdk installs, ignore this test
+            }
+            throw e;
+        }
+
+        // Verify that we took a heap dump
+        Path reports = testDirectory.directory( "reports" );
+        Path[] files = FileUtils.listPaths( reports );
+        assertThat( files ).isNotNull();
+        assertThat( files.length ).isEqualTo( 1 );
+
+        try ( FileSystem fs = FileSystems.newFileSystem( files[0], null ) )
+        {
+            assertTrue( Files.exists( fs.getPath( "heapdump.hprof" ) ) );
+        }
+    }
+
     @Test
     void shouldHandleRotatedLogFiles() throws IOException
     {
@@ -189,7 +233,7 @@ class DiagnosticsReportCommandIT
     }
 
     @Test
-    void allHasToBeOnlyClassifier() throws Exception
+    void allHasToBeOnlyClassifier()
     {
         String[] args = {"all", "logs", "tx"};
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
@@ -200,7 +244,7 @@ class DiagnosticsReportCommandIT
     }
 
     @Test
-    void printUnrecognizedClassifiers() throws Exception
+    void printUnrecognizedClassifiers()
     {
         String[] args = {"logs", "tx", "invalid"};
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
