@@ -313,7 +313,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           Acc(precedingWrite, errors)
         }
       case (acc, clause) => Acc(
-        acc.precedingWrite || clause.treeExists { case _: UpdateClause => true },
+        acc.precedingWrite || clause.folder.treeExists { case _: UpdateClause => true },
         acc.errors
       )
     }

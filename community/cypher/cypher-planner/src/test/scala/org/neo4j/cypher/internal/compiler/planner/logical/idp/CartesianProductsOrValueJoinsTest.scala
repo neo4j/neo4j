@@ -158,10 +158,10 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(plans, cfg.qg, interestingOrder, context, kit, considerSelections = false)
 
       // The cost of label scans is n2 < n1 < n0 < n3. Thus, this is the order we expect in the CartesianProducts.
-      result.plan.bestResult.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual Seq("n2", "n1", "n0", "n3")
+      result.plan.bestResult.folder.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual Seq("n2", "n1", "n0", "n3")
 
       // n3 needs to be on left, so that its sort order is kept. The rest should still be sorted by cost.
-      result.plan.bestResultFulfillingReq.get.findAllByClass[NodeLogicalLeafPlan].map(_.idName) shouldEqual Seq("n3", "n2", "n1", "n0")
+      result.plan.bestResultFulfillingReq.get.folder.findAllByClass[NodeLogicalLeafPlan].map(_.idName) shouldEqual Seq("n3", "n2", "n1", "n0")
     }
   }
 

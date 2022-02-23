@@ -88,7 +88,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   }
 
   def doesStartTransactions(query: LogicalQuery): Boolean =
-    query.logicalPlan.treeExists {
+    query.logicalPlan.folder.treeExists {
       case _: TransactionForeach | _: TransactionApply => true // CALL { ... } IN TRANSACTIONS
     } || query.periodicCommitInfo.isDefined // USING PERIODIC COMMIT
 

@@ -45,7 +45,7 @@ case object unnestOptional extends Rewriter {
    * a merge relationship, since it must be able to read its own
    * writes
    */
-  private def isSafe(input: AnyRef) = !input.treeExists {
+  private def isSafe(input: AnyRef) = !input.folder.treeExists {
     case m: Merge if m.createRelationships.nonEmpty => true
   }
 

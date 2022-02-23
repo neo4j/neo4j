@@ -21,6 +21,7 @@ package org.neo4j.codegen.api
 
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
+import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value
@@ -34,7 +35,7 @@ import scala.annotation.tailrec
  *
  * The representation is intended to be quite low level and fairly close to the actual bytecode representation.
  */
-sealed trait IntermediateRepresentation {
+sealed trait IntermediateRepresentation extends Foldable {
   def typeReference: TypeReference
 }
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
@@ -151,7 +152,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       withClue("Did not expect an UndirectedRelationshipIndexSeek to be planned") {
         planner.plan(
           s"""MATCH (a)-[r:REL]-(b) WITH r SKIP 0
-            |MATCH (a2)-[r:REL]-(b2) WHERE $pred RETURN r""".stripMargin).leaves.treeExists {
+            |MATCH (a2)-[r:REL]-(b2) WHERE $pred RETURN r""".stripMargin).leaves.folder.treeExists {
           case _: UndirectedRelationshipIndexSeek => true
         } should be(false)
       }
@@ -177,7 +178,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
   test("should not use index seek by range when rhs of > inequality depends on property") {
     val planner = plannerBuilder().build()
     withClue("Used relationship index when not expected:") {
-      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop > a.prop RETURN count(r) as c").treeExists {
+      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop > a.prop RETURN count(r) as c").folder.treeExists {
         case _: UndirectedRelationshipIndexSeek => true
         case _: DirectedRelationshipIndexSeek => true
       } should be(false)
@@ -187,7 +188,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
   test("should not use index seek by range when rhs of <= inequality depends on property") {
     val planner = plannerBuilder().build()
     withClue("Used relationship index when not expected:") {
-      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop <= a.prop RETURN count(r) as c").treeExists {
+      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop <= a.prop RETURN count(r) as c").folder.treeExists {
         case _: UndirectedRelationshipIndexSeek => true
         case _: DirectedRelationshipIndexSeek => true
       } should be(false)

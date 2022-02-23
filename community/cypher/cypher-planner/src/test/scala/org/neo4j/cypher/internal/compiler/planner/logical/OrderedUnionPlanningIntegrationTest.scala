@@ -93,7 +93,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     withClue(plan) {
-      plan.treeCount {
+      plan.folder.treeCount {
         case _: OrderedDistinct => true
       } should be(0)
     }

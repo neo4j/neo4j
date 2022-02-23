@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.Foldable.Folder
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
 object Foldable {
-
-  type TreeFold[R] = PartialFunction[Any, R => (R, Option[R => R])]
 
   implicit class TreeAny(val that: Any) extends AnyVal {
     def treeChildren: Iterator[AnyRef] = that match {
@@ -71,9 +71,18 @@ object Foldable {
    */
   case class TraverseChildrenNewAccForSiblings[R](accumulatorForChildren: R, forSiblings: R => R) extends FoldingBehavior[R]
 
-  implicit class FoldableAny(val that: Any) extends AnyVal {
+  /**
+   * Any type is foldable
+   */
+  implicit class FoldableAny(val that: Any) extends Foldable
+
+  /**
+   * Exposes the various fold methods
+   */
+  class Folder(that: Any, cancellation: CancellationChecker) {
+
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
-      foldAcc(mutable.ArrayStack(that), init, f.lift)
+      foldAcc(mutable.ArrayStack(that), init, f.lift, cancellation)
 
     /**
      * Fold of a tree structure
@@ -106,7 +115,8 @@ object Foldable {
           }
         }).lift,
         new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
-        reverse = false
+        reverse = false,
+        cancellation,
       )
     }
 
@@ -125,37 +135,38 @@ object Foldable {
           }
         }).lift,
         new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
-        reverse = true
+        reverse = true,
+        cancellation
       )
 
     /*
     Allows searching through object tree and object collections
      */
     def treeExists(f: PartialFunction[Any, Boolean]): Boolean =
-      existsAcc(mutable.ArrayStack(that), f.lift)
+      existsAcc(mutable.ArrayStack(that), f.lift, cancellation)
 
     /*
     Allows searching through object tree and object collections
      */
     def treeFind[A: ClassTag](f: PartialFunction[A, Boolean]): Option[A] =
-      findAcc[A](mutable.ArrayStack(that), f.lift)
+      findAcc[A](mutable.ArrayStack(that), f.lift, cancellation)
 
     /*
     Allows searching through object tree and object collections for a class
      */
     def treeFindByClass[A: ClassTag]: Option[A] =
-      optionFindAcc[A](mutable.ArrayStack(that))
+      optionFindAcc[A](mutable.ArrayStack(that), cancellation)
 
     /*
     Searches in trees, counting how many matches are found
      */
     def treeCount(f: PartialFunction[Any, Boolean]): Int = {
       val lifted = f.lift
-      countAcc(mutable.ArrayStack(that), (a: Any) => lifted(a).map(_ => 1), 0)
+      countAcc(mutable.ArrayStack(that), (a: Any) => lifted(a).map(_ => 1), 0, cancellation)
     }
 
     def treeCountAccumulation(f: PartialFunction[Any, Int]): Int = {
-      countAcc(mutable.ArrayStack(that), f.lift, 0)
+      countAcc(mutable.ArrayStack(that), f.lift, 0, cancellation)
     }
 
     def findAllByClass[A: ClassTag]: Seq[A] = {
@@ -163,6 +174,7 @@ object Foldable {
       val result = mutable.ListBuffer[A]()
 
       while (remaining.nonEmpty) {
+        cancellation.throwIfCancelled()
         val that = remaining.pop()
         that match {
           case x: A => result += x
@@ -176,13 +188,20 @@ object Foldable {
   }
 
   @tailrec
-  private def foldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[R => R]): R =
+  private def foldAcc[R](
+    remaining: mutable.ArrayStack[Any],
+    acc: R,
+    f: Any => Option[R => R],
+    cancellation: CancellationChecker,
+  ): R = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       acc
     } else {
       val that = remaining.pop()
-      foldAcc(remaining ++= that.reverseTreeChildren, f(that).fold(acc)(_(acc)), f)
+      foldAcc(remaining ++= that.reverseTreeChildren, f(that).fold(acc)(_(acc)), f, cancellation)
     }
+  }
 
   @tailrec
   private def treeFoldAcc[R](
@@ -190,35 +209,43 @@ object Foldable {
       acc: R,
       f: Any => Option[R => (R, Option[R => R])],
       continuation: mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)],
-      reverse: Boolean
-  ): R =
+      reverse: Boolean,
+      cancellation: CancellationChecker,
+  ): R = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       if (continuation.isEmpty) {
         acc
       } else {
         val (stack, contAccFunc) = continuation.pop()
-        treeFoldAcc(stack, contAccFunc(acc), f, continuation, reverse)
+        treeFoldAcc(stack, contAccFunc(acc), f, continuation, reverse, cancellation)
       }
     } else {
       val that = remaining.pop()
       f(that) match {
         case None =>
           val children = if (reverse) that.treeChildren else that.reverseTreeChildren
-          treeFoldAcc(remaining ++= children, acc, f, continuation, reverse)
+          treeFoldAcc(remaining ++= children, acc, f, continuation, reverse, cancellation)
         case Some(pf) =>
           pf(acc) match {
             case (newAcc, Some(contAccFunc)) =>
               continuation.push((remaining, contAccFunc))
               val children = if (reverse) that.treeChildren else that.reverseTreeChildren
-              treeFoldAcc(mutable.ArrayStack() ++= children, newAcc, f, continuation, reverse)
+              treeFoldAcc(mutable.ArrayStack() ++= children, newAcc, f, continuation, reverse, cancellation)
             case (newAcc, None) =>
-              treeFoldAcc(remaining, newAcc, f, continuation, reverse)
+              treeFoldAcc(remaining, newAcc, f, continuation, reverse, cancellation)
           }
       }
     }
+  }
 
   @tailrec
-  private def existsAcc(remaining: mutable.ArrayStack[Any], f: Any => Option[Boolean]): Boolean =
+  private def existsAcc(
+    remaining: mutable.ArrayStack[Any],
+    f: Any => Option[Boolean],
+    cancellation: CancellationChecker,
+  ): Boolean = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       false
     } else {
@@ -227,16 +254,19 @@ object Foldable {
         case Some(true) =>
           true
         case _ =>
-          existsAcc(remaining ++= that.reverseTreeChildren, f)
+          existsAcc(remaining ++= that.reverseTreeChildren, f, cancellation)
       }
     }
+  }
 
   @tailrec
   private def countAcc(
-                        remaining: mutable.ArrayStack[Any],
-                        f: Any => Option[Int],
-                        acc: Int
-                      ): Int =
+    remaining: mutable.ArrayStack[Any],
+    f: Any => Option[Int],
+    acc: Int,
+    cancellation: CancellationChecker,
+  ): Int = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       acc
     } else {
@@ -248,47 +278,67 @@ object Foldable {
           acc
       }
 
-      countAcc(remaining ++= that.reverseTreeChildren, f, next)
+      countAcc(remaining ++= that.reverseTreeChildren, f, next, cancellation)
     }
+  }
 
   @tailrec
-  private def findAcc[A: ClassTag](remaining: mutable.ArrayStack[Any]): A =
+  private def findAcc[A: ClassTag](
+    remaining: mutable.ArrayStack[Any],
+    cancellation: CancellationChecker,
+  ): A = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       throw new NoSuchElementException
     } else {
       val that = remaining.pop()
       that match {
         case x: A => x
-        case _ => findAcc(remaining ++= that.reverseTreeChildren)
+        case _ => findAcc(remaining ++= that.reverseTreeChildren, cancellation)
       }
     }
+  }
 
   @tailrec
-  private def optionFindAcc[A: ClassTag](remaining: mutable.ArrayStack[Any]): Option[A] =
+  private def optionFindAcc[A: ClassTag](
+    remaining: mutable.ArrayStack[Any],
+    cancellation: CancellationChecker,
+  ): Option[A] = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       None
     } else {
       val that = remaining.pop()
       that match {
         case x: A => Some(x)
-        case _    => optionFindAcc(remaining ++= that.reverseTreeChildren)
+        case _    => optionFindAcc(remaining ++= that.reverseTreeChildren, cancellation)
       }
     }
+  }
 
   @tailrec
   private def findAcc[A: ClassTag](
       remaining: mutable.ArrayStack[Any],
-      predicate: A => Option[Boolean]
-  ): Option[A] =
+      predicate: A => Option[Boolean],
+      cancellation: CancellationChecker,
+  ): Option[A] = {
+    cancellation.throwIfCancelled()
     if (remaining.isEmpty) {
       None
     } else {
       val that = remaining.pop()
       that match {
         case x: A if predicate(x).isDefined => Some(x)
-        case _ => findAcc(remaining ++= that.reverseTreeChildren, predicate)
+        case _ => findAcc(remaining ++= that.reverseTreeChildren, predicate, cancellation)
       }
     }
+  }
 }
 
-trait Foldable
+trait Foldable {
+  def folder: Folder =
+    new Folder(this, CancellationChecker.NeverCancelled)
+
+  def folder(cancellation: CancellationChecker): Folder =
+    new Folder(this, cancellation)
+}

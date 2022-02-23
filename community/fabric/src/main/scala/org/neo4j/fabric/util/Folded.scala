@@ -37,7 +37,7 @@ object Folded {
   implicit class FoldableOps[T](f: T) {
 
     def folded[R](init: R)(merge: (R, R) => R)(instructions: PartialFunction[Any, Instruction[R]]): R =
-      f.treeFold(init) {
+      f.folder.treeFold(init) {
         case a: Any if instructions.isDefinedAt(a) =>
           (r: R) =>
             instructions(a) match {

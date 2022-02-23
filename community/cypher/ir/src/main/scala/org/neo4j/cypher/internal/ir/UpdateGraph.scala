@@ -47,7 +47,7 @@ trait UpdateGraph {
   def containsMergeRecursive: Boolean = hasMergeNodePatterns || hasMergeRelationshipPatterns ||
     foreachPatterns.exists(_.innerUpdates.allQGsWithLeafInfo.map(_.queryGraph).exists(_.containsMergeRecursive))
 
-  def containsPropertyReadsInUpdates: Boolean = mutatingPatterns.treeExists {
+  def containsPropertyReadsInUpdates: Boolean = mutatingPatterns.folder.treeExists {
     case _:Property => true
     case _:ContainerIndex => true
   }
@@ -354,7 +354,7 @@ trait UpdateGraph {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
     def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments(semanticTable)
       .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet))
-    def overlapWithLabelsFunction = qgWithInfo.treeExists {
+    def overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
     }
 
@@ -371,7 +371,7 @@ trait UpdateGraph {
    * and what is updated with SET and MERGE here
    */
   def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
-    val hasDynamicProperties = qgWithInfo.treeExists {
+    val hasDynamicProperties = qgWithInfo.folder.treeExists {
       case ContainerIndex(_, _: Literal) => false
       case _: ContainerIndex => true
     }
@@ -388,7 +388,7 @@ trait UpdateGraph {
     val (readNodePropKeys, readRelPropKeys, readOtherPropKeys) =
       // Don't do this when comparing against self, to avoid finding overlap for e.g. SET n.prop = n.prop + 1
       if (this != qgWithInfo.queryGraph) {
-        val readProps = qgWithInfo.queryGraph.mutatingPatterns.findAllByClass[Property]
+        val readProps = qgWithInfo.queryGraph.mutatingPatterns.folder.findAllByClass[Property]
         val (readNodeProps, readRelOrOtherProps) = readProps.partition(p => semanticTable.isNodeNoFail(p.map))
         val (readRelProps, readOtherProps) = readRelOrOtherProps.partition(p => semanticTable.isRelationshipNoFail(p.map))
 

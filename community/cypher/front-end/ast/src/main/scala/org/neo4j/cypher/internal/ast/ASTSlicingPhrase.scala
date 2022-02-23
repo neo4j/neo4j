@@ -72,7 +72,7 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
   }
 
   private def doesNotTouchTheGraph(expression: Expression, name: String): SemanticCheck = {
-    val badExpressionFound = expression.treeExists {
+    val badExpressionFound = expression.folder.treeExists {
       case _: PatternComprehension |
            _: PatternExpression |
            _: PathExpression =>

@@ -26,7 +26,7 @@ import org.scalatest.Assertions
 object StatementHelper extends Assertions {
 
   implicit class RichStatement(ast: Statement) {
-    private val allVariables = ast.findAllByClass[Variable]
+    private val allVariables = ast.folder.findAllByClass[Variable]
 
     def semanticState(features: SemanticFeature*): SemanticState =
       ast.semanticCheck(SemanticState.clean.withFeatures(features: _*)) match {

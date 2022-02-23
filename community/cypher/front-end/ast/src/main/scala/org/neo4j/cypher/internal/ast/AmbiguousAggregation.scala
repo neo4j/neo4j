@@ -92,7 +92,7 @@ object AmbiguousAggregation {
   def isDeprecatedExpression(sortOrAggregationExpr: Expression,
                              variablesUsedForGrouping: Seq[LogicalVariable],
                              nonNestedPropertiesUsedForGrouping: Seq[LogicalProperty]): Boolean =
-    sortOrAggregationExpr.treeFold(Expression.TreeAcc[Boolean](false)) {
+    sortOrAggregationExpr.folder.treeFold(Expression.TreeAcc[Boolean](false)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -123,14 +123,14 @@ object AmbiguousAggregation {
    */
   def deprecatedGroupingKeysUsedInAggrExpr(expression: Seq[Expression],
                                            groupingItems: Seq[ReturnItem]): Seq[ReturnItem] = {
-    expression.treeFold(Seq.empty[ReturnItem]) {
+    expression.folder.treeFold(Seq.empty[ReturnItem]) {
       case IsAggregate(_) | _: LogicalVariable | LogicalProperty(LogicalVariable(_), _) =>
         acc => SkipChildren(acc)
       case e: Expression =>
         groupingItems
           .find(_.expression == e)
           // An expression which only contains literals/parameters is not deprecated -> must contain a variable
-          .filter(_.expression.treeExists { case _: LogicalVariable => true })
+          .filter(_.expression.folder.treeExists { case _: LogicalVariable => true })
           .map(deprecatedGroupingKey => (acc: Seq[ReturnItem]) => SkipChildren(acc :+ deprecatedGroupingKey))
           .getOrElse(acc => TraverseChildren(acc))
     }

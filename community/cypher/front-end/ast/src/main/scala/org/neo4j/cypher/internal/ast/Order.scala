@@ -140,7 +140,7 @@ sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def originalExpression: Expression
   def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain
-    SemanticPatternCheck.checkValidPropertyKeyNames(expression.findAllByClass[Property].map(prop => prop.propertyKey), expression.position)
+    SemanticPatternCheck.checkValidPropertyKeyNames(expression.folder.findAllByClass[Property].map(prop => prop.propertyKey), expression.position)
   def stringify(expressionStringifier: ExpressionStringifier): String
   def mapExpression(f: Expression => Expression): SortItem
 }

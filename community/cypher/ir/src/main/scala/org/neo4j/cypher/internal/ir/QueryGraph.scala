@@ -107,8 +107,8 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
    *         is not safe to use for planning pattern expressions and pattern comprehensions.
    */
   lazy val allQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
-    val patternComprehensions = this.findAllByClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
-    val patternExpressions = this.findAllByClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternComprehensions = this.folder.findAllByClass[PatternComprehension].toSet.map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternExpressions = this.folder.findAllByClass[PatternExpression].toSet.map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     val allQgsWithLeafInfo = Seq(this) ++
       patternComprehensions ++
       patternExpressions

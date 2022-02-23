@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.util.Foldable
 
-trait HasMappableExpressions[T] {
+trait HasMappableExpressions[T] extends Foldable {
   self: T =>
 
   def mapExpressions(f: Expression => Expression): T

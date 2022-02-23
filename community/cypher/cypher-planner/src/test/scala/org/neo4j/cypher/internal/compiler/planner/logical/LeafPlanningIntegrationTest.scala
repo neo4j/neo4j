@@ -1264,7 +1264,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .stripProduceResults
 
     withClue("Used relationshipTypeScan when not expected:") {
-      plan.treeExists {
+      plan.folder.treeExists {
         case _: DirectedRelationshipTypeScan => true
         case _: UndirectedRelationshipTypeScan => true
       } should be(false)
@@ -1318,7 +1318,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .stripProduceResults
 
     withClue("Used relationshipTypeScan when not expected:") {
-      plan.treeExists {
+      plan.folder.treeExists {
         case _: DirectedRelationshipTypeScan => true
         case _: UndirectedRelationshipTypeScan => true
       } should be(false)

@@ -150,7 +150,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     // For Volcano the shape of the CP tree is not important.
     // They all have the same cost, as long as the label scans appear in the right order from left to right in the tree.
-    volcanoPlan.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
+    volcanoPlan.folder.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
     // For Batched, a right deep tree is always equally good or better than other tree shapes.
     batchedPlan shouldEqual rightDeepPlan
   }
@@ -301,7 +301,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val plan = cfg.plan("MATCH (a:A)--(b:B), (c:C)--(d:D) WHERE a.prop + b.prop > c.prop AND a.prop + b.prop > d.prop RETURN a, b, c, d")
 
-    val nodeIndexSeeks = plan.treeCount {
+    val nodeIndexSeeks = plan.folder.treeCount {
       case _: NodeIndexSeek => true
     }
 
@@ -324,7 +324,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |WHERE r1.prop > r2.prop
         |RETURN a, b, c, d""".stripMargin)
 
-    val relIndexSeeks = plan.treeCount {
+    val relIndexSeeks = plan.folder.treeCount {
       case _: DirectedRelationshipIndexSeek => true
     }
 
@@ -537,7 +537,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN n
         |""".stripMargin)
 
-    plan.treeFindByClass[OptionalExpand].get.lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
+    plan.folder.treeFindByClass[OptionalExpand].get.lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
   }
 
   test("expensive optional match is solved after components are connected for Volcano") {
@@ -814,7 +814,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN n ORDER BY x.prop
         |""".stripMargin)
 
-    val numSorts = plan.treeCount { case _: Sort => true }
+    val numSorts = plan.folder.treeCount { case _: Sort => true }
     numSorts shouldEqual 1
   }
 
@@ -847,7 +847,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       final case object SortBeforeOptionalMatch extends State
       final case object SortAfterOptionalMatch extends State
 
-      plan.treeFold[State](Init) {
+      plan.folder.treeFold[State](Init) {
         case _: Sort => {
           case BeforeOptionalMatch => TraverseChildren(SortBeforeOptionalMatch)
           case _ => SkipChildren(SortAfterOptionalMatch)
@@ -881,10 +881,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
          |RETURN *
          |""".stripMargin)
 
-    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+    val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
       case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
     }
-    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+    val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
       case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
     }
 
@@ -906,10 +906,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN *
         |""".stripMargin)
 
-    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+    val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
       case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
     }
-    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+    val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
       case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
     }
 

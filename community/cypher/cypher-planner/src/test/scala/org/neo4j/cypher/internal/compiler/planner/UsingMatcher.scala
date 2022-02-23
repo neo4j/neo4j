@@ -38,7 +38,7 @@ trait UsingMatcher {
    */
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
     override def apply(actual: LogicalPlan): MatchResult = {
-      val matches = actual.treeFold(false) {
+      val matches = actual.folder.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => SkipChildren(true)
       }
       MatchResult(

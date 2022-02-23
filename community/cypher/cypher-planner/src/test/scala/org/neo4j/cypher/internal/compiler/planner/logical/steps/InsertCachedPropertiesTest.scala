@@ -957,7 +957,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       override protected[steps] def resortSelectionPredicates(from: LogicalPlanState,
                                                               context: PlannerContext,
                                                               s: Selection): Seq[Expression] = {
-        s.predicate.exprs.sortBy(_.treeCount { case _: Property => true })
+        s.predicate.exprs.sortBy(_.folder.treeCount { case _: Property => true })
       }
     }
 

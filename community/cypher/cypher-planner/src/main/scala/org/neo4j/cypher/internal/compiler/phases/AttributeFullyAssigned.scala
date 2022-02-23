@@ -46,7 +46,7 @@ case class AttributeFullyAssigned[T <: Attribute[LogicalPlan, _]]()(implicit val
         case x => throw new IllegalArgumentException(s"Unknown attribute: $x")
       }
 
-      plan.treeFold(Seq.empty[String]) {
+      plan.folder.treeFold(Seq.empty[String]) {
         case plan: LogicalPlan => acc =>
           if (!attribute.isDefinedAt(plan.id)) {
             val error = s"Attribute ${tag.runtimeClass.getSimpleName} not set for \n${LogicalPlanToPlanBuilderString(plan)}"

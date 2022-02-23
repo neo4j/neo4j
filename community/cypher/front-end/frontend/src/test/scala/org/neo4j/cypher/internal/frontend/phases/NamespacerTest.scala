@@ -183,7 +183,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    val outerScope = statement.treeFold(Set.empty[LogicalVariable]) {
+    val outerScope = statement.folder.treeFold(Set.empty[LogicalVariable]) {
       case expr: ExistsSubClause =>
         acc => TraverseChildren(acc ++ expr.outerScope)
     }
@@ -199,7 +199,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     val query = s"UNWIND [1,2,3] AS ${names(0)} WITH ${names(0)} + 1 AS x MATCH (${names(0)})-[${names(1)}]-(${names(2)}) RETURN 1 AS foo"
     val statement = prepareFrom(query, rewriterPhaseUnderTest).statement()
 
-    statement.findAllByClass[Variable].map(_.name).foreach {
+    statement.folder.findAllByClass[Variable].map(_.name).foreach {
       case "x" | "foo" => // OK
       case v if AnonymousVariableNameGenerator.notNamed(v) => // OK
       case v => fail(s"$v was not an anonymous variable")
