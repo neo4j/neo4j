@@ -19,12 +19,6 @@
  */
 package org.neo4j.cypher.testing.impl.http
 
-import io.circe
-import io.circe.Decoder
-import io.circe.HCursor
-import io.circe.KeyDecoder
-import io.circe.generic.auto.exportDecoder
-import io.circe.parser.decode
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.http.HttpStatementResult.Notification
 import org.neo4j.cypher.testing.impl.http.HttpStatementResult.Result
@@ -36,6 +30,9 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.server.HTTP
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class HttpStatementResult(result: Result, notifications: Seq[Notification]) extends StatementResult {
 
@@ -67,38 +64,13 @@ object HttpStatementResult {
   case class Position(offset: Int, line: Int, column: Int)
   case class Result(columns: Seq[String], data: Seq[Row])
   case class Row(row: Seq[AnyRef])
-  object Row {
 
-    // TODO: implement parsing Jolt here instead
-    private val primitiveDecoder: Decoder[AnyRef] =
-      Seq[Decoder[AnyRef]](
-        Decoder.decodeNone.map(_ => null),
-        Decoder.decodeString.map(v => v),
-        Decoder.decodeJavaBoolean.map(v => v),
-        Decoder.decodeJavaLong.map(v => v),
-        Decoder.decodeJavaDouble.map(v => v),
-      ).reduce(_ or _)
-
-    private val anyDecoder: Decoder[AnyRef] = new Decoder[AnyRef] {
-      override def apply(c: HCursor): Decoder.Result[AnyRef] =
-        Seq[Decoder[AnyRef]](
-          primitiveDecoder,
-          Decoder.decodeSeq(this).map(v => v),
-          Decoder.decodeMap(implicitly[KeyDecoder[String]], this).map(v => v),
-          Decoder.failedWithMessage("Decoding all result types isn't implemented yet"),
-        ).reduce(_ or _)
-          .apply(c)
-    }
-
-    implicit val decoder: Decoder[Row] =
-      Decoder.decodeSeq(anyDecoder).at("row").map(Row.apply)
-  }
 
   def fromResponse(response: HTTP.Response): HttpStatementResult = {
     val content = response.rawContent()
 
-    def failUnableToDecode(e: circe.Error): Nothing =
-      throw new Exception(s"Unable to decode json: $content", e)
+    def failUnableToDecode(exception: Throwable): Nothing =
+      throw new Exception(s"Unable to decode json: $content", exception)
 
     def failNoResults(): Nothing =
       throw new Exception(s"Response contained no results: $content")
@@ -106,9 +78,9 @@ object HttpStatementResult {
     def failMultipleResults(): Nothing =
       throw new Exception(s"Response contained multiple results: $content")
 
-    val (result, notifications) = decode[Response](content) match {
-      case Left(err)       => failUnableToDecode(err)
-      case Right(response) => response match {
+    val (result, notifications) = Try(HttpJson.read[Response](content)) match {
+      case Failure(exception) => failUnableToDecode(exception)
+      case Success(response)  => response match {
         case Response(Seq(result), Seq(), notifications) => (result, notifications)
         case Response(_, Seq(error), _)                  => serverError(error)
         case Response(Seq(), _, _)                       => failNoResults()

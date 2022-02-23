@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.testing.impl.http
 
-import io.circe.generic.auto.exportEncoder
-import io.circe.syntax.EncoderOps
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.http.HttpTransaction.statementPayload
@@ -61,8 +59,9 @@ object HttpTransaction {
     HttpStatementResult.fromResponse(resp)
   }
 
-  private def statementJsonString(statement: String): String =
-    Request(Seq(Statement(statement))).asJson.spaces2
+  private def statementJsonString(statement: String): String = {
+    HttpJson.write(Request(Seq(Statement(statement))))
+  }
 
   private def statementPayload(statement: String): HTTP.RawPayload =
     HTTP.RawPayload.rawPayload(statementJsonString(statement))

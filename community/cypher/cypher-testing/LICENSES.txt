@@ -4,7 +4,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  annotation
   Apache Commons BeanUtils
   Apache Commons Collections
   Apache Commons Compress
@@ -28,12 +27,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
-  Circe core
-  Circe generic
-  Circe jawn
-  Circe numbers
-  Circe parser
-  core
   fastinfoset
   IPAddress
   Jackson module: Old JAXB Annotations (javax.xml.bind)
@@ -63,6 +56,10 @@ Apache Software License, Version 2.0
   Jetty :: XML utilities
   jPowerShell
   jProcesses
+  json4s-ast
+  json4s-core
+  json4s-native
+  json4s-scalap
   magnolia
   mercator
   Neo4j Java Driver (Slim package)
@@ -335,6 +332,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  ParaNamer Core
   Zstandard
 ------------------------------------------------------------------------------
 
@@ -1706,13 +1704,10 @@ version.
 
 ------------------------------------------------------------------------------
 MIT License
-  Cats core
-  Cats kernel
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client
   jersey-inject-hk2
-  parser
   SLF4J API Module
   SLF4J NOP Binding
 ------------------------------------------------------------------------------
