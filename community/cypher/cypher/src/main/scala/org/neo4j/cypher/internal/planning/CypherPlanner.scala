@@ -383,7 +383,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
                            shouldBeCached: Boolean,
                            missingParameterNames: Seq[String]): CacheableLogicalPlan = {
     val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
-    val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
+    val hasLoadCsv = logicalPlanStateOld.logicalPlan.folder.treeFind[LogicalPlan] {
       case _: LoadCSV => true
     }.nonEmpty
     val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
@@ -451,7 +451,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val names = mutable.ArrayBuffer.empty[String]
     val mapBuilder = new MapValueBuilder()
     val extractor = new ParameterLiteralExtractor
-    statement.findByAllClass[Parameter].foreach {
+    statement.folder.findByAllClass[Parameter].foreach {
       case AutoExtractedParameter(name, _, writer) =>
         names += name
         writer.writeTo(extractor)
@@ -465,7 +465,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
 
 object ContainsSensitiveFields {
   def unapply(plan: LogicalPlan): Boolean = {
-    plan.treeExists {
+    plan.folder.treeExists {
       case _: SensitiveString => true
       case _: SensitiveParameter => true
     }

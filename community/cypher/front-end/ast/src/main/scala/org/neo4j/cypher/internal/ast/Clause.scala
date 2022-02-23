@@ -520,7 +520,7 @@ case class Match(
 
   private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
     val propertiesInPredicates: Seq[String] = (where match {
-      case Some(w) => w.treeFold(Seq.empty[String]) {
+      case Some(w) => w.folder.treeFold(Seq.empty[String]) {
         case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
           acc => SkipChildren(acc :+ name)
         case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
@@ -558,7 +558,7 @@ case class Match(
           acc => SkipChildren(acc)
       }
       case None => Seq.empty
-    }) ++ pattern.treeFold(Seq.empty[String]) {
+    }) ++ pattern.folder.treeFold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop)), _) if variable == id =>
         acc => SkipChildren(acc ++ prop.map(_._1.name))
     }
@@ -580,12 +580,12 @@ case class Match(
   }
 
   private def containsLabelPredicate(variable: String, label: String): Boolean = {
-    var labels = pattern.fold(Seq.empty[String]) {
+    var labels = pattern.folder.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
     }
     labels = where match {
-      case Some(innerWhere) => innerWhere.treeFold(labels) {
+      case Some(innerWhere) => innerWhere.folder.treeFold(labels) {
         case HasLabels(Variable(id), predicateLabels) if id == variable =>
           acc => SkipChildren(acc ++ predicateLabels.map(_.name))
         case HasLabelsOrTypes(v@Variable(id), predicateLabels) if id == variable =>
@@ -600,7 +600,7 @@ case class Match(
     labels.contains(label)
   }
 
-  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findByAllClass[LogicalVariable].toSet
+  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.findByAllClass[LogicalVariable].toSet
 }
 
 case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Where] = None)(val position: InputPosition)

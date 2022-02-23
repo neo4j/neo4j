@@ -38,7 +38,7 @@ case object slottedParameters {
     //This may look like it is dangerous, what if we both have a normal parameter and an implicit
     //procedure argument by the same name? This will not happen since implicit parameters is only supported
     //for stand-alone procedures, e.g `CALL my.proc` with `{input1: 'foo', input2: 1337}`
-    val mapping: ParameterMapping = input.treeFold(ParameterMapping.empty) {
+    val mapping: ParameterMapping = input.folder.treeFold(ParameterMapping.empty) {
       case Parameter(name, _) => acc => TraverseChildren(acc.updated(name))
       case ImplicitProcedureArgument(name, _, defaultValue) => acc => TraverseChildren(acc.updated(name, ValueUtils.of(defaultValue)))
     }

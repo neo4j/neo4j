@@ -73,8 +73,8 @@ object StatementConverters {
   )
 
 
-  private def findBlacklistedNodes(node: AnyRef): Seq[ASTNode] = {
-    node.treeFold(Seq.empty[ASTNode]) {
+  private def findBlacklistedNodes(queryPart: QueryPart): Seq[ASTNode] = {
+    queryPart.folder.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
         acc => TraverseChildren(acc :+ node)
     }

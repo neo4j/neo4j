@@ -44,7 +44,7 @@ object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState]
   }
 
   private def findDeprecations(statement: Statement): Set[InternalNotification] =
-    statement.treeFold(Set.empty[InternalNotification]) {
+    statement.folder.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _, _), _, _, _, _) =>
         seq => SkipChildren(seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy))
       case _:UnresolvedCall =>
@@ -64,7 +64,7 @@ object ProcedureWarnings extends VisitorPhase[BaseContext, BaseState] {
   }
 
   private def findWarnings(statement: Statement): Set[InternalNotification] =
-    statement.treeFold(Set.empty[InternalNotification]) {
+    statement.folder.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, _, _, _, Some(warning), _, _, _), _, _, _, _) =>
         seq => SkipChildren(seq + ProcedureWarningNotification(f.position, name.toString, warning))
       case ResolvedCall(ProcedureSignature(name, _, Some(output), None, _, _, _, _, _, _), _, results, _, _)

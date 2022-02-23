@@ -60,12 +60,12 @@ class ParameterTypeValueReplacementTest extends CypherFunSuite  {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original: Statement = parser.parse(originalQuery, exceptionFactory) // Do not use the old parameter syntax here
 
-    original.findByAllClass[Parameter].size should equal(parameterTypes.size) // make sure we use all given parameters in the query
+    original.folder.findByAllClass[Parameter].size should equal(parameterTypes.size) // make sure we use all given parameters in the query
 
     val rewriter = parameterValueTypeReplacement(original, parameterTypes)
-    val result = original.rewrite(rewriter).asInstanceOf[Statement]
+    val result = original.endoRewrite(rewriter)
 
-    val rewrittenParameters = result.findByAllClass[Parameter]
+    val rewrittenParameters = result.folder.findByAllClass[Parameter]
     parameterTypes.size should equal(rewrittenParameters.size)
 
     rewrittenParameters.forall( p => {

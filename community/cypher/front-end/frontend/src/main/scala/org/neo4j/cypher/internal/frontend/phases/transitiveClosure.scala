@@ -55,7 +55,7 @@ case object transitiveClosure extends StatementRewriter {
     })
 
     //Collects property equalities, e.g `a.prop = 42`
-    private def collect(e: Expression): Closures = e.treeFold(Closures.empty) {
+    private def collect(e: Expression): Closures = e.folder.treeFold(Closures.empty) {
       case _: Or => acc => SkipChildren(acc)
       case _: And => acc => TraverseChildren(acc)
       case Equals(p1: Property, p2: Property) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))

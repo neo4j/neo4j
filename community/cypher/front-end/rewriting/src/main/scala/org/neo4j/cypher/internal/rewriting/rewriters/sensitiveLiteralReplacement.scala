@@ -43,7 +43,7 @@ object sensitiveLiteralReplacement {
   }
 
   def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
-    val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(sensitiveliteralMatcher)
+    val replaceableLiterals = term.folder.treeFold(IdentityMap.empty: LiteralReplacements)(sensitiveliteralMatcher)
 
     val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
       case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)

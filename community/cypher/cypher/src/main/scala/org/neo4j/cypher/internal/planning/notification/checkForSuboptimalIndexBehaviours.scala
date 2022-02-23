@@ -36,7 +36,7 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
 
   def apply(plan: LogicalPlan): Set[InternalNotification] = {
 
-    plan.treeFold[Set[InternalNotification]](Set.empty) {
+    plan.folder.treeFold[Set[InternalNotification]](Set.empty) {
       case NodeIndexContainsScan(_, label, property, _, _, _) =>
         acc =>
           val notifications = getBehaviours(label, property.propertyKeyToken).collect {

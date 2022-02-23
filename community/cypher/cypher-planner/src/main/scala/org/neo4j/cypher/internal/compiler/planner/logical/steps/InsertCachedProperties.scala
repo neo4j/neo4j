@@ -148,7 +148,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Transf
 
     // In the first step we collect all property usages and renaming while going over the tree)
     def getAccProperties(logicalPlan: LogicalPlan): Acc = {
-      logicalPlan.treeFold(Acc()) {
+      logicalPlan.folder.treeFold(Acc()) {
 
         // Take on only consistent renaming across both unions and remember properties from both subtrees
         case plan: Union => acc =>

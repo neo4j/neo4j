@@ -243,7 +243,7 @@ object PatternExpressionSolver {
     }
 
     def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): RewriteResult = {
-      val patternExpressions: Seq[T] = expression.findByAllClass[T]
+      val patternExpressions: Seq[T] = expression.folder.findByAllClass[T]
 
       patternExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), patternExpression) =>
@@ -305,7 +305,7 @@ object PatternExpressionSolver {
     }
   }
 
-  private def qualifiesForRewriting(exp: AnyRef): Boolean = exp.treeExists {
+  private def qualifiesForRewriting(exp: AnyRef): Boolean = exp.folder.treeExists {
     case _: PatternExpression => true
     case _: PatternComprehension => true
   }

@@ -27,12 +27,12 @@ case object noUnnamedPatternElementsInPatternComprehension extends Condition {
 
   override def name: String = productPrefix
 
-  override def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
+  override def apply(that: Any): Seq[String] = that.folder.treeFold(Seq.empty[String]) {
     case expr: PatternComprehension if containsUnNamedPatternElement(expr.pattern) =>
       acc => SkipChildren(acc :+ s"Expression $expr contains pattern elements which are not named")
   }
 
-  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.treeExists {
+  private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.folder.treeExists {
     case p: PatternElement => p.variable.isEmpty
   }
 }

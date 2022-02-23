@@ -654,7 +654,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
       case _: PartialSort => true
     } shouldBe 0
@@ -677,7 +677,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
       case _: PartialSort => true
     } shouldBe 0
@@ -706,7 +706,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // It should maintain the
     // order from a
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
       case _: PartialSort => true
     } shouldBe 0
@@ -728,10 +728,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
-    plan.treeCount {
+    plan.folder.treeCount {
       case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
     } shouldBe 1
   }
@@ -753,10 +753,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a and only need to partially sort c
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
-    plan.treeCount {
+    plan.folder.treeCount {
       case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("c.prop"))) => true
     } shouldBe 1
   }
@@ -785,10 +785,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // It should maintain the
     // order from a and only need to partially sort b
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
-    plan.treeCount {
+    plan.folder.treeCount {
       case PartialSort(_, Seq(Ascending("a.prop")), Seq(Ascending("b.prop"))) => true
     } shouldBe 1
   }
@@ -821,7 +821,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort e
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
@@ -851,7 +851,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c.
     // If this were to disregard sorting, the index on a.foo would be more selective and thus a better choice than a.prop.
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
@@ -882,7 +882,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     // order from a and only need to partially sort b, c.
     // If this were to disregard sorting, the index on a.foo would be more selective and thus a better choice than a.prop.
     withClue(plan) {
-      plan.treeCount {
+      plan.folder.treeCount {
         case _: Sort => true
       } shouldBe 0
       plan should beLike {
@@ -914,7 +914,7 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c.
     // If this were to disregard sorting, the index on a.foo would be more selective and thus a better choice than a.prop.
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
     plan should beLike {
@@ -941,10 +941,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort b.
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: Sort => true
     } shouldBe 0
-    plan.treeCount {
+    plan.folder.treeCount {
       case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"))) => true
     } shouldBe 1
     // The PartialSort should be between the expands, not at the end.
@@ -971,10 +971,10 @@ class OrderPlanningIntegrationTestBase(queryGraphSolverSetup: QueryGraphSolverSe
     withClue(plan) {
       // Different join and expand variants are OK, but it should maintain the
       // order from a and only need to partially sort b, c.
-      plan.treeCount {
+      plan.folder.treeCount {
         case _: Sort => true
       } shouldBe 0
-      plan.treeCount {
+      plan.folder.treeCount {
         case PartialSort(_, Seq(Ascending("first")), Seq(Ascending("second"), Ascending("third"))) => true
       } shouldBe 1
       // The PartialSort should be between the expands, not at the end.

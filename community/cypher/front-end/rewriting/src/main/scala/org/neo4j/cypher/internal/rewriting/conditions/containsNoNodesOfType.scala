@@ -25,6 +25,7 @@ import scala.reflect.ClassTag
 case class containsNoNodesOfType[T <: ASTNode](implicit tag: ClassTag[T]) extends Condition {
   def apply(that: Any): Seq[String] =
     that
+      .folder
       .treeFindByClass[T]
       .map(node => s"Expected none but found ${node.getClass.getSimpleName} at position ${node.position}")
       .toSeq

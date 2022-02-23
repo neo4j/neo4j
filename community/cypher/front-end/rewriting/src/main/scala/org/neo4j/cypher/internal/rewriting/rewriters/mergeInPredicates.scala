@@ -74,20 +74,20 @@ case object mergeInPredicates extends Rewriter {
         or
   })
 
-  private def noOrsNorInnerScopes(expression: Expression):Boolean = !expression.treeExists {
+  private def noOrsNorInnerScopes(expression: Expression):Boolean = !expression.folder.treeExists {
     case _: Or => true
     case _: ScopeExpression => true
   }
 
-  private def noAnds(expression: Expression):Boolean = !expression.treeExists {
+  private def noAnds(expression: Expression):Boolean = !expression.folder.treeExists {
     case _: And => true
   }
 
-  private def nots(expression: Expression): Boolean = expression.treeExists {
+  private def nots(expression: Expression): Boolean = expression.folder.treeExists {
     case _: Not => true
   }
 
-  private def noNots(expression: Expression): Boolean = !expression.treeExists {
+  private def noNots(expression: Expression): Boolean = !expression.folder.treeExists {
     case _: Not => true
   }
 
@@ -116,7 +116,7 @@ case object mergeInPredicates extends Rewriter {
   //Returns {a -> merge(A,B), b -> C}
   private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])
                                  (expressions: Expression*): Map[Expression, Seq[Expression]] = {
-    val maps = expressions.map(_.treeFold(Map.empty[Expression, Seq[Expression]]) {
+    val maps = expressions.map(_.folder.treeFold(Map.empty[Expression, Seq[Expression]]) {
       case In(a, ListLiteral(exprs)) => map => {
         //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
         val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct

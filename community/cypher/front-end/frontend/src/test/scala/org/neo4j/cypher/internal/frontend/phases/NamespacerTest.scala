@@ -182,7 +182,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
 
     val statement = prepareFrom(query).statement()
 
-    val outerScope = statement.treeFold(Set.empty[Variable]) {
+    val outerScope = statement.folder.treeFold(Set.empty[Variable]) {
       case expr: ExistsSubClause =>
         acc => TraverseChildren(acc ++ expr.outerScope)
     }

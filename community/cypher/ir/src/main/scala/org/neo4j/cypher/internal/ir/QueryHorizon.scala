@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
-trait QueryHorizon {
+trait QueryHorizon extends Foldable {
 
   def exposedSymbols(coveredIds: Set[String]): Set[String]
 
@@ -35,7 +37,7 @@ trait QueryHorizon {
 
   def preferredStrictness(sorted: Boolean): Option[StrictnessMode]
 
-  def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
+  def dependencies: Set[String] = dependingExpressions.folder.treeFold(Set.empty[String]) {
     case id: Variable =>
       acc => TraverseChildren(acc + id.name)
   }

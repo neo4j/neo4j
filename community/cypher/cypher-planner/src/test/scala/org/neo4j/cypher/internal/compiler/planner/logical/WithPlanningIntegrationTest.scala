@@ -355,13 +355,13 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   private def hasNestedPlanExpression(ands: Ands): Boolean = {
-    ands.treeExists {
+    ands.folder.treeExists {
       case _: NestedPlanExpression => true
     }
   }
 
   private def containsHasDegreeGreaterThan(ands: Ands): Boolean = {
-    ands.treeExists {
+    ands.folder.treeExists {
       case _: HasDegreeGreaterThan => true
     }
   }

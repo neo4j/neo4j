@@ -152,7 +152,7 @@ object CardinalityCostModel extends CostModel {
   }
 
   def apply(expression: Expression): CostPerRow = {
-    val noOfStoreAccesses = expression.treeCount {
+    val noOfStoreAccesses = expression.folder.treeCount {
       case _: Property | _: HasLabels => true
       case _ => false
     }

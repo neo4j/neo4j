@@ -383,7 +383,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN n
         |""".stripMargin)
 
-    plan.treeFindByClass[OptionalExpand].get.lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
+    plan.folder.treeFindByClass[OptionalExpand].get.lhs should contain(cfg.subPlanBuilder().nodeByLabelScan("n", "N").build())
   }
 
   test("expensive optional match is solved after components are connected") {
@@ -551,7 +551,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN n ORDER BY x.prop
         |""".stripMargin)
 
-    val numSorts = plan.treeCount { case _: Sort => true }
+    val numSorts = plan.folder.treeCount { case _: Sort => true }
     numSorts shouldEqual 1
   }
 
@@ -607,10 +607,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
          |RETURN *
          |""".stripMargin)
 
-    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+    val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
       case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
     }
-    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+    val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
       case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
     }
 
@@ -632,10 +632,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         |RETURN *
         |""".stripMargin)
 
-    val allNodesScanned = plan.treeFold(Seq.empty[String]) {
+    val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
       case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
     }
-    val optionalExpanded = plan.treeFold(Seq.empty[String]) {
+    val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
       case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
     }
 

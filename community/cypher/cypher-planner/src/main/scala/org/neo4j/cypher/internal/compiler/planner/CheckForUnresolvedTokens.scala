@@ -51,7 +51,7 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
     def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 
-    val notifications = value.statement().treeFold(Seq.empty[InternalNotification]) {
+    val notifications = value.statement().folder.treeFold(Seq.empty[InternalNotification]) {
       case label@LabelName(name) if isEmptyLabel(name) => acc =>
         TraverseChildren(acc :+ MissingLabelNotification(label.position, name))
 

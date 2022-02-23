@@ -62,7 +62,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       cost = {
         case (_: AllNodesScan, _, _) => 2000000.0
         case (_: NodeByLabelScan, _, _) => 20.0
-        case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (p: Expand, _, _) if p.folder.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _, _) => 10.0
         case (_: LeftOuterHashJoin, _, _) => 20.0
         case (_: Argument, _, _) => 1.0
@@ -81,7 +81,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       cost = {
         case (_: AllNodesScan, _, _) => 2000000.0
         case (_: NodeByLabelScan, _, _) => 20.0
-        case (p: Expand, _, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
+        case (p: Expand, _, _) if p.folder.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
         case (_: Expand, _, _) => 10.0
         case (_: RightOuterHashJoin, _, _) => 20.0
         case (_: Argument, _, _) => 1.0
@@ -322,7 +322,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     val (_, plan, _, attributes) = lom.getLogicalPlanFor(query)
     val cardinalities = attributes.cardinalities
-    plan.treeExists {
+    plan.folder.treeExists {
       case plan: LogicalPlan =>
         cardinalities.get(plan.id) match {
           case Cardinality(amount) =>

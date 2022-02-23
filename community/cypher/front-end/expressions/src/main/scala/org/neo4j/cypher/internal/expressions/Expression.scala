@@ -72,13 +72,13 @@ abstract class Expression extends ASTNode {
 
   self =>
 
-  def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
+  def arguments: Seq[Expression] = this.folder.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => SkipChildren(acc :+ e)
   }
 
   // Collects all sub-expressions recursively
-  def subExpressions: Seq[Expression] = this.treeFold(List.empty[Expression]) {
+  def subExpressions: Seq[Expression] = this.folder.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => TraverseChildren(acc :+ e)
   }
@@ -86,7 +86,7 @@ abstract class Expression extends ASTNode {
   // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
   def dependencies: Set[LogicalVariable] =
-    this.treeFold(Expression.TreeAcc[Set[LogicalVariable]](Set.empty)) {
+    this.folder.treeFold(Expression.TreeAcc[Set[LogicalVariable]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -100,7 +100,7 @@ abstract class Expression extends ASTNode {
   // All (free) occurrences of variable in this expression or any of its children
   // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
   def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
-    this.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
+    this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
       case scope: ScopeExpression =>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -123,7 +123,7 @@ abstract class Expression extends ASTNode {
   // List of child expressions together with any of its dependencies introduced
   // by any of its parent expressions (where this expression is the root of the tree)
   def inputs: Seq[(Expression, Set[LogicalVariable])] =
-    this.treeFold(TreeAcc[Seq[(Expression, Set[LogicalVariable])]](Seq.empty)) {
+    this.folder.treeFold(TreeAcc[Seq[(Expression, Set[LogicalVariable])]](Seq.empty)) {
       case scope: ScopeExpression=>
         acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
@@ -139,18 +139,18 @@ abstract class Expression extends ASTNode {
   /**
    * Return true is this expression contains an aggregating expression.
    */
-  def containsAggregate: Boolean = this.treeExists {
+  def containsAggregate: Boolean = this.folder.treeExists {
     case IsAggregate(_) => true
   }
 
   /**
    * Returns the first encountered aggregate expression, or None if none existed.
    */
-  def findAggregate:Option[Expression] = this.treeFind[Expression] {
+  def findAggregate:Option[Expression] = this.folder.treeFind[Expression] {
     case IsAggregate(_) => true
   }
 
-  def isDeterministic: Boolean = !this.treeExists {
+  def isDeterministic: Boolean = !this.folder.treeExists {
     case f: FunctionInvocation if f.function == Rand || f.function == RandomUUID => true
     case _ => false
   }

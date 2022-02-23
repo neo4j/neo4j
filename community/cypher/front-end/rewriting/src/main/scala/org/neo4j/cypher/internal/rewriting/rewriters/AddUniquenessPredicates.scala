@@ -82,7 +82,7 @@ case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = Same
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
-    pattern.treeFold(Seq.empty[UniqueRel]) {
+    pattern.folder.treeFold(Seq.empty[UniqueRel]) {
       case _:ScopeExpression =>
         acc => SkipChildren(acc)
 

@@ -135,7 +135,7 @@ class OrLeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       indexOn("X", "prop")
     } getLogicalPlanFor query)._2)
 
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: NodeIndexSeek => true
     } should be(90)
   }

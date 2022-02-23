@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.RelTypeId
 
 object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
-    ast.fold(()) {
+    ast.folder.fold(()) {
       case token: PropertyKeyName =>
         _ => resolvePropertyKeyName(token.name)
       case token: LabelName =>

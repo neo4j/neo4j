@@ -56,7 +56,7 @@ object Additions {
   // This is functionality that has been added in 4.0 and 4.1 and should not work when using CYPHER 3.5
   case object addedFeaturesIn4_x extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.folder.treeExists {
 
       case u: UseGraph =>
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)

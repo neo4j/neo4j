@@ -80,9 +80,9 @@ object literalReplacement {
          _: Limit =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
-      acc => SkipChildren(n.properties.treeFold(acc)(literalMatcher))
+      acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher))
     case r: RelationshipPattern =>
-      acc => SkipChildren(r.properties.treeFold(acc)(literalMatcher))
+      acc => SkipChildren(r.properties.folder.treeFold(acc)(literalMatcher))
     case ContainerIndex(_, _: StringLiteral) =>
       acc => SkipChildren(acc)
     case l: StringLiteral =>
@@ -113,7 +113,7 @@ object literalReplacement {
   }
 
   private def doIt(term: ASTNode) = {
-    val replaceableLiterals = term.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
+    val replaceableLiterals = term.folder.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
 
     val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
       case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)
@@ -128,7 +128,7 @@ object literalReplacement {
     case Forced =>
       doIt(term)
     case IfNoParameter =>
-      val containsParameter: Boolean = term.treeExists {
+      val containsParameter: Boolean = term.folder.treeExists {
         case _: Parameter => true
       }
 
