@@ -713,16 +713,10 @@ object ClauseConverters {
   private def addForeachToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Foreach, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryBuilder = {
     val currentlyAvailableVariables = builder.currentlyAvailableVariables
 
-    val setOfNodeVariables: Set[String] =
-      if (builder.semanticTable.isNode(clause.variable.name))
-        Set(clause.variable.name)
-      else Set.empty
-
     val foreachVariable = clause.variable
 
     val innerBuilder = new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
-      .amendQueryGraph(_.addPatternNodes((builder.allSeenPatternNodes ++ setOfNodeVariables).toIndexedSeq:_*)
-        .addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
+      .amendQueryGraph(_.addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
       .withHorizon(PassthroughAllHorizon())
 
     val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(clause.updates, innerBuilder, anonymousVariableNameGenerator).build()
