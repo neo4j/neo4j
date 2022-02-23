@@ -121,6 +121,6 @@ class HintsParserTest extends CypherFunSuite with TestName with AstConstructionT
 
   private def parseAndFind[T: ClassTag](query: String): Seq[T] = {
     val ast = JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator())
-    ast.findAllByClass[T]
+    ast.folder.findAllByClass[T]
   }
 }

@@ -44,7 +44,7 @@ case class SystemProcedureCallPlanner(normalExecutionEngine: ExecutionEngine, se
     }
 
     def addParameterDefaults(params: MapValue): MapValue = {
-      val builder = call.treeFold(new MapValueBuilder()) {
+      val builder = call.folder.treeFold(new MapValueBuilder()) {
         case ImplicitProcedureArgument(name, _, defaultValue) => acc =>
           acc.add(name, ValueUtils.of(defaultValue))
           TraverseChildren(acc)

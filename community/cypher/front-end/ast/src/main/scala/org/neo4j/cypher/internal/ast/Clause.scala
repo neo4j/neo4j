@@ -417,7 +417,7 @@ case class Match(
 
   private def getPropertyPredicates(variable: String): Seq[String] = {
     where.map(w => collectPropertiesInPredicates(variable, w.expression)).getOrElse(Seq.empty[String]) ++
-      pattern.treeFold(Seq.empty[String]) {
+      pattern.folder.treeFold(Seq.empty[String]) {
         case NodePattern(Some(Variable(id)), _, _, properties, predicate) if variable == id =>
           acc => SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(collectPropertiesInPredicates(variable, _)).getOrElse(Seq.empty[String]))
         case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _, _) if variable == id =>
@@ -431,7 +431,7 @@ case class Match(
       case _ => Seq.empty[String]
     }
 
-  private def collectPropertiesInPredicates(variable: String, whereExpression: Expression): Seq[String] = whereExpression.treeFold(Seq.empty[String]) {
+  private def collectPropertiesInPredicates(variable: String, whereExpression: Expression): Seq[String] = whereExpression.folder.treeFold(Seq.empty[String]) {
       case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
         acc => SkipChildren(acc :+ name)
       case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
@@ -486,19 +486,19 @@ case class Match(
     getLabelAndRelTypePredicates(variable).contains(labelOrRelType)
 
   private def getLabelAndRelTypePredicates(variable: String): Seq[String] = {
-    val inlinedLabels = pattern.fold(Seq.empty[String]) {
+    val inlinedLabels = pattern.folder.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _, _, _) if variable == id =>
         list => list ++ nodeLabels.map(_.name)
     }
-    val inlinedRelTypes = pattern.fold(Seq.empty[String]) {
+    val inlinedRelTypes = pattern.folder.fold(Seq.empty[String]) {
       case RelationshipPattern(Some(Variable(id)), types, _, _, _, _, _) if variable == id =>
         list => list ++ types.map(_.name)
     }
 
-    val labelExpressionLabels: Seq[String] = pattern.fold(Seq.empty[String]) {
+    val labelExpressionLabels: Seq[String] = pattern.folder.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(labelExpression), _, _) if variable == id =>
         list => list ++
-          labelExpression.treeFold(Seq.empty[String]) {
+          labelExpression.folder.treeFold(Seq.empty[String]) {
             case l: LabelExpression.Label =>
               acc => SkipChildren(acc :+ l.label.name)
             case _: LabelExpression.Conjunction | _: LabelExpression.Disjunction =>
@@ -509,7 +509,7 @@ case class Match(
     }
 
     val (predicateLabels, predicateRelTypes) = where match {
-      case Some(innerWhere) => innerWhere.treeFold((Seq.empty[String], Seq.empty[String])) {
+      case Some(innerWhere) => innerWhere.folder.treeFold((Seq.empty[String], Seq.empty[String])) {
         case HasLabels(Variable(id), predicateLabels) if id == variable => {
           case (ls, rs) => SkipChildren((ls ++ predicateLabels.map(_.name), rs))
         }
@@ -531,7 +531,7 @@ case class Match(
     allLabels ++ allRelTypes
   }
 
-  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.findAllByClass[LogicalVariable].toSet
+  def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.findAllByClass[LogicalVariable].toSet
 }
 
 sealed trait CommandClause extends Clause with SemanticAnalysisTooling {
@@ -1174,7 +1174,7 @@ object SubqueryCall {
 
   def isTransactionalSubquery(clause: SubqueryCall): Boolean = clause.inTransactionsParameters.isDefined
 
-  def findTransactionalSubquery(node: ASTNode) : Option[SubqueryCall] = node.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
+  def findTransactionalSubquery(node: ASTNode) : Option[SubqueryCall] = node.folder.treeFind[SubqueryCall] { case s if isTransactionalSubquery(s) => true }
 }
 
 case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[SubqueryCall.InTransactionsParameters])(val position: InputPosition) extends HorizonClause with SemanticAnalysisTooling {

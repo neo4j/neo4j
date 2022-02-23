@@ -243,7 +243,7 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
   private def shouldRetainProvidedSortOrder(clause: String, containsTestedPlan: PartialFunction[Any, Boolean]): Unit = {
     verifyProvidedSortOrder(clause, containsTestedPlan,
       sortCheck = plan => withClue(s"Should not contain sort: $plan")(
-        plan.treeExists { case _: Sort => true}  shouldBe false
+        plan.folder.treeExists { case _: Sort => true}  shouldBe false
       )
     )
   }
@@ -302,6 +302,6 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
     sortCheck(plan)
   }
 
-  private def containsPlan(plan: LogicalPlan, f: PartialFunction[Any, Boolean]) = plan.treeExists(f)
-  private def providesOrder(plan: LogicalPlan) = plan.treeExists{ case NodeIndexScan(_, _, _, _, IndexOrderAscending, _) => true }
+  private def containsPlan(plan: LogicalPlan, f: PartialFunction[Any, Boolean]) = plan.folder.treeExists(f)
+  private def providesOrder(plan: LogicalPlan) = plan.folder.treeExists{ case NodeIndexScan(_, _, _, _, IndexOrderAscending, _) => true }
 }

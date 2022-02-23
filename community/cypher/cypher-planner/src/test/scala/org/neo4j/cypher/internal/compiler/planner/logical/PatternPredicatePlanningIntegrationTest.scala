@@ -501,7 +501,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }
@@ -518,7 +518,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }
@@ -1143,7 +1143,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }
@@ -1157,7 +1157,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }
@@ -1171,7 +1171,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }
@@ -1185,7 +1185,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     val plan = planFor(q)._1
-    plan.treeExists({
+    plan.folder.treeExists({
       case _:RollUpApply => true
     }) should be(false)
   }

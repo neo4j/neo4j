@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -179,7 +178,7 @@ object Deprecations {
 
     override def findWithContext(statement: ast.Statement): Set[Deprecation] = {
       def findExistsToIsNotNullReplacements(astNode: ASTNode): Set[Deprecation] = {
-        astNode.treeFold[Set[Deprecation]](Set.empty) {
+        astNode.folder.treeFold[Set[Deprecation]](Set.empty) {
           case _: ast.Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
             acc => TraverseChildren(acc)
 
@@ -195,7 +194,7 @@ object Deprecations {
         }
       }
 
-      val replacementsFromExistsToIsNotNull = statement.treeFold[Set[Deprecation]](Set.empty) {
+      val replacementsFromExistsToIsNotNull = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
         case w: ast.Where =>
           val deprecations = findExistsToIsNotNullReplacements(w)
           acc => SkipChildren(acc ++ deprecations)
@@ -234,7 +233,7 @@ object Deprecations {
 
     override def findWithContext(statement: ast.Statement,
                                  semanticTable: SemanticTable): Set[Deprecation] = {
-      val deprecationsOfPatternExpressionsOutsideExists = statement.treeFold[Set[Deprecation]](Set.empty) {
+      val deprecationsOfPatternExpressionsOutsideExists = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
         case Exists(_) =>
           // Don't look inside exists()
           deprecations => SkipChildren(deprecations)

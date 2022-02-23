@@ -23,7 +23,6 @@ import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.IntermediateRepresentation.block
 import org.neo4j.codegen.api.IntermediateRepresentation.declare
 import org.neo4j.codegen.api.IntermediateRepresentation.declareAndAssign
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
@@ -86,7 +85,7 @@ object SizeEstimation {
     }
 
     val visitedOneTimes = mutable.Set.empty[IntermediateRepresentation]
-    ir.treeFold(0) {
+    ir.folder.treeFold(0) {
 
       case _: Field =>
         acc => SkipChildren(acc)
@@ -141,7 +140,7 @@ object SizeEstimation {
             //it with the jump instruction of the conditional
 
             //for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
-            val numberOfOrs = ands.treeCount {
+            val numberOfOrs = ands.folder.treeCount {
               case _: BooleanOr => true
             }
             -5 + onFalse.map(_ => JUMP_INSTRUCTION).getOrElse(0) - numberOfOrs * 8
@@ -160,7 +159,7 @@ object SizeEstimation {
             //it with the jump instruction of the loop
 
             //for each or contained in the ands we also save in on two JUMP INSTRUCTIONS and TRUE, FALSE
-            val numberOfOrs = ands.treeCount {
+            val numberOfOrs = ands.folder.treeCount {
               case _: BooleanOr => true
             }
             -5 + JUMP_INSTRUCTION - numberOfOrs * 8

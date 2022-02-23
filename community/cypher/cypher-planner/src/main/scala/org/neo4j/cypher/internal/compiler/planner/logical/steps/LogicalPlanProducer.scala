@@ -1748,7 +1748,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   private def invalidatesProvidedOrderRecursive(plan: LogicalPlan, executionModel: ExecutionModel): Boolean =
-    plan.treeExists { case plan: LogicalPlan if invalidatesProvidedOrder(plan, executionModel) => true}
+    plan.folder.treeExists { case plan: LogicalPlan if invalidatesProvidedOrder(plan, executionModel) => true}
 
   /**
    * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.
@@ -1770,7 +1770,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
    * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
    */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
-    checkOnlyWhenAssertionsAreEnabled(!new FoldableAny(root).treeExists {
+    checkOnlyWhenAssertionsAreEnabled(!root.folder.treeExists {
       case _: PatternComprehension | _: MapProjection =>
         throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
       case _ =>

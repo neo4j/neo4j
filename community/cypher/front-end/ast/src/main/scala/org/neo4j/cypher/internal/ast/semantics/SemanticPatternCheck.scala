@@ -125,11 +125,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   private def getSelfReferenceVariableInPattern(pattern: Pattern, state: SemanticState): Set[LogicalVariable] = {
     val allSymbolDefinitions = state.currentScope.scope.allSymbolDefinitions
 
-    def findAllVariables(e: Any): Set[LogicalVariable] = e.findAllByClass[LogicalVariable].toSet
+    def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
     def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
     pattern.patternParts.flatMap {patternParts =>
-      val (declaredVariables, referencedVariables) = patternParts.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+      val (declaredVariables, referencedVariables) = patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
         case NodePattern(maybeVariable, _, _, maybeProperties, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
@@ -392,11 +392,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     when (ctx != SemanticContext.Match) {
       error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", predicate.position)
     } chain
-    checkValidLabelOrRelTypes(labelExpression.findAllByClass[LabelOrRelTypeName], inputPosition)
+    checkValidLabelOrRelTypes(labelExpression.folder.findAllByClass[LabelOrRelTypeName], inputPosition)
   }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
-    val propertyKeys = returnItems.items.collect { case item => item.expression.findAllByClass[Property]map(prop => prop.propertyKey) }.flatten
+    val propertyKeys = returnItems.items.collect { case item => item.expression.folder.findAllByClass[Property]map(prop => prop.propertyKey) }.flatten
     SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
   }
 

@@ -105,7 +105,7 @@ abstract class LogicalPlan(idGen: IdGen)
     }
   }
 
-  def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
+  def leaves: Seq[LogicalPlan] = this.folder.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => TraverseChildren(acc :+ plan)
   }
@@ -194,7 +194,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage(): Seq[IndexUsage] = {
-    this.fold(Seq.empty[IndexUsage]) {
+    this.folder.fold(Seq.empty[IndexUsage]) {
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage())
       case NodeByLabelScan(idName, _, _, _) =>
@@ -242,7 +242,7 @@ trait RelationshipTypeScan {
 }
 
 abstract class LogicalBinaryPlan(idGen: IdGen) extends LogicalPlan(idGen) {
-  final lazy val hasUpdatingRhs: Boolean = right.treeExists{case _: UpdatingPlan => true}
+  final lazy val hasUpdatingRhs: Boolean = right.folder.treeExists{case _: UpdatingPlan => true}
   final def lhs: Option[LogicalPlan] = Some(left)
   final def rhs: Option[LogicalPlan] = Some(right)
 

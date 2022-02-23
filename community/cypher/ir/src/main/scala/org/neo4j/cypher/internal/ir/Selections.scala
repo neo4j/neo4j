@@ -55,7 +55,7 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def expressionsContainingVariable: MapView[String, Set[Predicate]] = {
     predicates.flatMap { predicate =>
-      predicate.findAllByClass[Variable].map(v => v.name -> predicate)
+      predicate.folder.findAllByClass[Variable].map(v => v.name -> predicate)
     }.groupBy(_._1).view.mapValues(p => p.map(_._2))
   }
 
@@ -84,7 +84,7 @@ case class Selections private (predicates: Set[Predicate]) {
    * This includes deeply nested predicates (e.g. in OR).
    */
   lazy val allHasLabelsInvolving: Map[String, Set[HasLabels]] = {
-    predicates.treeFold(Map.empty[String, Set[HasLabels]]) {
+    predicates.folder.treeFold(Map.empty[String, Set[HasLabels]]) {
       case hasLabels@HasLabels(Variable(name), _) => acc =>
         val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
         SkipChildren(newMap)
@@ -96,7 +96,7 @@ case class Selections private (predicates: Set[Predicate]) {
    * This includes deeply nested predicates (e.g. in OR).
    */
   lazy val allHasLabelsOrTypesInvolving: Map[String, Set[HasLabelsOrTypes]] = {
-    predicates.treeFold(Map.empty[String, Set[HasLabelsOrTypes]]) {
+    predicates.folder.treeFold(Map.empty[String, Set[HasLabelsOrTypes]]) {
       case hasLabels@HasLabelsOrTypes(Variable(name), _) => acc =>
         val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
         SkipChildren(newMap)
@@ -108,7 +108,7 @@ case class Selections private (predicates: Set[Predicate]) {
    * This includes deeply nested predicates (e.g. in OR).
    */
   lazy val allHasTypesInvolving: Map[String, Set[HasTypes]] = {
-    predicates.treeFold(Map.empty[String, Set[HasTypes]]) {
+    predicates.folder.treeFold(Map.empty[String, Set[HasTypes]]) {
       case hasTypes@HasTypes(Variable(name), _) => acc =>
         val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
         SkipChildren(newMap)
@@ -120,7 +120,7 @@ case class Selections private (predicates: Set[Predicate]) {
    * This includes deeply nested predicates (e.g. in OR).
    */
   lazy val allPropertyPredicatesInvolving: Map[String, Set[Property]] = {
-    predicates.treeFold(Map.empty[String, Set[Property]]) {
+    predicates.folder.treeFold(Map.empty[String, Set[Property]]) {
       case prop@Property(Variable(name), _) => acc =>
         val newMap = acc.updated(name, acc.getOrElse(name, Set.empty) + prop)
         SkipChildren(newMap)

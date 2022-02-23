@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.ShowDatabase
+import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
@@ -48,7 +50,7 @@ import scala.util.Try
 
 class ParserPositionTest extends CypherFunSuite with TestName  {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
-  private val javaCcAST = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
+  private val javaCcAST: String => Try[Statement] = (query: String) => Try(JavaCCParser.parse(query, exceptionFactory, new AnonymousVariableNameGenerator()))
 
   test("MATCH (n) RETURN n.prop") {
     validatePosition(testName, _.isInstanceOf[Property], InputPosition(17, 1, 18))
@@ -91,23 +93,23 @@ class ParserPositionTest extends CypherFunSuite with TestName  {
   }
 
   test("MATCH (n) WHERE exists { (n) --> () }") {
-    val exists = javaCcAST(testName).findByClass[ExistsSubClause]
+    val exists = javaCcAST(testName).folder.treeFindByClass[ExistsSubClause].get
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(25, 1, 26)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(25, 1, 26)
   }
 
   test("MATCH (n) WHERE exists { MATCH (n)-[r]->(m) }") {
-    val exists = javaCcAST(testName).findByClass[ExistsSubClause]
+    val exists = javaCcAST(testName).folder.treeFindByClass[ExistsSubClause].get
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
   }
 
   test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
-    val exists :: existsNested :: Nil = javaCcAST(testName).findAllByClass[ExistsSubClause]
+    val exists :: existsNested :: Nil = javaCcAST(testName).folder.findAllByClass[ExistsSubClause]
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
     existsNested.position shouldBe InputPosition(41, 1, 42)
-    existsNested.findByClass[Pattern].position shouldBe InputPosition(50, 1, 51)
+    existsNested.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(50, 1, 51)
   }
 
   test("MATCH (n) SET n += {name: null}") {
@@ -136,7 +138,7 @@ class ParserPositionTest extends CypherFunSuite with TestName  {
   }
 
   private def validatePosition(query: String, astToVerify: ASTNode => Boolean, pos: InputPosition): Unit = {
-    val propAst = javaCcAST(query).treeFind[ASTNode] {
+    val propAst = javaCcAST(query).folder.treeFind[ASTNode] {
       case ast if astToVerify(ast) => true
     }
 

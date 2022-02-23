@@ -79,7 +79,7 @@ object expressionVariableAllocation {
     // Note: we use the treeFold to keep track of the expression variables in scope
     // We don't need the result, the side-effect mutated `globalMapping` and
     // `availableExpressionVars` contain all the data we need.
-    input.treeFold(List.empty[ExpressionVariable]) {
+    input.folder.treeFold(List.empty[ExpressionVariable]) {
       case x: ScopeExpression =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, x.introducedVariables)

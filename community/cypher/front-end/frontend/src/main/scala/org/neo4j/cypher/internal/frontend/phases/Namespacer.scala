@@ -111,7 +111,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
       Ref(variable) -> newVariable
     }
 
-    statement.treeFold(Map.empty[Ref[LogicalVariable], LogicalVariable]) {
+    statement.folder.treeFold(Map.empty[Ref[LogicalVariable], LogicalVariable]) {
       case i: LogicalVariable if ambiguousNames(i.name) =>
         val renaming = createVariableRenaming(i, anonymousVariableNameGenerator)
         acc => TraverseChildren(acc + renaming)

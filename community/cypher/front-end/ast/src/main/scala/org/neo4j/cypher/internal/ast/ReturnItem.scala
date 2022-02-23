@@ -101,7 +101,7 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def semanticCheck: SemanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain checkForExists
 
   private def checkForExists: SemanticCheck = {
-    val invalid: Option[Expression] = expression.treeFind[Expression] { case _: ExistsSubClause => true }
+    val invalid: Option[Expression] = expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
     invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a WITH or RETURN clause.", exp.position))
   }
 

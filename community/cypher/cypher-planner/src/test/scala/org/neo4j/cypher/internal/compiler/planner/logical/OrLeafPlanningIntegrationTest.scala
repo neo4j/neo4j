@@ -1279,7 +1279,7 @@ class OrLeafPlanningIntegrationTest
 
     val plan = runWithTimeout(1000)(cfg.plan(query))
 
-    plan.treeCount {
+    plan.folder.treeCount {
       case _: NodeIndexSeek => true
     } should be(90)
   }

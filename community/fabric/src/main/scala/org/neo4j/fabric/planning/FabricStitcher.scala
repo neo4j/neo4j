@@ -178,7 +178,7 @@ case class FabricStitcher(
     outputColumns: Seq[String],
   ): Fragment.Exec = {
 
-    val sensitive = statement.treeExists {
+    val sensitive = statement.folder.treeExists {
       case _: SensitiveParameter => true
       case _: SensitiveLiteral => true
     }

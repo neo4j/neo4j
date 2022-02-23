@@ -72,7 +72,7 @@ object Additions {
   // This is functionality that has been added earlier in 4.x and should not work when using CYPHER 3.5
   case object addedFeaturesIn4_x extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.folder.treeExists {
 
       case u: UseGraph =>
         throw cypherExceptionFactory.syntaxException("The USE clause is not supported in this Cypher version.", u.position)
@@ -195,7 +195,7 @@ object Additions {
   // This is functionality that has been added in 4.4 and should not work when using CYPHER 3.5 and CYPHER 4.3
   case object addedFeaturesIn4_4 extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.folder.treeExists {
 
       case c: UniquePropertyConstraintCommand if c.properties.size > 1 =>
         throw cypherExceptionFactory.syntaxException("Multi-property uniqueness constraints are not supported in this Cypher version.", c.position)

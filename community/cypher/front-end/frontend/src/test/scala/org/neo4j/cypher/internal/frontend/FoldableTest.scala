@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.frontend.FoldableTest.Add
+import org.neo4j.cypher.internal.frontend.FoldableTest.Exp
 import org.neo4j.cypher.internal.frontend.FoldableTest.Sum
 import org.neo4j.cypher.internal.frontend.FoldableTest.Val
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -40,7 +42,7 @@ class FoldableTest extends CypherFunSuite {
   test("should fold value depth first over object tree") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
-    val result = ast.fold(50) {
+    val result = ast.folder.fold(50) {
       case Val(x) => acc => acc + x
     }
 
@@ -50,7 +52,7 @@ class FoldableTest extends CypherFunSuite {
   test("should fold by depth then breadth left to right") {
     val ast = Add(Val(1), Add(Add(Val(2), Val(3)), Val(4)))
 
-    val result = ast.fold(Seq.empty[Int]) {
+    val result = ast.folder.fold(Seq.empty[Int]) {
       case Val(x) => acc => acc :+ x
     }
 
@@ -60,7 +62,7 @@ class FoldableTest extends CypherFunSuite {
   test("should tree fold over all objects") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
-    val result = ast.treeFold(50) {
+    val result = ast.folder.treeFold(50) {
       case Val(x) => acc => TraverseChildren(acc + x)
     }
 
@@ -70,8 +72,8 @@ class FoldableTest extends CypherFunSuite {
   test("should be able to stop-recursion in tree fold") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
-    val result = ast.treeFold(50) {
-      case Val(x) => acc => TraverseChildren(acc + x)
+    val result = ast.folder.treeFold(50) {
+      case Val(x)          => acc => TraverseChildren(acc + x)
       case Add(Val(43), _) => acc => SkipChildren(acc + 20)
     }
 
@@ -81,8 +83,8 @@ class FoldableTest extends CypherFunSuite {
   test("should be able merge accumulators in tree fold") {
     val ast = Sum(Seq(Val(55), Add(Val(43), Val(52)), Val(10)))
 
-    val result = ast.treeFold(50) {
-      case Val(x) => acc => TraverseChildren(acc + x)
+    val result = ast.folder.treeFold(50) {
+      case Val(x)    => acc => TraverseChildren(acc + x)
       case Add(_, _) => acc => TraverseChildrenNewAccForSiblings(acc, acc => acc * 2)
     }
 
@@ -92,7 +94,7 @@ class FoldableTest extends CypherFunSuite {
   test("should reverse tree fold over all objects") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
-    val result = ast.reverseTreeFold("x") {
+    val result = ast.folder.reverseTreeFold("x") {
       case Val(x) => acc => TraverseChildren(acc + "|" + x)
     }
 
@@ -102,8 +104,8 @@ class FoldableTest extends CypherFunSuite {
   test("should be able to stop-recursion in reverse tree fold") {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
-    val result = ast.reverseTreeFold("x") {
-      case Val(x) => acc => TraverseChildren(acc + "|" + x)
+    val result = ast.folder.reverseTreeFold("x") {
+      case Val(x)          => acc => TraverseChildren(acc + "|" + x)
       case Add(Val(43), _) => acc => SkipChildren(acc + "<>")
     }
 
@@ -113,8 +115,8 @@ class FoldableTest extends CypherFunSuite {
   test("should be able merge accumulators in reverse tree fold") {
     val ast = Sum(Seq(Val(55), Add(Val(43), Val(52)), Val(10)))
 
-    val result = ast.reverseTreeFold("x") {
-      case Val(x) => acc => TraverseChildren(acc + "|" + x)
+    val result = ast.folder.reverseTreeFold("x") {
+      case Val(x)    => acc => TraverseChildren(acc + "|" + x)
       case Add(_, _) => acc => TraverseChildrenNewAccForSiblings(acc + ">", acc => acc + "<")
     }
 
@@ -124,11 +126,11 @@ class FoldableTest extends CypherFunSuite {
   test("should allow using exist to find patterns deeply nested") {
     val ast = Add(Val(1), Add(Val(2), Val(3)))
 
-    ast.treeExists {
+    ast.folder.treeExists {
       case Val(x) => x == 2
     } should equal(true)
 
-    ast.treeExists {
+    ast.folder.treeExists {
       case Val(x) => x == 42
     } should equal(false)
   }
@@ -219,5 +221,142 @@ class FoldableTest extends CypherFunSuite {
     astEmptyWrappingList.reverseTreeChildren.toList shouldEqual Seq.empty
     astEmptyVector.treeChildren.toList shouldEqual Seq.empty
     astEmptyVector.reverseTreeChildren.toList shouldEqual Seq.empty
+  }
+
+  class TestCancellationChecker extends CancellationChecker {
+    var cancelNext = false
+    val message = "my exception"
+
+    override def throwIfCancelled(): Unit = if (cancelNext) throw new RuntimeException(message)
+  }
+
+  class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {
+    val message = "my exception"
+
+    override def throwIfCancelled(): Unit = {
+      count -= 1
+      if (count <= 0) throw new RuntimeException(message)
+    }
+  }
+
+  test("fold should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCancellationChecker
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).fold(0) {
+        case Val(3) =>
+          cancellation.cancelNext = true
+          acc => acc + 1
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeFold should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCancellationChecker
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeFold(0) {
+        case Val(3) =>
+          cancellation.cancelNext = true
+          acc => TraverseChildren(acc + 1)
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("reverseTreeFold should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCancellationChecker
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).reverseTreeFold(0) {
+        case Val(3) =>
+          cancellation.cancelNext = true
+          acc => TraverseChildren(acc + 1)
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeExists should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCancellationChecker
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeExists {
+        case Val(3) =>
+          cancellation.cancelNext = true
+          false
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeFind should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeFind[Exp] {
+        case Val(3) => true
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeFindByClass should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeFindByClass[Val]
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeCount should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeCount {
+        case _: Val => true
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("treeCountAccumulation should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).treeCountAccumulation {
+        case _: Val => 1
+      }
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
+  }
+
+  test("findAllByClass should support cancelling") {
+    val ast = Sum(Seq(Val(1), Val(2), Val(3), Val(4), Val(5)))
+
+    val cancellation = new TestCountdownCancellationChecker(2)
+    val ex = the[Exception].thrownBy(
+      ast.folder(cancellation).findAllByClass[Val]
+    )
+
+    ex.getMessage.shouldEqual(cancellation.message)
   }
 }

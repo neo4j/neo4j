@@ -287,7 +287,7 @@ object OrLeafPlanner {
    * If an expression uses exactly one non-argument variable, return it. Otherwise, return None.
    */
   private def variableUsedInExpression(e: Expression, argumentIds: Set[String]): Option[Variable] = {
-    val nonArgVars = e.findAllByClass[Variable].filterNot(v => argumentIds.contains(v.name))
+    val nonArgVars = e.folder.findAllByClass[Variable].filterNot(v => argumentIds.contains(v.name))
     if (nonArgVars.distinct.size == 1) nonArgVars.headOption else None
   }
 }

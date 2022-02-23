@@ -31,7 +31,7 @@ trait LogicalPlanMatchers {
    */
   def containPlanMatching(pf: PartialFunction[LogicalPlan, Unit]): Matcher[LogicalPlan] =
     (plan: LogicalPlan) => MatchResult(
-      matches = plan.treeExists({
+      matches = plan.folder.treeExists({
         case p: LogicalPlan =>
           val matches = pf.isDefinedAt(p)
           if (matches) pf(p)

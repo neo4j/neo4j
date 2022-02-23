@@ -101,7 +101,7 @@ case object rewriteShowQuery extends Rewriter with Step with PreparatoryRewritin
     Return(ReturnItems(includeExisting = true, Seq(), Some(defaultOrderOnColumns))(position))(position)
 
   private def lastPosition(y: Yield): InputPosition = {
-    y.treeFold(InputPosition.NONE) {
+    y.folder.treeFold(InputPosition.NONE) {
       case node: ASTNode => acc => TraverseChildren(Seq(acc, node.position).max)
     }
   }

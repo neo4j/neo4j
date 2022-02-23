@@ -132,7 +132,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext,
       return fallback
     }
 
-    val hasPropertyPredicate = selections.treeExists {
+    val hasPropertyPredicate = selections.folder.treeExists {
       case _:Property => true
     }
     if (!hasPropertyPredicate) {

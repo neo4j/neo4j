@@ -41,7 +41,7 @@ object Pattern {
 
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
 
-  lazy val length: Int = this.fold(0) {
+  lazy val length: Int = this.folder.fold(0) {
     case RelationshipChain(_, _, _) => _ + 1
     case _ => identity
   }
@@ -100,7 +100,7 @@ object RelationshipChain {
    * For each rel variable that is duplicated, return the first occurrence of that variable.
    */
   def findDuplicateRelationships(treeNode: ASTNode): Seq[LogicalVariable] = {
-    val duplicates = treeNode.fold(Map[String, List[LogicalVariable]]().withDefaultValue(Nil)) {
+    val duplicates = treeNode.folder.fold(Map[String, List[LogicalVariable]]().withDefaultValue(Nil)) {
       case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _, _), _) =>
         map =>
           map.updated(rel.name, rel :: map(rel.name))

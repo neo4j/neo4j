@@ -502,7 +502,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case q =>
-        val unsupportedClauses = q.treeFold(List.empty[String]) {
+        val unsupportedClauses = q.folder.treeFold(List.empty[String]) {
           case _: CallClause => acc => SkipChildren(acc)
           case _: Return => acc => SkipChildren(acc)
           case c: Clause => acc => SkipChildren(acc :+ c.name)
@@ -511,7 +511,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           throw new RuntimeException(s"The following unsupported clauses were used: ${unsupportedClauses.sorted.mkString(", ")}. \n" + systemDbProcedureRules)
         }
 
-        val callCount = q.treeCount {
+        val callCount = q.folder.treeCount {
           case _: CallClause => true
         }
         if (callCount > 1) {

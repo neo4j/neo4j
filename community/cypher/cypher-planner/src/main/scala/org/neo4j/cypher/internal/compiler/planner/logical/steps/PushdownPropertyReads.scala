@@ -101,7 +101,7 @@ case object PushdownPropertyReads {
 
     def foldSingleChildPlan(acc: Acc, plan: LogicalPlan): Acc = {
       val newPropertyExpressions =
-        plan.treeFold(List.empty[Property]) {
+        plan.folder.treeFold(List.empty[Property]) {
           case lp: LogicalPlan if lp.id != plan.id =>
             acc2 => SkipChildren(acc2) // do not traverse further
           case _: CaseExpression => // we don't want to pushdown properties inside case expressions since it's not sure we will ever need to read them

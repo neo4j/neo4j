@@ -79,7 +79,7 @@ case object moveWithPastMatch extends Rewriter with StepSequencer.Step with ASTR
     def usesVariableFromWith(w: With): Boolean = {
       // We can be sure all return items are aliased at this point
       clauses.exists {
-        m => m.findAllByClass[LogicalVariable].exists(w.returnItems.items.flatMap(_.alias).contains)
+        m => m.folder.findAllByClass[LogicalVariable].exists(w.returnItems.items.flatMap(_.alias).contains)
       }
     }
     def allExportedVariablesAsReturnItems: Seq[AliasedReturnItem] = clauses.flatMap(_.allExportedVariables.map(v => AliasedReturnItem(v))).distinct

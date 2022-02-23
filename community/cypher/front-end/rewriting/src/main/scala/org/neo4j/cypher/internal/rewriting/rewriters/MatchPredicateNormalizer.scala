@@ -38,7 +38,7 @@ trait MatchPredicateNormalizer {
    * Traverse into pattern and extract not normalized predicates from its elements.
    */
   final def extractAllFrom(pattern: Any): Seq[Expression] =
-    pattern.fold(Vector.empty[Expression]) {
+    pattern.folder.fold(Vector.empty[Expression]) {
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) => acc => acc ++ extract(patternElement)
       case _                                                             => identity
     }
