@@ -35,7 +35,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression) chain
-    SemanticPatternCheck.checkValidPropertyKeyNames(expression.findByAllClass[Property].map(prop => prop.propertyKey), expression.position)
+    SemanticPatternCheck.checkValidPropertyKeyNames(expression.folder.findByAllClass[Property].map(prop => prop.propertyKey), expression.position)
 
   def mapExpression(f: Expression => Expression): SortItem
 }

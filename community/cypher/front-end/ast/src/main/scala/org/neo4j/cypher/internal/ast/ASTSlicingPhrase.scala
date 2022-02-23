@@ -57,7 +57,7 @@ trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
   }
 
   private def doesNotTouchTheGraph: SemanticCheck = {
-    val badExpressionFound = expression.treeExists {
+    val badExpressionFound = expression.folder.treeExists {
       case _: PatternComprehension |
            _: PatternExpression |
            _: PathExpression =>

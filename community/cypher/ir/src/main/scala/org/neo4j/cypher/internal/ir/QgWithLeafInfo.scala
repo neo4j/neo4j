@@ -156,8 +156,8 @@ case class QgWithLeafInfo(private val solvedQg: QueryGraph,
   })
 
   private lazy val patternExpressionProperties: Set[PropertyKeyName] = {
-    (queryGraph.findByAllClass[PatternComprehension] ++ queryGraph.findByAllClass[PatternExpression]).flatMap {
-      _.findByAllClass[PropertyKeyName]
+    (queryGraph.folder.findByAllClass[PatternComprehension] ++ queryGraph.folder.findByAllClass[PatternExpression]).flatMap {
+      _.folder.findByAllClass[PropertyKeyName]
     }.toSet
   }
 

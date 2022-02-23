@@ -54,7 +54,7 @@ case class SetPropertyItem(property: LogicalProperty, expression: Expression)(va
       expectType(CTNode.covariant | CTRelationship.covariant, property.map)
 
   private def checkForExists: SemanticCheck = {
-    val invalid: Option[Expression] = expression.treeFind[Expression] { case _: ExistsSubClause => true }
+    val invalid: Option[Expression] = expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
     invalid.map(exp => SemanticError("The EXISTS subclause is not valid inside a SET clause.", exp.position))
   }
 }

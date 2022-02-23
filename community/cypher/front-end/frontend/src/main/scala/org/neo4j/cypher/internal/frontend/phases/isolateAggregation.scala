@@ -136,7 +136,7 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
     expressionsToGoToWith
   }
 
-  private def clauseNeedingWork(c: Clause): Boolean = c.treeExists {
+  private def clauseNeedingWork(c: Clause): Boolean = c.folder.treeExists {
     case e: Expression => hasAggregateButIsNotAggregate(e)
   }
 

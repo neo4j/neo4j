@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 case object selectPatternPredicates extends SelectionCandidateGenerator {
 
@@ -107,7 +108,7 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
     val new_qg = e.optionalWhereExpression.foldLeft(qg) {
       case (acc: QueryGraph, patternExpr: Expression) => {
         val outerVariableNames = e.outerScope.map(id => id.name)
-        val usedVariables: Seq[String] = patternExpr.arguments
+        val usedVariables: Seq[String] = patternExpr.arguments.folder
           .findByAllClass[Variable]
           .map(_.name)
           .distinct

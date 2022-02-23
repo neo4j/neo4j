@@ -310,7 +310,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       expectType(CTMap.covariant, properties)
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
-    val propertyKeys = returnItems.items.collect { case item => item.expression.findByAllClass[Property]map(prop => prop.propertyKey) }.flatten
+    val propertyKeys = returnItems.items.collect { case item => item.expression.folder.findByAllClass[Property]map(prop => prop.propertyKey) }.flatten
     SemanticPatternCheck.checkValidPropertyKeyNames(propertyKeys, position)
   }
 

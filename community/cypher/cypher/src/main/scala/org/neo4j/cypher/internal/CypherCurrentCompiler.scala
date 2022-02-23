@@ -288,7 +288,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
   }
 
   private def planHasDBMSProcedure(logicalPlan: LogicalPlan): Boolean =
-    logicalPlan.treeExists {
+    logicalPlan.folder.treeExists {
       case procCall: ProcedureCall if procCall.call.signature.accessMode.isInstanceOf[ProcedureDbmsAccess] => true
     }
 

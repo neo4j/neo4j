@@ -86,7 +86,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
 
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
                                 ambiguousNames: Set[String]): VariableRenamings =
-    statement.treeFold(Map.empty[Ref[Variable], Variable]) {
+    statement.folder.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) =>
         val renaming = createVariableRenaming(variableDefinitions, i)
         acc => TraverseChildren(acc + renaming)

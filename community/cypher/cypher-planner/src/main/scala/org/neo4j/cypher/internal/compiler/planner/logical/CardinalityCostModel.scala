@@ -217,7 +217,7 @@ object CardinalityCostModel {
    * The cost of evaluating an expression, per row.
    */
   def costPerRowFor(expression: Expression, semanticTable: SemanticTable): CostPerRow = {
-    val noOfStoreAccesses = expression.treeFold(0) {
+    val noOfStoreAccesses = expression.folder.treeFold(0) {
       case x: Property if semanticTable.isNodeNoFail(x.map) || semanticTable.isRelationshipNoFail(x.map) => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case cp: CachedProperty if cp.knownToAccessStore => count => TraverseChildren(count + PROPERTY_ACCESS_DB_HITS)
       case _: HasLabels |

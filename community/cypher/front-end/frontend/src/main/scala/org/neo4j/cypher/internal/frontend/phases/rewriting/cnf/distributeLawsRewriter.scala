@@ -40,7 +40,7 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
     }
   }
 
-  private def dnfCounts(value: Any) = value.treeFold(1) {
+  private def dnfCounts(value: Any) = value.folder.treeFold(1) {
     case Or(lhs, a: And) => acc => TraverseChildren(acc + 1)
     case Or(a: And, rhs) => acc => TraverseChildren(acc + 1)
   }

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.mergeDuplicateBooleanOperators
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -104,8 +103,8 @@ class MergeBooleanOperatorsTest extends CypherFunSuite {
     val original = JavaCCParser.parse("RETURN " +  originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = mergeDuplicateBooleanOperators(checkResult.state)
-    val result = original.rewrite(rewriter)
-    val maybeReturnExp = result.treeFind ({
+    val result = original.endoRewrite(rewriter)
+    val maybeReturnExp = result.folder.treeFind ({
       case UnaliasedReturnItem(expression, _) => {
         assert(matcher.isDefinedAt(expression), expression)
         true

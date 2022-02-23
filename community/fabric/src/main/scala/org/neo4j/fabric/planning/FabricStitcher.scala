@@ -167,7 +167,7 @@ case class FabricStitcher(
 
     val updatedStatement = withPeriodicCommitHint(statement)
 
-    val sensitive = updatedStatement.treeExists {
+    val sensitive = updatedStatement.folder.treeExists {
       case _: SensitiveParameter => true
       case _: SensitiveLiteral => true
     }

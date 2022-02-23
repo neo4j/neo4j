@@ -163,14 +163,14 @@ class CypherPlannerTest extends CypherFunSuite {
       .statement()
 
     val withAnons = statement
-      .treeFindByClass[With].get
-      .findByAllClass[Variable]
+      .folder.treeFindByClass[With].get
+      .folder.findByAllClass[Variable]
       .map(_.name)
       .map(NameDeduplicator.removeGeneratedNamesAndParams)
 
     val whereAnons = statement
-      .treeFindByClass[Where].get
-      .findByAllClass[Variable]
+      .folder.treeFindByClass[Where].get
+      .folder.findByAllClass[Variable]
       .map(_.name)
       .map(NameDeduplicator.removeGeneratedNamesAndParams)
 

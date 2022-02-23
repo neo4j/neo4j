@@ -256,9 +256,9 @@ object Deprecations {
     }
 
     override def findWithContext(statement: Statement): Set[Deprecation] = {
-      val replacementsFromExistsToIsNotNull = statement.treeFold[Set[Deprecation]](Set.empty) {
+      val replacementsFromExistsToIsNotNull = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
         case w: Where =>
-          val deprecations = w.treeFold[Set[Deprecation]](Set.empty) {
+          val deprecations = w.folder.treeFold[Set[Deprecation]](Set.empty) {
             case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
               acc => TraverseChildren(acc)
 
@@ -302,7 +302,7 @@ object Deprecations {
 
     override def findWithContext(statement: Statement,
                                  semanticTable: SemanticTable): Set[Deprecation] = {
-      val deprecationsOfPatternExpressionsOutsideExists = statement.treeFold[Set[Deprecation]](Set.empty) {
+      val deprecationsOfPatternExpressionsOutsideExists = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
         case Exists(_) =>
           // Don't look inside exists()
           deprecations => SkipChildren(deprecations)

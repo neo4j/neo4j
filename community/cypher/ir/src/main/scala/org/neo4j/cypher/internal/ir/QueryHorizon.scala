@@ -28,16 +28,18 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
-trait QueryHorizon {
+trait QueryHorizon extends Foldable {
 
   def exposedSymbols(coveredIds: Set[String]): Set[String]
 
   def dependingExpressions: Seq[Expression]
 
-  def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
+  def dependencies: Set[String] = dependingExpressions.folder.treeFold(Set.empty[String]) {
     case id: Variable =>
       acc => TraverseChildren(acc + id.name)
   }
@@ -57,8 +59,8 @@ trait QueryHorizon {
      */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
     val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
-    val patternComprehensions = filtered.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
-    val patternExpressions = filtered.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternComprehensions = filtered.folder.findByAllClass[PatternComprehension].map((e: PatternComprehension) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
+    val patternExpressions = filtered.folder.findByAllClass[PatternExpression].map((e: PatternExpression) => ExpressionConverters.asQueryGraph(e, e.dependencies.map(_.name), new AnonymousVariableNameGenerator))
     val qgs = patternComprehensions ++ patternExpressions :+ getQueryGraphFromDependingExpressions
     qgs.map(QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves)
   }

@@ -104,7 +104,7 @@ abstract class LogicalPlan(idGen: IdGen)
     }
   }
 
-  def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
+  def leaves: Seq[LogicalPlan] = this.folder.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => TraverseChildren(acc :+ plan)
   }
@@ -189,7 +189,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage(): Seq[IndexUsage] = {
-    this.fold(Seq.empty[IndexUsage]) {
+    this.folder.fold(Seq.empty[IndexUsage]) {
       case MultiNodeIndexSeek(indexPlans) =>
         acc => acc ++ indexPlans.flatMap(_.indexUsage())
       case NodeByLabelScan(idName, _, _, _) =>

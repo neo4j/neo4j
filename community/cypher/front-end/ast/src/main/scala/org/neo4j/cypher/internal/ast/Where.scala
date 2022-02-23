@@ -32,6 +32,6 @@ case class Where(expression: Expression)(val position: InputPosition)
 
   def semanticCheck =
     SemanticExpressionCheck.simple(expression) chain
-    SemanticPatternCheck.checkValidPropertyKeyNames(expression.findByAllClass[Property].map(prop => prop.propertyKey), expression.position) chain
+    SemanticPatternCheck.checkValidPropertyKeyNames(expression.folder.findByAllClass[Property].map(prop => prop.propertyKey), expression.position) chain
     SemanticExpressionCheck.expectType(CTBoolean.covariant, expression)
 }

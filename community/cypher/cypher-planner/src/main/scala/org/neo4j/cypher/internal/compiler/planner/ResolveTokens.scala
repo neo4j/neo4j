@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
  */
 case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step with PlanPipelineTransformerFactory {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
-    ast.fold(()) {
+    ast.folder.fold(()) {
       case token: PropertyKeyName =>
         _ => resolvePropertyKeyName(token.name)
       case token: LabelName =>

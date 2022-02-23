@@ -91,8 +91,8 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     val original = JavaCCParser.parse("RETURN " +  originalQuery, exceptionFactory, new AnonymousVariableNameGenerator())
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(checkResult.state)
-    val result = original.rewrite(rewriter)
-    val maybeReturnExp = result.treeFind ({
+    val result = original.endoRewrite(rewriter)
+    val maybeReturnExp = result.folder.treeFind ({
       case UnaliasedReturnItem(expression, _) => {
         assert(matcher.isDefinedAt(expression), expression)
         true

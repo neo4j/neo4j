@@ -70,7 +70,7 @@ object ExpressionConverters {
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
+    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
       case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     }
@@ -122,7 +122,7 @@ object ExpressionConverters {
     val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
     val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
     val relChain: RelationshipChain = exp.pattern.element
-    val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
+    val predicates: IndexedSeq[Expression] = relChain.folder.fold(uniquePredicates.toIndexedSeq) {
       case pattern: AnyRef if normalizer(anonymousVariableNameGenerator).extract.isDefinedAt(pattern) => acc => acc ++ normalizer(anonymousVariableNameGenerator).extract(pattern)
       case _                                                          => identity
     } ++ exp.predicate
@@ -143,7 +143,7 @@ object ExpressionConverters {
     }
 
     def asPredicates(outerScope: Set[String]): Set[Predicate] = {
-      predicate.treeFold(Set.empty[Predicate]) {
+      predicate.folder.treeFold(Set.empty[Predicate]) {
         // n:Label
         case p@HasLabels(Variable(name), labels) =>
           acc => val newAcc = acc ++ labels.map { label =>

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
@@ -313,7 +314,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     withClue("Did not expect an UndirectedRelationshipIndexScan to be planned") {
       planner.plan(
         """MATCH (a)-[r:REL]-(b) WITH r SKIP 0
-          |MATCH (a2)-[r:REL]-(b2) WHERE r.prop IS NOT NULL RETURN r""".stripMargin).leaves.treeExists {
+          |MATCH (a2)-[r:REL]-(b2) WHERE r.prop IS NOT NULL RETURN r""".stripMargin).leaves.folder.treeExists {
         case _: UndirectedRelationshipIndexScan => true
       } should be(false)
     }
@@ -355,7 +356,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           |MATCH (a2)-[r:REL]-(b2) WHERE r.prop CONTAINS 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).leaves.treeExists {
+      planner.plan(query).leaves.folder.treeExists {
         case _: UndirectedRelationshipIndexContainsScan => true
       } should be(false)
     }

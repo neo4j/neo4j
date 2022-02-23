@@ -63,7 +63,7 @@ class SemanticAwareAstGenerator(simpleStrings: Boolean = true, allowedVarNames: 
 
   def nonAggregatingExpression: Gen[Expression] =
     _expression.suchThat { expr =>
-      !expr.containsAggregate && !expr.treeExists {
+      !expr.containsAggregate && !expr.folder.treeExists {
         case _: FunctionInvocation => true // not interested in randomly-generated functions, we'll just end up with `scala.MatchError: UnresolvedFunction`
         case _: MapProjection => true // org.neo4j.exceptions.InternalException: `MapProjection` should have been rewritten away
       }

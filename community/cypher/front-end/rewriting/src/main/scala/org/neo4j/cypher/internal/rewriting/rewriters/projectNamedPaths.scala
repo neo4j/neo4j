@@ -85,7 +85,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     }.toIndexedSeq
 
     def withVariableRewritesForExpression(expr: Expression): Projectibles =
-      expr.treeFold(self) {
+      expr.folder.treeFold(self) {
         case ident: Variable =>
           acc =>
             acc.paths.get(ident) match {
@@ -124,7 +124,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     topDown(applicator)(input)
   }
 
-  private def collectProjectibles(input: AnyRef): Projectibles = input.treeFold(Projectibles.empty) {
+  private def collectProjectibles(input: AnyRef): Projectibles = input.folder.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
       acc =>
         // We are not allowed to replace the alias of a ReturnItem, so we add it to the protected variables.
@@ -151,7 +151,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
       acc =>
         // Collect importing WITH clauses to insert into subqueries.
         // Importing with clauses cannot contain PathExpressions, so we need to add an extra WITH clause before those with all the variables from the path.
-        val newAcc = subquery.part.treeFold(acc) {
+        val newAcc = subquery.part.folder.treeFold(acc) {
           case query:SingleQuery => innerAcc =>
             val allReturnItems: Seq[ReturnItem] = query.importWith.collect {
               case With(_, ReturnItems(_, items, _), _, _, _, _) => items

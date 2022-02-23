@@ -89,24 +89,24 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
         or
   })
 
-  private def containNeitherOrsNorInnerScopes(expressions: Expression*):Boolean = expressions.forall(!_.treeExists {
+  private def containNeitherOrsNorInnerScopes(expressions: Expression*):Boolean = expressions.forall(!_.folder.treeExists {
     case _: Or => true
     case _: ScopeExpression => true
   })
 
-  private def containNoAnds(expressions: Expression*):Boolean = expressions.forall(!_.treeExists {
+  private def containNoAnds(expressions: Expression*):Boolean = expressions.forall(!_.folder.treeExists {
     case _: And => true
   })
 
-  private def containNots(expressions: Expression*): Boolean = expressions.forall(_.treeExists {
+  private def containNots(expressions: Expression*): Boolean = expressions.forall(_.folder.treeExists {
     case _: Not => true
   })
 
-  private def containNoNots(expressions: Expression*): Boolean = expressions.forall(!_.treeExists {
+  private def containNoNots(expressions: Expression*): Boolean = expressions.forall(!_.folder.treeExists {
     case _: Not => true
   })
 
-  private def containIns(expressions: Expression*): Boolean = expressions.forall(_.treeExists {
+  private def containIns(expressions: Expression*): Boolean = expressions.forall(_.folder.treeExists {
     case _: In => true
   })
 
@@ -139,7 +139,7 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
   //Returns {a -> merge(A,B), b -> C}
   private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])
                                  (expressions: Expression*): Map[Expression, Seq[Expression]] = {
-    val maps = expressions.map(_.treeFold(Map.empty[Expression, Seq[Expression]]) {
+    val maps = expressions.map(_.folder.treeFold(Map.empty[Expression, Seq[Expression]]) {
       case In(a, ListLiteral(exprs)) => map => {
         //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
         val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct

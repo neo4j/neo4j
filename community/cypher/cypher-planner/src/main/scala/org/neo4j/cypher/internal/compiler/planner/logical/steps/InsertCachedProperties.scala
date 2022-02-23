@@ -202,7 +202,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
         copy(properties = properties.mapValues(_.copy(usages = 0)))
     }
 
-    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.treeFold(acc) {
+    def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.folder.treeFold(acc) {
       // Find properties
       case prop@Property(v: Variable, _) if isNode(v) => acc =>
         TraverseChildren(acc.addNodeProperty(prop, logicalPlan))
