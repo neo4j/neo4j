@@ -138,6 +138,7 @@ public class JmxDump
             public InputStream newInputStream() throws IOException
             {
                 final Path heapdumpFile = createTempFile( "neo4j-heapdump", ".hprof" ).toAbsolutePath();
+                deleteIfExists( heapdumpFile );
                 heapDump( heapdumpFile.toString() );
                 return new FileInputStream( heapdumpFile.toFile() )
                 {
