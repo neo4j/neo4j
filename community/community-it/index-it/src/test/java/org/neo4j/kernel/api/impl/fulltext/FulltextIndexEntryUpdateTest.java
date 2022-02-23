@@ -80,7 +80,6 @@ import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
@@ -442,7 +441,7 @@ class FulltextIndexEntryUpdateTest
 
     private IndexUpdater getPopulatingUpdater( IndexPopulator populator )
     {
-        return populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, CursorContext.NULL_CONTEXT );
+        return populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT );
     }
 
     private IndexAccessor getAccessor() throws IOException

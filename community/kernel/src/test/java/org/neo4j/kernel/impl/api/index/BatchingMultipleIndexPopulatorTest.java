@@ -37,7 +37,6 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -51,7 +50,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -102,7 +100,7 @@ public class BatchingMultipleIndexPopulatorTest
 
         IndexPopulator populator = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater = mock( IndexUpdater.class );
-        when( populator.newPopulatingUpdater( any(), any() ) ).thenReturn( updater );
+        when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index1, "bar" );
@@ -112,7 +110,7 @@ public class BatchingMultipleIndexPopulatorTest
         assertThat( batchingPopulator.needToApplyExternalUpdates() ).isFalse();
 
         verify( updater, never() ).process( any( ValueIndexEntryUpdate.class ) );
-        verify( populator, never() ).newPopulatingUpdater( any(), any() );
+        verify( populator, never() ).newPopulatingUpdater( any() );
     }
 
     @Test
@@ -128,11 +126,11 @@ public class BatchingMultipleIndexPopulatorTest
 
         IndexPopulator populator1 = addPopulator( batchingPopulator, index1 );
         IndexUpdater updater1 = mock( IndexUpdater.class );
-        when( populator1.newPopulatingUpdater( any(), any() ) ).thenReturn( updater1 );
+        when( populator1.newPopulatingUpdater( any() ) ).thenReturn( updater1 );
 
         IndexPopulator populator2 = addPopulator( batchingPopulator, index42 );
         IndexUpdater updater2 = mock( IndexUpdater.class );
-        when( populator2.newPopulatingUpdater( any(), any() ) ).thenReturn( updater2 );
+        when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
         batchingPopulator.createStoreScan( CONTEXT_FACTORY );
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
@@ -252,7 +250,6 @@ public class BatchingMultipleIndexPopulatorTest
             PropertyScanConsumer consumerArg = invocation.getArgument( 2 );
             return new IndexEntryUpdateScan( updates, consumerArg );
         } );
-        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         return storeView;
     }
 

@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -220,7 +219,7 @@ class IndexCRUDIT
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
+        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
         {
             return newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false );
         }

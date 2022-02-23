@@ -36,8 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,12 +48,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
@@ -104,7 +100,6 @@ class FullScanStoreViewTest
     private Relationship aKnowsS;
     private Relationship sKnowsA;
     private StorageReader reader;
-    private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
     void before() throws KernelException
@@ -127,7 +122,6 @@ class FullScanStoreViewTest
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
         storeView = new FullScanStoreView( locks, storageEngine::newReader, storageEngine::createStorageCursors, Config.defaults(), jobScheduler );
-        propertyAccessor = storeView.newPropertyAccessor( CursorContext.NULL_CONTEXT, INSTANCE );
         reader = storageEngine.newReader();
     }
 
@@ -135,7 +129,6 @@ class FullScanStoreViewTest
     void after() throws Exception
     {
         jobScheduler.close();
-        propertyAccessor.close();
         reader.close();
     }
 
@@ -255,13 +248,6 @@ class FullScanStoreViewTest
         order.verify( lock0 ).release();
         order.verify( locks ).acquireRelationshipLock( 1, SHARED );
         order.verify( lock1 ).release();
-    }
-
-    @Test
-    void shouldReadProperties() throws EntityNotFoundException
-    {
-        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId, CursorContext.NULL_CONTEXT );
-        assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 
     @Test

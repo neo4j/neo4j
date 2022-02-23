@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,7 +129,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
 
         List<TokenIndexEntryUpdate<?>> updates = TokenIndexUtility.generateSomeRandomUpdates( entityTokens, random );
 
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             for ( TokenIndexEntryUpdate<?> update : updates )
             {
@@ -149,7 +148,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
+        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
 
         // when
         updater.close();
@@ -186,7 +185,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
             populator.add( updates, NULL_CONTEXT );
 
             // Interleave external updates in id range lower than currentScanId
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL_CONTEXT ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
             {
                 for ( int i = 0; i < 100; i++ )
                 {

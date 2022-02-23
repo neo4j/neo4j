@@ -50,7 +50,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -61,7 +60,6 @@ import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
@@ -86,7 +84,6 @@ class LuceneSchemaIndexPopulatorTest
     private IndexSearcher searcher;
     private static final int propertyKeyId = 666;
     private IndexDescriptor index;
-    private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
     void before() throws IOException
@@ -96,7 +93,6 @@ class LuceneSchemaIndexPopulatorTest
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new TextIndexProvider( fs, directoryFactory, directoriesByProvider( testDir.directory( "folder" ) ),
                 new Monitors(), Config.defaults(), writable() );
-        propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withName( "index" ).materialise( 0 );
         indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP );
@@ -173,7 +169,7 @@ class LuceneSchemaIndexPopulatorTest
         addUpdate( indexPopulator, 1, "value" );
         addUpdate( indexPopulator, 2, "value" );
         addUpdate( indexPopulator, 3, "value" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ) );
 
         // THEN
         assertIndexedValues(
@@ -186,7 +182,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ) );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -203,7 +199,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ) );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -220,7 +216,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ) );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -236,10 +232,10 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ) );
         addUpdate( indexPopulator, 3, "3" );
         addUpdate( indexPopulator, 4, "4" );
-        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), propertyAccessor );
+        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ) );
 
         // THEN
         assertIndexedValues(
@@ -329,10 +325,9 @@ class LuceneSchemaIndexPopulatorTest
 
     private static void updatePopulator(
             IndexPopulator populator,
-            Iterable<IndexEntryUpdate<?>> updates,
-            NodePropertyAccessor accessor ) throws IndexEntryConflictException
+            Iterable<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor, NULL_CONTEXT ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             for ( IndexEntryUpdate<?> update :  updates )
             {

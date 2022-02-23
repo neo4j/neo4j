@@ -34,7 +34,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -42,9 +41,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
-import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -66,10 +62,9 @@ class SchemaComplianceChecker implements AutoCloseable
     private final Iterable<IndexDescriptor> indexes;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
-    private final NodePropertyAccessor propertyAccessor;
 
     SchemaComplianceChecker( CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties, Iterable<IndexDescriptor> indexes,
-            CursorContext cursorContext, StoreCursors storeCursors, MemoryTracker memoryTracker )
+            CursorContext cursorContext, StoreCursors storeCursors )
     {
         this.context = context;
         this.mandatoryProperties = mandatoryProperties;
@@ -77,7 +72,6 @@ class SchemaComplianceChecker implements AutoCloseable
         this.indexes = indexes;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
-        this.propertyAccessor = new DefaultNodePropertyAccessor( new RecordStorageReader( context.neoStores ), cursorContext, storeCursors, memoryTracker );
     }
 
     <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties( ENTITY entity, long[] entityTokens, IntObjectMap<Value> values,
@@ -116,7 +110,7 @@ class SchemaComplianceChecker implements AutoCloseable
     @Override
     public void close()
     {
-        closeAllUnchecked( indexReaders, propertyAccessor );
+        closeAllUnchecked( indexReaders );
     }
 
     private <ENTITY extends PrimitiveRecord> void verifyIndexedUniquely( ENTITY entity, Value[] propertyValues, IndexDescriptor indexRule,

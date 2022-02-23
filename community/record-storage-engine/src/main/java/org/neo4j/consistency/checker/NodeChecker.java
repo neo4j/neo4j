@@ -137,7 +137,7 @@ class NodeChecker implements Checker
               BoundedIterable<EntityTokenRange> labelIndexReader = getLabelIndexReader( fromNodeId, toNodeId, last, cursorContext );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
               SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, smallIndexes, cursorContext,
-                        storeCursors, context.memoryTracker ) )
+                        storeCursors ) )
         {
             ProgressListener localProgress = nodeProgress.threadLocalReporter();
             MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();

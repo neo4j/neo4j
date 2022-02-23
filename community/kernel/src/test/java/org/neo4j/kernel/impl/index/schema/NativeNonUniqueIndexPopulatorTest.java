@@ -109,7 +109,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
         // given
         populator.create();
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             // when
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
@@ -140,7 +140,7 @@ abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>
             updates[2] = updates[1];
             updates[3] = generator.next().values()[0];
             updates[4] = updates[3];
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
             {
                 long nodeId = 1000;
                 for ( Value value : updates )

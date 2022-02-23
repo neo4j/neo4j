@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -75,7 +74,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
+        try ( var updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
@@ -95,7 +94,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
+        try ( var updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "initial1" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "initial2" ) );
@@ -116,7 +115,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
 
         // When
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
+        try ( var updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
             updater.process( add( 2, SCHEMA_DESCRIPTOR, "bar" ) );
@@ -191,7 +190,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         final var populator = getPopulator( provider, SCHEMA_DESCRIPTOR );
         populator.add( internalUpdates, NULL_CONTEXT );
 
-        try ( var updater = populator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT ) )
+        try ( var updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             for ( final var update : externalUpdates )
             {

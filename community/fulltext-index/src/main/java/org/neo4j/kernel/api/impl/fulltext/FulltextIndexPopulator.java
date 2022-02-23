@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 
@@ -76,7 +75,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         return new PopulatingFulltextIndexUpdater();
     }

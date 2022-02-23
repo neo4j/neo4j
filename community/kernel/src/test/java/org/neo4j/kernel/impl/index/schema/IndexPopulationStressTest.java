@@ -67,7 +67,6 @@ import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleEntityClient;
 import org.neo4j.test.Race;
@@ -82,11 +81,6 @@ import org.neo4j.values.storable.Value;
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
@@ -130,7 +124,6 @@ abstract class IndexPopulationStressTest
     private IndexDescriptor descriptor;
     private IndexDescriptor descriptor2;
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( 1000, 0.2, true );
-    private final NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
     private IndexPopulator populator;
     private IndexProvider indexProvider;
     private TokenNameLookup tokenNameLookup;
@@ -163,8 +156,6 @@ abstract class IndexPopulationStressTest
                 .completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
         populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup );
-        when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt(), any( CursorContext.class ) ) ).thenThrow(
-                UnsupportedOperationException.class );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
 
@@ -247,7 +238,7 @@ abstract class IndexPopulationStressTest
                 // Do updates now and then
                 Thread.sleep( 10 );
                 updateLock.writeLock().lock();
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor, CursorContext.NULL_CONTEXT ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
                 {
                     for ( int i = 0; i < THREADS; i++ )
                     {
@@ -341,7 +332,7 @@ abstract class IndexPopulationStressTest
                     referencePopulator.add( generator.batch( descriptor2 ), CursorContext.NULL_CONTEXT );
                 }
             }
-            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( nodePropertyAccessor, CursorContext.NULL_CONTEXT ) )
+            try ( IndexUpdater updater = referencePopulator.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
             {
                 for ( ValueIndexEntryUpdate<?> update : updates )
                 {

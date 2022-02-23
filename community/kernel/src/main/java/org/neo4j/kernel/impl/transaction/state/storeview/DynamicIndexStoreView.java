@@ -45,7 +45,6 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -125,12 +124,6 @@ public class DynamicIndexStoreView implements IndexStoreView
     public boolean isEmpty( CursorContext cursorContext )
     {
         return fullScanStoreView.isEmpty( cursorContext );
-    }
-
-    @Override
-    public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return fullScanStoreView.newPropertyAccessor( cursorContext, memoryTracker );
     }
 
     private Optional<TokenIndexData> findTokenIndex( Supplier<StorageReader> storageReader, EntityType entityType )

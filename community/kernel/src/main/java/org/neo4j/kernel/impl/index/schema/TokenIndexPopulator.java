@@ -32,7 +32,6 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -95,7 +94,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         try
         {

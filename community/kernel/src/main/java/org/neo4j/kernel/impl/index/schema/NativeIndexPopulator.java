@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.UniqueIndexSampler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
@@ -131,12 +130,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
-    {
-        return newPopulatingUpdater( cursorContext );
-    }
-
-    IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector, cursorContext ) );
         if ( descriptor.isUnique() )

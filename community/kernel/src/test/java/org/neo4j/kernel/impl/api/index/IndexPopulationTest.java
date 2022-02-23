@@ -45,7 +45,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.values.storable.Values;
@@ -106,7 +105,7 @@ class IndexPopulationTest
         return new IndexPopulator.Adapter()
         {
             @Override
-            public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+            public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
             {
                 return new IndexUpdater()
                 {

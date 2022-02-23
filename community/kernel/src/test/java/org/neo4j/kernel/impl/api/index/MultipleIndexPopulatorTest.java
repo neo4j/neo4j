@@ -52,7 +52,6 @@ import org.neo4j.memory.HeapEstimator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -108,7 +107,6 @@ class MultipleIndexPopulatorTest
     {
         indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
-        when( indexStoreView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
         // The returned StoreScan instance returned from this MultipleIndexPopulator is wrapped in a LoggingStoreScan
         // so this inner/actual StoreScan instance is accessible as a field for verification
         actualStoreScan = mock( StoreScan.class );
@@ -420,11 +418,10 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 1 );
         addPopulator( indexPopulator2, 2 );
 
-        doThrow( getPopulatorException() ).when( indexPopulator2 )
-            .newPopulatingUpdater( any( NodePropertyAccessor.class ), any() );
+        doThrow( getPopulatorException() ).when( indexPopulator2 ).newPopulatingUpdater( any() );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT );
+            multipleIndexPopulator.newPopulatingUpdater( NULL_CONTEXT );
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -441,7 +438,7 @@ class MultipleIndexPopulatorTest
         addPopulator( indexPopulator1, 2 );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT );
+            multipleIndexPopulator.newPopulatingUpdater( NULL_CONTEXT );
 
         IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
@@ -461,7 +458,7 @@ class MultipleIndexPopulatorTest
         doThrow( getPopulatorException() ).when( indexUpdater1 ).process( propertyUpdate );
 
         IndexUpdater multipleIndexUpdater =
-            multipleIndexPopulator.newPopulatingUpdater( mock( NodePropertyAccessor.class ), NULL_CONTEXT );
+            multipleIndexPopulator.newPopulatingUpdater( NULL_CONTEXT );
 
         multipleIndexUpdater.process( propertyUpdate );
 
@@ -472,7 +469,6 @@ class MultipleIndexPopulatorTest
     @Test
     void testMultiplePropertyUpdateFailures() throws IndexEntryConflictException, FlipFailedKernelException
     {
-        NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index1, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
@@ -482,7 +478,7 @@ class MultipleIndexPopulatorTest
 
         doThrow( getPopulatorException() ).when( updater ).process( any( IndexEntryUpdate.class ) );
 
-        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( nodePropertyAccessor, NULL_CONTEXT );
+        IndexUpdater multipleIndexUpdater = multipleIndexPopulator.newPopulatingUpdater( NULL_CONTEXT );
 
         multipleIndexUpdater.process( update1 );
         multipleIndexUpdater.process( update2 );
@@ -571,7 +567,7 @@ class MultipleIndexPopulatorTest
         multipleIndexPopulator.applyExternalUpdates( 15 );
 
         // then only the lower one should be applied, the higher one ignored
-        verify( populator, times( 1 ) ).newPopulatingUpdater( any(), any() );
+        verify( populator, times( 1 ) ).newPopulatingUpdater( any() );
         verify( updater ).process( lowUpdate );
         verify( updater, never() ).process( highUpdate );
 
@@ -623,7 +619,7 @@ class MultipleIndexPopulatorTest
     private static IndexPopulator createIndexPopulator( IndexUpdater indexUpdater )
     {
         IndexPopulator indexPopulator = createIndexPopulator();
-        when( indexPopulator.newPopulatingUpdater( any( NodePropertyAccessor.class ), any() ) ).thenReturn( indexUpdater );
+        when( indexPopulator.newPopulatingUpdater( any() ) ).thenReturn( indexUpdater );
         return indexPopulator;
     }
 

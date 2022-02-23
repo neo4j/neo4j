@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView
@@ -77,8 +76,6 @@ public interface IndexStoreView
             PropertyScanConsumer propertyScanConsumer, TokenScanConsumer relationshipTypeScanConsumer,
             boolean forceStoreScan, boolean parallelWrite, CursorContextFactory contextFactory, MemoryTracker memoryTracker );
 
-    NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker );
-
     boolean isEmpty( CursorContext cursorContext );
 
     StoreScan EMPTY_SCAN = new StoreScan()
@@ -116,12 +113,6 @@ public interface IndexStoreView
                 MemoryTracker memoryTracker )
         {
             return EMPTY_SCAN;
-        }
-
-        @Override
-        public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-            return NodePropertyAccessor.EMPTY;
         }
 
         @Override

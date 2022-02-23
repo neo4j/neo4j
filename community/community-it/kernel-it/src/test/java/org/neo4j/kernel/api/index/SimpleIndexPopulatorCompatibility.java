@@ -130,7 +130,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             var update = add( nodeId, descriptor, propertyValue );
             p.add( singletonList( update ), CursorContext.NULL_CONTEXT );
             // ...is the same as update using updater
-            try ( IndexUpdater updater = p.newPopulatingUpdater( ( node, propertyId, cursorContext ) -> propertyValue, CursorContext.NULL_CONTEXT ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
             {
                 updater.process( update );
             }
@@ -166,7 +166,7 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         // GIVEN
         withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
         {
-            try ( IndexUpdater updater = p.newPopulatingUpdater( this::valueSet1Lookup, CursorContext.NULL_CONTEXT ) )
+            try ( IndexUpdater updater = p.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
             {
                 for ( NodeAndValue entry : valueSet1 )
                 {
@@ -301,18 +301,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 }
             }
         }
-    }
-
-    private Value valueSet1Lookup( long nodeId, @SuppressWarnings( "unused" ) int propertyId, CursorContext cursorContext )
-    {
-        for ( NodeAndValue x : valueSet1 )
-        {
-            if ( x.nodeId == nodeId )
-            {
-                return x.value;
-            }
-        }
-        return Values.NO_VALUE;
     }
 
     private void assertHasAllValues( List<NodeAndValue> values ) throws IOException, IndexNotApplicableKernelException

@@ -79,7 +79,6 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -454,7 +453,6 @@ class IndexPopulationJobTest
                 ArgumentMatchers.any(),
                 ArgumentMatchers.any(), anyBoolean(), anyBoolean(), any(), any() ) )
                 .thenReturn(storeScan );
-        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexPrototype( FIRST, name, false ) );
@@ -726,7 +724,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
+        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
         {
             return new IndexUpdater()
             {
@@ -798,7 +796,7 @@ class IndexPopulationJobTest
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
+        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
         {
             return new IndexUpdater()
             {

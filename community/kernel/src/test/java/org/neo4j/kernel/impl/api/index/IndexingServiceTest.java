@@ -84,7 +84,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -170,7 +169,6 @@ class IndexingServiceTest
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
     private final IndexStoreViewFactory storeViewFactory  = mock( IndexStoreViewFactory.class );
-    private final NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
     private final InMemoryTokens nameLookup = new InMemoryTokens();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
@@ -182,7 +180,6 @@ class IndexingServiceTest
         when( populator.sample( any( CursorContext.class ) ) ).thenReturn( new IndexSample() );
         when( indexStatisticsStore.indexSample( anyLong() ) ).thenReturn( new IndexSample() );
         when( storeViewFactory.createTokenIndexStoreView( any() )).thenReturn( storeView );
-        when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( propertyAccessor );
         ValueIndexReader indexReader = mock( ValueIndexReader.class );
         IndexSampler indexSampler = mock( IndexSampler.class );
         when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
@@ -261,7 +258,7 @@ class IndexingServiceTest
     void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
         // given
-        when( populator.newPopulatingUpdater( eq( propertyAccessor ), any() ) ).thenReturn( updater );
+        when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
         CountDownLatch populationLatch = new CountDownLatch( 1 );
 
@@ -320,7 +317,7 @@ class IndexingServiceTest
         order.verify( populator, times( 1 ) ).add( any( Collection.class ), any( CursorContext.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ), any( IndexPopulator.PopulationWorkScheduler.class ),
                 any( CursorContext.class ) );
-        order.verify( populator ).newPopulatingUpdater( eq( propertyAccessor ), any() );
+        order.verify( populator ).newPopulatingUpdater( any() );
         order.verify( populator ).includeSample( any() );
         order.verify( updater ).process( any() );
         order.verify( updater ).close();
@@ -1228,7 +1225,6 @@ class IndexingServiceTest
         IndexMonitor monitor = mock( IndexMonitor.class );
         IndexStoreViewFactory storeViewFactory = mock( IndexStoreViewFactory.class );
         when( storeViewFactory.createTokenIndexStoreView( any() ) ).thenReturn( storeView );
-        when( storeView.newPropertyAccessor( any(), any() ) ).thenReturn( propertyAccessor );
         IndexingService indexingService = new IndexingService(
                 indexProxyCreator, indexProviderMap, indexMapReference, storeViewFactory, schemaRules,
                 samplingController, nameLookup, scheduler, null, logProvider, monitor, mock( IndexStatisticsStore.class ),

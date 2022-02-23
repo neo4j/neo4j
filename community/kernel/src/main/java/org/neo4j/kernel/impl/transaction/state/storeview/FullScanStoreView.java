@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.lock.LockService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
@@ -74,12 +73,6 @@ public class FullScanStoreView implements IndexStoreView
     {
         return new RelationshipStoreScan( config, storageReaderSupplier.get(), storeCursorsFactory, locks, relationshipTypeScanConsumer, propertyScanConsumer,
                 relationshipTypeIds, propertyKeyIdFilter, parallelWrite, scheduler, contextFactory, memoryTracker );
-    }
-
-    @Override
-    public NodePropertyAccessor newPropertyAccessor( CursorContext cursorContext, MemoryTracker memoryTracker )
-    {
-        return new DefaultNodePropertyAccessor( storageReaderSupplier.get(), cursorContext, storeCursorsFactory.apply( cursorContext ), memoryTracker );
     }
 
     @Override

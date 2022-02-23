@@ -112,7 +112,7 @@ abstract class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>> e
         // given
         populator.create();
         IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
+        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )

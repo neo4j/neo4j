@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 
 /**
  * A {@link LuceneIndexPopulator} used for non-unique Lucene schema indexes, Performs index sampling.
@@ -42,7 +41,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor nodePropertyAccessor, CursorContext cursorContext )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         return new NonUniqueLuceneIndexPopulatingUpdater( writer, ignoreStrategy );
     }

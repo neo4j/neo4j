@@ -118,7 +118,7 @@ class RelationshipChecker implements Checker
                       checkToEndOfIndex, cursorContext );
               SafePropertyChainReader property = new SafePropertyChainReader( context, cursorContext );
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker( context, mandatoryProperties, indexes, cursorContext,
-                        storeCursors, context.memoryTracker ) )
+                        storeCursors ) )
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = cacheAccess.client();

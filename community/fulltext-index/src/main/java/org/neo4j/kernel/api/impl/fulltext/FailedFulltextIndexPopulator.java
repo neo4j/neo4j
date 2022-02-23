@@ -30,7 +30,6 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 class FailedFulltextIndexPopulator extends IndexPopulator.Adapter
@@ -71,7 +70,7 @@ class FailedFulltextIndexPopulator extends IndexPopulator.Adapter
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+    public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         return new IndexUpdater()
         {

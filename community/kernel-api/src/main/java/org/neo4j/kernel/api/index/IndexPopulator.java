@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.SwallowingIndexUpdater;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
@@ -91,12 +90,11 @@ public interface IndexPopulator extends MinimalIndexAccessor
      *   applied idempotently.</li>
      * </ol>
      *
-     * @param accessor accesses property data if implementation needs to be able look up property values while populating.
      * @param cursorContext underlying page cache events tracer
      * @return an {@link IndexUpdater} which will funnel changes that happen concurrently with index population
      * into the population and incorporating them as part of the index population.
      */
-    IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext );
+    IndexUpdater newPopulatingUpdater( CursorContext cursorContext );
 
     /**
      * Close this populator and releases any resources related to it.
@@ -197,7 +195,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
         {
             return SwallowingIndexUpdater.INSTANCE;
         }
@@ -257,9 +255,9 @@ public interface IndexPopulator extends MinimalIndexAccessor
         }
 
         @Override
-        public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+        public IndexUpdater newPopulatingUpdater( CursorContext cursorContext )
         {
-            return delegate.newPopulatingUpdater( accessor, cursorContext );
+            return delegate.newPopulatingUpdater( cursorContext );
         }
 
         @Override

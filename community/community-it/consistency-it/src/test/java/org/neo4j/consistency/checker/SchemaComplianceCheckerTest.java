@@ -58,7 +58,6 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.pointValue;
@@ -102,7 +101,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
 
         // when
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), mandatoryProperties, context().indexAccessors.onlineRules( NODE ),
-                CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
+                CursorContext.NULL_CONTEXT, storeCursors ) )
         {
             checker.checkContainsMandatoryProperties( new NodeRecord( nodeId ), labels, propertyValues, reporter::forNode );
         }
@@ -238,7 +237,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     private void checkIndexed( long nodeId ) throws Exception
     {
         try ( SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
+                context().indexAccessors.onlineRules( NODE ), CursorContext.NULL_CONTEXT, storeCursors ) )
         {
             NodeRecord node = loadNode( nodeId );
             checker.checkCorrectlyIndexed( node, nodeLabels( node ), readPropertyValues( node, reporter::forNode ), reporter::forNode );
@@ -249,7 +248,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase
     {
         try ( var storeCursors = new CachedStoreCursors( neoStores, CursorContext.NULL_CONTEXT );
                 SchemaComplianceChecker checker = new SchemaComplianceChecker( context(), new IntObjectHashMap<>(),
-                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL_CONTEXT, storeCursors, INSTANCE ) )
+                context().indexAccessors.onlineRules( RELATIONSHIP ), CursorContext.NULL_CONTEXT, storeCursors ) )
         {
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             RelationshipRecord record;

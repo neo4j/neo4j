@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.utils.PageCacheConfig;
 
@@ -60,11 +59,6 @@ import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 
 abstract class IndexPopulatorTests<KEY,VALUE,LAYOUT extends Layout<KEY,VALUE>> extends IndexTestUtil<KEY, VALUE, LAYOUT>
 {
-    static final NodePropertyAccessor null_property_accessor = ( nodeId, propertyKeyId, cursorContext ) ->
-    {
-        throw new RuntimeException( "Did not expect an attempt to go to store" );
-    };
-
     IndexPopulator populator;
 
     @BeforeEach

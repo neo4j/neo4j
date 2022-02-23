@@ -50,7 +50,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobSchedulerExtension;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.InMemoryTokens;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.storable.Values;
@@ -193,7 +192,6 @@ class TokenIndexPopulationTest
                 }
             } );
         } );
-        when( storeView.newPropertyAccessor( any(), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
     }
 
     private void mockTokenStore( Consumer<TokenScanConsumer.Batch> updates )
@@ -211,7 +209,6 @@ class TokenIndexPopulationTest
                 }
             } );
         } );
-        when( storeView.newPropertyAccessor( any(), any() ) ).thenReturn( mock( NodePropertyAccessor.class ) );
     }
 
     private void addIndexPopulator( IndexPopulator populator, IndexDescriptor descriptor )

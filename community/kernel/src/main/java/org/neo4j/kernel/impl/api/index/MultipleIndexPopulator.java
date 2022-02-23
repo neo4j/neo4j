@@ -64,7 +64,6 @@ import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -131,7 +130,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     private final AtomicLong activeTasks = new AtomicLong();
     private final IndexStoreView storeView;
     private final CursorContextFactory contextFactory;
-    private final NodePropertyAccessor propertyAccessor;
     private final InternalLogProvider logProvider;
     private final InternalLog log;
     private final EntityType type;
@@ -153,7 +151,6 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         this.contextFactory = contextFactory;
         this.cursorContext = contextFactory.create( MULTIPLE_INDEX_POPULATOR_TAG );
         this.memoryTracker = memoryTracker;
-        this.propertyAccessor = storeView.newPropertyAccessor( cursorContext, memoryTracker );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
@@ -304,12 +301,12 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     }
 
     @VisibleForTesting
-    MultipleIndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor, CursorContext cursorContext )
+    MultipleIndexUpdater newPopulatingUpdater( CursorContext cursorContext )
     {
         Map<SchemaDescriptor,IndexPopulationUpdater> updaters = new HashMap<>();
         forEachPopulation( population ->
         {
-            IndexUpdater updater = population.populator.newPopulatingUpdater( accessor, cursorContext );
+            IndexUpdater updater = population.populator.newPopulatingUpdater( cursorContext );
             updaters.put( population.schema(), new IndexPopulationUpdater( population, updater ) );
         }, cursorContext );
         return new MultipleIndexUpdater( this, updaters, logProvider, cursorContext );
@@ -327,7 +324,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     public void close()
     {
         phaseTracker.stop();
-        closeAllUnchecked( propertyAccessor, cursorContext );
+        closeAllUnchecked( cursorContext );
     }
 
     void resetIndexCounts( CursorContext cursorContext )
@@ -448,7 +445,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         }
 
         long updateByteSizeDrained = 0;
-        try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor, cursorContext ) )
+        try ( MultipleIndexUpdater updater = newPopulatingUpdater( cursorContext ) )
         {
             do
             {

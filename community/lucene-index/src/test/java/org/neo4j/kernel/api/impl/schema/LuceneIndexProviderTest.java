@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -153,7 +152,7 @@ class LuceneIndexProviderTest
         // And updated concurrently
         race.addContestant(throwing( () ->
         {
-            try ( var updater = populator.newPopulatingUpdater( NodePropertyAccessor.EMPTY, NULL_CONTEXT ) )
+            try ( var updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
             {
                 for ( int value = 0; value < 1000; value++ )
                 {

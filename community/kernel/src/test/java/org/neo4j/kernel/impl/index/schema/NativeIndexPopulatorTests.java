@@ -117,7 +117,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         // given
         populator.create();
         ValueIndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
         {
             // when
             for ( ValueIndexEntryUpdate<IndexDescriptor> update : updates )
@@ -137,7 +137,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
+        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
 
         // when
         updater.close();
@@ -198,7 +198,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
     {
         boolean useUpdater = true;
         Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
+        IndexUpdater updater = populator.newPopulatingUpdater( NULL_CONTEXT );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             if ( random.nextInt( 100 ) < 20 )
@@ -211,7 +211,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
                 else
                 {
                     populator.add( populatorBatch, NULL_CONTEXT );
-                    updater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT );
+                    updater = populator.newPopulatingUpdater( NULL_CONTEXT );
                 }
                 useUpdater = !useUpdater;
             }
@@ -242,7 +242,7 @@ abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>>
         {
             if ( updaterRandom.nextFloat() < 0.1 )
             {
-                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor, NULL_CONTEXT ) )
+                try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( NULL_CONTEXT ) )
                 {
                     int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
                     for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
