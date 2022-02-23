@@ -243,7 +243,7 @@ object PatternExpressionSolver {
     }
 
     def rewriteInnerExpressions(plan: LogicalPlan, expression: Expression, context: LogicalPlanningContext): RewriteResult = {
-      val patternExpressions: Seq[T] = expression.folder.findByAllClass[T]
+      val patternExpressions: Seq[T] = expression.folder(context.cancellationChecker).findByAllClass[T]
 
       patternExpressions.foldLeft(RewriteResult(plan, expression, Set.empty)) {
         case (RewriteResult(currentPlan, currentExpression, introducedVariables), patternExpression) =>
@@ -305,14 +305,14 @@ object PatternExpressionSolver {
     }
   }
 
-  private def qualifiesForRewriting(exp: AnyRef): Boolean = exp.folder.treeExists {
+  private def qualifiesForRewriting(exp: AnyRef, context: LogicalPlanningContext): Boolean = exp.folder(context.cancellationChecker).treeExists {
     case _: PatternExpression => true
     case _: PatternComprehension => true
   }
 
   case class ForMappable[T]() {
     def solve(inner: LogicalPlan, mappable: HasMappableExpressions[T],  context: LogicalPlanningContext): (T, LogicalPlan) = {
-      if (qualifiesForRewriting(mappable)) {
+      if (qualifiesForRewriting(mappable, context)) {
         val solver = PatternExpressionSolver.solverFor(inner, context)
         val rewrittenExpression = mappable.mapExpressions(solver.solve(_))
         val rewrittenInner = solver.rewrittenPlan()
@@ -325,7 +325,7 @@ object PatternExpressionSolver {
 
   object ForMulti {
     def solve(inner: LogicalPlan, expressions: Seq[Expression],  context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
-      if (qualifiesForRewriting(expressions)) {
+      if (qualifiesForRewriting(expressions, context)) {
         val solver = PatternExpressionSolver.solverFor(inner, context)
         val rewrittenExpressions: Seq[Expression] = expressions.map(solver.solve(_))
         val rewrittenInner = solver.rewrittenPlan()
@@ -338,7 +338,7 @@ object PatternExpressionSolver {
 
   object ForSingle  {
     def solve(inner: LogicalPlan, expression: Expression,  context: LogicalPlanningContext): (Expression, LogicalPlan) = {
-      if (qualifiesForRewriting(expression)) {
+      if (qualifiesForRewriting(expression, context)) {
         val solver = PatternExpressionSolver.solverFor(inner, context)
         val rewrittenExpression = solver.solve(expression)
         val rewrittenInner = solver.rewrittenPlan()
