@@ -929,12 +929,31 @@ public final class SettingValueParsers
         }
     };
 
-    public static final SettingValueParser<Map<String,String>> MAP_PATTERN = new SettingValueParser<>()
+    public static class MapPattern implements SettingValueParser<Map<String,String>>
     {
-        @Override
-        public Map<String,String> parse( String value )
+        private final Set<String> requiredKeys;
+        private final Set<String> validKeys;
+
+        public MapPattern( Set<String> requiredKeys, Set<String> validKeys )
         {
-            String[] splitString = value.split( ";" );
+            this.requiredKeys = requiredKeys;
+            this.validKeys = validKeys;
+        }
+
+        public MapPattern( Set<String> requiredKeys )
+        {
+            this( requiredKeys, null );
+        }
+
+        MapPattern()
+        {
+            this( null, null );
+        }
+
+        @Override
+        public Map<String,String> parse( String map )
+        {
+            String[] splitString = map.split( ";" );
             var settingMap = new HashMap<String,String>();
             Arrays.stream( splitString ).forEach( entry ->
                                                   {
@@ -944,15 +963,40 @@ public final class SettingValueParsers
                                                           throw new IllegalArgumentException(
                                                                   format( "'%s' map element does not follow k1=v1 format.", entry ) );
                                                       }
-                                                      settingMap.put( keyValueSplit[0], keyValueSplit[1] );
+                                                      String key = keyValueSplit[0];
+                                                      String value = keyValueSplit[1];
+
+                                                      if ( validKeys != null && !validKeys.contains( key ) )
+                                                      {
+                                                          throw new IllegalArgumentException(
+                                                                  format( "map element with key %s is not one of the accepted elements %s", key, validKeys ) );
+                                                      }
+
+                                                      settingMap.put( key, value );
                                                   } );
+
+            if ( requiredKeys != null && !settingMap.keySet().containsAll( requiredKeys ) )
+            {
+                throw new IllegalArgumentException(
+                        format( "'%s' map does not contain all of the required keys: %s.", map, requiredKeys ) );
+            }
+
             return settingMap;
         }
 
         @Override
         public String getDescription()
         {
-            return "A simple key value map pattern  k1=v1;k2=v2";
+            String description = "A simple key value map pattern `k1=v1;k2=v2`.";
+            if ( requiredKeys != null )
+            {
+                description += format( " Required key options are: `%s`.", requiredKeys );
+            }
+            if ( validKeys != null )
+            {
+                description += format( " Valid key options are: `%s`.", validKeys );
+            }
+            return description;
         }
 
         @Override
@@ -961,6 +1005,8 @@ public final class SettingValueParsers
             return (Class<Map<String,String>>) (Class) Map.class;
         }
     };
+
+    public static final SettingValueParser<Map<String,String>> MAP_PATTERN = new MapPattern();
 
     public static long parseLongWithUnit( String numberWithPotentialUnit )
     {

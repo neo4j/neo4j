@@ -375,11 +375,31 @@ class SettingTest
     }
 
     @Test
-    void testStringMap()
+    void testStringMapWithNoConstraintOnKeys()
     {
         var setting = (SettingImpl<Map<String,String>>) setting( "setting", SettingValueParsers.MAP_PATTERN );
         assertEquals( Map.of( "k1", "v1", "k2", "v2" ), setting.parse( "k1=v1;k2=v2" ) );
         assertThrows( IllegalArgumentException.class, () -> setting.parse( "k1=v1=v2" ) );
+    }
+
+    @Test
+    void testStringMapWithRequiredKeys()
+    {
+        var setting = (SettingImpl<Map<String,String>>) setting( "setting", new SettingValueParsers.MapPattern( Set.of( "k1", "k2" ) ) );
+        assertEquals( Map.of( "k1", "v1", "k2", "v2", "k3", "v3" ), setting.parse( "k1=v1;k2=v2;k3=v3" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "k1=v1;k3=v3" ) );
+    }
+
+    @Test
+    void testStringMapWithRestrictedKeys()
+    {
+        var setting = (SettingImpl<Map<String,String>>) setting( "setting", new SettingValueParsers.MapPattern( Set.of( "k1" ), Set.of( "k1", "k2" ) ) );
+        assertEquals( Map.of( "k1", "v1", "k2", "v2" ), setting.parse( "k1=v1;k2=v2" ) );
+        assertEquals( Map.of( "k1", "v1" ), setting.parse( "k1=v1" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "k2=v2" ) );
+        assertThrows( IllegalArgumentException.class, () -> setting.parse( "k1=v1;k3=v3" ) );
+        var settingWithoutRequired = (SettingImpl<Map<String,String>>) setting( "setting", new SettingValueParsers.MapPattern( null, Set.of( "k1", "k2" ) ) );
+        assertEquals( Map.of( "k2", "v2" ), settingWithoutRequired.parse( "k2=v2" ) );
     }
 
     @Test
