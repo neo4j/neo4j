@@ -880,7 +880,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
         val buffer = ArrayBuffer[Int]()
         nodeCursor.properties(propertyCursor)
         while (propertyCursor.next()) {
-          buffer.append(propertyCursor.propertyKey())
+          buffer += propertyCursor.propertyKey()
         }
         buffer.toArray
       }
@@ -946,7 +946,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
         val buffer = ArrayBuffer[Int]()
         relationshipScanCursor.properties(propertyCursor)
         while (propertyCursor.next()) {
-          buffer.append(propertyCursor.propertyKey())
+          buffer += propertyCursor.propertyKey()
         }
         buffer.toArray
       }

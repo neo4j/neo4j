@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import java.util
-
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.ByteCode
@@ -44,6 +42,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
+import java.util
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.collection.JavaConverters.setAsJavaSetConverter
@@ -80,7 +79,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
     stack.push(self)
     while (stack.nonEmpty) {
       val plan = stack.pop()
-      flatten.append(plan)
+      flatten += plan
       plan.children match {
         case NoChildren =>
         case SingleChild(child) =>

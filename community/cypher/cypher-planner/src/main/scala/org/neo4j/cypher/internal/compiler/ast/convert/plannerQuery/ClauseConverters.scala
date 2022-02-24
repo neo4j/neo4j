@@ -360,7 +360,7 @@ object ClauseConverters {
     nodePatterns.foreach {
       case c@CreateNodeCommand(pattern, _) =>
         if (!seen(pattern.idName)) {
-          result.append(c)
+          result += c
         } else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
           //reused patterns must be pure variable
           throw new SyntaxException(s"Can't create node `${pattern.idName}` with labels or properties here. The variable is already declared in this context")

@@ -72,13 +72,13 @@ object combineSetProperty extends Rewriter with StepSequencer.Step with ASTRewri
           case s@SetPropertyItem(Property(map, _), _) if i < itemsArray.length - 1 =>
             val itemsToCombine: mutable.ArrayBuffer[SetPropertyItem] = ArrayBuffer(s)
             while (i + 1 < itemsArray.length && onSameEntity(itemsArray(i + 1), map)) {
-              itemsToCombine.append(itemsArray(i + 1).asInstanceOf[SetPropertyItem])
+              itemsToCombine += itemsArray(i + 1).asInstanceOf[SetPropertyItem]
               i += 1
             }
-            newItems.append(combine(map, itemsToCombine))
+            newItems += combine(map, itemsToCombine)
 
           case item =>
-            newItems.append(item)
+            newItems += item
         }
         i += 1
       }

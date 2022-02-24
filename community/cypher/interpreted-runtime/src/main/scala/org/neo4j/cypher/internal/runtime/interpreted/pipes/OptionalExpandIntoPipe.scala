@@ -85,7 +85,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                   while (relationships.hasNext) {
                     val candidateRow = rowFactory.copyWith(row, relName, VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId()))
                     if (predicate.forall(p => p(candidateRow, state) eq Values.TRUE)) {
-                      filteredRows.append(candidateRow)
+                      filteredRows += candidateRow
                     }
                   }
                   if (filteredRows.isEmpty) {

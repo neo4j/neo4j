@@ -425,7 +425,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
   def addMutatingPatterns(pattern: MutatingPattern): QueryGraph = {
     val copyPatterns = new mutable.ArrayBuffer[MutatingPattern](mutatingPatterns.size + 1)
     copyPatterns.appendAll(mutatingPatterns)
-    copyPatterns.append(pattern)
+    copyPatterns += pattern
 
     copy(mutatingPatterns = copyPatterns)
   }

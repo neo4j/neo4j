@@ -235,7 +235,7 @@ class ResultStringBuilder private(columns: Array[String],
       val entry = propertyIterator.next()
       val key = entry.getKey
       val value = asTextValue(entry.getValue)
-      keyValues.append(s"$key:$value")
+      keyValues += s"$key:$value"
     }
     keyValues.mkString("{", ",", "}")
   }
