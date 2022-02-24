@@ -228,14 +228,6 @@ class PrettifierIT extends CypherFunSuite {
 
     // index commands
 
-    // old syntax
-
-    "create INDEX ON :A(p)" ->
-      "CREATE INDEX ON :A(p)",
-
-    "create INDEX ON :A(p1, p2, p3)" ->
-      "CREATE INDEX ON :A(p1, p2, p3)",
-
     // default type
 
     "create INDEX FOR (n:A) ON (n.p)" ->
@@ -777,147 +769,138 @@ class PrettifierIT extends CypherFunSuite {
   )
 
   // Constraint commands
-  def constraintCommandTests(): Seq[(String, String)] =
-    Seq("ON", "FOR").flatMap(onOrFor =>
-      Seq("ASSERT", "REQUIRE").flatMap(assertOrRequired => Seq(
-        // constraint commands
-        s"create CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+  def constraintCommandTests(): Seq[(String, String)] = Seq(
+    "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+    "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create CONSTRAINT `foo` $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+    "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create OR replace CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE OR REPLACE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+    "create OR replace CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE OR REPLACE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create CONSTRAINT foo IF NOT EXISTS $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY" ->
-          s"CREATE CONSTRAINT foo IF NOT EXISTS $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY",
+    "create CONSTRAINT foo IF NOT EXISTS FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT foo IF NOT EXISTS FOR (n:A) REQUIRE (n.p) IS NODE KEY",
 
-        s"create CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY" ->
-          s"CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY",
+    "create CONSTRAINT FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY" ->
+      "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY",
 
-        s"create CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY",
+    "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY",
 
-        s"create CONSTRAINT `foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY",
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY",
 
-        s"create CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS NODE KEY",
+    "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY" ->
+      "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""",
 
-        s"create CONSTRAINT myConstraint $onOrFor (n:A) ${assertOrRequired.toLowerCase} (n.p) IS NODE KEY OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-          s"""CREATE CONSTRAINT myConstraint $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS NODE KEY OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
 
-        s"create CONSTRAINT $onOrFor (n:A) ${assertOrRequired.toLowerCase} (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create CONSTRAINT FOR (n:A) require (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPtiONS {}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS NODE KEY OPTIONS {}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {}""",
 
-        s"create CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE" ->
-          s"CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
+      "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"create CONSTRAINT foo $onOrFor (n:A) $assertOrRequired n.p IS UNIQUE" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create CONSTRAINT foo FOR (n:A) REQUIRE n.p IS UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"create CONSTRAINT `foo` $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"create CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
+      "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"create CONSTRAINT IF NoT ExistS $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE" ->
-          s"CREATE CONSTRAINT IF NOT EXISTS $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create CONSTRAINT IF NoT ExistS FOR (n:A) REQUIRE (n.p) IS UNIQUE" ->
+      "CREATE CONSTRAINT IF NOT EXISTS FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"create or REPLACE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired n.p IS UNIQUE" ->
-          s"CREATE OR REPLACE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE",
+    "create or REPLACE CONSTRAINT foo FOR (n:A) REQUIRE n.p IS UNIQUE" ->
+      "CREATE OR REPLACE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {indexProvider: 'native-btree-1.0'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""",
 
-        s"create CONSTRAINT myConstraint $onOrFor (n:A) ${assertOrRequired.toLowerCase} (n.p) IS UNIQUE OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-          s"""CREATE CONSTRAINT myConstraint $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS UNIQUE OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
+      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
 
-        s"create CONSTRAINT $onOrFor (n:A) ${assertOrRequired.toLowerCase} (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create CONSTRAINT FOR (n:A) require (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
 
-        s"CREATE constraint $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPtiONS {}" ->
-          s"""CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p) IS UNIQUE OPTIONS {}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {}""",
 
-        s"create CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE" ->
-          s"CREATE CONSTRAINT $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE",
+    "create CONSTRAINT FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE" ->
+      "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
 
-        s"create CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE",
+    "create CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
 
-        s"create CONSTRAINT `foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE" ->
-          s"CREATE CONSTRAINT foo $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE",
+    "create CONSTRAINT `foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE" ->
+      "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
 
-        s"create CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor (n:A) $assertOrRequired (n.p1, n.p2) IS UNIQUE",
+    "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE" ->
+      "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS UNIQUE",
 
-        s"create CONSTRAINT $onOrFor (a:A) $assertOrRequired (a.p) is not null" ->
-          s"CREATE CONSTRAINT $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL",
+    "create CONSTRAINT FOR (a:A) REQUIRE (a.p) is not null" ->
+      "CREATE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS NOT NULL",
 
-        s"create CONSTRAINT foo $onOrFor (a:A) $assertOrRequired (a.p) IS NoT NulL" ->
-          s"CREATE CONSTRAINT foo $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL",
+    "create CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS NoT NulL" ->
+      "CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS NOT NULL",
 
-        s"create CONSTRAINT `foo` $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL OPTIONS {}" ->
-          s"CREATE CONSTRAINT foo $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL OPTIONS {}",
+    "create CONSTRAINT `foo` FOR (a:A) REQUIRE (a.p) IS NOT NULL OPTIONS {}" ->
+      "CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS NOT NULL OPTIONS {}",
 
-        s"create CONSTRAINT `foo` $onOrFor (a:A) $assertOrRequired a.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
-          s"""CREATE CONSTRAINT foo $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+    "create CONSTRAINT `foo` FOR (a:A) REQUIRE a.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+      """CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
-        s"create CONSTRAINT `$$foo` $onOrFor (a:A) $assertOrRequired a.p IS NOT NULL" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL",
+    "create CONSTRAINT `$foo` FOR (a:A) REQUIRE a.p IS NOT NULL" ->
+      "CREATE CONSTRAINT `$foo` FOR (a:A) REQUIRE (a.p) IS NOT NULL",
 
-        s"create OR replace CONSTRAINT $onOrFor (a:A) $assertOrRequired a.p IS NOT NULL" ->
-          s"CREATE OR REPLACE CONSTRAINT $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL",
+    "create OR replace CONSTRAINT FOR (a:A) REQUIRE a.p IS NOT NULL" ->
+      "CREATE OR REPLACE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS NOT NULL",
 
-        s"create CONSTRAINT foo if not EXISTS $onOrFor (a:A) $assertOrRequired a.p IS NOT NULL" ->
-          s"CREATE CONSTRAINT foo IF NOT EXISTS $onOrFor (a:A) $assertOrRequired (a.p) IS NOT NULL",
+    "create CONSTRAINT foo if not EXISTS FOR (a:A) REQUIRE a.p IS NOT NULL" ->
+      "CREATE CONSTRAINT foo IF NOT EXISTS FOR (a:A) REQUIRE (a.p) IS NOT NULL",
 
-        s"create CONSTRAINT $onOrFor ()-[r:R]-() $assertOrRequired r.p is not nULl" ->
-          s"CREATE CONSTRAINT $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE r.p is not nULl" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
 
-        s"create CONSTRAINT foo $onOrFor ()-[r:R]->() $assertOrRequired (r.p) IS NOT NULL" ->
-          s"CREATE CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
+    "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE (r.p) IS NOT NULL" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
 
-        s"create CONSTRAINT `foo` $onOrFor ()<-[r:R]-() $assertOrRequired r.p is NOT null" ->
-          s"CREATE CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
+    "create CONSTRAINT `foo` FOR ()<-[r:R]-() REQUIRE r.p is NOT null" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
 
-        s"create CONSTRAINT `$$foo` $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL OPTIONS {}" ->
-          s"CREATE CONSTRAINT `$$foo` $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL OPTIONS {}",
+    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL OPTIONS {}" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {}",
 
-        s"create CONSTRAINT `$$foo` $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
-          s"""CREATE CONSTRAINT `$$foo` $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+      """CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
 
-        s"create CONSTRAINT IF not exists $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL" ->
-          s"CREATE CONSTRAINT IF NOT EXISTS $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
+    "create CONSTRAINT IF not exists FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL" ->
+      "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
 
-        s"create or Replace CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired r.p IS NOT NULL" ->
-          s"CREATE OR REPLACE CONSTRAINT foo $onOrFor ()-[r:R]-() $assertOrRequired (r.p) IS NOT NULL",
-      ))) ++ Seq(
-      "create CONSTRAINT ON (a:A) ASSERT EXISTS (a.p)" ->
-        "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
-
-      "create CONSTRAINT ON ()-[r:R]-() ASSERT EXISTS (r.p)" ->
-        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+    "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL" ->
+      "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
 
       "drop CONSTRAINT foo" ->
         "DROP CONSTRAINT foo",

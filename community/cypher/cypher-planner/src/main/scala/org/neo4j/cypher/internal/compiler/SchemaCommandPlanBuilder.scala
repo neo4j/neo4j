@@ -174,10 +174,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       case DropConstraintOnName(name, ifExists, _) =>
         Some(plans.DropConstraintOnName(name, ifExists))
         
-      // CREATE INDEX ON :LABEL(prop)
-      case CreateIndexOldSyntax(label, props, _) =>
-        Some(plans.CreateBtreeIndex(None, Left(label), props, None, NoOptions))
-
       // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreateBtreeNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
         createBtreeIndex(Left(label), props, name, ifExistsDo, options)

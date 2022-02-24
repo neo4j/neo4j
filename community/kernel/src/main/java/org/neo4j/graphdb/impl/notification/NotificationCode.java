@@ -92,28 +92,11 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "Binding relationships to a list in a variable length pattern is deprecated."
     ),
-    DEPRECATED_CREATE_INDEX_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The create index syntax `CREATE INDEX ON :Label(property)` is deprecated, please use `CREATE INDEX FOR (n:Label) ON (n.property)` instead"
-    ),
     DEPRECATED_BTREE_INDEX_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. " +
                     "For now, b-tree indexes are still the correct alternative to use."
-    ),
-    DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The create property existence constraint syntax `CREATE CONSTRAINT ON ... ASSERT exists(variable.property)` is deprecated, " +
-                    "please use `CREATE CONSTRAINT FOR ... REQUIRE (variable.property) IS NOT NULL` instead"
-    ),
-    DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The create constraint syntax `CREATE CONSTRAINT ON ... ASSERT ...` is deprecated, " +
-                    "please use `CREATE CONSTRAINT FOR ... REQUIRE ...` instead"
     ),
     DEPRECATED_PROPERTY_EXISTENCE_SYNTAX(
             SeverityLevel.WARNING,

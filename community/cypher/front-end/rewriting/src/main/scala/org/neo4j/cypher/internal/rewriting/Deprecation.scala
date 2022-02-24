@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
@@ -30,14 +29,11 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
@@ -50,9 +46,6 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
-import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
-import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
-import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
@@ -61,7 +54,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSy
 import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
-import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -115,12 +107,6 @@ object Deprecations {
           Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
 
-      case i: ast.CreateIndexOldSyntax =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreateIndexSyntax(i.position))
-        )
-
         // CREATE BTREE INDEX ...
       case i: ast.CreateBtreeNodeIndex =>
         Deprecation(
@@ -161,48 +147,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(c.position))
-        )
-
-      // ASSERT EXISTS
-      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
-        )
-
-      // ASSERT EXISTS
-      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreatePropertyExistenceConstraintSyntax(c.position))
-        )
-
-      // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateNodePropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion1 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
-        )
-
-      // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateRelationshipPropertyExistenceConstraint if c.constraintVersion == ast.ConstraintVersion1 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
-        )
-
-      // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateNodeKeyConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
-        )
-
-      // CREATE CONSTRAINT ON ... ASSERT ...
-      case c: ast.CreateUniquePropertyConstraint if c.constraintVersion == ast.ConstraintVersion0 =>
-        Deprecation(
-          None,
-          Some(DeprecatedCreateConstraintOnAssertSyntax(c.position))
         )
 
       case e@Exists(_: Property | _: ContainerIndex) =>

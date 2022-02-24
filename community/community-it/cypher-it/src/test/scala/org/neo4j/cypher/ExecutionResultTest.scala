@@ -103,7 +103,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correctIndexStatisticsForIndexAdded") {
-    val result = execute("create index on :Person(name)")
+    val result = execute("create index for (n:Person) on (n.name)")
     val stats  = result.queryStatistics()
 
     assert(stats.indexesAdded === 1)

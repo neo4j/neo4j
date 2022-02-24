@@ -377,7 +377,7 @@ Feature: ConstraintAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """

@@ -490,10 +490,10 @@ public class BuiltInProcedures
 
     public static class SchemaStatementResult
     {
-        public final String name;               // "MY INDEX", "constraint_5837f24
+        public final String name;               // "MY INDEX", "constraint_5837f24"
         public final String type;               // "INDEX", "CONSTRAINT"
-        public final String createStatement;    // "CALL db.createIndex(...)"
-        public final String dropStatement;      // DROP CONSTRAINT `My Constraint`
+        public final String createStatement;    // "CREATE ... INDEX ... FOR ...", "CREATE CONSTRAINT ... FOR ... REQUIRE ..."
+        public final String dropStatement;      // "DROP INDEX `My Index`", "DROP CONSTRAINT `My Constraint`"
 
         public SchemaStatementResult( String name, String type, String createStatement, String dropStatement )
         {

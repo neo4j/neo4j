@@ -24,9 +24,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
@@ -69,10 +66,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   // DEPRECATED INDEX / CONSTRAINT SYNTAX in 4.X
 
-  test("deprecated create index syntax") {
-    assertNotificationInSupportedVersions("CREATE INDEX ON :Label(prop)", DEPRECATED_CREATE_INDEX_SYNTAX)
-  }
-
   test("deprecated create btree index syntax") {
     // Note: This index syntax was introduced in 4.X
 
@@ -108,39 +101,10 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
   }
 
-  test("deprecated create node property existence constraint syntax - deprecate version 0") {
-    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT EXISTS (n.prop)",
-      DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
-  }
-
-  test("deprecated create relationship property existence constraint syntax - deprecate version 0") {
-    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT EXISTS (r.prop)",
-      DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX)
-  }
-
-  test("deprecated create node property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions_4_X("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NOT NULL",
-      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
-  }
-
-  test("deprecated create relationship property existence constraint syntax - deprecate version 1") {
-    assertNotificationInSupportedVersions_4_X("CREATE CONSTRAINT ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL",
-      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
-  }
-
-  test("deprecated create node key constraint syntax") {
-    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS NODE KEY",
-      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
-  }
-
-  test("deprecated create uniqueness constraint syntax") {
-    assertNotificationInSupportedVersions("CREATE CONSTRAINT ON (n:Label) ASSERT (n.prop) IS UNIQUE",
-      DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX)
-  }
-
-  test("deprecated create constraint backed by btree index syntax") {
+  ignore("deprecated create constraint backed by btree index syntax") {
     // OPTIONS was introduced in 4.2
     // FOR ... REQUIRE was introduced in 4.4 and can therefore not be used in this test (since it tests 4.3)
+    // ON ... ASSERT is now removed, hence the ignored test -> will be remove when BTREE is removed
     assertNotificationInSupportedVersions_4_X(
       s"""CREATE CONSTRAINT ON (n:Label)
          |ASSERT (n.prop) IS NODE KEY

@@ -31,7 +31,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Product(unitsInStock)
+      CREATE INDEX FOR (n:Product) ON (n.unitsInStock)
       """
     And having executed:
       """
@@ -57,7 +57,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Product(unitsInStock)
+      CREATE INDEX FOR (n:Product) ON (n.unitsInStock)
       """
     And having executed:
       """
@@ -78,7 +78,7 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
@@ -101,7 +101,7 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
@@ -121,11 +121,11 @@ Feature: IndexAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(id)
+      CREATE INDEX FOR (n:Person) ON (n.id)
       """
     And having executed:
       """
@@ -154,7 +154,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :City(name)
+      CREATE INDEX FOR (n:City) ON (n.name)
       """
     And having executed:
       """
@@ -179,7 +179,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :L(prop)
+      CREATE INDEX FOR (n:L) ON (n.prop)
       """
     And having executed:
       """
@@ -206,11 +206,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop1)
+      CREATE INDEX FOR (n:User) ON (n.prop1)
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop2)
+      CREATE INDEX FOR (n:User) ON (n.prop2)
       """
     And having executed:
       """
@@ -238,11 +238,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop1)
+      CREATE INDEX FOR (n:User) ON (n.prop1)
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop2)
+      CREATE INDEX FOR (n:User) ON (n.prop2)
       """
     And having executed:
       """
@@ -269,11 +269,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop1)
+      CREATE INDEX FOR (n:User) ON (n.prop1)
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop2)
+      CREATE INDEX FOR (n:User) ON (n.prop2)
       """
     And having executed:
       """
@@ -300,11 +300,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop1)
+      CREATE INDEX FOR (n:User) ON (n.prop1)
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop2)
+      CREATE INDEX FOR (n:User) ON (n.prop2)
       """
     And having executed:
       """
@@ -331,7 +331,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :User(prop)
+      CREATE INDEX FOR (n:User) ON (n.prop)
       """
     And having executed:
       """
@@ -359,11 +359,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(number)
+      CREATE INDEX FOR (n:Person) ON (n.number)
       """
     And having executed:
       """
@@ -392,11 +392,11 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(number)
+      CREATE INDEX FOR (n:Person) ON (n.number)
       """
     And having executed:
       """
@@ -424,7 +424,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """
@@ -449,7 +449,7 @@ Feature: IndexAcceptance
       """
     And having executed:
       """
-      CREATE INDEX ON :Person(name)
+      CREATE INDEX FOR (n:Person) ON (n.name)
       """
     And having executed:
       """

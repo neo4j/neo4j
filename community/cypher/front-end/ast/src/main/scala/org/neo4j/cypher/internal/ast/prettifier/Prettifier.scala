@@ -255,9 +255,6 @@ case class Prettifier(
     val useString = asString(command.useGraph)
     val commandString = command match {
 
-      case CreateIndexOldSyntax(LabelName(label), properties, _) =>
-        s"CREATE INDEX ON :${backtick(label)}${properties.map(p => backtick(p.name)).mkString("(", ", ", ")")}"
-
       case CreateBtreeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "BTREE INDEX")
         s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"

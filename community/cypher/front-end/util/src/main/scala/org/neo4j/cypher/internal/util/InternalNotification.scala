@@ -33,13 +33,7 @@ case class DeprecatedFunctionNotification(position: InputPosition, oldName: Stri
 
 case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String) extends InternalNotification
 
-case class DeprecatedCreateIndexSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedBtreeIndexSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedCreatePropertyExistenceConstraintSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedCreateConstraintOnAssertSyntax(position: InputPosition) extends InternalNotification
 
 case class DeprecatedPropertyExistenceSyntax(position: InputPosition) extends InternalNotification
 

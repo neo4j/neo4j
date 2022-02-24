@@ -47,9 +47,6 @@ import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
-import org.neo4j.cypher.internal.util.DeprecatedCreateConstraintOnAssertSyntax
-import org.neo4j.cypher.internal.util.DeprecatedCreateIndexSyntax
-import org.neo4j.cypher.internal.util.DeprecatedCreatePropertyExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
 import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
@@ -60,7 +57,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPointsComparison
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
-import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -128,14 +124,8 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
       NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
-    case DeprecatedCreateIndexSyntax(pos) =>
-      NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedBtreeIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedCreatePropertyExistenceConstraintSyntax(pos) =>
-      NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedCreateConstraintOnAssertSyntax(pos) =>
-      NotificationCode.DEPRECATED_CREATE_CONSTRAINT_ON_ASSERT_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPropertyExistenceSyntax(pos) =>
       NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedDefaultDatabaseSyntax(pos) =>

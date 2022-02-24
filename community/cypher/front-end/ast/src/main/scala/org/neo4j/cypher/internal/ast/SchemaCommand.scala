@@ -60,11 +60,13 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
   protected val errorMessageOnRequire: String = "Invalid constraint syntax, ON should not be used in combination with REQUIRE. Replace ON with FOR."
   protected val errorMessageForAssert: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT. Replace ASSERT with REQUIRE."
   protected val errorMessageForAssertExists: String = "Invalid constraint syntax, FOR should not be used in combination with ASSERT EXISTS. Replace ASSERT EXISTS with REQUIRE ... IS NOT NULL."
+  protected val errorMessageOnAssert: String = "Invalid constraint syntax, ON and ASSERT should not be used. Replace ON with FOR and ASSERT with REQUIRE."
+  protected val errorMessageOnAssertExists: String = "Invalid constraint syntax, ON and ASSERT EXISTS should not be used. Replace ON with FOR and ASSERT EXISTS with REQUIRE ... IS NOT NULL."
 }
 
 case class CreateIndexOldSyntax(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[UseGraph] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  def semanticCheck = Seq()
+  def semanticCheck: SemanticCheck = error("Invalid create index syntax, use `CREATE INDEX FOR ...` instead.", position)
 }
 
 abstract class CreateIndex(variable: Variable, properties: List[Property], ifExistsDo: IfExistsDo, isNodeIndex: Boolean)(val position: InputPosition)
@@ -183,7 +185,6 @@ case class CreatePointRelationshipIndex(variable: Variable, relType: RelTypeName
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  def property: PropertyKeyName = properties.head
   def semanticCheck: SemanticCheck = error("Indexes cannot be dropped by schema, please drop by name instead: DROP INDEX index_name. The index name can be found using SHOW INDEXES.", position)
 }
 
@@ -260,8 +261,9 @@ case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, propert
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node key constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
         constraintVersion match {
-          case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
-          case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position)
+          case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position) // ON ... REQUIRE
+          case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT
+          case ConstraintVersion0 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT
           case _ => checkOptionsMap("node key constraint", options) chain super.semanticCheck
         }
   }
@@ -279,8 +281,9 @@ case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, 
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create uniqueness constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
-        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position) // ON ... REQUIRE
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT
+        case ConstraintVersion0 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT
         case _ => checkOptionsMap("uniqueness constraint", options) chain super.semanticCheck
       }
   }
@@ -298,9 +301,11 @@ case class CreateNodePropertyExistenceConstraint(variable: Variable, label: Labe
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create node property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
-        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position)
-        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position) // ON ... REQUIRE ... IS NOT NULL
+        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position) // FOR ... ASSERT EXISTS ...
+        case ConstraintVersion1 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if containsOn => error(errorMessageOnAssertExists, position) // ON ... ASSERT EXISTS ...
         case _ => checkOptionsMap("node property existence constraint", options) chain super.semanticCheck
       }
   }
@@ -318,9 +323,11 @@ case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, rel
     case IfExistsInvalidSyntax | IfExistsReplace => error(s"Failed to create relationship property existence constraint: `OR REPLACE` cannot be used together with this command.", position)
     case _ =>
       constraintVersion match {
-        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position)
-        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position)
-        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position)
+        case ConstraintVersion2 if containsOn => error(errorMessageOnRequire, position) // ON ... REQUIRE ... IS NOT NULL
+        case ConstraintVersion1 if !containsOn => error(errorMessageForAssert, position) // FOR ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if !containsOn => error(errorMessageForAssertExists, position) // FOR ... ASSERT EXISTS ...
+        case ConstraintVersion1 if containsOn => error(errorMessageOnAssert, position) // ON ... ASSERT ... IS NOT NULL
+        case ConstraintVersion0 if containsOn => error(errorMessageOnAssertExists, position) // ON ... ASSERT EXISTS ...
         case _ => checkOptionsMap("relationship property existence constraint", options) chain super.semanticCheck
       }
   }
