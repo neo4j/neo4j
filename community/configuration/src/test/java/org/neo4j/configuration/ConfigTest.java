@@ -598,7 +598,7 @@ class ConfigTest
 
     private static final class SingleSettingGroup implements GroupSetting
     {
-        final Setting<String> singleSetting = getBuilder( getPrefix(), name(), STRING, null ).build();
+        final Setting<String> singleSetting;
         private final String name;
 
         static SingleSettingGroup group( String name )
@@ -609,6 +609,7 @@ class ConfigTest
         private SingleSettingGroup( String name )
         {
             this.name = name;
+            singleSetting = getBuilder( getPrefix(), name, STRING, null ).build();
         }
 
         @Override
@@ -1431,13 +1432,16 @@ class ConfigTest
             return "test.connection.http";
         }
 
-        public final Setting<Integer> port = getBuilder( getPrefix(), name(), "port", INT, 1 ).build();
-        public final Setting<String> hostname = getBuilder( getPrefix(), name(), "hostname", STRING, "0.0.0.0" ).build();
-        public final Setting<Boolean> secure = getBuilder( getPrefix(), name(), "secure", BOOL, true ).build();
+        public final Setting<Integer> port;
+        public final Setting<String> hostname;
+        public final Setting<Boolean> secure;
 
         TestConnectionGroupSetting( String id )
         {
             this.id = id;
+            port = getBuilder( getPrefix(), id, "port", INT, 1 ).build();
+            hostname = getBuilder( getPrefix(), id, "hostname", STRING, "0.0.0.0" ).build();
+            secure = getBuilder( getPrefix(), id, "secure", BOOL, true ).build();
         }
     }
 
@@ -1462,26 +1466,29 @@ class ConfigTest
             return "test.dynamic";
         }
 
-        public final Setting<String> value = getBuilder( getPrefix(), name(), "value", STRING, "hello" ).dynamic().build();
+        public final Setting<String> value;
 
-        public final Setting<String> constrainedValue = getBuilder( getPrefix(), name(), "constrainedValue", STRING, "aDefaultValue" )
-                .addConstraint( SettingConstraints.matches( "a.*" )  )
-                .dynamic().build();
+        public final Setting<String> constrainedValue;
 
         TestDynamicGroupSetting( String id )
         {
             this.id = id;
+            value = getBuilder( getPrefix(), id, "value", STRING, "hello" ).dynamic().build();
+            constrainedValue = getBuilder( getPrefix(), id, "constrainedValue", STRING, "aDefaultValue" )
+                    .addConstraint( SettingConstraints.matches( "a.*" )  )
+                    .dynamic().build();
         }
     }
 
     abstract static class ParentGroup implements GroupSetting
     {
-        final Setting<String> parentSetting = getBuilder( getPrefix(), name(), "parent", STRING, "parent" ).build();
+        final Setting<String> parentSetting;
         private final String name;
 
         ParentGroup( String name )
         {
             this.name = name;
+            parentSetting = getBuilder( getPrefix(), name, "parent", STRING, "parent" ).build();
         }
 
         @Override
@@ -1492,11 +1499,12 @@ class ConfigTest
     }
     static class ChildGroup extends ParentGroup
     {
-        final Setting<String> childSetting = getBuilder( getPrefix(), name(), "child", STRING, null ).build();
+        final Setting<String> childSetting;
 
         private ChildGroup( String name )
         {
             super( name );
+            childSetting = getBuilder( getPrefix(), name, "child", STRING, null ).build();
         }
         @Override
         public String getPrefix()
@@ -1508,12 +1516,13 @@ class ConfigTest
 
     abstract static class ParentDynamicGroup implements GroupSetting
     {
-        final Setting<String> parentSetting = getBuilder( getPrefix(), name(), "parent", STRING, "parent" ).dynamic().build();
+        final Setting<String> parentSetting;
         private final String name;
 
         ParentDynamicGroup( String name )
         {
             this.name = name;
+            parentSetting = getBuilder( getPrefix(), name, "parent", STRING, "parent" ).dynamic().build();
         }
 
         @Override
@@ -1524,11 +1533,12 @@ class ConfigTest
     }
     static class ChildDynamicGroup extends ParentDynamicGroup
     {
-        final Setting<String> childSetting = getBuilder( getPrefix(), name(), "child", STRING, null ).dynamic().build();
+        final Setting<String> childSetting;
 
         private ChildDynamicGroup( String name )
         {
             super( name );
+            childSetting = getBuilder( getPrefix(), name, "child", STRING, null ).dynamic().build();
         }
         @Override
         public String getPrefix()

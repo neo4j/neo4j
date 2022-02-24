@@ -45,7 +45,7 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 @PublicApi
 public class SslPolicyConfig implements GroupSetting
 {
-    public final Setting<Boolean> enabled = getBuilder( "enabled", BOOL, Boolean.FALSE ).build();
+    public final Setting<Boolean> enabled;
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
             " It is also possible to override each individual configuration with absolute paths." )
@@ -56,28 +56,28 @@ public class SslPolicyConfig implements GroupSetting
 
     @Description( "Makes this policy trust all remote parties." +
             " Enabling this is not recommended and the trusted directory will be ignored." )
-    public final Setting<Boolean> trust_all = getBuilder( "trust_all", BOOL, false ).build();
+    public final Setting<Boolean> trust_all;
 
     @Description( "Client authentication stance." )
     public final Setting<ClientAuth> client_auth;
 
     @Description( "Restrict allowed TLS protocol versions." )
-    public final Setting<List<String>> tls_versions = getBuilder( "tls_versions", listOf( STRING ),  List.of("TLSv1.2") ).build();
+    public final Setting<List<String>> tls_versions;
 
     @Description( "Restrict allowed ciphers. " +
             "Valid values depend on JRE and SSL however some examples can be found here " +
             "https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names" )
-    public final Setting<List<String>> ciphers = getBuilder( "ciphers", listOf( STRING ), null ).build();
+    public final Setting<List<String>> ciphers;
 
     @Description( "When true, this node will verify the hostname of every other instance it connects to by comparing the address it used to connect with it " +
             "and the patterns described in the remote hosts public certificate Subject Alternative Names" )
-    public final Setting<Boolean> verify_hostname = getBuilder( "verify_hostname", BOOL, false ).build();
+    public final Setting<Boolean> verify_hostname;
 
     @Description( "Private PKCS#8 key in PEM format." )
     public final Setting<Path> private_key;
 
     @Description( "The passphrase for the private key." )
-    public final Setting<SecureString> private_key_password = getBuilder( "private_key_password", SECURE_STRING, null ).build();
+    public final Setting<SecureString> private_key_password;
 
     @Description( "X.509 certificate (chain) of this server in PEM format." )
     public final Setting<Path> public_certificate;
@@ -100,10 +100,16 @@ public class SslPolicyConfig implements GroupSetting
             throw new IllegalArgumentException( "SslPolicy can not be created for scope: " + scopeString );
         }
 
-        client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), scope.authDefault ).build();
+        enabled = getBuilder( "enabled", BOOL, Boolean.FALSE ).build();
         base_directory = getBuilder( "base_directory", PATH, Path.of( scope.baseDir ) ).setDependency( neo4j_home ).immutable().build();
         revoked_dir = getBuilder( "revoked_dir", PATH, Path.of( "revoked" ) ).setDependency( base_directory ).build();
+        trust_all = getBuilder( "trust_all", BOOL, false ).build();
+        client_auth = getBuilder( "client_auth", ofEnum( ClientAuth.class ), scope.authDefault ).build();
+        tls_versions = getBuilder( "tls_versions", listOf( STRING ),  List.of("TLSv1.2") ).build();
+        ciphers = getBuilder( "ciphers", listOf( STRING ), null ).build();
+        verify_hostname = getBuilder( "verify_hostname", BOOL, false ).build();
         private_key = getBuilder( "private_key", PATH, Path.of( "private.key" ) ).setDependency( base_directory ).build();
+        private_key_password = getBuilder( "private_key_password", SECURE_STRING, null ).build();
         public_certificate = getBuilder( "public_certificate", PATH, Path.of( "public.crt" ) ).setDependency( base_directory ).build();
         trusted_dir = getBuilder( "trusted_dir", PATH, Path.of( "trusted" ) ).setDependency( base_directory ).build();
     }
