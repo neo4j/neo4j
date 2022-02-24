@@ -74,7 +74,7 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
   def toArray[B >: T : ClassTag]: Array[B] = {
     val buffer = ArrayBuffer.empty[B]
     while (hasNext) {
-      buffer.append(next())
+      buffer += next()
     }
     buffer.toArray
   }
