@@ -430,10 +430,7 @@ class SystemBuiltInProceduresIT extends CommunityProcedureITBase
                 "CALL db.createLabel('Foo')",
                 "CALL db.createProperty('bar')",
                 "CALL db.createRelationshipType('BAZ')",
-                "CALL db.index.fulltext.createNodeIndex('businessNameIndex', ['Business'],['name'])",
-                "CALL db.index.fulltext.createRelationshipIndex('owner of index', ['IS_OWNER_OF'],['name'])",
-                "CALL tx.setMetaData( { User: 'Sascha' } )",
-                "CALL db.index.fulltext.drop('businessNameIndex')");
+                "CALL tx.setMetaData( { User: 'Sascha' } )" );
 
         // First validate that all queries can actually run on normal db
         final GraphDatabaseService defaultDb = openDatabase( DEFAULT_DATABASE_NAME );

@@ -25,7 +25,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -58,17 +57,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.graphdb.schema.IndexSettingImpl;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedLabelInSchemaException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInSchemaException;
-import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaException;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.util.concurrent.BinaryLatch;
@@ -76,7 +67,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -85,35 +75,41 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DB_AWAIT_INDEX;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DROP;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE_WITH_CONFIG;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.LIST_AVAILABLE_ANALYZERS;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.SHOW_FULLTEXT_INDEXES;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.kernel.api.impl.fulltext.analyzer.StandardFoldingAnalyzer.NON_ASCII_LETTERS;
 
 class FulltextProceduresTest extends FulltextProceduresTestSupport
 {
 
-    private static Stream<Arguments> fulltextTypeProvider()
+    @Test
+    void createFulltextRelationshipIndex()
     {
-        return Stream.of(
-                Arguments.of( "For nodes", NODE_CREATE ),
-                Arguments.of( "For relationships", RELATIONSHIP_CREATE )
-        );
+        String createMethod =
+                format( FULLTEXT_CREATE, "test-index", asRelationshipTypeStr( "EntityToken1", "EntityToken2" ), asPropertiesStrList( "prop1", "prop2" ) );
+        createFulltextIndex( createMethod );
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "fulltextTypeProvider" )
-    void createFulltextIndex( String name, String indexCreateMethod )
+    @Test
+    void createFulltextNodeIndex()
+    {
+        String createMethod =
+                format( FULLTEXT_CREATE, "test-index", asNodeLabelStr( "EntityToken1", "EntityToken2" ), asPropertiesStrList( "prop1", "prop2" ) );
+        createFulltextIndex( createMethod );
+    }
+
+    private void createFulltextIndex( String indexCreateMethod )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( indexCreateMethod, "test-index", asStrList( "EntityToken1", "EntityToken2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( indexCreateMethod ).close();
             tx.commit();
         }
         Result result;
@@ -162,174 +158,18 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    void dropIndexInTheSameTransaction()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
-
-            Set<String> indexes = new HashSet<>();
-
-            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).containsExactly( DEFAULT_NODE_IDX_NAME, DEFAULT_REL_IDX_NAME );
-            indexes.clear();
-
-            tx.execute( format( DROP, DEFAULT_NODE_IDX_NAME ) );
-            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).containsExactly( DEFAULT_REL_IDX_NAME );
-            indexes.clear();
-
-            tx.execute( format( DROP, DEFAULT_REL_IDX_NAME ) );
-            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).isEmpty();
-
-            tx.commit();
-        }
-    }
-
-    @Test
-    void dropIndex()
-    {
-        long indexesBefore = indexesCount();
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.commit();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            Set<String> indexes = new HashSet<>();
-            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).containsExactly( DEFAULT_NODE_IDX_NAME, DEFAULT_REL_IDX_NAME );
-
-            tx.execute( format( DROP, DEFAULT_NODE_IDX_NAME ) );
-            tx.commit();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            Set<String> indexes = new HashSet<>();
-            tx.execute( SHOW_FULLTEXT_INDEXES ).forEachRemaining( m -> indexes.add( (String) m.get( "name" ) ) );
-            assertThat( indexes ).containsExactly( DEFAULT_REL_IDX_NAME );
-
-            tx.execute( format( DROP, DEFAULT_REL_IDX_NAME ) );
-            tx.commit();
-        }
-
-        assertThat( indexesCount() ).isEqualTo( indexesBefore );
-    }
-
-    @Test
-    void mustNotBeAbleToCreateTwoIndexesWithSameName()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.commit();
-        }
-
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop3", "prop4" ) ) ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "There already exists an index called '" + DEFAULT_NODE_IDX_NAME + "'." );
-    }
-
-    @Test
-    void mustNotBeAbleToCreateNormalIndexWithSameNameAndSchemaAsExistingFulltextIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1" ), asStrList( "prop1" ) ) ).close();
-            tx.commit();
-        }
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( "CREATE INDEX `" + DEFAULT_NODE_IDX_NAME + "` FOR (n:Label1) ON (n.prop1)" ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "There already exists an index called '" + DEFAULT_NODE_IDX_NAME + "'." );
-    }
-
-    @Test
-    void mustNotBeAbleToCreateNormalIndexWithSameNameDifferentSchemaAsExistingFulltextIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.commit();
-        }
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( "CREATE INDEX `" + DEFAULT_NODE_IDX_NAME + "` FOR (n:Label1) ON (n.prop1)" ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "There already exists an index called '" + DEFAULT_NODE_IDX_NAME + "'." );
-    }
-
-    @Test
-    void mustNotBeAbleToCreateFulltextIndexWithSameNameAndSchemaAsExistingNormalIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( "CREATE INDEX `" + DEFAULT_NODE_IDX_NAME + "` FOR (n:Label1) ON (n.prop1)" ).close();
-            tx.commit();
-        }
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1" ), asStrList( "prop1" ) ) ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "There already exists an index called '" + DEFAULT_NODE_IDX_NAME + "'." );
-    }
-
-    @Test
-    void mustNotBeAbleToCreateFulltextIndexWithSameNameDifferentSchemaAsExistingNormalIndex()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( "CREATE INDEX `" + DEFAULT_NODE_IDX_NAME + "` FOR (n:Label1) ON (n.prop1)" ).close();
-            tx.commit();
-        }
-        Exception e = assertThrows( QueryExecutionException.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1" ), asStrList( "prop1", "prop2" ) ) ).close();
-                tx.commit();
-            }
-        } );
-        assertThat( e ).hasMessageContaining( "There already exists an index called '" + DEFAULT_NODE_IDX_NAME + "'." );
-    }
-
-    @Test
     void nodeIndexesMustHaveLabels()
     {
         Exception e = assertThrows( QueryExecutionException.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "nodeIndex", asStrList(), asStrList( PROP ) ) ).close();
+                tx.execute( format( FULLTEXT_CREATE, "nodeIndex", asNodeLabelStr(), asPropertiesStrList( PROP ) ) ).close();
             }
         } );
 
-        assertThat( e ).hasMessageContaining( "Schema descriptor must have at least one label." );
+        // Fails at parsing, schema descriptor must have at least one label.
+        assertThat( e ).hasMessageContaining( "Invalid input ')': expected \":\"" );
     }
 
     @Test
@@ -339,26 +179,43 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( RELATIONSHIP_CREATE, "relIndex", asStrList(), asStrList( PROP ) ) );
+                tx.execute( format( FULLTEXT_CREATE, "relIndex", asRelationshipTypeStr(), asPropertiesStrList( PROP ) ) );
             }
         } );
 
-        assertThat( e ).hasMessageContaining( "Schema descriptor must have at least one relationship type." );
+        // Fails at parsing, schema descriptor must have at least one relationship type.
+        assertThat( e ).hasMessageContaining( "Invalid input ']': expected \":\"" );
     }
 
-    @ParameterizedTest( name = "{0}" )
-    @MethodSource( "fulltextTypeProvider" )
-    void indexesMustHaveProperties( String name, String indexCreateMethod )
+    @Test
+    void relationshipIndexesMustHaveProperties()
     {
         Exception e = assertThrows( QueryExecutionException.class, () ->
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( indexCreateMethod, "index", asStrList( "EntityToken" ), asStrList() ) ).close();
+                tx.execute( format( FULLTEXT_CREATE, "index", asRelationshipTypeStr( "EntityToken" ), asPropertiesStrList() ) ).close();
             }
         } );
 
-        assertThat( e ).hasMessageContaining( "An index needs at least one property key to index" );
+        // Fails at parsing, an index needs at least one property key to index.
+        assertThat( e ).hasMessageContaining( "Invalid input ']': expected an identifier" );
+    }
+
+    @Test
+    void nodeIndexesMustHaveProperties()
+    {
+        String indexCreateMethod = format( FULLTEXT_CREATE, "index", asNodeLabelStr( "EntityToken" ), asPropertiesStrList() );
+        Exception e = assertThrows( QueryExecutionException.class, () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                tx.execute( indexCreateMethod ).close();
+            }
+        } );
+
+        // Fails at parsing, an index needs at least one property key to index.
+        assertThat( e ).hasMessageContaining( "Invalid input ']': expected an identifier" );
     }
 
     @Test
@@ -369,10 +226,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             // The property keys and labels we ask for do not exist, so those tokens will have to be allocated.
             // This test verifies that the locking required for the index modifications do not conflict with the
             // locking required for the token allocation.
-            tx.execute( format( NODE_CREATE, "nodesA", asStrList( "SOME_LABEL" ), asStrList( "this" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsA", asStrList( "SOME_REL_TYPE" ), asStrList( "foo" ) ) );
-            tx.execute( format( NODE_CREATE, "nodesB", asStrList( "SOME_OTHER_LABEL" ), asStrList( "that" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, "relsB", asStrList( "SOME_OTHER_REL_TYPE" ), asStrList( "bar" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "nodesA", asNodeLabelStr( "SOME_LABEL" ), asPropertiesStrList( "this" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "relsA", asRelationshipTypeStr( "SOME_REL_TYPE" ), asPropertiesStrList( "foo" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "nodesB", asNodeLabelStr( "SOME_OTHER_LABEL" ), asPropertiesStrList( "that" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "relsB", asRelationshipTypeStr( "SOME_OTHER_REL_TYPE" ), asPropertiesStrList( "bar" ) ) );
 
             tx.commit();
         }
@@ -409,12 +266,12 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            String lbl = asStrList( LABEL.name() );
-            String rel = asStrList( REL.name() );
-            String props = asStrList( PROP );
-            String swedish = props + ", {analyzer: '" + FulltextAnalyzerTest.SWEDISH + "'}";
-            tx.execute( format( NODE_CREATE, labelledSwedishNodes, lbl, swedish ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, typedSwedishRelationships, rel, swedish ) ).close();
+            String lbl = asNodeLabelStr( LABEL.name() );
+            String rel = asRelationshipTypeStr( REL.name() );
+            String props = asPropertiesStrList( PROP );
+            String swedish = "{`fulltext.analyzer`: '" + FulltextAnalyzerTest.SWEDISH + "'}";
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, labelledSwedishNodes, lbl, props, swedish ) ).close();
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, typedSwedishRelationships, rel, props, swedish ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -446,26 +303,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    void mustFailToCreateIndexWithUnknownAnalyzer()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            String label = asStrList( LABEL.name() );
-            String props = asStrList( PROP );
-            String analyzer = props + ", {analyzer: 'blablalyzer'}";
-
-            Exception e = assertThrows( QueryExecutionException.class, () -> tx.execute( format( NODE_CREATE, "my_index", label, analyzer ) ) );
-            assertThat( e ).hasMessageContaining( "No such full-text analyzer: 'blablalyzer'." );
-        }
-    }
-
-    @Test
     void queryShouldFindDataAddedInLaterTransactions()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( "Label1", "Label2" ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( "Reltype1", "Reltype2" ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( "Label1", "Label2" ), asPropertiesStrList( "prop1", "prop2" ) ) )
+              .close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( "Reltype1", "Reltype2" ),
+                                asPropertiesStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -516,8 +361,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) ) );
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP, "otherprop" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -534,8 +379,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
             tx.commit();
         }
 
@@ -572,8 +419,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
             tx.commit();
         }
         awaitIndexesOnline();
@@ -602,8 +451,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) );
             tx.commit();
         }
 
@@ -650,8 +501,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
             startLatch.await();
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
-                tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) );
+                tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ),
+                                    EVENTUALLY_CONSISTENT_OPTIONS ) );
+                tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ),
+                                    EVENTUALLY_CONSISTENT_OPTIONS ) );
                 tx.commit();
             }
         };
@@ -989,8 +842,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1035,8 +888,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1080,7 +933,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label secondLabel = Label.label( "label2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name(), secondLabel.name() ), asStrList( PROP ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name(), secondLabel.name() ), asPropertiesStrList( PROP ) ) )
+              .close();
             tx.commit();
         }
         long nodeId;
@@ -1120,7 +974,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label label = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asStrList( label.name() ), asStrList( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "books", asNodeLabelStr( label.name() ), asPropertiesStrList( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
         long nodeId;
@@ -1162,7 +1016,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asStrList( label.name() ), asStrList( "title", "author", "contents" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "books", asNodeLabelStr( label.name() ), asPropertiesStrList( "title", "author", "contents" ) ) ).close();
             tx.commit();
         }
 
@@ -1177,7 +1031,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         Label book = Label.label( "Book" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "books", asStrList( book.name() ), asStrList( "title", "author" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "books", asNodeLabelStr( book.name() ), asPropertiesStrList( "title", "author" ) ) ).close();
             tx.commit();
         }
 
@@ -1203,7 +1057,8 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( "a", "b", "c", "d", "e", "f" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( "a", "b", "c", "d", "e", "f" ) ) )
+              .close();
             tx.commit();
         }
         long nodeId;
@@ -1314,7 +1169,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     }
 
     @Test
-    void queryResultsMustIncludeNodesWithLabelsModifedToBeIndexed()
+    void queryResultsMustIncludeNodesWithLabelsModifiedToBeIndexed()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -1481,31 +1336,14 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
     @MethodSource( "entityTypeProvider" )
     @ParameterizedTest
-    void creatingAndDroppingIndexesInSameTransactionMustNotThrow( EntityUtil entityUtil )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            entityUtil.createIndex( tx );
-            entityUtil.dropIndex( tx );
-            tx.commit();
-        }
-        awaitIndexesOnline();
-        try ( Transaction tx = db.beginTx() )
-        {
-            var result = tx.execute( SHOW_FULLTEXT_INDEXES );
-            assertThat( result.hasNext() ).isFalse().as( "Fulltext indexes should not be created" );
-            tx.commit();
-        }
-    }
-
-    @MethodSource( "entityTypeProvider" )
-    @ParameterizedTest
     void eventuallyConsistentIndexMustNotIncludeEntitiesAddedInTransaction()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT ) ).close();
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) ).close();
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ),
+                                EVENTUALLY_CONSISTENT_OPTIONS ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -1525,115 +1363,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         assertQueryFindsIdsInOrder( db, true, DEFAULT_NODE_IDX_NAME, "value" );
         assertQueryFindsIdsInOrder( db, false, DEFAULT_REL_IDX_NAME, "value" );
-    }
-
-    @Test
-    void prefixedFulltextIndexSettingMustBeRecognized()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) ).close();
-            tx.execute(
-                    format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + EVENTUALLY_CONSISTENT_PREFIXED ) ).close();
-            tx.commit();
-        }
-        awaitIndexesOnline();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( IndexDefinition index : tx.schema().getIndexes() )
-            {
-                if ( index.getIndexType() != IndexType.FULLTEXT )
-                {
-                    continue;
-                }
-                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
-                Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
-                assertNotNull( eventuallyConsistentObj );
-                assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
-                assertTrue( (Boolean) eventuallyConsistentObj );
-            }
-            tx.commit();
-        }
-    }
-
-    @Test
-    void prefixedFulltextIndexSettingMustBeRecognizedTogetherWithNonPrefixed()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            String mixedPrefixConfig = ", {`fulltext.analyzer`: 'english', eventually_consistent: 'true'}";
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + mixedPrefixConfig ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + mixedPrefixConfig ) ).close();
-            tx.commit();
-        }
-        awaitIndexesOnline();
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            for ( IndexDefinition index : tx.schema().getIndexes() )
-            {
-                if ( index.getIndexType() != IndexType.FULLTEXT )
-                {
-                    continue;
-                }
-                Map<IndexSetting,Object> indexConfiguration = index.getIndexConfiguration();
-                Object eventuallyConsistentObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT );
-                assertNotNull( eventuallyConsistentObj );
-                assertThat( eventuallyConsistentObj ).isInstanceOf( Boolean.class );
-                assertTrue( (Boolean) eventuallyConsistentObj );
-                Object analyzerObj = indexConfiguration.get( IndexSettingImpl.FULLTEXT_ANALYZER );
-                assertNotNull( analyzerObj );
-                assertThat( analyzerObj ).isInstanceOf( String.class );
-                assertEquals( "english", analyzerObj );
-            }
-            tx.commit();
-        }
-    }
-
-    @Test
-    void mustThrowOnDuplicateFulltextIndexSetting()
-    {
-        String duplicateConfig = ", {`fulltext.analyzer`: 'english', analyzer: 'swedish'}";
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            Exception e = assertThrows( QueryExecutionException.class,
-                    () -> tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) + duplicateConfig ) ).close() );
-            assertThat( e ).hasMessageContaining( "Config setting was specified more than once, 'analyzer'." );
-            assertThat( e ).hasRootCauseExactlyInstanceOf( IllegalArgumentException.class );
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            Exception e = assertThrows( QueryExecutionException.class,
-                    () -> tx.execute(
-                            format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) + duplicateConfig ) ).close() );
-            assertThat( e ).hasMessageContaining( "Config setting was specified more than once, 'analyzer'." );
-            assertThat( e ).hasRootCauseExactlyInstanceOf( IllegalArgumentException.class );
-        }
-    }
-
-    @Test
-    void dropMustNotApplyToRegularSchemaIndexes()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.schema().indexFor( LABEL ).on( PROP ).create();
-            tx.commit();
-        }
-        awaitIndexesOnline();
-        String schemaIndexName;
-        try ( Transaction tx = db.beginTx() )
-        {
-            try ( Result result = tx.execute( "call db.indexes()" ) )
-            {
-                assertTrue( result.hasNext() );
-                schemaIndexName = result.next().get( "name" ).toString();
-            }
-            Exception e = assertThrows( QueryExecutionException.class, () -> tx.execute( format( DROP, schemaIndexName ) ).close() );
-            assertThat( e ).hasMessageContaining( "is not a full-text index." );
-        }
     }
 
     @CsvSource( {"false, without DB restart", "true, with DB restart"} )
@@ -1751,52 +1480,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
     }
 
-    @Test
-    void mustBePossibleToDropFulltextIndexByNameForWhichNormalIndexExistWithMatchingSchema()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( "CREATE INDEX FOR (n:Person) ON (n.name)" ).close();
-            tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
-            tx.commit();
-        }
-        awaitIndexesOnline();
-        try ( Transaction tx = db.beginTx() )
-        {
-            // This must not throw:
-            tx.execute( "call db.index.fulltext.drop('nameIndex')" ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( stream( tx.schema().getIndexes() ).map( IndexDefinition::getName ).collect( toList() ) ).doesNotContain( "nameIndex" );
-            tx.commit();
-        }
-    }
-
-    @Test
-    void fulltextIndexesMustNotPreventNormalSchemaIndexesFromBeingDropped()
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.execute( "CREATE INDEX firstNameIndex FOR (n:Person) ON (n.name)" ).close();
-            tx.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
-            tx.commit();
-        }
-        awaitIndexesOnline();
-        try ( Transaction tx = db.beginTx() )
-        {
-            // This must not throw:
-            tx.execute( "DROP INDEX firstNameIndex" ).close();
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( stream( tx.schema().getIndexes() ).map( IndexDefinition::getName ).collect( toList() ) ).contains( "nameIndex" );
-            tx.commit();
-        }
-    }
-
     @MethodSource( "entityTypeProvider" )
     @ParameterizedTest
     void mustSupportWildcardEndsLikeStartsWith( EntityUtil entityUtil )
@@ -1849,19 +1532,19 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     void mustMatchCaseInsensitiveWithStandardAnalyzer()
     {
         // The letter 'A' is a stop-word in English, so it is not indexed.
-        mustMatchCaseInsensitive( ", {analyzer: 'standard'}", false );
+        mustMatchCaseInsensitive( "{`fulltext.analyzer`: 'standard'}", false );
     }
 
     @Test
     void mustMatchCaseInsensitiveWithSimpleAnalyzer()
     {
-        mustMatchCaseInsensitive( ", {analyzer: 'simple'}", true );
+        mustMatchCaseInsensitive( "{`fulltext.analyzer`: 'simple'}", true );
     }
 
     @Test
     void mustMatchCaseInsensitiveWithDefaultAnalyzer()
     {
-        mustMatchCaseInsensitive( "", true );
+        mustMatchCaseInsensitive( "{}", true );
     }
 
     private void mustMatchCaseInsensitive( String analyzerString, boolean expectA )
@@ -1876,7 +1559,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asStrList( LABEL.name() ), asStrList( "id" ) + analyzerString ) ).close();
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, "myindex", asNodeLabelStr( LABEL.name() ), asPropertiesStrList( "id" ), analyzerString ) ).close();
             tx.commit();
         }
         awaitIndexesOnline();
@@ -1913,7 +1596,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asStrList( LABEL.name() ), asStrList( PROP ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "myindex", asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -1951,7 +1634,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "myindex", asStrList( LABEL.name() ), asStrList( PROP ) ) );
+            tx.execute( format( FULLTEXT_CREATE, "myindex", asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ) ) );
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -1962,51 +1645,6 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         assertThat( indexesCount() ).isEqualTo( indexesBefore + 2 );
     }
 
-    @CsvSource( value = {NODE_CREATE + "|For node", RELATIONSHIP_CREATE + "|For relationship"}, delimiter = '|' )
-    @ParameterizedTest( name = "{1}" )
-    void shouldNotBePossibleToCreateIndexWithDuplicateProperty( String createMethod, String name )
-    {
-        Exception e = assertThrows( Exception.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( createMethod, "myindex", asStrList( "EntityToken" ), asStrList( "id", "id" ) ) );
-            }
-        } );
-
-        assertThat( e ).hasRootCauseExactlyInstanceOf( RepeatedPropertyInSchemaException.class )
-                       .hasMessageContaining( "includes a property more than once." );
-    }
-
-    @Test
-    void shouldNotBePossibleToCreateIndexWithDuplicateLabel()
-    {
-        Exception e = assertThrows( Exception.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( NODE_CREATE, "myindex", asStrList( LABEL.name(), LABEL.name() ), asStrList( "id" ) ) );
-            }
-        } );
-
-        assertThat( e ).hasRootCauseExactlyInstanceOf( RepeatedLabelInSchemaException.class )
-                       .hasMessageContaining( "includes a label more than once." );
-    }
-
-    @Test
-    void shouldNotBePossibleToCreateIndexWithDuplicateRelType()
-    {
-        Exception e = assertThrows( Exception.class, () ->
-        {
-            try ( Transaction tx = db.beginTx() )
-            {
-                tx.execute( format( RELATIONSHIP_CREATE, "myindex", asStrList( "RelType", "RelType" ), asStrList( "id" ) ) );
-            }
-        } );
-        assertThat( e ).hasRootCauseExactlyInstanceOf( RepeatedRelationshipTypeInSchemaException.class )
-                       .hasMessageContaining( "includes a relationship type more than once." );
-    }
-
     @Test
     void attemptingToIndexOnPropertyUsedForInternalReferenceMustThrow()
     {
@@ -2014,9 +1652,9 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.execute( format( NODE_CREATE, "myindex",
-                        asStrList( LABEL.name() ),
-                        asStrList( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) ) )
+                tx.execute( format( FULLTEXT_CREATE, "myindex",
+                                    asNodeLabelStr( LABEL.name() ),
+                                    asPropertiesStrList( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID ) ) )
                   .close();
                 tx.commit();
             }
@@ -2128,7 +1766,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2163,7 +1801,7 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( REL.name() ), asStrList( PROP ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -2218,10 +1856,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            String label = asStrList( LABEL.name() );
-            String props = asStrList( PROP );
-            String analyzer = props + ", {analyzer: 'standard-folding'}";
-            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            String label = asNodeLabelStr( LABEL.name() );
+            String props = asPropertiesStrList( PROP );
+            String analyzer = "{`fulltext.analyzer`: 'standard-folding'}";
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, indexName, label, props, analyzer ) ).close();
             tx.commit();
         }
 
@@ -2309,10 +1947,10 @@ class FulltextProceduresTest extends FulltextProceduresTestSupport
         String indexName = "my_index";
         try ( Transaction tx = db.beginTx() )
         {
-            String label = asStrList( LABEL.name() );
-            String props = asStrList( PROP );
-            String analyzer = props + ", {analyzer: 'standard-folding'}";
-            tx.execute( format( NODE_CREATE, indexName, label, analyzer ) ).close();
+            String label = asNodeLabelStr( LABEL.name() );
+            String props = asPropertiesStrList( PROP );
+            String analyzer = "{`fulltext.analyzer`: 'standard-folding'}";
+            tx.execute( format( FULLTEXT_CREATE_WITH_CONFIG, indexName, label, props, analyzer ) ).close();
             tx.commit();
         }
 

@@ -83,9 +83,10 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
@@ -123,8 +124,8 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "prop" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -142,7 +143,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -161,7 +162,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -184,7 +185,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1", "L2" ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -207,7 +208,7 @@ class FulltextIndexConsistencyCheckIT
         String[] labels = {"L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10", "L11", "L12", "L13", "L14", "L15", "L16"};
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( labels ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( labels ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -226,7 +227,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1", "L2" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -270,7 +271,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relationshipType = RelationshipType.withName( "R1" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -292,7 +293,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relationshipType = RelationshipType.withName( "R1" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -321,7 +322,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relType2 = RelationshipType.withName( "R2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1", "R2" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1", "R2" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -347,7 +348,7 @@ class FulltextIndexConsistencyCheckIT
         RelationshipType relType2 = RelationshipType.withName( "R2" );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1", "R2" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1", "R2" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -383,8 +384,8 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2", "L3" ), asStrList( "p1", "p2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1", "R2" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1", "L2", "L3" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1", "R2" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -411,7 +412,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -430,7 +431,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "R1" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         try ( Transaction tx = db.beginTx() )
@@ -477,16 +478,16 @@ class FulltextIndexConsistencyCheckIT
             for ( int i = 1; i < labels.length; i++ )
             {
                 tx
-                        .execute( format( NODE_CREATE, "nodes" + i,
-                                asStrList( Arrays.stream( labels ).limit( i ).map( Label::name ).toArray( String[]::new ) ),
-                                asStrList( Arrays.copyOf( propertyKeys, i ) ) ) )
+                        .execute( format( FULLTEXT_CREATE, "nodes" + i,
+                                          asNodeLabelStr( Arrays.stream( labels ).limit( i ).map( Label::name ).toArray( String[]::new ) ),
+                                          asPropertiesStrList( Arrays.copyOf( propertyKeys, i ) ) ) )
                         .close();
             }
             for ( int i = 1; i < relTypes.length; i++ )
             {
-                tx.execute( format( RELATIONSHIP_CREATE, "rels" + i,
-                        asStrList( Arrays.stream( relTypes ).limit( i ).map( RelationshipType::name ).toArray( String[]::new ) ),
-                        asStrList( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
+                tx.execute( format( FULLTEXT_CREATE, "rels" + i,
+                        asRelationshipTypeStr( Arrays.stream( relTypes ).limit( i ).map( RelationshipType::name ).toArray( String[]::new ) ),
+                        asPropertiesStrList( Arrays.copyOf( propertyKeys, i ) ) ) ).close();
             }
             tx.commit();
         }
@@ -508,7 +509,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "Label" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         IndexDescriptor indexDescriptor;
@@ -542,7 +543,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2" ), asStrList( "p1", "p2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1", "L2" ), asPropertiesStrList( "p1", "p2" ) ) ).close();
             tx.commit();
         }
         //when
@@ -567,7 +568,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodes", asStrList( "L1", "L2" ), asStrList( "p1" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "L1", "L2" ), asPropertiesStrList( "p1" ) ) ).close();
             tx.commit();
         }
         //when
@@ -591,7 +592,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "REL" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "REL" ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         IndexDescriptor indexDescriptor;
@@ -627,7 +628,7 @@ class FulltextIndexConsistencyCheckIT
         GraphDatabaseService db = createDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "rels", asStrList( "REL" ), asStrList( "prop" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "REL" ), asPropertiesStrList( "prop" ) ) ).close();
             tx.commit();
         }
         long relId;

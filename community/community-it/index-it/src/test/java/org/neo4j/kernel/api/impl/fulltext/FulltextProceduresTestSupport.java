@@ -63,10 +63,10 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.DROP;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 
 @DbmsExtension( configurationCallback = "configure" )
 class FulltextProceduresTestSupport
@@ -78,8 +78,7 @@ class FulltextProceduresTestSupport
     static final Label LABEL = Label.label( "Label" );
     static final RelationshipType REL = RelationshipType.withName( "REL" );
     static final String PROP = "prop";
-    static final String EVENTUALLY_CONSISTENT = ", {eventually_consistent: 'true'}";
-    static final String EVENTUALLY_CONSISTENT_PREFIXED = ", {`fulltext.eventually_consistent`: 'true'}";
+    static final String EVENTUALLY_CONSISTENT_OPTIONS = "{`fulltext.eventually_consistent`: true}";
     static final String QUERY_NODES = "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\")";
     static final String QUERY_RELS = "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\")";
     static final String DEFAULT_NODE_IDX_NAME = "nodes";
@@ -271,12 +270,12 @@ class FulltextProceduresTestSupport
 
     static void createSimpleRelationshipIndex( Transaction tx )
     {
-        tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) ) ).close();
+        tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) ).close();
     }
 
     static void createSimpleNodesIndex( Transaction tx )
     {
-        tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP ) ) ).close();
+        tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP ) ) ).close();
     }
 
     interface EntityUtil
@@ -354,7 +353,7 @@ class FulltextProceduresTestSupport
         @Override
         public void dropIndex( Transaction tx )
         {
-            tx.execute( format( DROP, DEFAULT_NODE_IDX_NAME ) );
+            tx.execute( format( "DROP INDEX `%s`", DEFAULT_NODE_IDX_NAME ) );
         }
 
         @Override
@@ -432,7 +431,7 @@ class FulltextProceduresTestSupport
         @Override
         public void dropIndex( Transaction tx )
         {
-            tx.execute( format( DROP, DEFAULT_REL_IDX_NAME ) );
+            tx.execute( format( "DROP INDEX `%s`", DEFAULT_REL_IDX_NAME ) );
         }
 
         @Override

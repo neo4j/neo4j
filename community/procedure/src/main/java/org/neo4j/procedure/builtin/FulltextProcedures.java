@@ -19,10 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.eclipse.collections.impl.factory.Maps;
-
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
@@ -33,23 +30,16 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnalyzerProvider;
-import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.schema.IndexSetting;
-import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -65,16 +55,10 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.util.FeatureToggles;
 
-import static java.lang.String.format;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.FULLTEXT_PREFIX;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_ANALYZER;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettingsKeys.PROCEDURE_EVENTUALLY_CONSISTENT;
 import static org.neo4j.procedure.Mode.READ;
-import static org.neo4j.procedure.Mode.SCHEMA;
 
 /**
  * Procedures for querying the Fulltext indexes.
@@ -122,90 +106,6 @@ public class FulltextProcedures
         }
 
         accessor.awaitRefresh();
-    }
-
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    @Description( "Create a node full-text index for the given labels and properties. " +
-                  "The optional 'config' map parameter can be used to supply settings to the index. " +
-                  "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
-                  "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
-                  "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
-                  "such that updates from committing transactions are applied in a background thread." )
-    @Procedure( name = "db.index.fulltext.createNodeIndex", mode = SCHEMA, deprecatedBy = "CREATE FULLTEXT INDEX command" )
-    public void createNodeFulltextIndex(
-            @Name( "indexName" ) String name,
-            @Name( "labels" ) List<String> labelNames,
-            @Name( "properties" ) List<String> properties,
-            @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-    {
-        Label[] labels = labelNames.stream().map( Label::label ).toArray( Label[]::new );
-        IndexCreator indexCreator = transaction.schema().indexFor( labels );
-        createIndex( indexCreator, name, properties, config );
-    }
-
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    @Description( "Create a relationship full-text index for the given relationship types and properties. " +
-                  "The optional 'config' map parameter can be used to supply settings to the index. " +
-                  "Supported settings are '" + PROCEDURE_ANALYZER + "', for specifying what analyzer to use " +
-                  "when indexing and querying. Use the `db.index.fulltext.listAvailableAnalyzers` procedure to see what options are available. " +
-                  "And '" + PROCEDURE_EVENTUALLY_CONSISTENT + "' which can be set to 'true' to make this index eventually consistent, " +
-                  "such that updates from committing transactions are applied in a background thread." )
-    @Procedure( name = "db.index.fulltext.createRelationshipIndex", mode = SCHEMA, deprecatedBy = "CREATE FULLTEXT INDEX command" )
-    public void createRelationshipFulltextIndex(
-            @Name( "indexName" ) String name,
-            @Name( "relationshipTypes" ) List<String> relTypes,
-            @Name( "properties" ) List<String> properties,
-            @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
-    {
-        RelationshipType[] types = relTypes.stream().map( RelationshipType::withName ).toArray( RelationshipType[]::new );
-        IndexCreator indexCreator = transaction.schema().indexFor( types );
-        createIndex( indexCreator, name, properties, config );
-    }
-
-    private static void createIndex( IndexCreator indexCreator, String name, List<String> properties, Map<String,String> config )
-    {
-        indexCreator = indexCreator.withName( name );
-        indexCreator = indexCreator.withIndexType( FULLTEXT );
-
-        for ( String property : properties )
-        {
-            indexCreator = indexCreator.on( property );
-        }
-
-        config = sanitizeFulltextConfig( config );
-        if ( !config.isEmpty() )
-        {
-            Map<IndexSetting,Object> parsedConfig = Maps.mutable.of();
-
-            String analyzer = config.remove( PROCEDURE_ANALYZER );
-            if ( analyzer != null )
-            {
-                parsedConfig.put( IndexSettingImpl.FULLTEXT_ANALYZER, analyzer );
-            }
-
-            String eventuallyConsistent = config.remove( PROCEDURE_EVENTUALLY_CONSISTENT );
-            if ( eventuallyConsistent != null )
-            {
-                parsedConfig.put( IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT, Boolean.parseBoolean( eventuallyConsistent ) );
-            }
-
-            indexCreator = indexCreator.withIndexConfiguration( parsedConfig );
-        }
-
-        indexCreator.create();
-    }
-
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    @Description( "Drop the specified index." )
-    @Procedure( name = "db.index.fulltext.drop", mode = SCHEMA, deprecatedBy = "DROP INDEX command" )
-    public void drop( @Name( "indexName" ) String name )
-    {
-        IndexDefinition index = transaction.schema().getIndexByName( name );
-        if ( index.getIndexType() != FULLTEXT )
-        {
-            throw new IllegalArgumentException( "The index called '" + name + "' is not a full-text index." );
-        }
-        index.drop();
     }
 
     @SystemProcedure
@@ -350,26 +250,6 @@ public class FulltextProcedures
         }
         // If the index was created in this transaction, then we skip this check entirely.
         // We will get an exception later, when we try to get an IndexReader, so this is fine.
-    }
-
-    private static Map<String,String> sanitizeFulltextConfig( Map<String,String> config )
-    {
-        Map<String,String> cleanMap = new HashMap<>();
-        for ( Map.Entry<String,String> entry : config.entrySet() )
-        {
-            String key = entry.getKey();
-            if ( key.startsWith( FULLTEXT_PREFIX ) )
-            {
-                key = key.substring( FULLTEXT_PREFIX.length() );
-            }
-            String value = entry.getValue();
-            String duplicate = cleanMap.put( key, value );
-            if ( duplicate != null )
-            {
-                throw new IllegalArgumentException( format( "Config setting was specified more than once, '%s'.", key ) );
-            }
-        }
-        return cleanMap;
     }
 
     private abstract static class SpliteratorAdaptor<T> implements Spliterator<T>

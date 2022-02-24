@@ -35,9 +35,10 @@ import org.neo4j.util.concurrent.BinaryLatch;
 import static java.lang.String.format;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.AWAIT_REFRESH;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.scheduler.JobMonitoringParams.NOT_MONITORED;
 
 class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestSupport
@@ -55,8 +56,8 @@ class EventuallyConsistentFulltextProceduresTest extends FulltextProceduresTestS
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, DEFAULT_NODE_IDX_NAME, asStrList( LABEL.name() ), asStrList( PROP, "otherprop" ) ) );
-            tx.execute( format( RELATIONSHIP_CREATE, DEFAULT_REL_IDX_NAME, asStrList( REL.name() ), asStrList( PROP ) ) );
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP, "otherprop" ) ) );
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) );
             tx.commit();
         }
         awaitIndexesOnline();

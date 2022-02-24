@@ -114,9 +114,10 @@ import static org.neo4j.internal.schema.IndexType.FULLTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.NODE_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.RELATIONSHIP_CREATE;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.FULLTEXT_CREATE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asNodeLabelStr;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asPropertiesStrList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProceduresUtil.asRelationshipTypeStr;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
 import static org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -289,12 +290,12 @@ class FulltextIndexProviderTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex",
-                    asStrList( "Label1", "Label2" ),
-                    asStrList( "prop1", "prop2" ) ) ).close();
-            tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
-                    asStrList( "RelType1", "RelType2" ),
-                    asStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodeIndex",
+                                asNodeLabelStr( "Label1", "Label2" ),
+                                asPropertiesStrList( "prop1", "prop2" ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "relIndex",
+                    asRelationshipTypeStr( "RelType1", "RelType2" ),
+                    asPropertiesStrList( "prop1", "prop2" ) ) ).close();
             tx.commit();
         }
 
@@ -394,9 +395,9 @@ class FulltextIndexProviderTest
         // Test that multi-token node indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( NODE_CREATE, "nodeIndex",
-                    asStrList( label1.name(), label2.name(), label3.name() ),
-                    asStrList( prop1, prop2, prop3 ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "nodeIndex",
+                                asNodeLabelStr( label1.name(), label2.name(), label3.name() ),
+                                asPropertiesStrList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 
@@ -413,9 +414,9 @@ class FulltextIndexProviderTest
         // Test that multi-token relationship indexes can be waited for.
         try ( Transaction tx = db.beginTx() )
         {
-            tx.execute( format( RELATIONSHIP_CREATE, "relIndex",
-                    asStrList( relType1.name(), relType2.name(), relType3.name() ),
-                    asStrList( prop1, prop2, prop3 ) ) ).close();
+            tx.execute( format( FULLTEXT_CREATE, "relIndex",
+                    asRelationshipTypeStr( relType1.name(), relType2.name(), relType3.name() ),
+                    asPropertiesStrList( prop1, prop2, prop3 ) ) ).close();
             tx.commit();
         }
 
