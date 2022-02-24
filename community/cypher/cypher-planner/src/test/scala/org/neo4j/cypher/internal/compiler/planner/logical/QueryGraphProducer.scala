@@ -54,10 +54,8 @@ import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.scalatestplus.mockito.MockitoSugar
 
-trait QueryGraphProducer extends MockitoSugar {
-
+trait QueryGraphProducer {
   self: LogicalPlanningTestSupport =>
 
   /**

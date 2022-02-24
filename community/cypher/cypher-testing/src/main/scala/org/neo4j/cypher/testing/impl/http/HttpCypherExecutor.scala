@@ -26,8 +26,6 @@ import org.neo4j.driver.Session
 import org.neo4j.driver.TransactionConfig
 import org.neo4j.test.server.HTTP
 
-import scala.collection.JavaConverters.mapAsJavaMapConverter
-
 case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherExecutor with HttpExceptionConverter {
 
   override def beginTransaction(): CypherExecutorTransaction =

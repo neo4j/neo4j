@@ -69,7 +69,7 @@ trait LogicalPlanningConfiguration {
   def executionModel: ExecutionModel
   def lookupRelationshipsByType: LookupRelationshipsByType
 
-  protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply)
+  protected def mapCardinality(pf: PartialFunction[PlannerQueryPart, Double]): PartialFunction[PlannerQueryPart, Cardinality] = pf.andThen(Cardinality.apply(_))
   protected def selectivitiesCardinality(selectivities: Map[Expression, Double],
                                          baseCardinality: QueryGraph => Double): PartialFunction[PlannerQueryPart, Cardinality] = mapCardinality {
     case RegularSinglePlannerQuery(queryGraph, _, _, _, _) =>

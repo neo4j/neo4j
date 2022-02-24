@@ -29,7 +29,7 @@ import org.neo4j.graphdb.InputPosition
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.server.HTTP
 
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

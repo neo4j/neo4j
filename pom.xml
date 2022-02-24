@@ -1276,19 +1276,19 @@
       </dependency>
       <dependency>
         <groupId>io.circe</groupId>
-        <artifactId>circe-core_2.12</artifactId>
+        <artifactId>circe-core_${scala.binary.version}</artifactId>
         <version>0.14.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.circe</groupId>
-        <artifactId>circe-generic_2.12</artifactId>
+        <artifactId>circe-generic_${scala.binary.version}</artifactId>
         <version>0.14.1</version>
         <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.circe</groupId>
-        <artifactId>circe-parser_2.12</artifactId>
+        <artifactId>circe-parser_${scala.binary.version}</artifactId>
         <version>0.14.1</version>
         <scope>test</scope>
       </dependency>

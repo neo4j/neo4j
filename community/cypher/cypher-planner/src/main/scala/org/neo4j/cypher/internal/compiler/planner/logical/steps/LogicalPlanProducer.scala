@@ -1650,7 +1650,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                   pattern: ForeachPattern,
                   context: LogicalPlanningContext,
                   expression: Expression,
-                  mutations: Seq[SimpleMutatingPattern]): LogicalPlan = {
+                  mutations: collection.Seq[SimpleMutatingPattern]): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
     val (rewrittenExpression, rewrittenLeft) = PatternExpressionSolver.ForSingle.solve(inner, expression, context)
     val plan = Foreach(rewrittenLeft, pattern.variable, rewrittenExpression, mutations)

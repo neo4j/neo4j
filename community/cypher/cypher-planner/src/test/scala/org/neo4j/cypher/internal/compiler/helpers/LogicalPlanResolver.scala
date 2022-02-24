@@ -36,9 +36,9 @@ case class TokenContainer(
   def addProperty(property: String): TokenContainer = this.copy(properties = properties + property)
 
   def getResolver(procedures: Set[ProcedureSignature]): LogicalPlanResolver = new LogicalPlanResolver(
-    labels.to[ArrayBuffer],
-    properties.to[ArrayBuffer],
-    relTypes.to[ArrayBuffer],
+    labels.to(ArrayBuffer),
+    properties.to(ArrayBuffer),
+    relTypes.to(ArrayBuffer),
     procedures
   )
 }

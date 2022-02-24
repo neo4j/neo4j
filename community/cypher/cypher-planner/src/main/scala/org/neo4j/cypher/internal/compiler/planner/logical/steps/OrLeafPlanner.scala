@@ -88,7 +88,7 @@ object OrLeafPlanner {
    * @param interestingOrderCandidates if these candidates lead to different leaf plans, we can plan OrderedUnion instead of Union
    */
   case class DisjunctionForOneVariable(variableName: String,
-                                       predicates: Seq[DistributablePredicate],
+                                       predicates: collection.Seq[DistributablePredicate],
                                        interestingOrderCandidates: Seq[InterestingOrderCandidate]) {
     override def toString: String = predicates.mkString(" OR ")
   }
@@ -113,7 +113,7 @@ object OrLeafPlanner {
    */
   final case object WhereClausePredicateKind extends PredicateKind {
 
-    private def variableIfAllEqualHasLabelsOrRelTypes(expressions: Seq[Expression]): Option[Expression] = {
+    private def variableIfAllEqualHasLabelsOrRelTypes(expressions: collection.Seq[Expression]): Option[Expression] = {
       expressions.headOption
         .collect {
           case HasLabels(variable, _) => variable
@@ -166,7 +166,7 @@ object OrLeafPlanner {
 
       // Predicates solved by only one plan each must be added inside an Ors
       val disjunctivePredicates = solvedQgs.flatMap(_.selections.flatPredicates.filterNot(predicatesSolvedByAllPlans.contains))
-      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans.toSeq: _*)
+      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
 
       if (disjunctivePredicates.nonEmpty) {
         qgWithPredicatesSolvedByAllPlans.addPredicates(Ors(disjunctivePredicates)(InputPosition.NONE))

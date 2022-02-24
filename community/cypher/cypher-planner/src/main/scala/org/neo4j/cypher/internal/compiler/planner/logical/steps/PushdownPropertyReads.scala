@@ -187,7 +187,7 @@ case object PushdownPropertyReads {
 
         case _ =>
           val newLowestCardinalities =
-            acc.variableOptima.mapValues(optimum =>
+            acc.variableOptima.view.mapValues(optimum =>
               if (outgoingCardinality <= (optimum.cardinality + CARDINALITY_EPSILON)) {
                 CardinalityOptimum(outgoingCardinality, plan.id, optimum.variableName)
               } else {
@@ -261,7 +261,7 @@ case object PushdownPropertyReads {
 
           val outgoingAvailableProperties = acc.availableProperties ++ newPropertyExpressions ++ propertiesFromPlan
 
-          Acc(outgoingVariableOptima, outgoingReadOptima, outgoingAvailableProperties, acc.availableWholeEntities ++ maybeEntityFromPlan, outgoingCardinality)
+          Acc(outgoingVariableOptima.toMap, outgoingReadOptima, outgoingAvailableProperties, acc.availableWholeEntities ++ maybeEntityFromPlan, outgoingCardinality)
       }
     }
 

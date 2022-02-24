@@ -43,9 +43,9 @@ import org.neo4j.cypher.internal.util.topDown
  * i.e it groups inequalities by property lookup and collects each group of inequalities into
  * an instance of AndedPropertyInequalities
  */
-object groupInequalityPredicates extends (Seq[Predicate] => Seq[Predicate]) {
+object groupInequalityPredicates extends (collection.Seq[Predicate] => collection.Seq[Predicate]) {
 
-  override def apply(inputPredicates: Seq[Predicate]): Seq[Predicate] = {
+  override def apply(inputPredicates: collection.Seq[Predicate]): collection.Seq[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality on a property or not
     val (propertyInequalities, otherPredicates) = inputPredicates.partition {

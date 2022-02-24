@@ -1900,7 +1900,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           planBuilderWithSort
             .projection(returnProjections)
-            .filterExpression(selectionExpression.exprs:_*)
+            .filterExpression(selectionExpression.exprs.toSeq:_*)
             .relationshipIndexOperator("(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > '')]->(b)", indexOrder = indexOrder)
             .build()
         }

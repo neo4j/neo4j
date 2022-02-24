@@ -77,7 +77,7 @@ case object pruningVarExpander extends Rewriter {
       lowerDistinctLand
     }
 
-    val planStack = new mutable.ArrayStack[(LogicalPlan, Option[Set[String]])]()
+    val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
     planStack.push((plan, None))
 
     while(planStack.nonEmpty) {

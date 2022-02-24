@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalacheck.Gen
 import org.scalacheck.Gen.listOf
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.immutable.BitSet
 
-class BitSetEqualityTest extends CypherFunSuite with GeneratorDrivenPropertyChecks {
+class BitSetEqualityTest extends CypherFunSuite with ScalaCheckDrivenPropertyChecks {
 
   implicit val config: PropertyCheckConfiguration = PropertyCheckConfiguration(minSuccessful = 500)
 

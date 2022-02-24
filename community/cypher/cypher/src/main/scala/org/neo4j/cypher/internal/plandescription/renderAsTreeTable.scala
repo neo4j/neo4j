@@ -335,7 +335,7 @@ private class TreeTableBuilder private(private val withRawCardinalities: Boolean
 
   def result(): Table = {
     unmergedRow.foreach(r => addRow(merge(r, None)))
-    Table(rows, lengths)
+    Table(rows.toSeq, lengths)
   }
 
   private def tableRow(levelledPlan: LevelledPlan): BuildingRow = {

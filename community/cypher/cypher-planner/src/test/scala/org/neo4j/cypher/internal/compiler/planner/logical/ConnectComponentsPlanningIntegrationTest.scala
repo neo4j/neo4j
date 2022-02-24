@@ -117,7 +117,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val builder = plannerBuilder()
       .setAllNodesCardinality(20000)
-      .setLabelCardinalities(labelsAndNumbers.toMap.mapValues(_.toDouble * 2000))
+      .setLabelCardinalities(labelsAndNumbers.toMap.view.mapValues(_.toDouble * 2000).toMap)
 
     val volcano = builder.setExecutionModel(Volcano).build()
     val batched = builder.setExecutionModel(Batched.default).build()

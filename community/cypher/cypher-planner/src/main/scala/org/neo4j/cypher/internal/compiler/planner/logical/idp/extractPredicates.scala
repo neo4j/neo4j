@@ -43,7 +43,7 @@ object extractPredicates {
   type RelationshipPredicates = List[Expression]
   type SolvedPredicates = List[Expression] // for marking predicates as solved
 
-  def apply(availablePredicates: Seq[Expression],
+  def apply(availablePredicates: collection.Seq[Expression],
             originalRelationshipName: String,
             tempRelationship: String,
             tempNode: String,

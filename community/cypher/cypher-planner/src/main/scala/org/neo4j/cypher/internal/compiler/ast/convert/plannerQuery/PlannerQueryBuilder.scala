@@ -194,7 +194,7 @@ object PlannerQueryBuilder {
       case (acc, pred@Predicate(_, Ors(HasTypes(Variable(name), headRelTypes) +: exprs))) =>
         val tailRelTypesOnTheSameVariable = exprs.collect {
           case HasTypes(Variable(`name`), relTypes) => relTypes
-        }
+        }.toSeq
 
         // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
         if (tailRelTypesOnTheSameVariable.length == exprs.length) {

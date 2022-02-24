@@ -204,7 +204,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
       }
 
       def resetUsagesCount(): Acc =
-        copy(properties = properties.mapValues(_.copy(usages = 0)))
+        copy(properties = properties.view.mapValues(_.copy(usages = 0)).toMap)
     }
 
     def findPropertiesInPlan(acc: Acc, logicalPlan: LogicalPlan): Acc = logicalPlan.treeFold(acc) {
@@ -357,7 +357,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
                                                  s: Selection): Seq[Expression] = {
     LogicalPlanProducer.sortPredicatesBySelectivity(
       s.source,
-      s.predicate.exprs,
+      s.predicate.exprs.toSeq,
       QueryGraphSolverInput.empty,
       from.semanticTable(),
       IndexCompatiblePredicatesProviderContext.default,

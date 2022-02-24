@@ -351,7 +351,7 @@ object ClauseConverters {
       case _ => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
 
-    builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes, relationships)))
+    builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes.toSeq, relationships.toSeq)))
   }
 
   private def dedup(nodePatterns: Vector[CreateNodeCommand]) = {

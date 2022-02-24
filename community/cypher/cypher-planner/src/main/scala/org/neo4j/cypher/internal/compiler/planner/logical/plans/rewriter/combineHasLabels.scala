@@ -49,7 +49,7 @@ case object combineHasLabels extends Rewriter {
       .groupBy(_.expression).toSeq
       .map {
         case (_, Seq(singleHasLabels)) => singleHasLabels
-        case (entity, hasLabels) => HasAnyLabel(entity, hasLabels.flatMap(_.labels).distinct)(entity.position)
+        case (entity, hasLabels) => HasAnyLabel(entity, hasLabels.flatMap(_.labels).distinct.toSeq)(entity.position)
       }
 
     if (rewrittenHasLabels.size == lonelyHasLabels.size) {

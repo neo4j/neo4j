@@ -181,7 +181,7 @@ object VerifyBestPlan {
       ))
   }
 
-  private case class UnfulfillableIndexHints(missingIndexHints: Set[MissingIndexHint], wrongPropertyTypeHints: Seq[WrongPropertyTypeHint]) {
+  private case class UnfulfillableIndexHints(missingIndexHints: Set[MissingIndexHint], wrongPropertyTypeHints: collection.Seq[WrongPropertyTypeHint]) {
     def hints: Set[Hint] = Set[Hint]() ++ missingIndexHints.map(_.hint) ++ wrongPropertyTypeHints.map(_.hint)
   }
 

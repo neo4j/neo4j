@@ -171,12 +171,12 @@ object GoalBitAllocation {
     val initialTodo = components.toSeq ++ queryGraph.optionalMatches
 
     // For each optional match, find dependencies to components and other optional matches
-    val optionalMatchDependencies = queryGraph.optionalMatches.map { om =>
+    val optionalMatchDependencies: IndexedSeq[BitSet] = queryGraph.optionalMatches.map { om =>
       om.argumentIds.iterator.map { arg =>
         val index = initialTodo.indexWhere(x => x.idsWithoutOptionalMatchesOrUpdates.contains(arg))
         AssertMacros.checkOnlyWhenAssertionsAreEnabled(index >= 0, "Did not find which QG introduces dependency of optional match.")
         startComponents + index
-      }(collection.breakOut): BitSet // directly create a BitSet using CanBuildFrom magic
+      }.to(BitSet)
     }
 
     val gba = GoalBitAllocation(

@@ -99,7 +99,7 @@ object expandSolverStep {
         context.logicalPlanProducer.planSimpleExpand(sourcePlan, nodeId, dir, otherSide, patternRel, mode, context)
 
       case _: VarPatternLength =>
-        val availablePredicates: Seq[Expression] =
+        val availablePredicates: collection.Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val tempNode = patternRel.name + "_NODES"
         val tempRelationship = patternRel.name + "_RELS"
