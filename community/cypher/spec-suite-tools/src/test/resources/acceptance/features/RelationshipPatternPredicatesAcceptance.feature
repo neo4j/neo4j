@@ -42,14 +42,22 @@ Feature: RelationshipPatternPredicates
       | 3      |
     And no side effects
 
-  Scenario: Should not allow to reference other elements of the pattern
-    Given any graph
+  Scenario: Should allow reference other elements of the pattern
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: 100})-[:R {prop: 1}]->()
+      CREATE (:A {prop: 200})-[:R {prop: 2}]->()
+      """
     When executing query:
       """
-      MATCH (a:A)-[r:R WHERE a.prop > 1]-(b:B)
-      RETURN a.prop AS result
+      MATCH (a:A)-[r:R WHERE a.prop > 100]-()
+      RETURN r.prop AS result
       """
-    Then a SyntaxError should be raised at runtime: UndefinedVariable
+    Then the result should be, in any order:
+      | r.prop |
+      | 200    |
+    And no side effects
 
   Scenario: Pattern comprehension with predicate on a relationship
     Given an empty graph
@@ -69,10 +77,69 @@ Feature: RelationshipPatternPredicates
       | [2, 3] |
     And no side effects
 
-  Scenario: Should not allow to reference other elements of the pattern in a pattern comprehension
-    Given any graph
+  Scenario: Should allow references to other elements of the pattern in a pattern comprehension
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: 1})-[:R {prop: 100}]->(:B)
+      CREATE (:A {prop: 2})-[:R {prop: 200}]->(:B)
+      """
     When executing query:
       """
-      RETURN [(a:A)-[r WHERE b.prop > 1]-(b:B) | a]
+      RETURN [(a:A)-[r WHERE a.prop > 1]-(:B) | [a.prop, r.prop]] AS result
       """
-    Then a SyntaxError should be raised at runtime: UndefinedVariable
+    Then the result should be, in any order:
+      | result     |
+      | [[2, 200]] |
+    And no side effects
+
+  Scenario: Should allow projected variables in relationship predicate
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:R {prop: 1}]->()
+      """
+    When executing query:
+      """
+      WITH true as x
+      MATCH ()-[r WHERE x]->()
+      RETURN r.prop AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | 1          |
+    And no side effects
+
+  Scenario: Should allow arbitrary search conditions
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:R {prop: 1}]->()
+      """
+    When executing query:
+      """
+      MATCH ()-[r WHERE true]->()
+      RETURN r.prop AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | 1          |
+    And no side effects
+
+  Scenario: Should allow mixing property specification and WHERE clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:R {p: 1, q: 100}]->()
+      CREATE ()-[:R {p: 2, q: 200}]->()
+      CREATE ()-[:R {p: 1, q: 300}]->()
+      """
+    When executing query:
+      """
+      MATCH ()-[r:R {p: 1} WHERE r.q > 100]->()
+      RETURN r.q AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | 300        |
+    And no side effects

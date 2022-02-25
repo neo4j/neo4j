@@ -305,9 +305,11 @@ Feature: LabelExpressionAcceptance
     Given an empty graph
     And having executed:
       """
-      CREATE (:A {id: 'a'})
-      CREATE (:B {id: 'b'})
-      CREATE (:C {id: 'c'})
+      CREATE (:A),
+             (:B),
+             (:C),
+             (:A:B),
+             (:B:C)
       """
 
     When executing query:

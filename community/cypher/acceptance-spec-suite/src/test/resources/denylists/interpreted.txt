@@ -20,3 +20,9 @@ Feature "LabelExpressionAcceptance": Scenario "Label expression in CASE expressi
 Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in WHERE clause"
 Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"
 Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"
+
+// Predicates on peer nodes in node and relationship patterns is not yet implemented
+Feature "NodePatternPredicates": Scenario "Should allow reference to other elements of the pattern"
+Feature "NodePatternPredicates": Scenario "Should allow references other elements of the pattern in a pattern comprehension"
+Feature "RelationshipPatternPredicates": Scenario "Should allow reference other elements of the pattern"
+Feature "RelationshipPatternPredicates": Scenario "Should allow references to other elements of the pattern in a pattern comprehension"

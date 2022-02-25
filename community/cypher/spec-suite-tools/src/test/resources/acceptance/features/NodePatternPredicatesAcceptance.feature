@@ -85,14 +85,24 @@ Feature: NodePatternPredicates
       | 3        | 4   |
     And no side effects
 
-  Scenario: Should not allow to reference other elements of the pattern
+  Scenario: Should allow reference to other elements of the pattern
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a)-[:R]->({prop: 100})
+      CREATE (a)-[:R]->({prop: 200})
+      """
+
     Given any graph
     When executing query:
       """
-      MATCH (a:A WHERE b.prop > 1)-[r]-(b:B)
-      RETURN a.prop AS result
+      MATCH (a:A WHERE b.prop > 100)-[r]-(b)
+      RETURN b.prop AS result
       """
-    Then a SyntaxError should be raised at runtime: UndefinedVariable
+    Then the result should be, in any order:
+      | b.prop |
+      | 200    |
+    And no side effects
 
   Scenario: Pattern comprehension with predicate on a single node
     Given an empty graph
@@ -132,10 +142,52 @@ Feature: NodePatternPredicates
       | [[1, 200], [2, 300]] |
     And no side effects
 
-  Scenario: Should not allow to reference other elements of the pattern in a pattern comprehension
-    Given any graph
+  Scenario: Should allow references other elements of the pattern in a pattern comprehension
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: 1})-[:R]->(:B {prop: 100})
+      CREATE (:A {prop: 2})-[:R]->(:B {prop: 200})
+      """
     When executing query:
       """
-      RETURN [(a:A WHERE b.prop > 1)-[r]-(b:B) | a]
+      RETURN [(a:A WHERE b.prop > 100)-[r]-(b:B) | [a.prop, b.prop]] AS result
       """
-    Then a SyntaxError should be raised at runtime: UndefinedVariable
+    Then the result should be, in any order:
+      | result     |
+      | [[2, 200]] |
+    And no side effects
+
+  Scenario: Should allow arbitrary search conditions
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({prop: 1})
+      """
+    When executing query:
+      """
+      MATCH (n WHERE true)
+      RETURN n.prop AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | 1          |
+    And no side effects
+
+  Scenario: Should allow mixing property specification and WHERE clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({p: 1, q: 100})
+      CREATE ({p: 2, q: 200})
+      CREATE ({p: 1, q: 300})
+      """
+    When executing query:
+      """
+      MATCH (n {p: 1} WHERE n.q > 100)
+      RETURN n.q AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | 300        |
+    And no side effects
