@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
@@ -52,7 +51,7 @@ case class LogicalPlanState(queryText: String,
                             maybeSemanticTable: Option[SemanticTable] = None,
                             maybeQuery: Option[PlannerQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
-                            maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
+                            maybePeriodicCommit: Option[Option[Nothing]] = None,
                             accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
                             hasLoadCSV: Boolean = false,
                             maybeReturnColumns: Option[Seq[String]] = None,
@@ -60,7 +59,7 @@ case class LogicalPlanState(queryText: String,
 
   def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
-  def periodicCommit: Option[PeriodicCommit] = maybePeriodicCommit getOrElse fail("Periodic commit")
+  def periodicCommit: Option[Nothing] = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery: Query = statement().asInstanceOf[Query]
 
   def asCachableLogicalPlanState(): CachableLogicalPlanState = {
@@ -115,7 +114,7 @@ case class CachableLogicalPlanState(queryText: String,
                                     statement: Statement,
                                     semanticTable: SemanticTable,
                                     logicalPlan: LogicalPlan,
-                                    maybePeriodicCommit: Option[Option[PeriodicCommit]],
+                                    maybePeriodicCommit: Option[Option[Nothing]],
                                     hasLoadCSV: Boolean = false,
                                     returnColumns: Seq[String])
 

@@ -572,11 +572,8 @@ case class Prettifier(
 
     private def asNewLine(l: String) = NL + l
 
-    def query(q: Query): String = {
-      val hint = q.periodicCommitHint.map(INDENT + "USING PERIODIC COMMIT" + _.size.map(" " + expr(_)).getOrElse("") + NL).getOrElse("")
-      val query = queryPart(q.part)
-      s"$hint$query"
-    }
+    def query(q: Query): String =
+      queryPart(q.part)
 
     def queryPart(part: QueryPart): String =
       part match {

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.InputDataStream
-import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
 import org.neo4j.cypher.internal.ast.Return
@@ -55,7 +54,6 @@ case class FabricStitcher(
   queryString: String,
   allowMultiGraph: Boolean,
   fabricContextName: Option[String],
-  periodicCommitHint: Option[PeriodicCommitHint],
   pipeline: FabricFrontEnd#Pipeline,
 ) {
 
@@ -136,7 +134,7 @@ case class FabricStitcher(
 
     asExec(
       input = leaf.input,
-      statement = Query(None, SingleQuery(clauses)(pos))(pos),
+      statement = Query(SingleQuery(clauses)(pos))(pos),
       outputColumns = leaf.outputColumns
     )
   }
@@ -166,7 +164,7 @@ case class FabricStitcher(
       case (true, _, _, Some(use))  => failInvalidOverride(use)
 
       case (_, _, None, None) =>
-        val query = Query(None, stitched.queryPart)(stitched.queryPart.position)
+        val query = Query(stitched.queryPart)(stitched.queryPart.position)
         val init = Fragment.Init(stitched.lastUse, fragment.argumentColumns, fragment.importColumns)
         Some(asExec(init, query, fragment.outputColumns))
 
@@ -180,25 +178,18 @@ case class FabricStitcher(
     outputColumns: Seq[String],
   ): Fragment.Exec = {
 
-    val updatedStatement = withPeriodicCommitHint(statement)
-
-    val sensitive = updatedStatement.treeExists {
+    val sensitive = statement.treeExists {
       case _: SensitiveParameter => true
       case _: SensitiveLiteral => true
     }
 
-    val local = pipeline.checkAndFinalize.process(updatedStatement)
+    val local = pipeline.checkAndFinalize.process(statement)
 
-    val (rewriter, extracted) = sensitiveLiteralReplacement(updatedStatement)
-    val toRender = updatedStatement.endoRewrite(rewriter)
+    val (rewriter, extracted) = sensitiveLiteralReplacement(statement)
+    val toRender = statement.endoRewrite(rewriter)
     val remote = Fragment.RemoteQuery(QueryRenderer.render(toRender), extracted)
 
-    Fragment.Exec(input, updatedStatement, local, remote, sensitive, outputColumns)
-  }
-
-  private def withPeriodicCommitHint(statement: Statement) = statement match {
-    case query: Query => query.copy(periodicCommitHint = periodicCommitHint)(query.position)
-    case stmt         => stmt
+    Fragment.Exec(input, statement, local, remote, sensitive, outputColumns)
   }
 
   private def failDynamicGraph(use: Use): Nothing =

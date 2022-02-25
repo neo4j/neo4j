@@ -50,11 +50,6 @@ class FabricFragmenter(
       Fragment.SchemaCommand(use, command)
   }
 
-  def periodicCommitHint: Option[ast.PeriodicCommitHint] = queryStatement match {
-    case query: ast.Query => query.periodicCommitHint
-    case _                => None
-  }
-
   private def fragmentPart(
     input: Fragment.Init,
     part: ast.QueryPart,

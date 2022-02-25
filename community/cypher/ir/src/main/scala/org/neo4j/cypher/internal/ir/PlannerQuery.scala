@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 /**
  * A query in a representation that is consumed by the planner.
  */
-case class PlannerQuery(query: PlannerQueryPart, periodicCommit: Option[PeriodicCommit]) {
+case class PlannerQuery(query: PlannerQueryPart, periodicCommit: Option[Nothing]) {
   def readOnly: Boolean = query.readOnly
 }
 

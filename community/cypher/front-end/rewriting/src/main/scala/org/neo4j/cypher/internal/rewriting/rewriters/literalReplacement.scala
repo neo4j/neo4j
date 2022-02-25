@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
-import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.Unwind
@@ -77,7 +76,6 @@ object literalReplacement {
          _: CallClause =>
       acc => TraverseChildren(acc)
     case _: Clause |
-         _: PeriodicCommitHint |
          _: Limit =>
       acc => SkipChildren(acc)
     case n: NodePattern =>

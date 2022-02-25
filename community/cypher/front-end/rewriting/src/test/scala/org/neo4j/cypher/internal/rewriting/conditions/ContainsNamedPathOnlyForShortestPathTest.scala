@@ -34,7 +34,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   private val condition: Any => Seq[String] = containsNamedPathOnlyForShortestPath
 
   test("happy when we have no named paths") {
-    val ast = Query(None, SingleQuery(Seq(
+    val ast = Query( SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos))))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))(pos), None, None, None)(pos)
     ))(pos))(pos)
@@ -44,7 +44,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
 
   test("unhappy when we have a named path") {
     val namedPattern: NamedPatternPart = NamedPatternPart(varFor("p"), EveryPath(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)))(pos)
-    val ast = Query(None, SingleQuery(Seq(
+    val ast = Query( SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))(pos), None, None, None)(pos)
     ))(pos))(pos)
@@ -53,7 +53,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   }
 
   test("should allow named path for shortest path") {
-    val ast = Query(None, SingleQuery(Seq(
+    val ast = Query( SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(NamedPatternPart(varFor("p"), ShortestPaths(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos), single = true)(pos))(pos)))(pos), Seq.empty, None)(pos),
       Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos, isAutoAliased = false)))(pos), None, None, None)(pos)
     ))(pos))(pos)

@@ -60,7 +60,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
         SingleQuery(Seq(
           Match(
             false,
@@ -83,7 +83,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
         SingleQuery(Seq(
           Match(
             false,
@@ -106,7 +106,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
       SingleQuery(Seq(
         Match(
           false,
@@ -129,7 +129,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
       SingleQuery(Seq(
         Match(
           false,
@@ -152,7 +152,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
       SingleQuery(Seq(
         Match(
           false,
@@ -179,7 +179,7 @@ class ResolveTokensTest extends CypherFunSuite {
     ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
-      case Query(_,
+      case Query(
       SingleQuery(Seq(
         Match(
           false,

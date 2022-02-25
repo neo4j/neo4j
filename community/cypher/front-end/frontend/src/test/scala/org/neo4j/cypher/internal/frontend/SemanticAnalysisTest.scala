@@ -315,16 +315,6 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query)
   }
 
-  test("CALL { ... } IN TRANSACTIONS in a PERIODIC COMMIT query") {
-    val query =
-      """USING PERIODIC COMMIT 500 LOAD CSV FROM 'file:///artists.csv' AS line
-        |CALL { CREATE (x) } IN TRANSACTIONS
-        |RETURN line AS line""".stripMargin
-    expectErrorsFrom(query, Set(
-      SemanticError("CALL { ... } IN TRANSACTIONS in a PERIODIC COMMIT query is not supported", InputPosition(70, 2, 1))
-    ))
-  }
-
   test("should allow node pattern predicates in MATCH") {
     val query = "WITH 123 AS minValue MATCH (n {prop: 42} WHERE n.otherProp > minValue)-->(m:Label WHERE m.prop = 42) RETURN n AS result"
     expectNoErrorsFrom(query)

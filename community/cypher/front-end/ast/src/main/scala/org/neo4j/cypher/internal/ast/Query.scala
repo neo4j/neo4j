@@ -36,33 +36,16 @@ import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 
 import scala.annotation.tailrec
 
-case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
+case class Query(part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticAnalysisTooling {
 
   override def returnColumns: List[LogicalVariable] = part.returnColumns
 
   def finalScope(scope: Scope): Scope = part.finalScope(scope)
 
-  override def semanticCheck: SemanticCheck =
-    part.semanticCheck chain
-    periodicCommitHint.semanticCheck chain
-    disallowNonUpdatingInPeriodicCommit chain
-    disallowCallInTransactionsInPeriodicCommit
+  override def semanticCheck: SemanticCheck = part.semanticCheck
 
   override def containsUpdates: Boolean = part.containsUpdates
-
-  private def disallowNonUpdatingInPeriodicCommit: SemanticCheck =
-    when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
-      SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
-    }
-
-  private def disallowCallInTransactionsInPeriodicCommit: SemanticCheck =
-    when(periodicCommitHint.nonEmpty) {
-      SubqueryCall.findTransactionalSubquery(part) match {
-        case Some(subqueryCall) => SemanticError("CALL { ... } IN TRANSACTIONS in a PERIODIC COMMIT query is not supported", subqueryCall.position)
-        case None               => success
-      }
-    }
 }
 
 sealed trait QueryPart extends ASTNode with SemanticCheckable {

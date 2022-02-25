@@ -489,7 +489,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           prettifier.asString(c)))
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
-      case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
+      case Query(SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
       case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _)))) if signature.systemProcedure =>
@@ -497,7 +497,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
       // Currently doesn't allow WITH, is this a problem for rewrites?
-      case q@Query(None, SingleQuery(clauses))
+      case q@Query(SingleQuery(clauses))
         if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[ClauseAllowedOnSystem]) =>
         Some(plans.AllowedNonAdministrationCommands(q))
 

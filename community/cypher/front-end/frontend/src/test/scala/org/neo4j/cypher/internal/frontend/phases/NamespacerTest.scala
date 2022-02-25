@@ -91,7 +91,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
     ),
     TestCaseWithStatement(
       "MATCH (a:Party) RETURN a AS a UNION MATCH (a:Animal) RETURN a AS a",
-      Query(None, ProjectingUnionDistinct(
+      Query( ProjectingUnionDistinct(
         singleQuery(
           match_(NodePattern(Some(varFor("  a@0")), Seq.empty, None, None, None)(pos), Some(Where(HasLabels(varFor("  a@0"), Seq(LabelName("Party")(pos)))(pos))(pos))),
           return_(varFor("  a@0").as("  a@0"))

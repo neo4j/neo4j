@@ -46,7 +46,7 @@ class FabricStitcherTest
   "Single-graph:" - {
 
     def stitching(fragment: Fragment) =
-      FabricStitcher(dummyQuery, allowMultiGraph = false, None, None, dummyPipeline)
+      FabricStitcher(dummyQuery, allowMultiGraph = false, None, dummyPipeline)
         .convert(fragment).withoutLocalAndRemote
 
 
@@ -205,7 +205,7 @@ class FabricStitcherTest
   "Multi-graph:" - {
 
     def stitching(fragment: Fragment) =
-      FabricStitcher(dummyQuery, allowMultiGraph = true, Some(defaultGraphName), None, dummyPipeline)
+      FabricStitcher(dummyQuery, allowMultiGraph = true, Some(defaultGraphName), dummyPipeline)
         .convert(fragment).withoutLocalAndRemote
 
     "rewrite" in {

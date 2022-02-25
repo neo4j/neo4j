@@ -154,7 +154,7 @@ object Fragment {
     outputColumns: Seq[String],
   ) extends Fragment.Segment {
     override val producesResults: Boolean = query match {
-      case Query(_, part) => part.isYielding
+      case Query(part) => part.isYielding
       case _              => true
     }
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)

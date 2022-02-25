@@ -516,12 +516,6 @@ public class NullAstFactory implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL periodicCommitQuery( NULL p, NULL periodicCommitPosition, String batchSize, NULL loadCsv, List<NULL> queryBody )
-    {
-        return null;
-    }
-
-    @Override
     public NULL useClause( NULL p, NULL e )
     {
         return null;

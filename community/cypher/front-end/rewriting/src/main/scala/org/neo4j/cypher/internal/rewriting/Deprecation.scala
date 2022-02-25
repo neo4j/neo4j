@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPeriodicCommit
 import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -154,12 +153,6 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-      case p: ast.PeriodicCommitHint =>
-        Deprecation(
-          None,
-          Some(DeprecatedPeriodicCommit(p.position))
         )
 
       case h@ast.UsingIndexHint(_, _, _, _, UsingBtreeIndexType) =>

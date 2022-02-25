@@ -165,7 +165,6 @@ import org.neo4j.cypher.internal.ast.OnMatch
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.OrderBy
-import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
@@ -463,7 +462,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     if (clauses.isEmpty) {
       throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
     }
-    Query(None, SingleQuery(clauses.asScala.toList)(p))(p)
+    Query(SingleQuery(clauses.asScala.toList)(p))(p)
   }
 
   override def newSingleQuery(clauses: util.List[Clause]): Query = {
@@ -471,7 +470,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       throw new Neo4jASTConstructionException("A valid Cypher query has to contain at least 1 clause")
     }
     val pos = clauses.get(0).position
-    Query(None, SingleQuery(clauses.asScala.toList)(pos))(pos)
+    Query(SingleQuery(clauses.asScala.toList)(pos))(pos)
   }
 
   override def newUnion(p: InputPosition,
@@ -489,18 +488,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     val union =
       if (all) UnionAll(lhs.part, rhsQuery)(p)
       else UnionDistinct(lhs.part, rhsQuery)(p)
-    Query(None, union)(lhs.position)
-  }
-
-  override def periodicCommitQuery(p: InputPosition,
-                                   periodicCommitPosition: InputPosition,
-                                   batchSize: String,
-                                   loadCsv: Clause,
-                                   queryBody: util.List[Clause]): Query = {
-
-    Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
-      SingleQuery(loadCsv +: queryBody.asScala.toSeq)(loadCsv.position)
-    )(p)
+    Query(union)(lhs.position)
   }
 
   override def useClause(p: InputPosition,

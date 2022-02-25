@@ -1611,7 +1611,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Admin") {
     val adminPlanDescription: PlanDescriptionImpl = planDescription(id, "AdministrationCommand", NoChildren, Seq.empty, Set.empty)
 
-    assertGood(attach(AllowedNonAdministrationCommands(Query(None, SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos))(pos)), 1.0), adminPlanDescription)
+    assertGood(attach(AllowedNonAdministrationCommands(Query( SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos))(pos)), 1.0), adminPlanDescription)
 
     assertGood(attach(ShowUsers(privLhsLP, List(), None, None), 1.0), adminPlanDescription)
 

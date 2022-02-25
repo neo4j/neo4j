@@ -61,7 +61,7 @@ object QueryRenderer {
   private val NL = System.lineSeparator()
 
   def render(clauses: Seq[Clause]): String =
-    render(Query(None, SingleQuery(clauses)(pos))(pos))
+    render(Query( SingleQuery(clauses)(pos))(pos))
 
   def render(statement: Statement): String =
     renderStrict.asString(statement)

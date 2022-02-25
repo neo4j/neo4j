@@ -86,7 +86,7 @@ trait PrettyPrintingUtils {
 
   def query(cs: Seq[Clause]): Stream[String] = {
     val pos = InputPosition.NONE
-    query(Query(None, SingleQuery(cs)(pos))(pos))
+    query(Query( SingleQuery(cs)(pos))(pos))
   }
 
   def list(ss: Seq[Any]): String =

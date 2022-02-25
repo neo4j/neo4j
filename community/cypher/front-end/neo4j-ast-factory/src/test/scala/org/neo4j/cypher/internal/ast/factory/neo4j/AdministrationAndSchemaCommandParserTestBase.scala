@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NamedGraphScope
-import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedurePrivilegeQualifier
@@ -286,7 +285,6 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
                _: ListSlice |
                _: HasLabelsOrTypes |
                _: SingleQuery |
-               _: PeriodicCommitHint |
                _: ReadAdministrationCommand |
                _: SetIncludingPropertiesFromMapItem |
                _: SetExactPropertiesFromMapItem => acc => TraverseChildren(acc)

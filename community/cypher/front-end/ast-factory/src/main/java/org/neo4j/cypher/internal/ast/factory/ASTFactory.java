@@ -103,8 +103,6 @@ public interface ASTFactory<STATEMENT,
 
     QUERY newUnion( POS p, QUERY lhs, QUERY rhs, boolean all );
 
-    QUERY periodicCommitQuery( POS p, POS periodicCommitPosition, String batchSize, CLAUSE loadCsv, List<CLAUSE> queryBody );
-
     USE_GRAPH useClause( POS p, EXPRESSION e );
 
     RETURN_CLAUSE newReturnClause( POS p, boolean distinct,

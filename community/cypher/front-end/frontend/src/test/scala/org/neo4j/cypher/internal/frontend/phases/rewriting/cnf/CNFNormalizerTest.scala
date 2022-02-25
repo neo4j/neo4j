@@ -227,11 +227,11 @@ object TestStatement {
   def apply(e: Expression): Statement = {
     val returnClause = Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(e, Variable("")(InputPosition.NONE))
     (InputPosition.NONE, isAutoAliased = false)))(InputPosition.NONE))(InputPosition.NONE)
-    Query(None, SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
+    Query(SingleQuery(Seq(returnClause))(InputPosition.NONE))(InputPosition.NONE)
   }
 
   def unapply(s: Statement): Option[Expression] = s match {
-    case Query(_, SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) => Some(expression)
+    case Query(SingleQuery(Seq(Return(_, ReturnItems(_, Seq(AliasedReturnItem(expression, _)), _), _, _, _, _)))) => Some(expression)
     case _ => None
   }
 }

@@ -77,7 +77,7 @@ case object ExpressionsInOrderByAndWhereUseAliases extends Condition
 case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherExceptionFactory, notificationLogger: InternalNotificationLogger) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = that match {
-    case q@Query(_, queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
+    case q@Query(queryPart) => q.copy(part = rewriteTopLevelQueryPart(queryPart))(q.position)
 
     case s@ShowPrivileges(_, Some(Left((yields, returns))),_) =>
       s.copy(yieldOrWhere = Some(Left((addAliasesToYield(yields),returns.map(addAliasesToReturn)))))(s.position)

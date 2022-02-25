@@ -65,7 +65,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
-import org.neo4j.cypher.internal.ir.PeriodicCommit
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -357,7 +356,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           stripProduceResults: Boolean = true,
                           deduplicateNames: Boolean = deduplicateNames,
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
-                         ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
+                         ): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) = {
       val context = getContext(queryString, cypherConfig, queryGraphSolver, debugOptions)
       val state = createInitState(queryString)
       val output = pipeLine(deduplicateNames).transform(state, context)
@@ -368,7 +367,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
-    def getLogicalPlanForAst(initialState: BaseState): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) = {
+    def getLogicalPlanForAst(initialState: BaseState): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) = {
       // As the test only checks ast -> planning, the query string can be an empty string
       val context = getContext("")
 
@@ -480,7 +479,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
               queryGraphSolver: QueryGraphSolver = queryGraphSolver,
               stripProduceResults: Boolean = true,
               deduplicateNames: Boolean = deduplicateNames
-             ): (Option[PeriodicCommit], LogicalPlan, SemanticTable, PlanningAttributes) =
+             ): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) =
     new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

@@ -90,11 +90,11 @@ trait RewriteProcedureCalls {
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q @ Query(None, part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
+    case q @ Query(part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
       q.copy(part = part.copy(clauses = newResolved +: projection.toSeq)(part.position))(q.position)
 
-    case q @ Query(None, part @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
+    case q @ Query(part @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
       q.copy(part = part.copy(clauses = Seq(graph, newResolved) ++ projection)(part.position))(q.position)
   }

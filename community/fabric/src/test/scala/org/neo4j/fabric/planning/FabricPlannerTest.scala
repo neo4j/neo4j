@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NoOptions
-import org.neo4j.cypher.internal.ast.PeriodicCommitHint
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
@@ -144,24 +143,7 @@ class FabricPlannerTest
         )
     }
 
-    "periodic commit" in {
-      val remote = asRemote(
-        """USING PERIODIC COMMIT 200
-          |LOAD CSV FROM 'someurl' AS line
-          |CREATE (n)
-          |RETURN line
-          |""".stripMargin)
-
-      parse(remote.query)
-        .shouldEqual(
-          Query(Some(PeriodicCommitHint(Some(literalUnsignedInt(200)))(pos)),
-            singleQuery(
-              LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
-              create(nodePat("n")),
-              return_(varFor("line").as("line"))
-            ))(pos)
-        )
-    }
+    // TODO: Test CALL IN TX?
 
     "single admin command" in {
       val remote = asRemote(
@@ -358,7 +340,7 @@ class FabricPlannerTest
       val local = inst.asLocal(exec).query
 
       local.state.statement().shouldEqual(
-        Query(None,
+        Query(
           singleQuery(
             match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
             with_(varFor("n").as("true")),
@@ -380,7 +362,7 @@ class FabricPlannerTest
       val local = inst.asLocal(exec).query
 
       local.state.statement().shouldEqual(
-        Query(None,
+        Query(
           singleQuery(
             match_(NodePattern(Some(varFor("n")), Seq.empty, None, None, None)(pos)),
             with_(varFor("n").as("true")),
@@ -746,30 +728,6 @@ class FabricPlannerTest
         .check(_.query.withoutLocalAndRemote.shouldEqual(
           init(defaultUse).exec(query(return_(literal(1).as("x"))), Seq("x"))
         ))
-    }
-
-    "passes periodic commit on to local parts" in {
-      val inst = instance(
-        """USING PERIODIC COMMIT 200
-          |LOAD CSV FROM 'someurl' AS line
-          |CREATE (n)
-          |RETURN line
-          |""".stripMargin)
-
-      val exec = inst.plan.query.as[Fragment.Exec]
-
-      val local = inst.asLocal(exec).query
-
-      local.state.statement().shouldEqual(
-        Query(Some(PeriodicCommitHint(Some(literalUnsignedInt(200)))(pos)),
-          singleQuery(
-            LoadCSV(withHeaders = false, literal("someurl"), varFor("line"), None)(pos),
-            create(nodePat("n")),
-            return_(varFor("line").as("line"))
-          ))(pos)
-      )
-
-      local.options.isPeriodicCommit.shouldEqual(true)
     }
 
     "passes options on in remote and local parts" in {
