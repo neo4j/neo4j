@@ -53,7 +53,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
   protected val testRange: immutable.Seq[Int] = 0 until sizeHint/2
   protected val testValueOffset = 10000
 
-  private def wrapInQuotations(c: String): String = "\"" + c + "\""
+  def wrapInQuotations(c: String): String = "\"" + c + "\""
 
   def singleColumnCsvFile(withHeaders: Boolean = false): String = {
     val url = createCSVTempFileURL({ writer: PrintWriter =>
@@ -371,23 +371,37 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
-  test("should load csv create node with properties with periodic commit") {
+  /**
+   * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
+   */
+  def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
+    case InterpretedRuntimeName.name | SlottedRuntimeName.name => expectation
+    case _ => 1 // transactionsCommitted default value
+  }
+}
+
+// Currently not supported in pipelined
+trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
+  self: LoadCsvTestBase[CONTEXT] =>
+
+
+  test("should load csv create node with properties with call in tx") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(this,
-                                               hasLoadCsv = true,
-                                               periodicCommitBatchSize = Some(testRange.size / 5))
+    val logicalQuery = new LogicalQueryBuilder(this, hasLoadCsv = true)
       .produceResults("n")
-      .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+      .transactionApply(testRange.size / 5)
+      .|.create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+      .|.argument("line")
       .loadCSV(url, variableName = "line", HasHeaders)
       .argument()
       .build(readOnly = false)
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
     consume(runtimeResult)
 
     // then
@@ -397,28 +411,28 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(5)
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(6)
       )
   }
 
-  test("should load csv create node with properties with periodic commit and eager aggregation") {
+  test("should load csv create node with properties with call in tx and eager aggregation") {
     // given an empty data base
     val url = multipleColumnCsvFile(withHeaders = true)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(this,
-                                               hasLoadCsv = true,
-                                               periodicCommitBatchSize = Some(testRange.size / 5))
+    val logicalQuery = new LogicalQueryBuilder(this, hasLoadCsv = true)
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(n) AS count"))
-      .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+      .transactionApply(testRange.size / 5)
+      .|.create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
+      .|.argument("line")
       .loadCSV(url, variableName = "line", HasHeaders)
       .argument()
       .build(readOnly = false)
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
     consume(runtimeResult)
 
     // then
@@ -428,7 +442,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
         nodesCreated = testRange.size,
         labelsAdded = testRange.size,
         propertiesSet = testRange.size * 3,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(5)
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(6)
       )
   }
 
@@ -455,79 +469,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected)
   }
 
-  Seq(1, 2, 3, 4, testRange.size/5, testRange.size).foreach { explicitBatchSize =>
-    test(s"should load csv create node with properties with periodic commit with batch size $explicitBatchSize") {
-      // given an empty data base
-      val url = multipleColumnCsvFile(withHeaders = true)
-      val periodicCommitBatchSize = explicitBatchSize
-
-      // when
-      var beforeTxId: Long = Long.MinValue
-      val numberOfNewTokens = 4 // Creating new tokens will result in implicit transactions being committed
-
-      val beforeProbe: Probe = new Probe() {
-        override def onRow(row: AnyRef): Unit = {
-          beforeTxId = runtimeTestSupport.getLastClosedTransactionId
-        }
-      }
-
-      val txIdAssertingProbe: Probe = new Probe() {
-        var seenRowsCount = 0
-
-        override def onRow(row: AnyRef): Unit = {
-          val lastTxId = runtimeTestSupport.getLastClosedTransactionId
-          val expectedTxId = beforeTxId + numberOfNewTokens + (seenRowsCount / periodicCommitBatchSize)
-          seenRowsCount += 1
-          if (lastTxId != expectedTxId && beforeTxId != Long.MinValue) {
-            // Beware that for some values on explicitBatchSize this may not match exactly and could be a false positive
-            fail(s"Expected last closed transaction #$expectedTxId but was #$lastTxId at seen row $seenRowsCount with batch size $periodicCommitBatchSize")
-          }
-        }
-      }
-
-      val logicalQuery = new LogicalQueryBuilder(this,
-                                                 hasLoadCsv = true,
-                                                 periodicCommitBatchSize = Some(periodicCommitBatchSize))
-        .produceResults("n")
-        .prober(txIdAssertingProbe)
-        .create(createNodeWithProperties("n", Seq("A"), "{p1: line.a, p2: line.b, p3: line.c}"))
-        .loadCSV(url, variableName = "line", HasHeaders)
-        .prober(beforeProbe)
-        .argument()
-        .build(readOnly = false)
-
-      val executablePlan = buildPlan(logicalQuery, runtime)
-
-      val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
-      consume(runtimeResult)
-
-      // then
-      val expectedCommitCount = Math.ceil(testRange.size / explicitBatchSize.toDouble).toInt
-      runtimeResult should beColumns("n")
-        .withRows(RowCount(testRange.size))
-        .withStatistics(
-          nodesCreated = testRange.size,
-          labelsAdded = testRange.size,
-          propertiesSet = testRange.size * 3,
-          transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(expectedCommitCount)
-        )
-    }
-  }
-
-  /**
-   * We currently only support to count transactions for interpreted and slotted runtime. To account for that, this method switches accordingly.
-   */
-  def transactionsExpectedIfTransactionCountingAvailable(expectation: Int): Int = runtime.name.toUpperCase() match {
-    case InterpretedRuntimeName.name | SlottedRuntimeName.name => expectation
-    case _ => 1 // transactionsCommitted default value
-  }
-}
-
-// In pipelined this is only supported with fusing
-trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
-  self: LoadCsvTestBase[CONTEXT] =>
-
-  test("should close open cursors on periodic commit - scenario") {
+  test("should close open cursors on call in tx - scenario") {
     val url = multipleColumnCsvFile(withHeaders = true)
 
     given {
@@ -549,7 +491,7 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
 
     val setupResult = given {
       val setupPlan = buildPlan(setupQuery, runtime)
-      val setupResult = execute(setupPlan, readOnly = false, periodicCommit = true)
+      val setupResult = execute(setupPlan, readOnly = false)
       consume(setupResult)
       setupResult
     }
@@ -559,25 +501,25 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
       .withStatistics(nodesCreated = testRange.size * 2, labelsAdded = testRange.size * 2, propertiesSet = testRange.size * 2)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(this,
-                                               hasLoadCsv = true,
-                                               periodicCommitBatchSize = Some(2))
+    val logicalQuery = new LogicalQueryBuilder(this, hasLoadCsv = true)
       .produceResults("r")
-      .apply()
-      .|.merge(Seq(), Seq(createRelationship("r", "a", "T", "b", OUTGOING)), Seq(), Seq(), Set("a", "b"))
-      .|.filter("a = aa", "b = bb")
-      .|.relationshipTypeScan("(aa)-[r:T]->(bb)", IndexOrderNone, "a", "b")
-      .apply()
-      .|.cartesianProduct()
-      .|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
-      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .transactionApply(2)
+      .|.apply()
+      .|.|.merge(Seq(), Seq(createRelationship("r", "a", "T", "b", OUTGOING)), Seq(), Seq(), Set("a", "b"))
+      .|.|.filter("a = aa", "b = bb")
+      .|.|.relationshipTypeScan("(aa)-[r:T]->(bb)", IndexOrderNone, "a", "b")
+      .|.apply()
+      .|.|.cartesianProduct()
+      .|.|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.argument("row")
       .loadCSV(url, "row", HasHeaders)
       .argument()
       .build(readOnly = false)
 
     val executablePlan = buildPlan(logicalQuery, runtime)
 
-    val runtimeResult = execute(executablePlan, readOnly = false, periodicCommit = true)
+    val runtimeResult = execute(executablePlan, readOnly = false, implicitTx = true)
     consume(runtimeResult)
 
     // then
@@ -585,7 +527,7 @@ trait LoadCsvWithMergeTestBase[CONTEXT <: RuntimeContext] {
       .withRows(RowCount(testRange.size))
       .withStatistics(
         relationshipsCreated = testRange.size,
-        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(testRange.size / 2)
+        transactionsCommitted = transactionsExpectedIfTransactionCountingAvailable(testRange.size / 2 + 1)
       )
   }
 }

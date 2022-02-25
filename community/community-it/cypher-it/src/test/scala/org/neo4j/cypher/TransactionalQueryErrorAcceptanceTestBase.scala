@@ -59,35 +59,10 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
         )(code)
 
     }
-
-  }
-
-  test("disallows PERIODIC COMMIT in explicit transaction") {
-    def code = executeInExplicitTx(s"USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()")
-
-    testApiKind match {
-
-      case TestApiKind.Bolt =>
-        expectExplicitTxError(code)
-
-      case TestApiKind.Embedded =>
-        expectError(
-          Status.Statement.SemanticError,
-          "Executing stream that use periodic commit in an open transaction is not possible."
-        )(code)
-
-      case TestApiKind.Http =>
-        cancel("The HTTP api actually allows this...")
-    }
-
   }
 
   test("allows EXPLAIN CALL IN TRANSACTIONS in explicit transaction") {
     expectNoError(executeInExplicitTx("EXPLAIN CALL { CREATE () } IN TRANSACTIONS"))
-  }
-
-  test("allows EXPLAIN PERIODIC COMMIT in explicit transaction") {
-    expectNoError(executeInExplicitTx(s"EXPLAIN USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()"))
   }
 
   test("allows CALL IN TRANSACTIONS in implicit transaction") {
@@ -100,10 +75,6 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
         expectNoError(executeInImplicitTx("CALL { CREATE () } IN TRANSACTIONS"))
     }
 
-  }
-
-  test("allows PERIODIC COMMIT in implicit transaction") {
-    expectNoError(executeInImplicitTx(s"USING PERIODIC COMMIT LOAD CSV FROM '${createCsv()}' AS l CREATE ()"))
   }
 
   def executeInExplicitTx(statement: String): StatementResult = {

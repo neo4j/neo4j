@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
  */
 class LogicalQueryBuilder(tokenResolver: Resolver,
                           hasLoadCsv: Boolean = false,
-                          periodicCommitBatchSize: Option[Long] = None,
                           override val idGen: IdGen = new SequentialIdGen(),
                           wholePlan: Boolean = true)
   extends AbstractLogicalPlanBuilder[LogicalQuery, LogicalQueryBuilder](tokenResolver, wholePlan) {

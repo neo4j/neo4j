@@ -129,7 +129,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
-  def restartPeriodicCommitTx(): Unit = {
+  def restartImplicitTx(): Unit = {
     _txContext.close()
     if (_tx.isOpen) {
       _tx.commit()
@@ -165,9 +165,9 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                    runtime: CypherRuntime[CONTEXT]): (ExecutionPlan, CONTEXT) =
     compileWithTx(logicalQuery, runtime, newQueryContext(_txContext, logicalQuery.readOnly))
 
-  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean = true, periodicCommit: Boolean = false): RecordingRuntimeResult = {
+  override def execute(executablePlan: ExecutionPlan, readOnly: Boolean = true, implicitTx: Boolean = false): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
-    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false, readOnly, periodicCommit = periodicCommit)
+    val result = run(executablePlan, NoInput, (_, result) => result, subscriber, profile = false, readOnly, implicitTx = implicitTx)
     RecordingRuntimeResult(result, subscriber)
   }
 
@@ -294,15 +294,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   }
 
   private def run[RESULT](executableQuery: ExecutionPlan,
-                  input: InputDataStream,
-                  resultMapper: (CONTEXT, RuntimeResult) => RESULT,
-                  subscriber: QuerySubscriber,
-                  profile: Boolean,
-                  readOnly: Boolean,
-                  parameters: Map[String, Any] = Map.empty,
-                  periodicCommit: Boolean = false): RESULT = {
-    if (periodicCommit) {
-      restartPeriodicCommitTx()
+                          input: InputDataStream,
+                          resultMapper: (CONTEXT, RuntimeResult) => RESULT,
+                          subscriber: QuerySubscriber,
+                          profile: Boolean,
+                          readOnly: Boolean,
+                          parameters: Map[String, Any] = Map.empty,
+                          implicitTx: Boolean = false): RESULT = {
+    if (implicitTx) {
+      restartImplicitTx()
     }
     runWithTx(executableQuery, input, resultMapper, subscriber, profile, readOnly, parameters, _tx, _txContext)
   }
@@ -347,7 +347,6 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
 
     val queryOptions = PreParser.queryOptions(List.empty,
       InputPosition.NONE,
-      isPeriodicCommit = false,
       cypherConfiguration)
 
     runtimeContextManager.create(queryContext,

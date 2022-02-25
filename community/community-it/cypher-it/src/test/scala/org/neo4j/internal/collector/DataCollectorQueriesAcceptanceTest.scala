@@ -548,7 +548,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val url = path.toUri.toURL.toString
 
     execute(s"LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
-    execute(s"USING PERIODIC COMMIT 30 LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
+    execute(s"LOAD CSV FROM '$url' AS row CALL { WITH row CREATE ({key: row[0]}) } IN TRANSACTIONS OF 30 ROWS")
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -557,7 +557,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     val urlLength = url.length
     res.toList should beListWithoutOrder(
       querySection(s"LOAD CSV FROM 'string[$urlLength]' AS var0 CREATE ({UNKNOWN0: var0[0]})"),
-      querySection(s"USING PERIODIC COMMIT 30 LOAD CSV FROM 'string[$urlLength]' AS var0 CREATE ({UNKNOWN0: var0[0]})")
+      querySection(s"LOAD CSV FROM 'string[$urlLength]' AS var0 CALL { WITH var0 CREATE ({UNKNOWN0: var0[0]}) } IN TRANSACTIONS OF 30 ROWS")
     )
   }
 
