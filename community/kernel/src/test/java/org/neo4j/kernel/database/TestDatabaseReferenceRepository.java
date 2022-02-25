@@ -94,7 +94,8 @@ public final class TestDatabaseReferenceRepository
         var normalizedTarget = new NormalizedDatabaseName( targetDatabaseName );
         var addr = SocketAddressParser.socketAddress( URI.create( "my.neo4j.com" ), BoltConnector.DEFAULT_PORT, SocketAddress::new );
         var uri = new RemoteUri( "neo4j", List.of( addr ), null );
-        return new DatabaseReference.External( normalizedTarget, normalizedAlias, uri );
+        var uuid = UUID.randomUUID();
+        return new DatabaseReference.External( normalizedTarget, normalizedAlias, uri, uuid );
     }
 
     public static class Fixed implements DatabaseReferenceRepository

@@ -24,9 +24,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.helpers.RemoteUri;
@@ -35,9 +35,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.Level;
-import org.neo4j.values.storable.DurationValue;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.values.storable.DurationValue.duration;
 
@@ -78,18 +78,20 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
     @Test
     void canReturnAllExternalDatabaseReferences()
     {
-
         // given
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        createExternalReferenceForDatabase( tx, "fooAlias", "foo", remoteNeo4j );
-        createExternalReferenceForDatabase( tx, "fooOtherAlias", "foo", remoteNeo4j );
-        createExternalReferenceForDatabase( tx, "barAlias", "bar", remoteNeo4j );
+        var fooId = randomUUID();
+        var fooOtherId = randomUUID();
+        var barId = randomUUID();
+        createExternalReferenceForDatabase( tx, "fooAlias", "foo", remoteNeo4j, fooId );
+        createExternalReferenceForDatabase( tx, "fooOtherAlias", "foo", remoteNeo4j, fooOtherId );
+        createExternalReferenceForDatabase( tx, "barAlias", "bar", remoteNeo4j, barId );
 
         var expected = Set.of(
-                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "fooAlias" ), remoteNeo4j ),
-                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "fooOtherAlias" ), remoteNeo4j ),
-                new DatabaseReference.External( new NormalizedDatabaseName( "bar" ), new NormalizedDatabaseName( "barAlias" ), remoteNeo4j ) );
+                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "fooAlias" ), remoteNeo4j, fooId ),
+                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "fooOtherAlias" ), remoteNeo4j, fooOtherId ),
+                new DatabaseReference.External( new NormalizedDatabaseName( "bar" ), new NormalizedDatabaseName( "barAlias" ), remoteNeo4j, barId ) );
 
         // when
         var aliases = dbmsModel.getAllExternalDatabaseReferences();
@@ -106,10 +108,11 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
         createInternalReferenceForDatabase( tx, "fooAlias", false, fooDb  );
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        createExternalReferenceForDatabase( tx, "bar", "foo", remoteNeo4j );
+        var barId = UUID.randomUUID();
+        createExternalReferenceForDatabase( tx, "bar", "foo", remoteNeo4j, barId );
 
         var expected = Set.of(
-                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "bar" ), remoteNeo4j ),
+                new DatabaseReference.External( new NormalizedDatabaseName( "foo" ), new NormalizedDatabaseName( "bar" ), remoteNeo4j, barId ),
                 new DatabaseReference.Internal( new NormalizedDatabaseName( "foo" ), fooDb ),
                 new DatabaseReference.Internal( new NormalizedDatabaseName( "fooAlias" ), fooDb ) );
 
@@ -127,7 +130,7 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
         var aliasName = "fooAlias";
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j );
+        createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j, randomUUID() );
 
         // when
         var result = dbmsModel.getDriverSettings( aliasName );
@@ -144,7 +147,8 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
         var aliasName = "fooAlias";
         var remoteAddress = new SocketAddress( "my.neo4j.com", 7687 );
         var remoteNeo4j = new RemoteUri( "neo4j", List.of( remoteAddress ), null );
-        var aliasNode = createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j );
+        var fooId = randomUUID();
+        var aliasNode = createExternalReferenceForDatabase( tx, aliasName, "foo", remoteNeo4j, fooId );
 
         createDriverSettingsForExternalAlias( tx, aliasNode, driverSettings );
 

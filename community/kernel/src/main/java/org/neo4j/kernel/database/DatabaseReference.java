@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.UUID;
 
 import org.neo4j.configuration.helpers.RemoteUri;
 
@@ -53,6 +54,11 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
      */
     public abstract boolean isRemote();
 
+    /**
+     * @return the unique identity for this reference
+     */
+    public abstract UUID id();
+
     @Override
     public int compareTo( DatabaseReference that )
     {
@@ -67,12 +73,14 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         private final NormalizedDatabaseName targetName;
         private final NormalizedDatabaseName name;
         private final RemoteUri remoteUri;
+        private final UUID uuid;
 
-        public External( NormalizedDatabaseName targetName, NormalizedDatabaseName name, RemoteUri remoteUri )
+        public External( NormalizedDatabaseName targetName, NormalizedDatabaseName name, RemoteUri remoteUri, UUID uuid )
         {
             this.targetName = targetName;
             this.name = name;
             this.remoteUri = remoteUri;
+            this.uuid = uuid;
         }
 
         @Override
@@ -104,6 +112,12 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         }
 
         @Override
+        public UUID id()
+        {
+            return uuid;
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )
@@ -116,13 +130,13 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
             }
             External remote = (External) o;
             return Objects.equals( targetName, remote.targetName ) && Objects.equals( name, remote.name ) &&
-                   Objects.equals( remoteUri, remote.remoteUri );
+                   Objects.equals( remoteUri, remote.remoteUri ) && Objects.equals( uuid, remote.uuid );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hash( targetName, name, remoteUri );
+            return Objects.hash( targetName, name, remoteUri, uuid );
         }
 
         @Override
@@ -132,6 +146,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
                    "remoteName=" + targetName +
                    ", name=" + name +
                    ", remoteUri=" + remoteUri +
+                   ", uuid=" + uuid +
                    '}';
         }
     }
@@ -174,6 +189,12 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         public boolean isRemote()
         {
             return false;
+        }
+
+        @Override
+        public UUID id()
+        {
+            return namedDatabaseId.databaseId().uuid();
         }
 
         @Override

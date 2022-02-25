@@ -20,11 +20,8 @@
 package org.neo4j.dbms.systemgraph;
 
 import java.net.URI;
-import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -48,7 +45,6 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.Level;
 import org.neo4j.values.storable.DurationValue;
-import org.neo4j.values.storable.StringValue;
 
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_MAX_LIFETIME;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_ACQUISITION_TIMEOUT;
@@ -154,18 +150,19 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
         return tx.findNodes( REMOTE_DATABASE_LABEL ).stream().flatMap( alias -> createExternalReference( alias ).stream() );
     }
 
-    private Optional<DatabaseReference.External> createExternalReference( Node alias )
+    private Optional<DatabaseReference.External> createExternalReference( Node ref )
     {
         return ignoreConcurrentDeletes( () ->
         {
-            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, URL_PROPERTY, String.class );
-            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, TARGET_NAME_PROPERTY, String.class ) );
-            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, alias, NAME_PROPERTY, String.class ) );
+            var uriString = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, URL_PROPERTY, String.class );
+            var targetName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, TARGET_NAME_PROPERTY, String.class ) );
+            var aliasName = new NormalizedDatabaseName( getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, NAME_PROPERTY, String.class ) );
 
             var uri = URI.create( uriString );
             var host = SocketAddressParser.socketAddress( uri, BoltConnector.DEFAULT_PORT, SocketAddress::new );
             var remoteUri = new RemoteUri( uri.getScheme(), List.of( host ), uri.getQuery() );
-            return Optional.of( new DatabaseReference.External( targetName, aliasName, remoteUri ) );
+            var uuid = getPropertyOnNode( REMOTE_DATABASE_LABEL_DESCRIPTION, ref, VERSION_PROPERTY, String.class );
+            return Optional.of( new DatabaseReference.External( targetName, aliasName, remoteUri, UUID.fromString( uuid ) ) );
         } );
     }
 

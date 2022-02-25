@@ -108,7 +108,7 @@ class CommunityCatalogManager(databaseLookup: DatabaseLookup, txListeners: Globa
   protected def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
     case i: DatabaseReference.Internal if i.isPrimary => None //ignore primary aliases
     case i: DatabaseReference.Internal => Some(InternalAlias(idx, i.databaseId.databaseId.uuid, new NormalizedGraphName(i.alias.name), i.alias))
-    case e: DatabaseReference.External => Some(ExternalAlias(idx, new UUID(idx,0), new NormalizedGraphName(e.alias.name), e.alias, e.remoteName, e.remoteUri))
+    case e: DatabaseReference.External => Some(ExternalAlias(idx, e.id, new NormalizedGraphName(e.alias.name), e.alias, e.remoteName, e.remoteUri))
     case other => None //ignore unexpected reference types
   }
 

@@ -91,6 +91,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.VERSION_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RELATIONSHIP;
 
 @ImpermanentDbmsExtension
@@ -400,7 +401,7 @@ public abstract class BaseTopologyGraphDbmsModelTest
         return referenceNode;
     }
 
-    protected Node createExternalReferenceForDatabase( Transaction tx, String name, String targetName, RemoteUri uri )
+    protected Node createExternalReferenceForDatabase( Transaction tx, String name, String targetName, RemoteUri uri, UUID uuid )
     {
         var referenceNode = tx.createNode( REMOTE_DATABASE_LABEL, DATABASE_NAME_LABEL );
         referenceNode.setProperty( PRIMARY_PROPERTY, false );
@@ -408,6 +409,7 @@ public abstract class BaseTopologyGraphDbmsModelTest
         referenceNode.setProperty( TARGET_NAME_PROPERTY, targetName );
         var uriString = String.format( "%s://%s", uri.getScheme(), uri.getAddresses().get( 0 ) );
         referenceNode.setProperty( URL_PROPERTY, uriString );
+        referenceNode.setProperty( VERSION_PROPERTY, uuid.toString() );
         return referenceNode;
     }
 
