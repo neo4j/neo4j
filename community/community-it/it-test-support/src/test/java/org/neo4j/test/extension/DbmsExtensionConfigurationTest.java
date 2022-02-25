@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseManagementServiceBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
@@ -41,7 +40,7 @@ class DbmsExtensionConfigurationTest
     }
 
     @ExtensionCallback
-    static void configureLocal( DatabaseManagementServiceBuilder builder )
+    static void configureLocal( TestDatabaseManagementServiceBuilder builder )
     {
         builder.setConfig( default_database, "local" );
     }
