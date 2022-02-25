@@ -49,4 +49,6 @@ public interface ASTExceptionFactory
     {
         return String.format( "Index type %s is not defined for create index command.", got.description() );
     }
+
+    String periodicCommitNotSupported = "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.";
 }

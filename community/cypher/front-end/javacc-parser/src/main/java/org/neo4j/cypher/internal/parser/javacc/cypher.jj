@@ -1413,9 +1413,9 @@ STATEMENT Statement() throws Exception:
     USE_CLAUSE useClause = null;
 }
 {
+    [ PeriodicCommitQueryHintFailure() ]
     (
-        statement=PeriodicCommitQuery()
-        | useClause=UseClause() statement=SingleQueryOrCommandWithUseClause(useClause)
+        useClause=UseClause() statement=SingleQueryOrCommandWithUseClause(useClause)
         | statement=SingleQueryOrCommand()
     )
     {
@@ -1463,32 +1463,16 @@ STATEMENT SingleQueryOrCommandWithUseClause( USE_CLAUSE useClause ) throws Excep
     }
 }
 
-QUERY PeriodicCommitQuery() :
+void PeriodicCommitQueryHintFailure() throws Exception :
 {
-    Token t;
     Token tPeriodicCommit;
-    Token batchSize = null;
-    CLAUSE loadCsv;
-    List<CLAUSE> queryBody;
 }
 {
-    t=<USING> tPeriodicCommit=<PERIODIC> <COMMIT> ( batchSize=<UNSIGNED_DECIMAL_INTEGER> )?
-    loadCsv=LoadCSVClause()
-    queryBody=PeriodicCommitQueryBody()
+    <USING> tPeriodicCommit=<PERIODIC> <COMMIT> ( <UNSIGNED_DECIMAL_INTEGER> )?
     {
-        return astFactory.periodicCommitQuery( pos( t ), pos( tPeriodicCommit ), batchSize == null ? null : batchSize.image, loadCsv, queryBody );
-    }
-}
-
-List<CLAUSE> PeriodicCommitQueryBody() :
-{
-    CLAUSE x;
-    List<CLAUSE> clauses = new ArrayList<>();
-}
-{
-    ( x=Clause() { clauses.add( x ); } )*
-    {
-        return clauses;
+        throw exceptionFactory.syntaxException(
+            new ParseException( ASTExceptionFactory.periodicCommitNotSupported ),
+            tPeriodicCommit.beginOffset, tPeriodicCommit.beginLine, tPeriodicCommit.beginColumn );
     }
 }
 
@@ -2032,7 +2016,7 @@ CLAUSE SubqueryClause() :
 {
     t=<CALL>
     <LCURLY>
-    ( q=PeriodicCommitQuery() | q=RegularQuery() )
+    q=RegularQuery()
     <RCURLY>
     ( inTransactionsParams = SubqueryInTransactionsParameters() )?
     {

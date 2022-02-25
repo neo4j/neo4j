@@ -496,10 +496,12 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
                                    periodicCommitPosition: InputPosition,
                                    batchSize: String,
                                    loadCsv: Clause,
-                                   queryBody: util.List[Clause]): Query =
+                                   queryBody: util.List[Clause]): Query = {
+
     Query(Some(PeriodicCommitHint(Option(batchSize).map(UnsignedDecimalIntegerLiteral(_)(periodicCommitPosition)))(periodicCommitPosition)),
       SingleQuery(loadCsv +: queryBody.asScala.toSeq)(loadCsv.position)
     )(p)
+  }
 
   override def useClause(p: InputPosition,
                          e: Expression): UseGraph = UseGraph(e)(p)
