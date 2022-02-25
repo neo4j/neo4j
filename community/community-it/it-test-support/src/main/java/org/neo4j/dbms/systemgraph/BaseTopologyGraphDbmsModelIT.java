@@ -63,6 +63,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.VERSION_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.WAS_HOSTED_ON_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.InstanceModeConstraint.PRIMARY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY;
@@ -406,6 +407,7 @@ public abstract class BaseTopologyGraphDbmsModelIT {
         var uriString =
                 String.format("%s://%s", uri.getScheme(), uri.getAddresses().get(0));
         referenceNode.setProperty(URL_PROPERTY, uriString);
+        referenceNode.setProperty(VERSION_PROPERTY, uuid.toString());
         return referenceNode;
     }
 
