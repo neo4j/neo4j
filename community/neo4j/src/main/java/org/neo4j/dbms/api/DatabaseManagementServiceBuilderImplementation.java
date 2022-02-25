@@ -53,7 +53,7 @@ import org.neo4j.service.Services;
 import static java.lang.Boolean.FALSE;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
-public class DatabaseManagementServiceBuilderImplementation implements DBMSBuilder
+public class DatabaseManagementServiceBuilderImplementation implements Neo4jDatabaseManagementServiceBuilder
 {
     protected final List<ExtensionFactory<?>> extensions = new ArrayList<>();
     protected final List<DatabaseEventListener> databaseEventListeners = new ArrayList<>();

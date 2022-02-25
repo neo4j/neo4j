@@ -31,9 +31,9 @@ import org.neo4j.logging.LogProvider;
  * Creates a {@link DatabaseManagementService} with Community Edition features.
  */
 @PublicApi
-public final class DatabaseManagementServiceBuilder implements DBMSBuilder
+public final class DatabaseManagementServiceBuilder implements Neo4jDatabaseManagementServiceBuilder
 {
-    private final DBMSBuilder implementation;
+    private final Neo4jDatabaseManagementServiceBuilder implementation;
 
     public DatabaseManagementServiceBuilder( Path homeDirectory )
     {

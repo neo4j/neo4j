@@ -61,7 +61,7 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_pag
  * Please be aware that since it's a database it will close filesystem as part of its lifecycle.
  * If you expect your file system to be open after database is closed, use {@link UncloseableDelegatingFileSystemAbstraction}
  */
-public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilderImplementation implements TestDBMSBuilder
+public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServiceBuilderImplementation implements TestNeo4jDatabaseManagementServiceBuilder
 {
     private static final Path EPHEMERAL_PATH = Path.of( "/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
     public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";

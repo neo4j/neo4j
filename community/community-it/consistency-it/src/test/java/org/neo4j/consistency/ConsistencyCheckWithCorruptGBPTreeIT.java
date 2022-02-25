@@ -74,8 +74,8 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestDBMSBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.TestNeo4jDatabaseManagementServiceBuilder;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -737,9 +737,9 @@ class ConsistencyCheckWithCorruptGBPTreeIT
      * Open dbms with schemaIndex as default index provider on provided file system abstraction and apply dbSetup to DEFAULT_DATABASE.
      */
     private static void dbmsAction( Path neo4jHome, FileSystemAbstraction fs,
-            Consumer<GraphDatabaseService> dbSetup, Consumer<TestDBMSBuilder> dbConfiguration )
+            Consumer<GraphDatabaseService> dbSetup, Consumer<TestNeo4jDatabaseManagementServiceBuilder> dbConfiguration )
     {
-        TestDBMSBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
+        TestNeo4jDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         dbConfiguration.accept( builder );
         final DatabaseManagementService dbms = builder.build();

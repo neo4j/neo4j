@@ -36,7 +36,7 @@ import org.neo4j.logging.LogProvider;
  * @see DatabaseEventListener
  */
 @PublicApi
-public interface DBMSBuilder
+public interface Neo4jDatabaseManagementServiceBuilder
 {
     /**
      * Construct the service matching the configuration in this builder.
@@ -52,7 +52,7 @@ public interface DBMSBuilder
      * @param databaseEventListener the event listener to be invoked on events.
      * @return the builder.
      */
-    DBMSBuilder addDatabaseListener( DatabaseEventListener databaseEventListener );
+    Neo4jDatabaseManagementServiceBuilder addDatabaseListener( DatabaseEventListener databaseEventListener );
 
     /**
      * Set a specific log provider for the service. This will not affect the {@code debug.log} that is configured
@@ -61,7 +61,7 @@ public interface DBMSBuilder
      * @param userLogProvider a log provider that will handle logging of user events/messages.
      * @return the builder.
      */
-    DBMSBuilder setUserLogProvider( LogProvider userLogProvider );
+    Neo4jDatabaseManagementServiceBuilder setUserLogProvider( LogProvider userLogProvider );
 
     /**
      * Configure a specific setting.
@@ -71,7 +71,7 @@ public interface DBMSBuilder
      * @param <T> the type of the value.
      * @return the builder.
      */
-    <T> DBMSBuilder setConfig( Setting<T> setting, T value );
+    <T> Neo4jDatabaseManagementServiceBuilder setConfig( Setting<T> setting, T value );
 
     /**
      * Configure a set of different settings.
@@ -79,7 +79,7 @@ public interface DBMSBuilder
      * @param config a map with settings to configure.
      * @return the builder.
      */
-    DBMSBuilder setConfig( Map<Setting<?>, Object> config );
+    Neo4jDatabaseManagementServiceBuilder setConfig( Map<Setting<?>, Object> config );
 
     /**
      * Read configuration from a file.
@@ -90,5 +90,5 @@ public interface DBMSBuilder
      * @param path to a file containing neo4j configuration statements.
      * @return the builder.
      */
-    DBMSBuilder loadPropertiesFromFile( Path path );
+    Neo4jDatabaseManagementServiceBuilder loadPropertiesFromFile( Path path );
 }
