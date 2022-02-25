@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionMode
-import org.neo4j.cypher.internal.runtime.ExplainMode
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -45,7 +44,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.profiler.Profiler
 import org.neo4j.cypher.internal.runtime.slottedParameters
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.exceptions.PeriodicCommitInOpenTransactionException
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
@@ -80,26 +78,26 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       query.hasLoadCSV,
       startsTransactions)
 
-    new InterpretedExecutionPlan(query.periodicCommitInfo,
+    new InterpretedExecutionPlan(
       resultBuilderFactory,
       InterpretedRuntimeName,
       query.readOnly,
       startsTransactions,
       IndexedSeq.empty,
-      Set.empty)
+      Set.empty
+    )
   }
 
   def doesStartTransactions(query: LogicalQuery): Boolean =
     query.logicalPlan.treeExists {
       case _: TransactionForeach | _: TransactionApply => true // CALL { ... } IN TRANSACTIONS
-    } || query.periodicCommitInfo.isDefined // USING PERIODIC COMMIT
+    }
 
   /**
    * Executable plan for a single cypher query. Warning, this class will get cached! Do not leak transaction objects
    * or other resources in here.
    */
-  class InterpretedExecutionPlan(periodicCommit: Option[PeriodicCommitInfo],
-                                 resultBuilderFactory: ExecutionResultBuilderFactory,
+  class InterpretedExecutionPlan(resultBuilderFactory: ExecutionResultBuilderFactory,
                                  override val runtimeName: RuntimeName,
                                  readOnly: Boolean,
                                  startsTransactions: Boolean,
@@ -118,12 +116,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       val builder = resultBuilderFactory.create(builderContext)
 
       val profileInformation = new InterpretedProfileInformation
-
-      if (periodicCommit.isDefined && executionMode != ExplainMode) {
-        if (!builderContext.transactionalContext.isTopLevelTx)
-          throw new PeriodicCommitInOpenTransactionException()
-        builder.setLoadCsvPeriodicCommitObserver(periodicCommit.get.batchRowCount)
-      }
 
       if (doProfile)
         builder.addProfileDecorator(new Profiler(queryContext.transactionalContext.dbmsInfo, profileInformation))

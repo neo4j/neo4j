@@ -190,7 +190,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planningAttributesCopy.providedOrders,
       planningAttributesCopy.leveragedOrders,
       planState.hasLoadCSV,
-      None,
       new SequentialIdGen(planningAttributesCopy.cardinalities.size),
       query.options.queryOptions.executionMode == CypherExecutionMode.profile)
 

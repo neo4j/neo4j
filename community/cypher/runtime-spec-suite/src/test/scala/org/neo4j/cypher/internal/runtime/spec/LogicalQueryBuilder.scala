@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
-import org.neo4j.cypher.internal.PeriodicCommitInfo
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.Resolver
@@ -80,7 +79,6 @@ class LogicalQueryBuilder(tokenResolver: Resolver,
                  providedOrders,
                  leveragedOrders,
                  hasLoadCsv,
-                 periodicCommitBatchSize.map(size => PeriodicCommitInfo(Some(size))),
                  idGen,
                  doProfile = false)
   }

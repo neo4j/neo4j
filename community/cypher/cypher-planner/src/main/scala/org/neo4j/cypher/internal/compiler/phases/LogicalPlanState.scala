@@ -51,7 +51,6 @@ case class LogicalPlanState(queryText: String,
                             maybeSemanticTable: Option[SemanticTable] = None,
                             maybeQuery: Option[PlannerQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
-                            maybePeriodicCommit: Option[Option[Nothing]] = None,
                             accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
                             hasLoadCSV: Boolean = false,
                             maybeReturnColumns: Option[Seq[String]] = None,
@@ -59,7 +58,6 @@ case class LogicalPlanState(queryText: String,
 
   def query: PlannerQuery = maybeQuery getOrElse fail("The planner query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
-  def periodicCommit: Option[Nothing] = maybePeriodicCommit getOrElse fail("Periodic commit")
   def astAsQuery: Query = statement().asInstanceOf[Query]
 
   def asCachableLogicalPlanState(): CachableLogicalPlanState = {
@@ -71,7 +69,6 @@ case class LogicalPlanState(queryText: String,
       statement(),
       semanticTable(),
       logicalPlan,
-      maybePeriodicCommit,
       hasLoadCSV,
       returnColumns())
   }
@@ -114,7 +111,6 @@ case class CachableLogicalPlanState(queryText: String,
                                     statement: Statement,
                                     semanticTable: SemanticTable,
                                     logicalPlan: LogicalPlan,
-                                    maybePeriodicCommit: Option[Option[Nothing]],
                                     hasLoadCSV: Boolean = false,
                                     returnColumns: Seq[String])
 

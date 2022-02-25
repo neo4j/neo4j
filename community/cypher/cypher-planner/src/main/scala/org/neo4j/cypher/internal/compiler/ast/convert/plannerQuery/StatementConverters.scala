@@ -94,7 +94,7 @@ object StatementConverters {
 
   def toPlannerQuery(query: Query, semanticTable: SemanticTable, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQuery = {
     val plannerQueryPart = toPlannerQueryPart(query.part, semanticTable, anonymousVariableNameGenerator)
-    PlannerQuery(plannerQueryPart, None)
+    PlannerQuery(plannerQueryPart)
   }
 
   def toPlannerQueryPart(queryPart: QueryPart, semanticTable: SemanticTable, anonymousVariableNameGenerator: AnonymousVariableNameGenerator): PlannerQueryPart = {

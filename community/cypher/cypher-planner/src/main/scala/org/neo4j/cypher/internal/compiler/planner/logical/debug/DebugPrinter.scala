@@ -66,7 +66,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     context.planContext.statistics.nodesAllCardinality()
 
     val (plan, newStatement, newReturnColumnts) = stringToLogicalPlan(string)
-    from.copy(maybePeriodicCommit = Some(None), maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), maybeReturnColumns = Some(newReturnColumnts))
+    from.copy(maybeLogicalPlan = Some(plan), maybeStatement = Some(newStatement), maybeReturnColumns = Some(newReturnColumnts))
   }
 
   private def stringToLogicalPlan(string: String): (LogicalPlan, Statement, Seq[String]) = {

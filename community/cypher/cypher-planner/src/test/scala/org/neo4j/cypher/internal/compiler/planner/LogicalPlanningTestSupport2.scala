@@ -364,7 +364,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case p: ProduceResult if stripProduceResults => p.source
         case p => p
       }
-      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
+      (None, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     def getLogicalPlanForAst(initialState: BaseState): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) = {
@@ -376,7 +376,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case p: ProduceResult => p.source
         case p => p
       }
-      (output.maybePeriodicCommit.flatten, logicalPlan, output.semanticTable(), output.planningAttributes)
+      (None, logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     private def getContext(

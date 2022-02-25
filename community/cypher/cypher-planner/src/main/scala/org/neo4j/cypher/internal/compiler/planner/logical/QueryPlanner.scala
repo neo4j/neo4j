@@ -63,7 +63,6 @@ case object QueryPlanner
     val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
 
     from.copy(
-      maybePeriodicCommit = Some(from.query.periodicCommit),
       maybeLogicalPlan = Some(logicalPlan),
       maybeSemanticTable = Some(logicalPlanningContext.semanticTable))
   }
