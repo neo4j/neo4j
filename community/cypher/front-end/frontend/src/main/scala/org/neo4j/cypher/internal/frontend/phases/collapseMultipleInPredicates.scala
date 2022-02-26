@@ -36,6 +36,10 @@ case object InPredicatesCollapsed extends StepSequencer.Condition
 /**
  * This class merges multiple IN predicates into larger ones.
  * These can later be turned into index lookups or node-by-id ops.
+ *
+ * Example:
+ * MATCH (n) WHERE n.prop IN [1,2,3] OR n.prop IN [4,5,6] RETURN n.prop
+ * -> MATCH (n) WHERE n.prop IN [1,2,3,4,5,6]
  */
 case object collapseMultipleInPredicates extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
   case class InValue(lhs: Expression, expr: Expression)
