@@ -27,6 +27,7 @@ import org.eclipse.collections.api.tuple.Pair;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.TextValue;
@@ -68,10 +69,10 @@ public class SchemaRuleMapifier {
         schemaDescriptorToMap(rule.schema(), map);
 
         // Rule
-        if (rule instanceof IndexDescriptor) {
-            schemaIndexToMap((IndexDescriptor) rule, map);
-        } else if (rule instanceof ConstraintDescriptor) {
-            schemaConstraintToMap((ConstraintDescriptor) rule, map);
+        if (rule instanceof IndexDescriptor index) {
+            schemaIndexToMap(index, map);
+        } else if (rule instanceof ConstraintDescriptor constraint) {
+            schemaConstraintToMap(constraint, map);
         }
         return map;
     }
@@ -87,14 +88,12 @@ public class SchemaRuleMapifier {
     public static SchemaRule unmapifySchemaRule(long ruleId, Map<String, Value> map)
             throws MalformedSchemaRuleException {
         String schemaRuleType = getString(PROP_SCHEMA_RULE_TYPE, map);
-        switch (schemaRuleType) {
-            case "INDEX":
-                return buildIndexRule(ruleId, map);
-            case "CONSTRAINT":
-                return buildConstraintRule(ruleId, map);
-            default:
-                throw new MalformedSchemaRuleException("Can not create a schema rule of type: " + schemaRuleType);
-        }
+        return switch (schemaRuleType) {
+            case "INDEX" -> buildIndexRule(ruleId, map);
+            case "CONSTRAINT" -> buildConstraintRule(ruleId, map);
+            default -> throw new MalformedSchemaRuleException(
+                    "Can not create a schema rule of type: " + schemaRuleType);
+        };
     }
 
     private static void schemaDescriptorToMap(SchemaDescriptor schemaDescriptor, Map<String, Value> map) {
@@ -151,71 +150,51 @@ public class SchemaRuleMapifier {
 
     private static void schemaConstraintToMap(ConstraintDescriptor rule, Map<String, Value> map) {
         // Rule
-        putStringProperty(map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT");
         ConstraintType type = rule.type();
+        putStringProperty(map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT");
+        putStringProperty(map, PROP_CONSTRAINT_RULE_TYPE, type.name());
         switch (type) {
-            case UNIQUE:
-                putStringProperty(map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE");
+            case UNIQUE, UNIQUE_EXISTS -> {
+                IndexBackedConstraintDescriptor indexBackedConstraint = rule.asIndexBackedConstraint();
                 putStringProperty(
-                        map,
-                        PROP_INDEX_TYPE,
-                        rule.asIndexBackedConstraint().indexType().name());
-                if (rule.asIndexBackedConstraint().hasOwnedIndexId()) {
-                    putLongProperty(
-                            map,
-                            PROP_OWNED_INDEX,
-                            rule.asIndexBackedConstraint().ownedIndexId());
+                        map, PROP_INDEX_TYPE, indexBackedConstraint.indexType().name());
+                if (indexBackedConstraint.hasOwnedIndexId()) {
+                    putLongProperty(map, PROP_OWNED_INDEX, indexBackedConstraint.ownedIndexId());
                 }
-                break;
-            case EXISTS:
-                putStringProperty(map, PROP_CONSTRAINT_RULE_TYPE, "EXISTS");
-                break;
-            case UNIQUE_EXISTS:
-                putStringProperty(map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE_EXISTS");
-                putStringProperty(
-                        map,
-                        PROP_INDEX_TYPE,
-                        rule.asIndexBackedConstraint().indexType().name());
-                if (rule.asIndexBackedConstraint().hasOwnedIndexId()) {
-                    putLongProperty(
-                            map,
-                            PROP_OWNED_INDEX,
-                            rule.asIndexBackedConstraint().ownedIndexId());
-                }
-                break;
-            default:
-                throw new UnsupportedOperationException("Unrecognized constraint type: " + type);
+            }
+
+            default -> {}
         }
     }
 
     private static int[] getIntArray(String property, Map<String, Value> props) throws MalformedSchemaRuleException {
         Value value = props.get(property);
-        if (value instanceof IntArray) {
-            return (int[]) value.asObject();
+        if (value instanceof IntArray intArray) {
+            return intArray.asObject();
         }
         throw new MalformedSchemaRuleException("Expected property " + property + " to be a IntArray but was " + value);
     }
 
     private static long getLong(String property, Map<String, Value> props) throws MalformedSchemaRuleException {
         Value value = props.get(property);
-        if (value instanceof LongValue) {
-            return ((LongValue) value).value();
+        if (value instanceof LongValue longValue) {
+            return longValue.value();
         }
         throw new MalformedSchemaRuleException("Expected property " + property + " to be a LongValue but was " + value);
     }
 
     private static OptionalLong getOptionalLong(String property, Map<String, Value> props) {
         Value value = props.get(property);
-        if (value instanceof LongValue) {
-            return OptionalLong.of(((LongValue) value).value());
+        if (value instanceof LongValue longValue) {
+            return OptionalLong.of(longValue.value());
         }
         return OptionalLong.empty();
     }
 
     private static String getString(String property, Map<String, Value> map) throws MalformedSchemaRuleException {
         Value value = map.get(property);
-        if (value instanceof TextValue) {
-            return ((TextValue) value).stringValue();
+        if (value instanceof TextValue textValue) {
+            return textValue.stringValue();
         }
         throw new MalformedSchemaRuleException("Expected property " + property + " to be a TextValue but was " + value);
     }
@@ -265,14 +244,11 @@ public class SchemaRuleMapifier {
     }
 
     private static boolean parseIndexType(String indexRuleType) throws MalformedSchemaRuleException {
-        switch (indexRuleType) {
-            case "NON_UNIQUE":
-                return false;
-            case "UNIQUE":
-                return true;
-            default:
-                throw new MalformedSchemaRuleException("Did not recognize index rule type: " + indexRuleType);
-        }
+        return switch (indexRuleType) {
+            case "NON_UNIQUE" -> false;
+            case "UNIQUE" -> true;
+            default -> throw new MalformedSchemaRuleException("Did not recognize index rule type: " + indexRuleType);
+        };
     }
 
     private static SchemaRule buildConstraintRule(long id, Map<String, Value> props)
@@ -283,7 +259,7 @@ public class SchemaRuleMapifier {
         OptionalLong ownedIndex = getOptionalLong(PROP_OWNED_INDEX, props);
         ConstraintDescriptor constraint;
         switch (constraintRuleType) {
-            case "UNIQUE":
+            case "UNIQUE" -> {
                 constraint = ConstraintDescriptorFactory.uniqueForSchema(
                         schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
 
@@ -291,10 +267,14 @@ public class SchemaRuleMapifier {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
                 }
                 return constraint.withId(id).withName(name);
-            case "EXISTS":
+            }
+
+            case "EXISTS" -> {
                 constraint = ConstraintDescriptorFactory.existsForSchema(schema);
                 return constraint.withId(id).withName(name);
-            case "UNIQUE_EXISTS":
+            }
+
+            case "UNIQUE_EXISTS" -> {
                 constraint = ConstraintDescriptorFactory.nodeKeyForSchema(
                         schema, getIndexType(getString(PROP_INDEX_TYPE, props)));
 
@@ -302,8 +282,10 @@ public class SchemaRuleMapifier {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
                 }
                 return constraint.withId(id).withName(name);
-            default:
-                throw new MalformedSchemaRuleException("Did not recognize constraint rule type: " + constraintRuleType);
+            }
+
+            default -> throw new MalformedSchemaRuleException(
+                    "Did not recognize constraint rule type: " + constraintRuleType);
         }
     }
 

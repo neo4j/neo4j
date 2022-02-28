@@ -38,8 +38,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
 import org.neo4j.common.EntityType;
@@ -457,26 +457,18 @@ public class SchemaCache {
         }
 
         private SchemaDescriptorLookupSet<IndexDescriptor> selectIndexSetByEntityType(EntityType entityType) {
-            switch (entityType) {
-                case NODE:
-                    return indexesByNode;
-                case RELATIONSHIP:
-                    return indexesByRelationship;
-                default:
-                    throw new IllegalArgumentException(entityType.name());
-            }
+            return switch (entityType) {
+                case NODE -> indexesByNode;
+                case RELATIONSHIP -> indexesByRelationship;
+            };
         }
 
         private SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> selectUniquenessConstraintSetByEntityType(
                 EntityType entityType) {
-            switch (entityType) {
-                case NODE:
-                    return uniquenessConstraintsByNode;
-                case RELATIONSHIP:
-                    return uniquenessConstraintsByRelationship;
-                default:
-                    throw new IllegalArgumentException(entityType.name());
-            }
+            return switch (entityType) {
+                case NODE -> uniquenessConstraintsByNode;
+                case RELATIONSHIP -> uniquenessConstraintsByRelationship;
+            };
         }
 
         <P, T> T getOrCreateDependantState(Class<T> type, Function<P, T> factory, P parameter) {
@@ -490,8 +482,8 @@ public class SchemaCache {
                 constrainsByName.put(constraint.getName(), constraint);
                 constraints.add(constraint);
                 cacheUniquenessConstraint(constraint);
-            } else if (rule instanceof IndexDescriptor) {
-                IndexDescriptor index = indexConfigCompleter.completeConfiguration((IndexDescriptor) rule);
+            } else if (rule instanceof IndexDescriptor index) {
+                index = indexConfigCompleter.completeConfiguration((IndexDescriptor) rule);
                 indexesById.put(index.getId(), index);
                 SchemaDescriptor schema = index.schema();
                 indexesBySchema.merge(schema, Set.of(index), SchemaCacheState::concatImmutableSets);
@@ -502,9 +494,7 @@ public class SchemaCache {
         }
 
         private static Set<IndexDescriptor> concatImmutableSets(Set<IndexDescriptor> left, Set<IndexDescriptor> right) {
-            var newSet = new HashSet<>(left);
-            newSet.addAll(right);
-            return Set.copyOf(newSet);
+            return Sets.union(left, right).asUnmodifiable();
         }
 
         void removeSchemaRule(long id) {
@@ -529,11 +519,8 @@ public class SchemaCache {
     }
 
     private static Set<IndexDescriptor> removeFromImmutable(Set<IndexDescriptor> set, IndexDescriptor toRemove) {
-        var result = set.stream().filter(i -> !i.equals(toRemove)).collect(Collectors.toSet());
-        if (result.isEmpty()) {
-            return null;
-        }
-        return Set.copyOf(result);
+        final var result = Sets.mutable.withAll(set).without(toRemove);
+        return !result.isEmpty() ? result.asUnmodifiable() : null;
     }
 
     /**
