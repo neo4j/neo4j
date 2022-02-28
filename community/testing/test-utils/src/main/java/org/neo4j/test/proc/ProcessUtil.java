@@ -23,6 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -122,8 +124,13 @@ public final class ProcessUtil
         {
             args.addAll( moduleOptions );
         }
-        args.add( "-cp" );
-        args.add( getClassPath() );
+
+        // Classpath can get very long and that can upset Windows, so write it to a file
+        Path p = Files.createTempFile( "jvm", ".args" );
+        p.toFile().deleteOnExit();
+        Files.writeString( p, "-cp " + getClassPath(), StandardCharsets.UTF_8 );
+
+        args.add( "@" + p.normalize() );
         args.addAll( Arrays.asList( arguments ) );
         ProcessBuilder processBuilder = new ProcessBuilder( args );
         configurator.accept( processBuilder );
