@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
@@ -90,6 +91,11 @@ object expressionVariableAllocation {
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: PruningVarExpand =>
+        outerVars =>
+          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
+
+      case x: BFSPruningVarExpand =>
         outerVars =>
           val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
