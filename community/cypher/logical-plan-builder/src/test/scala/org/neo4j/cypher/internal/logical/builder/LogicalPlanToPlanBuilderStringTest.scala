@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Modifier
+
 import scala.collection.mutable
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
@@ -1225,6 +1226,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .|.argument("x")
       .allNodeScan("x")
       .build())
+
+  testPlan("argumentTracker",
+           new TestPlanBuilder()
+             .produceResults("x", "y")
+             .argumentTracker()
+             .argument()
+             .build())
 
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
