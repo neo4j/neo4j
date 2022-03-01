@@ -127,18 +127,20 @@ public class StatementProcessorTxManager implements TransactionManager
     @Override
     public void interrupt( String txReference )
     {
-        if ( txReference != null && statementProcessors.containsKey( txReference ) )
+        var statementProcessor = txReference != null ? statementProcessors.get( txReference ) : null;
+        if ( statementProcessor != null )
         {
-            statementProcessors.get( txReference ).markCurrentTransactionForTermination();
+            statementProcessor.markCurrentTransactionForTermination();
         }
     }
 
     @Override
     public TransactionStatus transactionStatus( String txId )
     {
-        if ( statementProcessors.containsKey( txId ) )
+        var tx = statementProcessors.get( txId );
+
+        if ( tx != null )
         {
-            var tx = statementProcessors.get( txId );
             try
             {
                 var status = tx.validateTransaction();
