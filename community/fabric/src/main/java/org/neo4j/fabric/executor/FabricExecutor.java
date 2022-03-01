@@ -178,11 +178,6 @@ public class FabricExecutor
         }
     }
 
-    public boolean isPeriodicCommit( String query )
-    {
-        return planner.isPeriodicCommit( query );
-    }
-
     /**
      * This is a hack to be able to get an InternalTransaction for the TestFabricTransaction tx wrapper
      */

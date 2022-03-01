@@ -112,12 +112,6 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        return fabricExecutor.isPeriodicCommit( query );
-    }
-
-    @Override
     public NamedDatabaseId getNamedDatabaseId()
     {
         return namedDatabaseId;

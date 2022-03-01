@@ -86,10 +86,6 @@ case class FabricFrontEnd(
       preParser.preParseQuery(queryString)
     }
 
-    def isPeriodicCommit(queryString: String): Boolean = {
-      val preParsedQuery = preParser.preParseQuery(queryString)
-      preParsedQuery.options.queryOptions.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
-    }
   }
 
   case class Pipeline(

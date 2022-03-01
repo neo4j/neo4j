@@ -60,10 +60,6 @@ case class FabricPlanner(
     PlannerInstance(query, queryParams, defaultGraphName, fabricContextName)
   }
 
-  def isPeriodicCommit(queryString: String): Boolean = {
-    frontend.preParsing.isPeriodicCommit(queryString)
-  }
-
   case class PlannerInstance(
     query: PreParsedQuery,
     queryParams: MapValue,
