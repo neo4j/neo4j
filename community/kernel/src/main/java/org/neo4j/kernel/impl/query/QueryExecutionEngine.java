@@ -32,11 +32,6 @@ public interface QueryExecutionEngine
     QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate,
             QuerySubscriber subscriber ) throws QueryExecutionKernelException;
 
-    /**
-     * @return {@code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
-     */
-    boolean isPeriodicCommit( String query );
-
     long clearQueryCaches();
 
     List<FunctionInformation> getProvidedLanguageFunctions();

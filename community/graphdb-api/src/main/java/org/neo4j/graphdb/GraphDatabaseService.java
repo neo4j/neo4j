@@ -85,7 +85,7 @@ public interface GraphDatabaseService
 
     /**
      * Executes query in a separate transaction.
-     * Capable to execute periodic commit queries.
+     * Capable to execute queries with inner transactions.
      *
      * @param query The query to execute
      * @throws QueryExecutionException If the Query contains errors
@@ -94,7 +94,7 @@ public interface GraphDatabaseService
 
     /**
      * Executes query in a separate transaction.
-     * Capable to execute periodic commit queries.
+     * Capable to execute queries with inner transactions.
      *
      * @param query The query to execute
      * @param parameters Parameters for the query
@@ -104,7 +104,7 @@ public interface GraphDatabaseService
 
     /**
      * Executes query in a separate transaction and allow to query result to be consumed by provided {@link ResultTransformer}.
-     * Capable to execute periodic commit queries.
+     * Capable to execute queries with inner transactions.
      *
      * @param query The query to execute
      * @param parameters Parameters for the query
@@ -117,7 +117,7 @@ public interface GraphDatabaseService
      * Executes query in a separate transaction and allows query result to be consumed by provided {@link ResultTransformer}.
      * If query will not gonna be able to complete within provided timeout time interval it will be terminated.
      *
-     * Capable to execute periodic commit queries.
+     * Capable to execute queries with inner transactions.
      *
      * @param query The query to execute
      * @param parameters Parameters for the query

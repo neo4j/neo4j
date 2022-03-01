@@ -957,7 +957,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void periodicCommitQueryShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInQuerySnapshot()
+    void contextWithRestartedTransactionShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInQuerySnapshot()
     {
         // Given
 
@@ -998,7 +998,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void periodicCommitQueryShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInPROFILE()
+    void contextWithRestartedTransactionShouldSumUpPageHitsFaultsFromFirstAndSecondTransactionInPROFILE()
     {
         // Given
 
@@ -1052,7 +1052,7 @@ class Neo4jTransactionalContextIT
     }
 
     @Test
-    void periodicCommitExecutingQueryShouldBeReusedAfterRestart()
+    void contextWithRestartedTransactionShouldReuseExecutingQuery()
     {
         // Given
 
@@ -1076,5 +1076,34 @@ class Neo4jTransactionalContextIT
         assertThat( secondStatement ).isNotSameAs( firstStatement );
         assertThat( secondExecutingQuery ).isSameAs( firstExecutingQuery );
         assertFalse( firstKernelTx.isOpen() );
+    }
+
+    @Test
+    void contextWithNewTransactionsQueryTransactionShouldReuseExecutingQuery()
+    {
+        // Given
+
+        var firstInternalTx = graph.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
+        var firstKernelTx = firstInternalTx.kernelTransaction();
+        var ctx = createTransactionContext( firstInternalTx );
+        var firstStatement = ctx.statement();
+        //noinspection OptionalGetWithoutIsPresent
+        var firstExecutingQuery = ((KernelStatement) firstStatement).queryRegistry().executingQuery().get();
+
+        // When
+        ctx = ctx.contextWithNewTransaction();
+
+        // Then
+        var secondInternalTx = ctx.transaction();
+        var secondKernelTx = secondInternalTx.kernelTransaction();
+        var secondStatement = ctx.statement();
+        //noinspection OptionalGetWithoutIsPresent
+        var secondExecutingQuery = ((KernelStatement) secondStatement).queryRegistry().executingQuery().get();
+
+        assertThat( secondInternalTx ).isNotSameAs( firstInternalTx );
+        assertThat( secondKernelTx ).isNotSameAs( firstKernelTx );
+        assertThat( secondStatement ).isNotSameAs( firstStatement );
+        assertThat( secondExecutingQuery ).isSameAs( firstExecutingQuery );
+        assertTrue( firstKernelTx.isOpen() );
     }
 }

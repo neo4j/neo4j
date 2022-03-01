@@ -32,7 +32,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 /**
  * Controls the capabilities of a KernelTransaction, including the authenticated user and authorization data.
  *
- * Must extend LoginContext to handle procedures creating internal transactions, periodic commit and the parallel cypher prototype.
+ * Must extend LoginContext to handle queries and procedures creating internal transactions, and the parallel cypher prototype.
  */
 public class SecurityContext extends LoginContext
 {

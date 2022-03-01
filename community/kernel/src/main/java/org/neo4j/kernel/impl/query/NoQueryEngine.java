@@ -42,12 +42,6 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        throw noQueryEngine();
-    }
-
-    @Override
     public long clearQueryCaches()
     {
         throw noQueryEngine();
