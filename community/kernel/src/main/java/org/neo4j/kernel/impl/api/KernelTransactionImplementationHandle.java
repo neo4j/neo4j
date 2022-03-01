@@ -121,7 +121,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public boolean markForTermination( Status reason )
     {
-        return tx.markForTermination( transactionStamp.getReuseCount(), reason );
+        return tx.markForTermination( transactionStamp.getUserTransactionId(), reason );
     }
 
     @Override
@@ -233,6 +233,6 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     @Override
     public String toString()
     {
-        return "KernelTransactionImplementationHandle{txReuseCount=" + transactionStamp.getReuseCount() + ", tx=" + tx + "}";
+        return "KernelTransactionImplementationHandle{userTransactionId=" + transactionStamp.getUserTransactionId() + ", tx=" + tx + "}";
     }
 }

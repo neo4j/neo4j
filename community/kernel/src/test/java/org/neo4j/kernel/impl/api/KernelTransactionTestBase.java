@@ -141,26 +141,21 @@ class KernelTransactionTestBase
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )
     {
-        return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis );
+        return newTransaction( 0, AUTH_DISABLED, transactionTimeoutMillis, 1L );
     }
 
     public KernelTransactionImplementation newTransaction( LoginContext loginContext )
     {
-        return newTransaction( 0, loginContext, defaultTransactionTimeoutMillis );
-    }
-
-    public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext )
-    {
-        return newTransaction( lastTransactionIdWhenStarted, loginContext, defaultTransactionTimeoutMillis );
+        return newTransaction( 0, loginContext, defaultTransactionTimeoutMillis, 1L );
     }
 
     public KernelTransactionImplementation newTransaction( long lastTransactionIdWhenStarted, LoginContext loginContext,
-            long transactionTimeout )
+            long transactionTimeout, long userTransactionId )
     {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         SecurityContext securityContext = loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG );
         tx.initialize( lastTransactionIdWhenStarted, BASE_TX_COMMIT_TIMESTAMP, KernelTransaction.Type.EXPLICIT,
-                securityContext, transactionTimeout, 1L, EMBEDDED_CONNECTION );
+                securityContext, transactionTimeout, userTransactionId, EMBEDDED_CONNECTION );
         return tx;
     }
 

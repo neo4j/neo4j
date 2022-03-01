@@ -484,24 +484,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         verify( transactionMonitor ).addNativeTransactionSize( anyLong() );
     }
 
-    @ParameterizedTest
-    @MethodSource( "parameters" )
-    void shouldIncrementReuseCounterOnReuse( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
-    {
-        // GIVEN
-        KernelTransactionImplementation transaction = newTransaction( loginContext( isWriteTx ) );
-        int reuseCount = transaction.getReuseCount();
-
-        // WHEN
-        transaction.close();
-        transaction.initialize( 1, BASE_TX_COMMIT_TIMESTAMP, KernelTransaction.Type.IMPLICIT,
-                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
-                0L, 1L, EMBEDDED_CONNECTION );
-
-        // THEN
-        assertEquals( reuseCount + 1, transaction.getReuseCount() );
-    }
-
     @Test
     void markForTerminationNotInitializedTransaction()
     {
@@ -657,39 +639,29 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void markForTerminationWithCorrectReuseCount( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
+    void markForTerminationWithCorrectUserTxId( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
     {
-        int reuseCount = 10;
+        long userTransactionId = 10;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
-        KernelTransactionImplementation tx = newNotInitializedTransaction();
-        initializeAndClose( tx, reuseCount, isWriteTx );
+        KernelTransactionImplementation tx = newTransaction( 2L, AUTH_DISABLED, 0L, userTransactionId );
 
-        tx.initialize( 42, 42, KernelTransaction.Type.IMPLICIT,
-                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
-                0L, 0L, EMBEDDED_CONNECTION );
-
-        assertTrue( tx.markForTermination( reuseCount, terminationReason ) );
+        assertTrue( tx.markForTermination( userTransactionId, terminationReason ) );
 
         assertEquals( terminationReason, tx.getReasonIfTerminated().get() );
     }
 
     @ParameterizedTest
     @MethodSource( "parameters" )
-    void markForTerminationWithIncorrectReuseCount( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
+    void markForTerminationWithIncorrectUserTxId( String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer ) throws Exception
     {
-        int reuseCount = 13;
-        int nextReuseCount = reuseCount + 2;
+        long userTransactionId = 13;
+        long wrongUserTransactionId = userTransactionId + 2;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
-        KernelTransactionImplementation tx = newNotInitializedTransaction();
-        initializeAndClose( tx, reuseCount, isWriteTx );
+        KernelTransactionImplementation tx = newTransaction( 2L, AUTH_DISABLED, 0L, userTransactionId );
 
-        tx.initialize( 42, 42, KernelTransaction.Type.IMPLICIT,
-                loginContext( isWriteTx ).authorize( LoginContext.IdLookup.EMPTY, GraphDatabaseSettings.DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ),
-                0L, 0L, EMBEDDED_CONNECTION );
-
-        assertFalse( tx.markForTermination( nextReuseCount, terminationReason ) );
+        assertFalse( tx.markForTermination( wrongUserTransactionId, terminationReason ) );
 
         assertFalse( tx.getReasonIfTerminated().isPresent() );
     }

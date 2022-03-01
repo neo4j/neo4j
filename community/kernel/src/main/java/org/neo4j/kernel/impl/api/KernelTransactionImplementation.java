@@ -175,7 +175,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final ConstraintSemantics constraintSemantics;
-    private final StorageLocks storageLocks;
     private CursorContext cursorContext;
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
@@ -207,7 +206,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private long transactionId;
     private long commitTime;
     private volatile ClientConnectionInfo clientInfo;
-    private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
     private volatile String statusDetails;
     private final AllStoreHolder allStoreHolder;
@@ -223,7 +221,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
      * {@link #close() transaction commit} and specifically with {@link #reset()}.
      * Termination can run concurrently with commit and we need to make sure that it terminates the right lock client
-     * and the right transaction (with the right {@link #reuseCount}) because {@link KernelTransactionImplementation}
+     * and the right transaction (with the right {@link #userTransactionId}) because {@link KernelTransactionImplementation}
      * instances are pooled.
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
@@ -275,7 +273,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors( CursorContext.NULL_CONTEXT );
-        this.storageLocks = storageEngine.createStorageLocks( lockClient );
+        StorageLocks storageLocks = storageEngine.createStorageLocks( lockClient );
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader, transactionalCursors, config );
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler( securityLog );
         this.allStoreHolder = new AllStoreHolder( storageReader, this, storageLocks, cursors, globalProcedures, schemaState,
@@ -360,11 +358,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return internalTransaction;
     }
 
-    int getReuseCount()
-    {
-        return reuseCount;
-    }
-
     @Override
     public long startTime()
     {
@@ -416,12 +409,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return Optional.ofNullable( terminationReason );
     }
 
-    boolean markForTermination( long expectedReuseCount, Status reason )
+    boolean markForTermination( long expectedUserTransactionId, Status reason )
     {
         terminationReleaseLock.lock();
         try
         {
-            return expectedReuseCount == reuseCount && markForTerminationIfPossible( reason );
+            return expectedUserTransactionId == userTransactionId && markForTerminationIfPossible( reason );
         }
         finally
         {
@@ -1100,7 +1093,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             transactionEvent = null;
             txState = null;
             collectionsFactory.release();
-            reuseCount++;
             userMetaData = emptyMap();
             statusDetails = EMPTY;
             clientInfo = null;

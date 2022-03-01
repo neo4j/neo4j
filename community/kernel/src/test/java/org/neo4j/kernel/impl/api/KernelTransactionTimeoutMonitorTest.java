@@ -43,7 +43,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 class KernelTransactionTimeoutMonitorTest
 {
-    private static final int EXPECTED_REUSE_COUNT = 2;
+    private static final long EXPECTED_USER_TRANSACTION_ID = 2;
     private KernelTransactions kernelTransactions;
     private FakeClock fakeClock;
     private AssertableLogProvider logProvider;
@@ -83,7 +83,7 @@ class KernelTransactionTimeoutMonitorTest
         fakeClock.forward( 2, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
-        verify( tx1 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
+        verify( tx1 ).markForTermination( EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut );
         verify( tx2, never() ).markForTermination( Status.Transaction.TransactionTimedOut );
         assertThat( logProvider ).containsMessages( "timeout" );
 
@@ -91,7 +91,7 @@ class KernelTransactionTimeoutMonitorTest
         fakeClock.forward( 10, TimeUnit.MILLISECONDS );
         transactionMonitor.run();
 
-        verify( tx2 ).markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut );
+        verify( tx2 ).markForTermination( EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut );
         assertThat( logProvider ).containsMessages( "timeout" );
     }
 
@@ -128,9 +128,9 @@ class KernelTransactionTimeoutMonitorTest
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         when( transaction.startTime() ).thenReturn( startMillis );
         when( transaction.getUserTransactionId() ).thenReturn( userTxId );
-        when( transaction.getReuseCount() ).thenReturn( EXPECTED_REUSE_COUNT );
+        when( transaction.getUserTransactionId() ).thenReturn( EXPECTED_USER_TRANSACTION_ID );
         when( transaction.timeout() ).thenReturn( timeoutMillis );
-        when( transaction.markForTermination( EXPECTED_REUSE_COUNT, Status.Transaction.TransactionTimedOut ) ).thenReturn( true );
+        when( transaction.markForTermination( EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut ) ).thenReturn( true );
         return transaction;
     }
 }

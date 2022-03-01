@@ -24,32 +24,32 @@ import java.util.Objects;
 public class KernelTransactionStamp
 {
     private final KernelTransactionImplementation ktx;
-    private final long reuseCount;
+    private final long userTransactionId;
 
     public KernelTransactionStamp( KernelTransactionImplementation ktx )
     {
-        this.reuseCount = ktx.getReuseCount();
+        this.userTransactionId = ktx.getUserTransactionId();
         this.ktx = ktx;
     }
 
     public boolean isOpen()
     {
-        return ktx.isOpen() && reuseCount == ktx.getReuseCount();
+        return ktx.isOpen() && userTransactionId == ktx.getUserTransactionId();
     }
 
     public boolean isClosing()
     {
-        return ktx.isClosing() && reuseCount == ktx.getReuseCount();
+        return ktx.isClosing() && userTransactionId == ktx.getUserTransactionId();
     }
 
-    long getReuseCount()
+    long getUserTransactionId()
     {
-        return reuseCount;
+        return userTransactionId;
     }
 
     public boolean isNotExpired()
     {
-        return reuseCount == ktx.getReuseCount();
+        return userTransactionId == ktx.getUserTransactionId();
     }
 
     @Override
@@ -64,12 +64,12 @@ public class KernelTransactionStamp
             return false;
         }
         KernelTransactionStamp that = (KernelTransactionStamp) o;
-        return reuseCount == that.reuseCount && Objects.equals( ktx, that.ktx );
+        return userTransactionId == that.userTransactionId && Objects.equals( ktx, that.ktx );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( ktx, reuseCount );
+        return Objects.hash( ktx, userTransactionId );
     }
 }
