@@ -19,16 +19,14 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
-
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
-import java.util.stream.Stream;
 
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
@@ -36,7 +34,6 @@ import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 
 public abstract class KnownCommunityTopologyComponentVersion extends KnownSystemComponentVersion
@@ -65,8 +62,8 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      */
     protected void setDatabaseAccessToReadWrite( Transaction tx )
     {
-        final ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL );
-        nodes.stream().forEach( node -> node.setProperty( DATABASE_ACCESS_PROPERTY, TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE.toString() ) );
+        String rwString = TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE.toString();
+        Iterators.forEachRemaining( tx.findNodes( DATABASE_LABEL ), node -> node.setProperty( DATABASE_ACCESS_PROPERTY, rwString ) );
     }
 
     /**
@@ -76,19 +73,16 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
      */
     protected void addDatabaseNameNodes( Transaction tx )
     {
-        final ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL );
-        nodes.stream().forEach(
-                databaseNode ->
-                {
-                    if ( !hasPrimaryAlias( databaseNode ) )
-                    {
-                        Node nameNode = tx.createNode( DATABASE_NAME_LABEL );
-                        nameNode.setProperty( NAME_PROPERTY, databaseNode.getProperty( DATABASE_NAME_PROPERTY ) );
-                        nameNode.setProperty( PRIMARY_PROPERTY, true );
-                        nameNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );
-                    }
-                }
-        );
+        Iterators.forEachRemaining( tx.findNodes( DATABASE_LABEL ), databaseNode ->
+        {
+            if ( !hasPrimaryAlias( databaseNode ) )
+            {
+                Node nameNode = tx.createNode( DATABASE_NAME_LABEL );
+                nameNode.setProperty( NAME_PROPERTY, databaseNode.getProperty( DATABASE_NAME_PROPERTY ) );
+                nameNode.setProperty( PRIMARY_PROPERTY, true );
+                nameNode.createRelationshipTo( databaseNode, TARGETS_RELATIONSHIP );
+            }
+        } );
     }
 
     private boolean hasPrimaryAlias( Node node )

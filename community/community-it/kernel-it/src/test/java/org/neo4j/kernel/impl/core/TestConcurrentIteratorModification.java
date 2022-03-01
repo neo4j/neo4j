@@ -65,12 +65,14 @@ class TestConcurrentIteratorModification
         try ( Transaction tx = db.beginTx() )
         {
             node3 = tx.createNode( label );
-            ResourceIterator<Node> iterator = tx.findNodes( label );
-            node3.removeLabel( label );
-            tx.createNode( label );
-            while ( iterator.hasNext() )
+            try ( ResourceIterator<Node> iterator = tx.findNodes( label ) )
             {
-                result.add( iterator.next() );
+                node3.removeLabel( label );
+                tx.createNode( label );
+                while ( iterator.hasNext() )
+                {
+                    result.add( iterator.next() );
+                }
             }
             tx.commit();
         }
@@ -102,12 +104,14 @@ class TestConcurrentIteratorModification
         try ( Transaction tx = db.beginTx() )
         {
             rel3 = tx.createNode().createRelationshipTo( tx.createNode(), type );
-            ResourceIterator<Relationship> iterator = tx.findRelationships( type );
-            rel3.delete();
-            tx.createNode().createRelationshipTo( tx.createNode(), type );
-            while ( iterator.hasNext() )
+            try ( ResourceIterator<Relationship> iterator = tx.findRelationships( type ) )
             {
-                result.add( iterator.next() );
+                rel3.delete();
+                tx.createNode().createRelationshipTo( tx.createNode(), type );
+                while ( iterator.hasNext() )
+                {
+                    result.add( iterator.next() );
+                }
             }
             tx.commit();
         }

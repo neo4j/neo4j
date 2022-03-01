@@ -305,9 +305,9 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
                 var dbms = ctx.dbms();
                 var db = dbms.database( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
 
-                try ( var txc = db.beginTx() )
+                try ( var txc = db.beginTx();
+                      var it = txc.findNodes( label( "my_dynamic_capability" ) ) )
                 {
-                    var it = txc.findNodes( label( "my_dynamic_capability" ) );
                     return it.stream().findAny().isPresent();
                 }
             } );

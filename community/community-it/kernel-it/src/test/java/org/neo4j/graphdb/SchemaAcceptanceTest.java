@@ -1921,9 +1921,9 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         }
 
         // but it should still be possible to find entities (without trying to use the index and getting exceptions)
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, "somevalue" ) )
         {
-            ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, "somevalue" );
             assertThat( nodes.hasNext() ).isTrue();
             assertThat( nodes.next().getId() ).isEqualTo( expectedNode );
             assertThat( nodes.hasNext() ).isFalse();

@@ -410,10 +410,10 @@ class DatabaseUpgradeTransactionIT
     private void setDbmsRuntime( DbmsRuntimeVersion runtimeVersion )
     {
         GraphDatabaseAPI system = (GraphDatabaseAPI) dbms.database( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
-        try ( var tx = system.beginTx() )
+        try ( var tx = system.beginTx();
+              var nodes = tx.findNodes( VERSION_LABEL ).stream() )
         {
-            tx.findNodes( VERSION_LABEL ).stream()
-                    .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
+            nodes.forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
             tx.commit();
         }
     }

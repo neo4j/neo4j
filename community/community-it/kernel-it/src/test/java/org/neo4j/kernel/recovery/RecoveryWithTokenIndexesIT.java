@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -146,8 +147,8 @@ class RecoveryWithTokenIndexesIT
 
         try ( Transaction tx = db.beginTx() )
         {
-            assertEquals( numberOfEntities, tx.findNodes( label ).stream().count() );
-            assertEquals( numberOfEntities, tx.findRelationships( type ).stream().count() );
+            assertEquals( numberOfEntities, Iterators.count( tx.findNodes( label ) ) );
+            assertEquals( numberOfEntities, Iterators.count( tx.findRelationships( type ) ) );
         }
     }
 
@@ -190,8 +191,8 @@ class RecoveryWithTokenIndexesIT
 
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfEntities, tx.findNodes( label ).stream().count() );
-            assertEquals( numberOfEntities, tx.findRelationships( type ).stream().count() );
+            assertEquals( numberOfEntities, Iterators.count( tx.findNodes( label ) ) );
+            assertEquals( numberOfEntities, Iterators.count( tx.findRelationships( type ) ) );
         }
     }
 
@@ -244,8 +245,8 @@ class RecoveryWithTokenIndexesIT
 
         try ( Transaction tx = recoveredDatabase.beginTx() )
         {
-            assertEquals( numberOfEntities, tx.findNodes( label ).stream().count() );
-            assertEquals( numberOfEntities, tx.findRelationships( type ).stream().count() );
+            assertEquals( numberOfEntities, Iterators.count( tx.findNodes( label ) ) );
+            assertEquals( numberOfEntities, Iterators.count( tx.findRelationships( type ) ) );
         }
     }
 

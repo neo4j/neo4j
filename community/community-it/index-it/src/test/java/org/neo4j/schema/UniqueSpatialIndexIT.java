@@ -138,15 +138,19 @@ class UniqueSpatialIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ResourceIterator<Node> origin = tx.findNodes( LABEL_ONE, KEY, point1 );
-            assertTrue( origin.hasNext() );
-            assertEquals( nodeIds.first().longValue(), origin.next().getId() );
-            assertFalse( origin.hasNext() );
+            try ( ResourceIterator<Node> origin = tx.findNodes( LABEL_ONE, KEY, point1 ) )
+            {
+                assertTrue( origin.hasNext() );
+                assertEquals( nodeIds.first().longValue(), origin.next().getId() );
+                assertFalse( origin.hasNext() );
+            }
 
-            ResourceIterator<Node> center = tx.findNodes( LABEL_ONE, KEY, point2 );
-            assertTrue( center.hasNext() );
-            assertEquals( nodeIds.other().longValue(), center.next().getId() );
-            assertFalse( center.hasNext() );
+            try ( ResourceIterator<Node> center = tx.findNodes( LABEL_ONE, KEY, point2 ) )
+            {
+                assertTrue( center.hasNext() );
+                assertEquals( nodeIds.other().longValue(), center.next().getId() );
+                assertFalse( center.hasNext() );
+            }
 
             tx.commit();
         }

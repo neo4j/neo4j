@@ -177,9 +177,10 @@ public abstract class SchemaConstraintProviderApprovalTest
 
     private static void addToResults( Transaction transaction, Map<TestValue,Set<Object>> results, TestValue value )
     {
-        ResourceIterator<Node> foundNodes = transaction.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
-        Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );
-        results.put( value, propertyValues );
+        try ( ResourceIterator<Node> foundNodes = transaction.findNodes( label( LABEL ), PROPERTY_KEY, value.value ) )
+        {
+            results.put( value, asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) ) );
+        }
     }
 
     private static class ArrayEqualityObject

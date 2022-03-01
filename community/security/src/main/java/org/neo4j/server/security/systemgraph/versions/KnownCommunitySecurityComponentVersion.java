@@ -21,7 +21,6 @@ package org.neo4j.server.security.systemgraph.versions;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
@@ -79,8 +79,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
     void updateInitialUserPassword( Transaction tx, User initialUser ) throws FormatException
     {
         // The set-initial-password command should only take effect if the only existing user is the default user with the default password.
-        ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL );
-        List<Node> users = nodes.stream().collect( Collectors.toList() );
+        List<Node> users = Iterators.asList( tx.findNodes( USER_LABEL ) );
         if ( users.size() == 0 )
         {
             securityLog.warn( String.format( "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name() ) );

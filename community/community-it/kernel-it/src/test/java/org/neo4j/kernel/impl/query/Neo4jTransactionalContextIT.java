@@ -35,6 +35,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
@@ -126,7 +127,10 @@ class Neo4jTransactionalContextIT
 
     private void getLocks( TransactionalContext ctx, String label )
     {
-        ctx.transaction().findNodes( Label.label( label ) ).stream().forEach( Node::delete );
+        try ( ResourceIterator<Node> nodes = ctx.transaction().findNodes( Label.label( label ) ) )
+        {
+            nodes.stream().forEach( Node::delete );
+        }
     }
 
     private long getActiveLockCount( TransactionalContext ctx )

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.internal.helpers.collection.Iterators
 
 import java.util
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -160,7 +161,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(labelsRemoved = expectedLabelsRemoved)
     removeLabels.foreach { label =>
       withClue(s"Number of nodes with label '$label' ") {
-        tx.findNodes(Label.label(label)).stream().count() shouldBe 0
+        Iterators.count(tx.findNodes(Label.label(label))) shouldBe 0
       }
     }
   }

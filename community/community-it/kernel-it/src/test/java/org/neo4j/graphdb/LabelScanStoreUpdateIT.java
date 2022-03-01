@@ -208,9 +208,9 @@ class LabelScanStoreUpdateIT
 
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( label ) )
         {
-            ResourceIterator<Node> nodes = tx.findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
             assertThat( nodeList ).as( sizeMismatchMessage ).hasSize( expectedNodeIds.length );
             int index = 0;

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -127,10 +128,10 @@ class PropertyIndexPopulationIT
 
     private static void verifyData( Transaction tx )
     {
-        assertThat( tx.findNodes( PERSON ).stream().count() ).isEqualTo( 1 );
-        assertThat( tx.findRelationships( FRIEND ).stream().count() ).isEqualTo( 1 );
-        assertThat( tx.findNodes( PERSON, "name", "some name" ).stream().count() ).isEqualTo( 1 );
-        assertThat( tx.findRelationships( FRIEND, "tag", "some value" ).stream().count() ).isEqualTo( 1 );
+        assertThat( Iterators.count( tx.findNodes( PERSON ) ) ).isEqualTo( 1 );
+        assertThat( Iterators.count( tx.findRelationships( FRIEND ) ) ).isEqualTo( 1 );
+        assertThat( Iterators.count( tx.findNodes( PERSON, "name", "some name" ) ) ).isEqualTo( 1 );
+        assertThat( Iterators.count( tx.findRelationships( FRIEND, "tag", "some value" ) ) ).isEqualTo( 1 );
     }
 
     private void populateData()

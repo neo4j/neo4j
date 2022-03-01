@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 
@@ -64,7 +65,7 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     {
         SystemGraphComponent.executeWithFullAccess( systemDb, tx ->
         {
-            tx.findNodes( OLD_COMPONENT_LABEL ).forEachRemaining( Node::delete );
+            Iterators.forEachRemaining( tx.findNodes( OLD_COMPONENT_LABEL ), Node::delete );
             setToLatestVersion( tx );
         } );
     }

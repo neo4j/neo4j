@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -35,6 +37,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -77,6 +80,21 @@ class TestCommonIterators
     }
 
     @Test
+    void firstElementClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed::setTrue );
+
+        // when
+        var single = Iterators.first( iterator );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( single ).isEqualTo( "a" );
+    }
+
+    @Test
     void testLastElement()
     {
         Object object = new Object();
@@ -96,6 +114,21 @@ class TestCommonIterators
         assertEquals( object2, Iterators.lastOrNull( asList( object, object2 ).iterator() ) );
         assertEquals( object, Iterators.lastOrNull( singletonList( object ).iterator() ) );
         assertNull( Iterators.lastOrNull( Collections.emptyIterator() ) );
+    }
+
+    @Test
+    void lastElementClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed::setTrue );
+
+        // when
+        var single = Iterators.last( iterator );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( single ).isEqualTo( "c" );
     }
 
     @Test
@@ -126,12 +159,42 @@ class TestCommonIterators
     }
 
     @Test
+    void singleElementClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a" ), closed::setTrue );
+
+        // when
+        var single = Iterators.single( iterator );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( single ).isEqualTo( "a" );
+    }
+
+    @Test
     void getItemFromEnd()
     {
         Iterable<Integer> ints = asList( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 );
         assertEquals( (Integer) 9, Iterators.fromEnd( ints.iterator(), 0 ) );
         assertEquals( (Integer) 8, Iterators.fromEnd( ints.iterator(), 1 ) );
         assertEquals( (Integer) 7, Iterators.fromEnd( ints.iterator(), 2 ) );
+    }
+
+    @Test
+    void getItemFromEndClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed::setTrue );
+
+        // when
+        var end = Iterators.fromEnd( iterator, 1 );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( end ).isEqualTo( "b" );
     }
 
     @Test
@@ -221,5 +284,108 @@ class TestCommonIterators
     {
         assertEquals( "[a, b, c]", Iterators.toString( Iterators.iterator( "a", "b", "c" ), Object::toString, 5 ) );
         assertEquals( "[a, b, ...]", Iterators.toString( Iterators.iterator( "a", "b", "c" ), Object::toString, 2 ) );
+    }
+
+    @Test
+    void iteratorsToStringClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed::setTrue );
+
+        // when
+        var str = Iterators.toString( iterator, Object::toString, 5 );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( str ).isEqualTo( "[a, b, c]" );
+    }
+
+    @Test
+    void forEachRemaining()
+    {
+        // given
+        var items = Sets.newHashSet();
+        // when
+        Iterators.forEachRemaining( Iterators.iterator( "a", "b", "c" ), items::add );
+        // then
+        assertThat( items ).containsExactly( "a", "b", "c" );
+    }
+
+    @Test
+    void forEachRemainingWithAlreadyConsumed()
+    {
+        // given
+        var items = Sets.newHashSet();
+        Iterator<String> iterator = Iterators.iterator( "a", "b", "c" );
+        // when
+        iterator.next();
+        Iterators.forEachRemaining( iterator, items::add );
+        // then
+        assertThat( items ).containsExactly( "b", "c" );
+    }
+
+    @Test
+    void forEachRemainingAllAlreadyConsumed()
+    {
+        // given
+        var items = Sets.newHashSet();
+        Iterator<String> iterator = Iterators.iterator( "a", "b", "c" );
+        // when
+        iterator.next();
+        iterator.next();
+        iterator.next();
+        Iterators.forEachRemaining( iterator, items::add );
+        // then
+        assertThat( items ).isEmpty();
+    }
+
+    @Test
+    void forEachRemainingClosesResourceIterator()
+    {
+        // given
+        var closed = new MutableBoolean();
+        var items = Sets.newHashSet();
+        var iterator = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed::setTrue );
+
+        // when
+        Iterators.forEachRemaining( iterator, items::add );
+
+        // then
+        assertThat( closed.getValue() ).isTrue();
+        assertThat( items ).containsExactly( "a", "b", "c" );
+    }
+
+    @Test
+    void iteratorsEqual()
+    {
+        // given
+        var items1 = List.of( 1, 2, 3 );
+        var items2 = List.of( 1, 2 );
+        var items3 = List.of( 1, 2, 3, 4 );
+
+        // when / then
+        assertThat( Iterators.iteratorsEqual( items1.iterator(), items1.iterator() ) ).isTrue();
+        assertThat( Iterators.iteratorsEqual( items1.iterator(), items2.iterator() ) ).isFalse();
+        assertThat( Iterators.iteratorsEqual( items1.iterator(), items3.iterator() ) ).isFalse();
+        assertThat( Iterators.iteratorsEqual( items2.iterator(), items1.iterator() ) ).isFalse();
+        assertThat( Iterators.iteratorsEqual( items3.iterator(), items1.iterator() ) ).isFalse();
+    }
+
+    @Test
+    void iteratorsEqualClosesResourceIterator()
+    {
+        // given
+        var closed1 = new MutableBoolean();
+        var closed2 = new MutableBoolean();
+        var iterator1 = Iterators.resourceIterator( Iterators.iterator( "a", "b", "c" ), closed1::setTrue );
+        var iterator2 = Iterators.resourceIterator( Iterators.iterator( "a", "d" ), closed2::setTrue );
+
+        // when
+        assertThat( Iterators.iteratorsEqual( iterator1, iterator2 ) ).isFalse();
+
+        // then
+        assertThat( closed1.getValue() ).isTrue();
+        assertThat( closed2.getValue() ).isTrue();
     }
 }

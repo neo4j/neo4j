@@ -37,6 +37,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -73,7 +74,14 @@ public final class Iterators
      */
     public static <T> T firstOrNull( Iterator<T> iterator )
     {
-        return iterator.hasNext() ? iterator.next() : null;
+        try
+        {
+            return iterator.hasNext() ? iterator.next() : null;
+        }
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -88,7 +96,14 @@ public final class Iterators
      */
     public static <T> T firstOrDefault( Iterator<T> iterator, T defaultValue )
     {
-        return iterator.hasNext() ? iterator.next() : defaultValue;
+        try
+        {
+            return iterator.hasNext() ? iterator.next() : defaultValue;
+        }
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -116,12 +131,19 @@ public final class Iterators
      */
     static <T> T lastOrNull( Iterator<T> iterator )
     {
-        T result = null;
-        while ( iterator.hasNext() )
+        try
         {
-            result = iterator.next();
+            T result = null;
+            while ( iterator.hasNext() )
+            {
+                result = iterator.next();
+            }
+            return result;
         }
-        return result;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -203,16 +225,23 @@ public final class Iterators
      */
     private static <T> T fromEndOrNull( Iterator<T> iterator, int n )
     {
-        Deque<T> trail = new ArrayDeque<>( n );
-        while ( iterator.hasNext() )
+        try
         {
-            if ( trail.size() > n )
+            Deque<T> trail = new ArrayDeque<>( n );
+            while ( iterator.hasNext() )
             {
-                trail.removeLast();
+                if ( trail.size() > n )
+                {
+                    trail.removeLast();
+                }
+                trail.addFirst( iterator.next() );
             }
-            trail.addFirst( iterator.next() );
+            return trail.size() == n + 1 ? trail.getLast() : null;
         }
-        return trail.size() == n + 1 ? trail.getLast() : null;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -225,19 +254,21 @@ public final class Iterators
      */
     public static boolean iteratorsEqual( Iterator<?> first, Iterator<?> other )
     {
-        while ( true )
+        try
         {
-            if ( first.hasNext() && other.hasNext() )
+            while ( first.hasNext() && other.hasNext() )
             {
-                if ( !first.next().equals( other.next() ) )
+                if ( !Objects.equals( first.next(), other.next() ) )
                 {
                     return false;
                 }
             }
-            else
-            {
-                return first.hasNext() == other.hasNext();
-            }
+            return first.hasNext() == other.hasNext();
+        }
+        finally
+        {
+            tryCloseResource( first );
+            tryCloseResource( other );
         }
     }
 
@@ -279,10 +310,7 @@ public final class Iterators
         }
         finally
         {
-            if ( iterator instanceof Resource )
-            {
-                ((Resource) iterator).close();
-            }
+            tryCloseResource( iterator );
         }
     }
 
@@ -298,11 +326,18 @@ public final class Iterators
     public static <C extends Collection<T>,T> C addToCollection( Iterator<T> iterator,
             C collection )
     {
-        while ( iterator.hasNext() )
+        try
         {
-            collection.add( iterator.next() );
+            while ( iterator.hasNext() )
+            {
+                collection.add( iterator.next() );
+            }
+            return collection;
         }
-        return collection;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -316,11 +351,18 @@ public final class Iterators
      */
     private static <C extends Collection<T>,T> C addToCollectionUnique( Iterator<T> iterator, C collection )
     {
-        while ( iterator.hasNext() )
+        try
         {
-            addUnique( collection, iterator.next() );
+            while ( iterator.hasNext() )
+            {
+                addUnique( collection, iterator.next() );
+            }
+            return collection;
         }
-        return collection;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     private static <T, C extends Collection<T>> void addUnique( C collection, T item )
@@ -379,15 +421,22 @@ public final class Iterators
      */
     public static <T> long count( Iterator<T> iterator, Predicate<T> filter )
     {
-        long result = 0;
-        while ( iterator.hasNext() )
+        try
         {
-            if ( filter.test( iterator.next() ) )
+            long result = 0;
+            while ( iterator.hasNext() )
             {
-                result++;
+                if ( filter.test( iterator.next() ) )
+                {
+                    result++;
+                }
             }
+            return result;
         }
-        return result;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     public static <T> Collection<T> asCollection( Iterator<T> iterable )
@@ -402,12 +451,19 @@ public final class Iterators
 
     public static <T, EX extends Exception> List<T> asList( RawIterator<T, EX> iterator ) throws EX
     {
-        List<T> out = new ArrayList<>();
-        while ( iterator.hasNext() )
+        try
         {
-            out.add( iterator.next() );
+            List<T> out = new ArrayList<>();
+            while ( iterator.hasNext() )
+            {
+                out.add( iterator.next() );
+            }
+            return out;
         }
-        return out;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     public static <T> Set<T> asSet( Iterator<T> iterator )
@@ -462,18 +518,25 @@ public final class Iterators
     /**
      * Creates a {@link Set} from an array of items.
      *
-     * @param items the items to add to the set.
+     * @param iterator the items to add to the set.
      * @param <T> the type of the items
      * @return the {@link Set} containing the items.
      */
-    public static <T> Set<T> asUniqueSet( Iterator<T> items )
+    public static <T> Set<T> asUniqueSet( Iterator<T> iterator )
     {
-        Set<T> set = new HashSet<>();
-        while ( items.hasNext() )
+        try
         {
-            addUnique( set, items.next() );
+            Set<T> set = new HashSet<>();
+            while ( iterator.hasNext() )
+            {
+                addUnique( set, iterator.next() );
+            }
+            return set;
         }
-        return set;
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     public static <T> SortedSet<T> asSortedSet( Comparator<T> comparator, T... items )
@@ -627,6 +690,7 @@ public final class Iterators
                 }
                 else
                 {
+                    tryCloseResource( iterator );
                     throw new NoSuchElementException();
                 }
             }
@@ -658,6 +722,7 @@ public final class Iterators
                 }
                 else
                 {
+                    tryCloseResource( iterator );
                     throw new NoSuchElementException();
                 }
             }
@@ -676,18 +741,25 @@ public final class Iterators
      */
     public static <T> String toString( Iterator<T> iterator, Function<T,String> toString, int maxItems )
     {
-        StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
-        while ( iterator.hasNext() && maxItems > 0 )
+        try
         {
-            String str = toString.apply( iterator.next() );
-            joiner.add( str );
-            maxItems--;
+            StringJoiner joiner = new StringJoiner( ", ", "[", "]" );
+            while ( iterator.hasNext() && maxItems > 0 )
+            {
+                String str = toString.apply( iterator.next() );
+                joiner.add( str );
+                maxItems--;
+            }
+            if ( iterator.hasNext() )
+            {
+                joiner.add( "..." );
+            }
+            return joiner.toString();
         }
-        if ( iterator.hasNext() )
+        finally
         {
-            joiner.add( "..." );
+            tryCloseResource( iterator );
         }
-        return joiner.toString();
     }
 
     @SuppressWarnings( "unchecked" )
@@ -839,11 +911,54 @@ public final class Iterators
         Objects.requireNonNull( iterator );
         Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize( iterator, characteristics );
         Stream<T> stream = StreamSupport.stream( spliterator, false );
-        if ( iterator instanceof Resource )
+        if ( iterator instanceof Resource resource )
         {
-            return stream.onClose( ((Resource) iterator)::close );
+            return stream.onClose( resource::close );
         }
         return stream;
+    }
+
+    /**
+     * Process each remaining item in the iterator
+     * <p>
+     * <b>Note:</b> the iterator will be closed via {@link Resource#close()} if the given iterator implements
+     * {@link Resource}.
+     *
+     * @param iterator the iterator to process
+     * @param consumer the consumer of each remaining item in the iterator
+     * @param <T> the type of elements in the given iterator
+     */
+    public static <T> void forEachRemaining( Iterator<T> iterator, Consumer<? super T> consumer )
+    {
+        try
+        {
+            iterator.forEachRemaining( consumer );
+        }
+        finally
+        {
+            tryCloseResource( iterator );
+        }
+    }
+
+    /**
+     * Close the provided {@code iterator} if it implements {@link Resource}.
+     *
+     * @param iterator the iterator to check for closing
+     */
+    public static void tryCloseResource( Iterator<?> iterator )
+    {
+        if ( iterator instanceof Resource closeable )
+        {
+            closeable.close();
+        }
+    }
+
+    private static void tryCloseResource( RawIterator<?,?> iterator )
+    {
+        if ( iterator instanceof Resource closeable )
+        {
+            closeable.close();
+        }
     }
 
     private static class EmptyResourceIterator<E> implements ResourceIterator<E>

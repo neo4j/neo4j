@@ -187,9 +187,10 @@ public abstract class IndexProviderApprovalTest
 
     private static void addToResults( Transaction tx, Map<TestValue,Set<Object>> results, TestValue value )
     {
-        ResourceIterator<Node> foundNodes = tx.findNodes( label( LABEL ), PROPERTY_KEY, value.value );
-        Set<Object> propertyValues = asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) );
-        results.put( value, propertyValues );
+        try ( ResourceIterator<Node> foundNodes = tx.findNodes( label( LABEL ), PROPERTY_KEY, value.value ) )
+        {
+            results.put( value, asSet( Iterators.map( PROPERTY_EXTRACTOR, foundNodes ) ) );
+        }
     }
 
     private static class ArrayEqualityObject

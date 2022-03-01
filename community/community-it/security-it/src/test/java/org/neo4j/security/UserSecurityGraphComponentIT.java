@@ -249,9 +249,9 @@ class UserSecurityGraphComponentIT
     {
         HashMap<String, Object> usernameAndIds = new HashMap<>();
 
-        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
+        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED );
+              ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL ) )
         {
-             ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL );
              while ( nodes.hasNext() )
              {
                  Node userNode = nodes.next();

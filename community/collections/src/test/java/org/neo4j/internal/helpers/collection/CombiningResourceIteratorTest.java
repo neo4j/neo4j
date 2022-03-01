@@ -42,7 +42,7 @@ class CombiningResourceIteratorTest
         CombiningResourceIterator<Long> combingIterator = new CombiningResourceIterator<>( iterator(it1, it2) );
 
         // When I iterate through it, things come back in the right order
-        assertThat( Iterators.asList( combingIterator ) ).isEqualTo( asList( 1L, 2L, 3L, 5L, 6L, 7L ) );
+        assertThat( combingIterator ).toIterable().containsExactly( 1L, 2L, 3L, 5L, 6L, 7L );
 
         // Then
         verify(it1, never()).close();

@@ -23,6 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -66,11 +68,12 @@ class DbmsRuntimeVersionTest
 
     private void setRuntimeVersion( DbmsRuntimeVersion runtimeVersion )
     {
-        try ( var tx = systemDb.beginTx() )
+        try ( var tx = systemDb.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( VERSION_LABEL ) )
         {
-            tx.findNodes( VERSION_LABEL )
-              .stream()
-              .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
+            nodes
+                    .stream()
+                    .forEach( dbmsRuntimeNode -> dbmsRuntimeNode.setProperty( ComponentVersion.DBMS_RUNTIME_COMPONENT, runtimeVersion.getVersion() ) );
 
             tx.commit();
         }

@@ -67,6 +67,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ProcessorAssignmentStrategies;
 import org.neo4j.internal.batchimport.staging.StageExecution;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -414,8 +415,8 @@ public class ParallelBatchImporterTest
 
             // Labels
             long labelScanStoreEntryCount = stream( tx.getAllLabels() )
-                .flatMap( l -> tx.findNodes( l ).stream() )
-                .count();
+                    .mapToLong( l -> Iterators.count( tx.findNodes( l ) ) )
+                    .sum();
 
             assertEquals(
                 allNodesScanLabelCount, labelScanStoreEntryCount, format( "Expected label scan store and node store to have same number labels. But %n" +

@@ -32,6 +32,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
@@ -244,9 +245,10 @@ public class SchemaIndexAcceptanceTest
 
     private static void doStuff( GraphDatabaseService db, Label label, String propertyKey )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, 3323 ) )
         {
-            for ( Node node : loop( tx.findNodes( label, propertyKey, 3323 ) ) )
+            for ( Node node : loop( nodes ) )
             {
                 count( node.getLabels() );
             }

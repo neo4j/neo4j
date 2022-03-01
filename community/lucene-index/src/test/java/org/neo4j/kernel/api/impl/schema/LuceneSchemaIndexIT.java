@@ -85,20 +85,17 @@ class LuceneSchemaIndexIT
             indexAccessor.force( NULL_CONTEXT );
 
             // When & Then
+            List<String> indexFileNames = asFileInsidePartitionNames( indexAccessor.snapshotFiles() );
+
             List<String> singlePartitionFileTemplates = Arrays.asList( ".cfe", ".cfs", ".si", "segments_1" );
-            try ( ResourceIterator<Path> snapshotIterator = indexAccessor.snapshotFiles() )
+            assertTrue( indexFileNames.size() >= (singlePartitionFileTemplates.size() * 4), "Expect files from 4 partitions" );
+            Map<String,Integer> templateMatches =
+                    countTemplateMatches( singlePartitionFileTemplates, indexFileNames );
+
+            for ( String fileTemplate : singlePartitionFileTemplates )
             {
-                List<String> indexFileNames = asFileInsidePartitionNames( snapshotIterator );
-
-                assertTrue( indexFileNames.size() >= (singlePartitionFileTemplates.size() * 4), "Expect files from 4 partitions" );
-                Map<String,Integer> templateMatches =
-                        countTemplateMatches( singlePartitionFileTemplates, indexFileNames );
-
-                for ( String fileTemplate : singlePartitionFileTemplates )
-                {
-                    Integer matches = templateMatches.get( fileTemplate );
-                    assertTrue( matches >= 4, "Expect to see at least 4 matches for template: " + fileTemplate );
-                }
+                Integer matches = templateMatches.get( fileTemplate );
+                assertTrue( matches >= 4, "Expect to see at least 4 matches for template: " + fileTemplate );
             }
         }
     }

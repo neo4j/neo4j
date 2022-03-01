@@ -274,10 +274,8 @@ class ImportCommandTest
             long nodeCount = Iterables.count( tx.getAllNodes() );
             assertEquals( 4097, nodeCount );
 
-            ResourceIterator<Node> nodes = tx.findNodes( label( "FIRST 4096" ) );
-            assertEquals( 1, Iterators.asList( nodes ).size() );
-            nodes = tx.findNodes( label( "SECOND 4096" ) );
-            assertEquals( 1, Iterators.asList( nodes ).size() );
+            assertThat( Iterators.count( tx.findNodes( label( "FIRST 4096" ) ) ) ).isEqualTo( 1 );
+            assertThat( Iterators.count( tx.findNodes( label( "SECOND 4096" ) ) ) ).isEqualTo( 1 );
             tx.commit();
         }
     }

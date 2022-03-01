@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -223,10 +224,10 @@ public class TextIndexIT
         // When the nodes are queried
         try ( var tx = db.beginTx() )
         {
-            assertThat( tx.findNodes( person, "name", "Smith", CONTAINS ).stream().count() ).isEqualTo( 4 );
-            assertThat( tx.findNodes( person, "name", "Unknown", CONTAINS ).stream().count() ).isEqualTo( 0 );
-            assertThat( tx.findNodes( person, "name", "Smith", PREFIX ).stream().count() ).isEqualTo( 2 );
-            assertThat( tx.findNodes( person, "name", "Smith", SUFFIX ).stream().count() ).isEqualTo( 1 );
+            assertThat( Iterators.count( tx.findNodes( person, "name", "Smith", CONTAINS ) ) ).isEqualTo( 4 );
+            assertThat( Iterators.count( tx.findNodes( person, "name", "Unknown", CONTAINS ) ) ).isEqualTo( 0 );
+            assertThat( Iterators.count( tx.findNodes( person, "name", "Smith", PREFIX ) ) ).isEqualTo( 2 );
+            assertThat( Iterators.count( tx.findNodes( person, "name", "Smith", SUFFIX ) ) ).isEqualTo( 1 );
         }
 
         // Then all queries touch only text index
@@ -267,10 +268,10 @@ public class TextIndexIT
         // When the relationships are queried
         try ( var tx = db.beginTx() )
         {
-            assertThat( tx.findRelationships( relation, "since", "years", CONTAINS ).stream().count() ).isEqualTo( 2 );
-            assertThat( tx.findRelationships( relation, "since", "unknown", CONTAINS ).stream().count() ).isEqualTo( 0 );
-            assertThat( tx.findRelationships( relation, "since", "five", PREFIX ).stream().count() ).isEqualTo( 1 );
-            assertThat( tx.findRelationships( relation, "since", "months", SUFFIX ).stream().count() ).isEqualTo( 2 );
+            assertThat( Iterators.count( tx.findRelationships( relation, "since", "years", CONTAINS ) ) ).isEqualTo( 2 );
+            assertThat( Iterators.count(tx.findRelationships( relation, "since", "unknown", CONTAINS ) ) ).isEqualTo( 0 );
+            assertThat( Iterators.count(tx.findRelationships( relation, "since", "five", PREFIX ) ) ).isEqualTo( 1 );
+            assertThat( Iterators.count(tx.findRelationships( relation, "since", "months", SUFFIX ) ) ).isEqualTo( 2 );
         }
 
         // Then all queries touch only text index
@@ -311,7 +312,7 @@ public class TextIndexIT
         try ( var tx = db.beginTx() )
         {
             tx.schema().awaitIndexesOnline( 2, MINUTES );
-            assertThat( tx.findNodes( person, "name", "Smith", CONTAINS ).stream().count() ).isEqualTo( 1 );
+            assertThat( Iterators.count( tx.findNodes( person, "name", "Smith", CONTAINS ) ) ).isEqualTo( 1 );
             assertThat( monitor.accessed( org.neo4j.internal.schema.IndexType.TEXT ) ).isEqualTo( 1 );
         }
 

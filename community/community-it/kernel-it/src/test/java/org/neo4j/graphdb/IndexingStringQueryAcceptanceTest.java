@@ -310,10 +310,10 @@ public class IndexingStringQueryAcceptanceTest
                     public LongSet findEntities( Transaction tx, String token, String propertyName, String template, StringSearchMode searchMode )
                     {
                         MutableLongSet found = new LongHashSet();
-                        tx.findNodes( Label.label( token ), propertyName, template, searchMode )
-                          .stream()
-                          .mapToLong( Node::getId )
-                          .forEach( found::add );
+                        try ( var nodes = tx.findNodes( Label.label( token ), propertyName, template, searchMode ).stream() )
+                        {
+                            nodes.mapToLong( Node::getId ).forEach( found::add );
+                        }
                         return found;
                     }
                 },
@@ -353,10 +353,10 @@ public class IndexingStringQueryAcceptanceTest
                     public LongSet findEntities( Transaction tx, String token, String propertyName, String template, StringSearchMode searchMode )
                     {
                         MutableLongSet found = new LongHashSet();
-                        tx.findRelationships( RelationshipType.withName( token ), propertyName, template, searchMode )
-                          .stream()
-                          .mapToLong( Relationship::getId )
-                          .forEach( found::add );
+                        try ( var relationships = tx.findRelationships( RelationshipType.withName( token ), propertyName, template, searchMode ).stream() )
+                        {
+                            relationships.mapToLong( Relationship::getId ).forEach( found::add );
+                        }
                         return found;
                     }
                 }

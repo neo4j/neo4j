@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -48,9 +49,12 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 
     public Map<NamedDatabaseId,TopologyGraphDbmsModel.DatabaseAccess> getAllDatabaseAccess()
     {
-        return tx.findNodes( DATABASE_LABEL ).stream()
-                 .collect( Collectors.toMap( CommunityTopologyGraphDbmsModel::getDatabaseId,
-                                             CommunityTopologyGraphDbmsModel::getDatabaseAccess ) );
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL ) )
+        {
+            return nodes.stream()
+                        .collect( Collectors.toMap( CommunityTopologyGraphDbmsModel::getDatabaseId,
+                                                    CommunityTopologyGraphDbmsModel::getDatabaseAccess ) );
+        }
     }
 
     private static TopologyGraphDbmsModel.DatabaseAccess getDatabaseAccess( Node databaseNode )
@@ -88,17 +92,23 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     @Override
     public Set<NamedDatabaseId> getAllDatabaseIds()
     {
-        return tx.findNodes( DATABASE_LABEL ).stream()
-                     .map( CommunityTopologyGraphDbmsModel::getDatabaseId )
-                     .collect( Collectors.toUnmodifiableSet() );
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_LABEL ) )
+        {
+            return nodes.stream()
+                        .map( CommunityTopologyGraphDbmsModel::getDatabaseId )
+                        .collect( Collectors.toUnmodifiableSet() );
+        }
     }
 
     private Map<String,NamedDatabaseId> getAllDatabaseAliases0()
     {
-        return tx.findNodes( DATABASE_NAME_LABEL ).stream()
-                 .flatMap( alias -> getTargetedDatabase( alias )
-                         .flatMap( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
-                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+        try ( ResourceIterator<Node> nodes = tx.findNodes( DATABASE_NAME_LABEL ) )
+        {
+            return nodes.stream()
+                        .flatMap( alias -> getTargetedDatabase( alias )
+                                .flatMap( db -> aliasDatabaseIdPair( alias, db ) ).stream() )
+                        .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+        }
     }
 
     private Optional<Map.Entry<String,NamedDatabaseId>> aliasDatabaseIdPair( Node alias, NamedDatabaseId targetedDatabase )

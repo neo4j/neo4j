@@ -251,9 +251,9 @@ class IndexPopulationIT
         waitForOnlineIndexes();
 
         // then
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction tx = database.beginTx();
+              ResourceIterator<Node> nodes = tx.findNodes( nodeLabel, key, value ) )
         {
-            ResourceIterator<Node> nodes = tx.findNodes( nodeLabel, key, value );
             long nodeCount = Iterators.count( nodes );
             assertEquals( 1, nodeCount, "expected exactly one hit in index but was " );
             nodes.close();

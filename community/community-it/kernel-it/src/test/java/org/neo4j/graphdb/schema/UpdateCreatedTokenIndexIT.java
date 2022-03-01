@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
@@ -132,7 +133,7 @@ class UpdateCreatedTokenIndexIT
 
         try ( var tx = db.beginTx() )
         {
-            var labeledNodes = tx.findNodes( LABEL_ONE ).stream().count();
+            var labeledNodes = Iterators.count( tx.findNodes( LABEL_ONE ));
             var allNodex = tx.getAllNodes().stream().collect( toList() );
             Assertions.assertThat( allNodex.stream().filter( n -> n.hasLabel( LABEL_ONE ) ).count() ).isEqualTo( labeledNodes );
         }

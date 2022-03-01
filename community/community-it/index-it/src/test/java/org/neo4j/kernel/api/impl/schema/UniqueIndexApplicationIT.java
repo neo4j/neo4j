@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -196,9 +197,12 @@ public class UniqueIndexApplicationIT
         return graphDb ->
         {
             List<Long> ids = new ArrayList<>();
-            for ( Node node : loop( tx.findNodes( label, propertyKey, value ) ) )
+            try ( ResourceIterator<Node> nodes = tx.findNodes( label, propertyKey, value ) )
             {
-                ids.add( node.getId() );
+                for ( Node node : loop( nodes ) )
+                {
+                    ids.add( node.getId() );
+                }
             }
             return ids;
         };

@@ -40,6 +40,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
@@ -72,7 +73,6 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.glassfish.jersey.internal.guava.Iterators.size;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -420,8 +420,8 @@ class LabelsAcceptanceTest
         // THEN
         try ( Transaction transaction = db.beginTx() )
         {
-            assertTrue( size( transaction.findNodes( Labels.MY_LABEL ) ) > 0 );
-            assertEquals( 0, size( transaction.findNodes( Labels.MY_OTHER_LABEL ) ) );
+            assertTrue( Iterators.count( transaction.findNodes( Labels.MY_LABEL ) ) > 0 );
+            assertEquals( 0, Iterators.count( transaction.findNodes( Labels.MY_OTHER_LABEL ) ) );
         }
     }
 

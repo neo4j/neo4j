@@ -34,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -97,7 +98,7 @@ public class FindRelationshipsIT
         List<Relationship> result;
         try ( Transaction tx = db.beginTx() )
         {
-            result = tx.findRelationships( REL_TYPE ).stream().collect( Collectors.toList() );
+            result = Iterators.asList( tx.findRelationships( REL_TYPE ) );
         }
         assertThat( result ).containsExactlyInAnyOrder( rel1, rel2 );
     }
@@ -139,7 +140,7 @@ public class FindRelationshipsIT
             Iterable<Relationship> nodeRels = tx.findNode( label, "key", "value" ).getRelationships();
             nodeRels.forEach( Relationship::delete );
 
-            result = tx.findRelationships( REL_TYPE ).stream().collect( Collectors.toList() );
+            result = Iterators.asList( tx.findRelationships( REL_TYPE ) );
         }
         assertThat( result ).containsExactlyInAnyOrder( rel1, rel2, rel3 );
     }

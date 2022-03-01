@@ -478,10 +478,13 @@ public class IndexingCompositeQueryAcceptanceTest
 
     private static LongSet mapToIds( ResourceIterator<? extends Entity> nodes )
     {
-        MutableLongSet found = new LongHashSet();
-        nodes.stream()
-             .mapToLong( Entity::getId )
-             .forEach( found::add );
-        return found;
+        try ( nodes )
+        {
+            MutableLongSet found = new LongHashSet();
+            nodes.stream()
+                 .mapToLong( Entity::getId )
+                 .forEach( found::add );
+            return found;
+        }
     }
 }

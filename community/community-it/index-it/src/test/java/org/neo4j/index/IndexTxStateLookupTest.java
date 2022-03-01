@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -307,13 +308,13 @@ public class IndexTxStateLookupTest
             String key = "prop";
             Node node = tx.createNode( label );
             node.setProperty( key, this.store );
-            assertTrue( tx.findNodes( label, key, this.lookup ).hasNext() );
+            assertTrue( exists( tx.findNodes( label, key, this.lookup ) ) );
 
             // when
             node.delete();
 
             // then
-            assertFalse( tx.findNodes( label, key, this.lookup ).hasNext() );
+            assertFalse( exists( tx.findNodes( label, key, this.lookup ) ) );
         }
     }
 
@@ -330,13 +331,13 @@ public class IndexTxStateLookupTest
             String key = "prop";
             Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
             relationship.setProperty( key, this.store );
-            assertTrue( tx.findRelationships( type, key, this.lookup ).hasNext() );
+            assertTrue( exists( tx.findRelationships( type, key, this.lookup ) ) );
 
             // when
             relationship.delete();
 
             // then
-            assertFalse( tx.findRelationships( type, key, this.lookup ).hasNext() );
+            assertFalse( exists( tx.findRelationships( type, key, this.lookup ) ) );
         }
     }
 
@@ -355,13 +356,13 @@ public class IndexTxStateLookupTest
             Node node = tx.createNode( label );
             node.setProperty( key, this.store );
             node.setProperty( key2, this.store );
-            assertTrue( tx.findNodes( label, key, this.lookup ).hasNext() );
+            assertTrue( exists( tx.findNodes( label, key, this.lookup ) ) );
 
             // when
             node.delete();
 
             // then
-            assertFalse( tx.findNodes( label, key, this.lookup ).hasNext() );
+            assertFalse( exists( tx.findNodes( label, key, this.lookup ) ) );
         }
     }
 
@@ -380,13 +381,21 @@ public class IndexTxStateLookupTest
             Relationship relationship = tx.createNode().createRelationshipTo( tx.createNode(), type );
             relationship.setProperty( key, this.store );
             relationship.setProperty( key2, this.store );
-            assertTrue( tx.findRelationships( type, key, this.lookup ).hasNext() );
+            assertTrue( exists( tx.findRelationships( type, key, this.lookup ) ) );
 
             // when
             relationship.delete();
 
             // then
-            assertFalse( tx.findRelationships( type, key, this.lookup ).hasNext() );
+            assertFalse( exists( tx.findRelationships( type, key, this.lookup ) ) );
+        }
+    }
+
+    private static boolean exists( ResourceIterator<?> iterator )
+    {
+        try ( iterator )
+        {
+            return iterator.hasNext();
         }
     }
 }
