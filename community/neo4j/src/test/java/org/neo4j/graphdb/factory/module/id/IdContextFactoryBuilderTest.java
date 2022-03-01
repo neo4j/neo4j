@@ -19,7 +19,9 @@
  */
 package org.neo4j.graphdb.factory.module.id;
 
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -30,6 +32,8 @@ import java.util.function.LongSupplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.BufferedIdController;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory;
+import org.neo4j.internal.id.FreeIds;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordIdType;
@@ -38,10 +42,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -59,6 +64,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
 @PageCacheExtension
+@ExtendWith( LifeExtension.class )
 class IdContextFactoryBuilderTest
 {
     private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
@@ -69,6 +75,8 @@ class IdContextFactoryBuilderTest
     private DefaultFileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private LifeSupport life;
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
 
     @Test
@@ -93,7 +101,9 @@ class IdContextFactoryBuilderTest
         assertThat( idContext.getIdController() ).isInstanceOf( BufferedIdController.class );
         assertThat( bufferedGeneratorFactory ).isInstanceOf( BufferingIdGeneratorFactory.class );
 
-        ((BufferingIdGeneratorFactory)bufferedGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ), EmptyMemoryTracker.INSTANCE );
+        ((BufferingIdGeneratorFactory) bufferedGeneratorFactory).initialize( fs, testDirectory.file( "buffer" ), config,
+                () -> new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 ), s -> true, EmptyMemoryTracker.INSTANCE );
+        life.add( idContext.getIdController() );
         Path file = testDirectory.file( "a" );
         RecordIdType idType = RecordIdType.NODE;
         LongSupplier highIdSupplier = () -> 0;
@@ -129,7 +139,9 @@ class IdContextFactoryBuilderTest
         var idContext = idContextFactory.createIdContext( from( "test", UUID.randomUUID() ) );
         var idGeneratorFactory = idContext.getIdGeneratorFactory();
         var idController = idContext.getIdController();
-        idController.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
+        idController.initialize( fs, testDirectory.file( "buffer" ), config, () -> new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 ),
+                s -> true, EmptyMemoryTracker.INSTANCE );
+        life.add( idController );
 
         Path file = testDirectory.file( "b" );
         RecordIdType idType = RecordIdType.NODE;
@@ -137,7 +149,11 @@ class IdContextFactoryBuilderTest
         try ( IdGenerator idGenerator = idGeneratorFactory.create( pageCache, file, idType, 1, false, 100, writable(), config, contextFactory,
                 immutable.empty(), SINGLE_IDS ) )
         {
-            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
+            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT );
+            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
+            {
+                marker.markDeleted( 1 );
+            }
             idGeneratorFactory.clearCache( NULL_CONTEXT );
 
             long initialPins = cacheTracer.pins();

@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,19 +47,23 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
-import org.neo4j.internal.id.IdController.IdFreeCondition;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.test.Race;
-import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
+import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
@@ -69,12 +75,21 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
+@EphemeralPageCacheExtension
+@ExtendWith( LifeExtension.class )
 class BufferingIdGeneratorFactoryTest
 {
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private LifeSupport life;
+
     private MockedIdGeneratorFactory actual;
     private ControllableSnapshotSupplier boundaries;
-    private PageCache pageCache;
     private BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private IdGenerator idGenerator;
     private ScopedMemoryPool dbMemoryPool;
@@ -84,14 +99,15 @@ class BufferingIdGeneratorFactoryTest
     {
         actual = new MockedIdGeneratorFactory();
         boundaries = new ControllableSnapshotSupplier();
-        pageCache = mock( PageCache.class );
         GlobalMemoryGroupTracker globalMemoryGroupTracker =
                 new GlobalMemoryGroupTracker( new MemoryPools(), MemoryGroup.OTHER, ByteUnit.mebiBytes( 1 ), true, true, null );
         dbMemoryPool = globalMemoryGroupTracker.newDatabasePool( "test", ByteUnit.mebiBytes( 1 ), null );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
-        bufferingIdGeneratorFactory.initialize( boundaries, dbMemoryPool.getPoolMemoryTracker() );
+        Config config = Config.defaults();
+        bufferingIdGeneratorFactory.initialize( fs, directory.file( "tmp-ids" ), config, boundaries, boundaries, dbMemoryPool.getPoolMemoryTracker() );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
-                Config.defaults(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.empty(), SINGLE_IDS );
+                config, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.empty(), SINGLE_IDS );
+        life.add( bufferingIdGeneratorFactory );
     }
 
     @Test
@@ -136,7 +152,7 @@ class BufferingIdGeneratorFactoryTest
                 }
             }
         } );
-        List<ControllableIdFreeCondition> conditions = new ArrayList<>();
+        List<IdController.TransactionSnapshot> conditions = new ArrayList<>();
         race.addContestant( throwing( () ->
         {
             bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
@@ -145,21 +161,21 @@ class BufferingIdGeneratorFactoryTest
                 return;
             }
 
-            ControllableIdFreeCondition condition = boundaries.mostRecentlyReturned;
+            IdController.TransactionSnapshot condition = boundaries.mostRecentlyReturned;
             boundaries.mostRecentlyReturned = null;
             if ( ThreadLocalRandom.current().nextBoolean() )
             {
                 // Chance to let this condition be true immediately
-                condition.enable();
+                boundaries.enable( condition );
             }
             if ( ThreadLocalRandom.current().nextBoolean() )
             {
                 // Chance to enable a previously disabled condition
-                for ( ControllableIdFreeCondition olderCondition : conditions )
+                for ( IdController.TransactionSnapshot olderCondition : conditions )
                 {
-                    if ( !olderCondition.eligibleForFreeing() )
+                    if ( !boundaries.eligibleForFreeing( olderCondition ) )
                     {
-                        olderCondition.enable();
+                        boundaries.enable( olderCondition );
                         break;
                     }
                 }
@@ -170,9 +186,9 @@ class BufferingIdGeneratorFactoryTest
 
         // when
         race.goUnchecked();
-        for ( ControllableIdFreeCondition condition : conditions )
+        for ( IdController.TransactionSnapshot condition : conditions )
         {
-            condition.enable();
+            boundaries.enable( condition );
         }
         boundaries.automaticallyEnableConditions = true;
         bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
@@ -200,9 +216,9 @@ class BufferingIdGeneratorFactoryTest
             }
         }
         assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
-        // maintenance where transactions are still open
+        // maintenance where transactions are still open. Here the buffered IDs should have been written to the page cache and the heap usage freed
         bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-        assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
+        assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
         // maintenance where transactions are closed and i.e. the buffered IDs gets released
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
@@ -211,41 +227,32 @@ class BufferingIdGeneratorFactoryTest
         assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
     }
 
-    private static class ControllableSnapshotSupplier implements Supplier<IdFreeCondition>
+    private static class ControllableSnapshotSupplier implements Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition
     {
         boolean automaticallyEnableConditions;
-        volatile ControllableIdFreeCondition mostRecentlyReturned;
+        volatile IdController.TransactionSnapshot mostRecentlyReturned;
+        private final Set<IdController.TransactionSnapshot> enabledSnapshots = new HashSet<>();
 
         @Override
-        public IdFreeCondition get()
+        public IdController.TransactionSnapshot get()
         {
-            return mostRecentlyReturned = new ControllableIdFreeCondition( automaticallyEnableConditions );
+            return mostRecentlyReturned = new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 );
+        }
+
+        @Override
+        public boolean eligibleForFreeing( IdController.TransactionSnapshot snapshot )
+        {
+            return enabledSnapshots.contains( snapshot );
+        }
+
+        void enable( IdController.TransactionSnapshot snapshot )
+        {
+            enabledSnapshots.add( snapshot );
         }
 
         void setMostRecentlyReturnedSnapshotToAllClosed()
         {
-            mostRecentlyReturned.enable();
-        }
-    }
-
-    private static class ControllableIdFreeCondition implements IdFreeCondition
-    {
-        private volatile boolean conditionMet;
-
-        ControllableIdFreeCondition( boolean enabled )
-        {
-            conditionMet = enabled;
-        }
-
-        void enable()
-        {
-            conditionMet = true;
-        }
-
-        @Override
-        public boolean eligibleForFreeing()
-        {
-            return conditionMet;
+            enabledSnapshots.add( mostRecentlyReturned );
         }
     }
 

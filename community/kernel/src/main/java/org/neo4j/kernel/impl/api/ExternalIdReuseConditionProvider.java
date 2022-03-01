@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 @FunctionalInterface
 public interface ExternalIdReuseConditionProvider
 {
-    ExternalIdReuseConditionProvider NONE = ( baseCondition, transactionIdStore, clock ) -> baseCondition;
+    ExternalIdReuseConditionProvider NONE = ( transactionIdStore, clock ) -> snapshot -> true;
 
-    IdController.IdFreeCondition get( IdController.IdFreeCondition baseCondition, TransactionIdStore transactionIdStore, Clock clock );
+    IdController.IdFreeCondition get( TransactionIdStore transactionIdStore, Clock clock );
 }

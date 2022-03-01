@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.id;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
 
@@ -40,7 +44,8 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     }
 
     @Override
-    public void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
+    public void initialize( FileSystemAbstraction fs, Path baseBufferPath, Config config, Supplier<TransactionSnapshot> snapshotSupplier,
+            IdFreeCondition condition, MemoryTracker memoryTracker ) throws IOException
     {
     }
 }

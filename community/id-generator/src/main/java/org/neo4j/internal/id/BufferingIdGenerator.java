@@ -29,13 +29,17 @@ import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
 
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
+    private final int idTypeOrdinal;
     private final MemoryTracker memoryTracker;
+    private final Runnable collector;
     private HeapTrackingLongArrayList bufferedDeletedIds;
 
-    BufferingIdGenerator( IdGenerator delegate, MemoryTracker memoryTracker )
+    BufferingIdGenerator( IdGenerator delegate, int idTypeOrdinal, MemoryTracker memoryTracker, Runnable collector )
     {
         super( delegate );
+        this.idTypeOrdinal = idTypeOrdinal;
         this.memoryTracker = memoryTracker;
+        this.collector = collector;
         newFreeBuffer();
     }
 
@@ -66,6 +70,10 @@ class BufferingIdGenerator extends IdGenerator.Delegate
                 {
                     bufferedDeletedIds.add( combinedIdAndNumberOfIds( id, numberOfIds, false ) );
                 }
+                if ( bufferedDeletedIds.size() > 10_000 )
+                {
+                    collector.run();
+                }
             }
 
             @Override
@@ -86,7 +94,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate
     {
         if ( !bufferedDeletedIds.isEmpty() )
         {
-            idBuffers.add( new BufferingIdGeneratorFactory.IdBuffer( delegate, bufferedDeletedIds ) );
+            idBuffers.add( new BufferingIdGeneratorFactory.IdBuffer( idTypeOrdinal, bufferedDeletedIds ) );
             newFreeBuffer();
         }
     }

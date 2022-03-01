@@ -22,28 +22,36 @@ package org.neo4j.internal.id;
 import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
+import static org.neo4j.internal.id.DiskBufferedIds.DEFAULT_SEGMENT_SIZE;
 import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
 import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
@@ -51,24 +59,46 @@ import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
  * Wraps {@link IdGenerator} so that ids can be freed using reuse marker at safe points in time, after all transactions
  * which were active at the time of freeing, have been closed.
  */
-public class BufferingIdGeneratorFactory implements IdGeneratorFactory
+public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdGeneratorFactory
 {
-    private static final int MAX_QUEUED_BUFFERS = 20;
+    public static final String PAGED_ID_BUFFER_FILE_NAME = "id-buffer.tmp";
+    public static final Predicate<String> PAGED_ID_BUFFER_FILE_NAME_FILTER = new Predicate<>()
+    {
+        private final Pattern pattern = Pattern.compile( ".*" + PAGED_ID_BUFFER_FILE_NAME + ".+\\d$" );
+
+        @Override
+        public boolean test( String fileName )
+        {
+            return pattern.matcher( fileName ).matches();
+        }
+    };
 
     private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
-    private Supplier<IdController.IdFreeCondition> boundaries;
+    private FileSystemAbstraction fs;
+    private Path bufferBasePath;
+    private Config config;
+    private Supplier<IdController.TransactionSnapshot> snapshotSupplier;
+    private IdController.IdFreeCondition condition;
     private MemoryTracker memoryTracker;
     private final IdGeneratorFactory delegate;
-    private final Deque<IdBuffers> bufferQueue = new ArrayDeque<>();
+    private BufferedIds bufferQueue;
+    private final IdTypeMapping idTypeMapping = new IdTypeMapping();
+    private final Lock bufferWriteLock = new ReentrantLock();
+    private final Lock bufferReadLock = new ReentrantLock();
 
     public BufferingIdGeneratorFactory( IdGeneratorFactory delegate )
     {
         this.delegate = delegate;
     }
 
-    public void initialize( Supplier<IdController.IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
+    public void initialize( FileSystemAbstraction fs, Path bufferBasePath, Config config, Supplier<IdController.TransactionSnapshot> snapshotSupplier,
+            IdController.IdFreeCondition condition, MemoryTracker memoryTracker ) throws IOException
     {
-        boundaries = conditionSupplier;
+        this.fs = fs;
+        this.bufferBasePath = bufferBasePath;
+        this.config = config;
+        this.snapshotSupplier = snapshotSupplier;
+        this.condition = condition;
         this.memoryTracker = memoryTracker;
     }
 
@@ -76,7 +106,7 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     public IdGenerator open( PageCache pageCache, Path filename, IdType idType, LongSupplier highIdScanner, long maxId, DatabaseReadOnlyChecker readOnlyChecker,
             Config config, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions, IdSlotDistribution slotDistribution ) throws IOException
     {
-        assert boundaries != null : "Factory needs to be initialized before usage";
+        assert snapshotSupplier != null : "Factory needs to be initialized before usage";
 
         IdGenerator generator =
                 delegate.open( pageCache, filename, idType, highIdScanner, maxId, readOnlyChecker, config, contextFactory, openOptions, slotDistribution );
@@ -121,94 +151,147 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 
     private IdGenerator wrapAndKeep( IdType idType, IdGenerator generator )
     {
-        BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator, memoryTracker );
+        int id = idTypeMapping.map( idType );
+        BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator, id, memoryTracker, () -> collectAndOffloadBufferedIds( false ) );
         overriddenIdGenerators.put( idType, bufferingGenerator );
         return bufferingGenerator;
     }
 
-    public synchronized void maintenance( CursorContext cursorContext )
+    public void maintenance( CursorContext cursorContext )
     {
-        if ( bufferQueue.size() < MAX_QUEUED_BUFFERS )
-        {
-            // Gather currently pending deleted IDs
-            List<IdBuffer> buffers = new ArrayList<>();
-            overriddenIdGenerators.values().forEach( generator -> generator.collectBufferedIds( buffers ) );
-            if ( !buffers.isEmpty() )
-            {
-                bufferQueue.offer( new IdBuffers( buffers, boundaries.get() ) );
-            }
-        }
-        // else there's one or more open (long-lived) transactions blocking freeing of IDs and it's therefore unnecessary
-        // to pile on more buffers including their transaction snapshots to the buffer queue.
+        collectAndOffloadBufferedIds( true );
 
         // Check and free deleted IDs that are safe to free
-        IdBuffers candidate;
-        while ( (candidate = bufferQueue.peek()) != null )
+        bufferReadLock.lock();
+        try
         {
-            if ( candidate.idFreeCondition.eligibleForFreeing() )
-            {
-                bufferQueue.remove();
-                candidate.free( cursorContext );
-            }
-            else
-            {
-                break;
-            }
+            bufferQueue.read( new IdFreer( cursorContext ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            bufferReadLock.unlock();
         }
         overriddenIdGenerators.values().forEach( generator -> generator.maintenance( cursorContext ) );
     }
 
-    /**
-     * Contains deleted IDs from multiple ID generators, with an attached condition to know when to free it
-     */
-    static class IdBuffers
+    private void collectAndOffloadBufferedIds( boolean blocking )
     {
-        private final List<IdBuffer> buffers;
-        private final IdController.IdFreeCondition idFreeCondition;
-
-        IdBuffers( List<IdBuffer> buffers, IdController.IdFreeCondition idFreeCondition )
+        if ( blocking )
         {
-            this.buffers = buffers;
-            this.idFreeCondition = idFreeCondition;
+            bufferWriteLock.lock();
+        }
+        else if ( !bufferWriteLock.tryLock() )
+        {
+            return;
         }
 
-        void free( CursorContext cursorContext )
+        try
         {
-            for ( IdBuffer buffer : buffers )
+            List<IdBuffer> buffers = new ArrayList<>();
+            overriddenIdGenerators.values().forEach( generator -> generator.collectBufferedIds( buffers ) );
+            if ( !buffers.isEmpty() )
             {
-                buffer.free( cursorContext );
+                bufferQueue.write( snapshotSupplier.get(), buffers );
             }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        finally
+        {
+            bufferWriteLock.unlock();
         }
     }
 
-    static class IdBuffer
+    @Override
+    public void init() throws Exception
     {
-        private final IdGenerator idGenerator;
-        private final HeapTrackingLongArrayList ids;
+        this.bufferQueue = config.get( GraphDatabaseInternalSettings.buffered_ids_offload )
+                ? new DiskBufferedIds( fs, bufferBasePath, memoryTracker, DEFAULT_SEGMENT_SIZE )
+                : new HeapBufferedIds();
+    }
 
-        IdBuffer( IdGenerator idGenerator, HeapTrackingLongArrayList ids )
+    @Override
+    public void shutdown() throws Exception
+    {
+        IOUtils.closeAllUnchecked( bufferQueue );
+        overriddenIdGenerators.clear();
+        idTypeMapping.clear();
+    }
+
+    record IdBuffer(int idTypeOrdinal, HeapTrackingLongArrayList ids) implements AutoCloseable
+    {
+        @Override
+        public void close()
         {
-            this.idGenerator = idGenerator;
-            this.ids = ids;
+            ids.close();
+        }
+    }
+
+    private class IdFreer implements BufferedIds.BufferedIdVisitor
+    {
+        private final CursorContext cursorContext;
+        private IdGenerator.Marker marker;
+
+        IdFreer( CursorContext cursorContext )
+        {
+            this.cursorContext = cursorContext;
         }
 
-        void free( CursorContext cursorContext )
+        @Override
+        public boolean startChunk( IdController.TransactionSnapshot snapshot )
         {
-            try ( IdGenerator.Marker marker = idGenerator.marker( cursorContext ) )
-            {
-                try ( PrimitiveLongResourceIterator idIterator = ids.iterator() )
-                {
-                    while ( idIterator.hasNext() )
-                    {
-                        long id = idIterator.next();
-                        marker.markFree( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) );
-                    }
-                }
-            }
-            finally
-            {
-                ids.close();
-            }
+            return condition.eligibleForFreeing( snapshot );
+        }
+
+        @Override
+        public void startType( int idTypeOrdinal )
+        {
+            marker = overriddenIdGenerators.get( idTypeMapping.get( idTypeOrdinal ) ).delegate.marker( cursorContext );
+        }
+
+        @Override
+        public void id( long id )
+        {
+            marker.markFree( idFromCombinedId( id ), numberOfIdsFromCombinedId( id ) );
+        }
+
+        @Override
+        public void endType()
+        {
+            marker.close();
+        }
+
+        @Override
+        public void endChunk()
+        {
+        }
+    }
+
+    private static class IdTypeMapping
+    {
+        private final List<IdType> idTypes = new ArrayList<>();
+
+        int map( IdType idType )
+        {
+            Preconditions.checkState( !idTypes.contains( idType ), "IdType %s already added", idType );
+            idTypes.add( idType );
+            return idTypes.size() - 1;
+        }
+
+        IdType get( int value )
+        {
+            return idTypes.get( value );
+        }
+
+        void clear()
+        {
+            idTypes.clear();
         }
     }
 }

@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.id;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
@@ -30,9 +31,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -47,6 +50,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @EphemeralPageCacheExtension
+@ExtendWith( LifeExtension.class )
 class BufferedIdControllerTest
 {
     @Inject
@@ -55,20 +59,25 @@ class BufferedIdControllerTest
     private FileSystemAbstraction fs;
     @Inject
     private PageCache pageCache;
+    @Inject
+    private LifeSupport life;
 
     private BufferingIdGeneratorFactory idGeneratorFactory;
+    private BufferedIdController controller;
 
-    @BeforeEach
-    void setUp()
+    void setUp( CursorContextFactory contextFactory ) throws IOException
     {
         idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME ) );
-        idGeneratorFactory.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
+        controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), contextFactory, "test db" );
+        controller.initialize( fs, testDirectory.file( "buffer" ), Config.defaults(),
+                () -> new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 ), s -> true, EmptyMemoryTracker.INSTANCE );
+        life.add( controller );
     }
 
     @Test
-    void shouldStopWhenNotStarted()
+    void shouldStopWhenNotStarted() throws IOException
     {
-        BufferedIdController controller = newController( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+        setUp( new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
 
         assertDoesNotThrow( controller::stop );
     }
@@ -77,31 +86,28 @@ class BufferedIdControllerTest
     void reportPageCacheMetricsOnMaintenance() throws IOException
     {
         var pageCacheTracer = new DefaultPageCacheTracer();
-        CursorContextFactory contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        var contextFactory = new CursorContextFactory( pageCacheTracer, EMPTY );
+        setUp( contextFactory );
 
         try ( var idGenerator = idGeneratorFactory.create( pageCache, testDirectory.file( "foo" ), TestIdType.TEST, 100L, true, 1000L, writable(),
                 Config.defaults(), contextFactory, immutable.empty(), SINGLE_IDS ) )
         {
-            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1L );
+            idGenerator.start( FreeIds.NO_FREE_IDS, NULL_CONTEXT );
+            try ( var marker = idGenerator.marker( NULL_CONTEXT ) )
+            {
+                marker.markDeleted( 1L );
+            }
             idGenerator.clearCache( NULL_CONTEXT );
 
             long initialPins = pageCacheTracer.pins();
             long initialUnpins = pageCacheTracer.unpins();
             long initialHits = pageCacheTracer.hits();
 
-            var controller = newController( contextFactory );
             controller.maintenance();
 
-            assertThat( pageCacheTracer.pins() - initialPins ).isOne();
-            assertThat( pageCacheTracer.unpins() - initialUnpins ).isOne();
-            assertThat( pageCacheTracer.hits() - initialHits ).isOne();
+            assertThat( pageCacheTracer.pins() - initialPins ).isEqualTo( 3 );
+            assertThat( pageCacheTracer.unpins() - initialUnpins ).isEqualTo( 3 );
+            assertThat( pageCacheTracer.hits() - initialHits ).isEqualTo( 3 );
         }
-    }
-
-    private BufferedIdController newController( CursorContextFactory contextFactory )
-    {
-        BufferedIdController controller = new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler(), contextFactory, "test db" );
-        controller.initialize( () -> () -> true, EmptyMemoryTracker.INSTANCE );
-        return controller;
     }
 }

@@ -29,7 +29,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
+import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -493,6 +495,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     public static Predicate<String> defaultFileWatcherFilter()
     {
-        return TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE;
+        return Predicates.any( TransactionLogFilesHelper.DEFAULT_FILENAME_PREDICATE, BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME_FILTER );
     }
 }

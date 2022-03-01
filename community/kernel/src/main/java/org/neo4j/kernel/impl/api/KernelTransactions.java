@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -84,7 +88,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_d
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.IdFreeCondition>
+public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition
 {
     public static final long SYSTEM_TRANSACTION_ID = 0;
     private final Locks locks;
@@ -108,7 +112,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
-    private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
+    private final IdController.IdFreeCondition externalIdReuseCondition;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -156,7 +160,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                                IndexingService indexingService,
                                IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
                                GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                               TransactionExecutionMonitor transactionExecutionMonitor, ExternalIdReuseConditionProvider externalIdReuseConditionProvider )
+                               TransactionExecutionMonitor transactionExecutionMonitor, IdController.IdFreeCondition externalIdReuseCondition )
     {
         this.config = config;
         this.locks = locks;
@@ -176,7 +180,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
-        this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
+        this.externalIdReuseCondition = externalIdReuseCondition;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
@@ -239,6 +243,25 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             .map( this::createHandle )
             .filter( KernelTransactionHandle::isOpen )
             .collect( toSet() );
+    }
+
+    /**
+     * Just like {@link #activeTransactions()}, but gives only a {@link LongSet} of the {@link KernelTransaction#getUserTransactionId() user transaction ID}
+     * for the active transactions.
+     *
+     * @see #activeTransactions()
+     */
+    public LongSet activeUserTransactionIds()
+    {
+        MutableLongSet userTransactionIds = LongSets.mutable.empty();
+        for ( KernelTransactionImplementation transaction : allTransactions )
+        {
+            if ( transaction.isOpen() )
+            {
+                userTransactionIds.add( transaction.getUserTransactionId() );
+            }
+        }
+        return userTransactionIds;
     }
 
     /**
@@ -329,9 +352,16 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     }
 
     @Override
-    public IdController.IdFreeCondition get()
+    public IdController.TransactionSnapshot get()
     {
-        return externalIdReuseConditionProvider.get( new KernelTransactionsSnapshot( activeTransactionsStamps() ), transactionIdStore, clock );
+        return new IdController.TransactionSnapshot( activeUserTransactionIds(), clock.millis(), transactionIdStore.getLastCommittedTransactionId() );
+    }
+
+    @Override
+    public boolean eligibleForFreeing( IdController.TransactionSnapshot snapshot )
+    {
+        return externalIdReuseCondition.eligibleForFreeing( snapshot ) &&
+                !snapshot.activeTransactions().containsAny( activeUserTransactionIds() );
     }
 
     /**

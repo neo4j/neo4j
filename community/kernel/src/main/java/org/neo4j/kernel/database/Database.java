@@ -181,6 +181,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
@@ -439,7 +440,8 @@ public class Database extends LifecycleAdapter
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
 
-            idController.initialize( () -> kernelModule.kernelTransactions().get(), otherDatabaseMemoryTracker );
+            idController.initialize( fs, databaseLayout.file( PAGED_ID_BUFFER_FILE_NAME ), databaseConfig, () -> kernelModule.kernelTransactions().get(),
+                    s -> kernelModule.kernelTransactions().eligibleForFreeing( s ), otherDatabaseMemoryTracker );
 
             storageEngine = storageEngineFactory.instantiate( fs, databaseLayout, databaseConfig, databasePageCache, tokenHolders, databaseSchemaState,
                     constraintSemantics, indexProviderMap, lockService, idGeneratorFactory, databaseHealth, internalLogProvider,
@@ -805,7 +807,7 @@ public class Database extends LifecycleAdapter
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,
                                         indexStatisticsStore, databaseDependencies,
                                         tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                                        externalIdReuseConditionProvider ) );
+                                        externalIdReuseConditionProvider.get( transactionIdStore, clock ) ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

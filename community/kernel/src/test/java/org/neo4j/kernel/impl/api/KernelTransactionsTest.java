@@ -239,21 +239,21 @@ class KernelTransactionsTest
         KernelTransaction a = getKernelTransaction( transactions );
         KernelTransaction b = getKernelTransaction( transactions );
         KernelTransaction c = getKernelTransaction( transactions );
-        IdController.IdFreeCondition snapshot = transactions.get();
-        assertFalse( snapshot.eligibleForFreeing() );
+        IdController.TransactionSnapshot snapshot = transactions.get();
+        assertFalse( transactions.eligibleForFreeing( snapshot ) );
 
         // WHEN a gets closed
         a.close();
-        assertFalse( snapshot.eligibleForFreeing() );
+        assertFalse( transactions.eligibleForFreeing( snapshot ) );
 
         // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
         c.close();
         KernelTransaction d = getKernelTransaction( transactions );
-        assertFalse( snapshot.eligibleForFreeing() );
+        assertFalse( transactions.eligibleForFreeing( snapshot ) );
 
         // WHEN b finally gets closed
         b.close();
-        assertTrue( snapshot.eligibleForFreeing() );
+        assertTrue( transactions.eligibleForFreeing( snapshot ) );
     }
 
     @Test
@@ -264,7 +264,7 @@ class KernelTransactionsTest
         Race race = new Race();
         final int threads = 50;
         final AtomicBoolean end = new AtomicBoolean();
-        final AtomicReferenceArray<IdController.IdFreeCondition> snapshots = new AtomicReferenceArray<>( threads );
+        final AtomicReferenceArray<IdController.TransactionSnapshot> snapshots = new AtomicReferenceArray<>( threads );
 
         // Representing "transaction" threads
         for ( int i = 0; i < threads; i++ )
@@ -300,8 +300,8 @@ class KernelTransactionsTest
             while ( snapshotsLeft > 0 )
             {
                 int threadIndex = random.nextInt( threads );
-                IdController.IdFreeCondition snapshot = snapshots.get( threadIndex );
-                if ( snapshot != null && snapshot.eligibleForFreeing() )
+                IdController.TransactionSnapshot snapshot = snapshots.get( threadIndex );
+                if ( snapshot != null && transactions.eligibleForFreeing( snapshot ) )
                 {
                     snapshotsLeft--;
                     snapshots.set( threadIndex, null );
@@ -734,7 +734,7 @@ class KernelTransactionsTest
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
                 memoryGroupTracker, writable(),
-                TransactionExecutionMonitor.NO_OP, ExternalIdReuseConditionProvider.NONE
+                TransactionExecutionMonitor.NO_OP, snapshot -> true
         );
     }
 
@@ -805,7 +805,7 @@ class KernelTransactionsTest
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
-                   TransactionExecutionMonitor.NO_OP, ExternalIdReuseConditionProvider.NONE );
+                   TransactionExecutionMonitor.NO_OP, snapshot -> true );
         }
 
         @Override

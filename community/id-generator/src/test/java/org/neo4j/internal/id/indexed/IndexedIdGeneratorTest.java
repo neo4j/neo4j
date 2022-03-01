@@ -772,13 +772,14 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void tracePageCacheActivityOnOnNextId()
+    void tracePageCacheActivityOnOnNextId() throws IOException
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "noPageCacheActivityWithNoMaintenanceOnOnNextId" ) ) )
         {
-            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
+            idGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
+            markDeleted( 1 );
             idGenerator.clearCache( NULL_CONTEXT );
             idGenerator.maintenance( cursorContext );
 
@@ -836,12 +837,13 @@ class IndexedIdGeneratorTest
     }
 
     @Test
-    void tracePageCacheOnIdGeneratorMaintenance()
+    void tracePageCacheOnIdGeneratorMaintenance() throws IOException
     {
         open();
         var pageCacheTracer = new DefaultPageCacheTracer();
         try ( var cursorContext = CONTEXT_FACTORY.create( pageCacheTracer.createPageCursorTracer( "tracePageCacheOnIdGeneratorMaintenance" ) ) )
         {
+            idGenerator.start( NO_FREE_IDS, NULL_CONTEXT );
             var cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isZero();
             assertThat( cursorTracer.unpins() ).isZero();
@@ -853,7 +855,7 @@ class IndexedIdGeneratorTest
             assertThat( cursorTracer.unpins() ).isZero();
             assertThat( cursorTracer.hits() ).isZero();
 
-            idGenerator.marker( NULL_CONTEXT ).markDeleted( 1 );
+            markDeleted( 1 );
             idGenerator.clearCache( NULL_CONTEXT );
             idGenerator.maintenance( cursorContext );
 

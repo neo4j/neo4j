@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.id;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
@@ -55,20 +59,34 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void start()
+    public void init() throws Exception
     {
+        bufferingIdGeneratorFactory.init();
+    }
+
+    @Override
+    public void start() throws Exception
+    {
+        bufferingIdGeneratorFactory.start();
         var monitoringParams = JobMonitoringParams.systemJob( databaseName, "ID generator maintenance" );
         jobHandle = scheduler.scheduleRecurring( Group.STORAGE_MAINTENANCE, monitoringParams, this::maintenance, 1, SECONDS );
     }
 
     @Override
-    public void stop()
+    public void stop() throws Exception
     {
         if ( jobHandle != null )
         {
             jobHandle.cancel();
             jobHandle = null;
         }
+        bufferingIdGeneratorFactory.stop();
+    }
+
+    @Override
+    public void shutdown() throws Exception
+    {
+        bufferingIdGeneratorFactory.shutdown();
     }
 
     @Override
@@ -81,8 +99,9 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     }
 
     @Override
-    public void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker )
+    public void initialize( FileSystemAbstraction fs, Path baseBufferPath, Config config, Supplier<TransactionSnapshot> snapshotSupplier,
+            IdFreeCondition condition, MemoryTracker memoryTracker ) throws IOException
     {
-        bufferingIdGeneratorFactory.initialize( conditionSupplier, memoryTracker );
+        bufferingIdGeneratorFactory.initialize( fs, baseBufferPath, config, snapshotSupplier, condition, memoryTracker );
     }
 }

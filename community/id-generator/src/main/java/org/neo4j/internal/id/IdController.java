@@ -19,8 +19,14 @@
  */
 package org.neo4j.internal.id;
 
+import org.eclipse.collections.api.set.primitive.LongSet;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryTracker;
 
@@ -32,7 +38,7 @@ public interface IdController extends Lifecycle
 {
     /**
      * Essentially a condition to check whether or not the {@link IdController} can free a batch of IDs, in maintenance.
-     * For a concrete example it can be a snapshot of ongoing transactions. Then given that snapshot {@link #eligibleForFreeing()}
+     * For a concrete example it can be a snapshot of ongoing transactions. Then given that snapshot {@link #eligibleForFreeing(TransactionSnapshot)}
      * would check whether or not all of those transactions from the snapshot were closed.
      */
     interface IdFreeCondition
@@ -40,7 +46,11 @@ public interface IdController extends Lifecycle
         /**
          * @return whether or not the condition for freeing has been met so that maintenance can free a specific batch of ids.
          */
-        boolean eligibleForFreeing();
+        boolean eligibleForFreeing( TransactionSnapshot snapshot );
+    }
+
+    record TransactionSnapshot(LongSet activeTransactions, long snapshotTimeMillis, long lastCommittedTransactionId)
+    {
     }
 
     /**
@@ -48,5 +58,6 @@ public interface IdController extends Lifecycle
      */
     void maintenance();
 
-    void initialize( Supplier<IdFreeCondition> conditionSupplier, MemoryTracker memoryTracker );
+    void initialize( FileSystemAbstraction fs, Path baseBufferPath, Config config, Supplier<TransactionSnapshot> snapshotSupplier, IdFreeCondition condition,
+            MemoryTracker memoryTracker ) throws IOException;
 }

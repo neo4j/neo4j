@@ -19,14 +19,29 @@
  */
 package org.neo4j.internal.id;
 
-public enum TestIdType implements IdType
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+
+public interface BufferedIds extends Closeable
 {
-    TEST,
-    TEST_2;
+    void write( IdController.TransactionSnapshot snapshot, List<BufferingIdGeneratorFactory.IdBuffer> idBuffers ) throws IOException;
+
+    void read( BufferedIdVisitor visitor ) throws IOException;
 
     @Override
-    public boolean highActivity()
+    void close() throws IOException;
+
+    interface BufferedIdVisitor
     {
-        return false;
+        boolean startChunk( IdController.TransactionSnapshot snapshot );
+
+        void startType( int idTypeOrdinal );
+
+        void id( long id );
+
+        void endType();
+
+        void endChunk();
     }
 }

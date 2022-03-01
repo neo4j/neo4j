@@ -809,4 +809,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
 
     @Description( "Whether or not to do parallel index writes during online transaction application" )
     public static Setting<Boolean> parallel_index_updates_apply = newBuilder( "unsupported.dbms.parallel_index_updates_apply", BOOL, false ).build();
+
+    @Description( "Whether to offload buffered IDs for freeing to disk, rather than to keep them in memory" )
+    public static Setting<Boolean> buffered_ids_offload = newBuilder( "unsupported.dbms.id_buffering.offload_to_disk", BOOL, true ).build();
 }

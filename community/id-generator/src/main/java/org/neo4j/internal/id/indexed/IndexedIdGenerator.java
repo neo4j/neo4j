@@ -577,7 +577,7 @@ public class IndexedIdGenerator implements IdGenerator
     @Override
     public void maintenance( CursorContext cursorContext )
     {
-        if ( !cache.isFull() && !readOnlyChecker.isReadOnly() )
+        if ( started && !cache.isFull() && !readOnlyChecker.isReadOnly() )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache( true, cursorContext );
