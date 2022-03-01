@@ -67,9 +67,13 @@ public class UnauthenticatedChannelProtector implements ChannelProtector
     @Override
     public void afterRequestReceived()
     {
-        if ( timeoutHandler != null )
+        // There is a race here between the bolt thread removing the handler
+        // and netty receiving and request. Here we create a local var to
+        // prevent a NPE.
+        var localTimeoutHandler = timeoutHandler;
+        if ( localTimeoutHandler != null )
         {
-            timeoutHandler.setRequestReceived( true );
+            localTimeoutHandler.setRequestReceived( true );
         }
     }
 
