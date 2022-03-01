@@ -69,16 +69,6 @@ public class TransitionalTxManagementKernelTransaction
         tx.commit();
     }
 
-    void closeTransactionForPeriodicCommit()
-    {
-        tx.close();
-    }
-
-    void reopenAfterPeriodicCommit()
-    {
-        tx = startTransaction();
-    }
-
     private InternalTransaction startTransaction()
     {
         return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? db.beginTransaction( type, loginContext, connectionInfo,

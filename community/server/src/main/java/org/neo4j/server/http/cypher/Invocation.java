@@ -85,7 +85,6 @@ class Invocation
     private final MemoryPool memoryPool;
 
     private OutputEventStream outputEventStream;
-    private boolean hasPrevious;
     private Neo4jError neo4jError;
     private RuntimeException outputError;
     private TransactionNotificationState transactionNotificationState = TransactionNotificationState.NO_TRANSACTION;
@@ -291,31 +290,8 @@ class Invocation
 
     private void executeStatement( Statement statement ) throws Exception
     {
-        boolean periodicCommit = transactionHandle.isPeriodicCommit( statement.getStatement() );
-        if ( periodicCommit )
-        {
-
-            if ( hasPrevious || readStatement() != null )
-            {
-                throw new QueryExecutionKernelException(
-                        new InvalidSemanticsException( "Cannot execute another statement with PERIODIC COMMIT statement in the same transaction", null ) );
-            }
-
-            transactionHandle.closeTransactionForPeriodicCommit();
-        }
-
-        hasPrevious = true;
-
-        StatementMetadata result;
-
-        result = transactionHandle.executeStatement( statement, periodicCommit );
-
+        StatementMetadata result = transactionHandle.executeStatement( statement );
         writeResult( statement, result );
-
-        if ( periodicCommit )
-        {
-            transactionHandle.reopenAfterPeriodicCommit();
-        }
     }
 
     private void writeResult( Statement statement, StatementMetadata statementMetadata ) throws TransactionNotFoundException, ResultNotFoundException
@@ -346,7 +322,7 @@ class Invocation
                 try
                 {
                     var statement = createGetNodeByIdStatement( id );
-                    var statementMetadata = transactionHandle.executeStatement( statement, transactionHandle.isPeriodicCommit( statement.getStatement() ) );
+                    var statementMetadata = transactionHandle.executeStatement( statement );
                     transactionHandle.transactionManager().pullData( transactionHandle.getTxManagerTxId(), statementMetadata.queryId(), -1,
                                                                      new SingleNodeResultConsumer( cachingWriter, nodeReference::set ) );
                 }
@@ -387,14 +363,7 @@ class Invocation
         {
             // unwrap FabricException where possible.
             var rootCause = ((FabricException) cause).status();
-            if ( cause.getCause() != null &&
-                 cause.getCause().getMessage().equals( "A query with 'PERIODIC COMMIT' can only be executed in an implicit transaction, " +
-                                                       "but tried to execute in an explicit transaction." ) )
-            {
-                neo4jError = new Neo4jError( Status.Request.Invalid,
-                                             "Routing of PERIODIC COMMIT is not currently supported. Please retry your request against the cluster leader" );
-            }
-            else if ( rootCause.equals( Status.Statement.AccessMode ) &&
+            if ( rootCause.equals( Status.Statement.AccessMode ) &&
                       cause.getMessage() != null && cause.getMessage().startsWith( WRITING_IN_READ_NOT_ALLOWED_MSG ) )
 
             {

@@ -270,56 +270,6 @@ class InvocationTest
     }
 
     @Test
-    void shouldCommitSinglePeriodicCommitStatement() throws Throwable
-    {
-        // given
-        String queryText = "USING PERIODIC COMMIT CREATE()";
-        when( executionEngine.isPeriodicCommit( queryText ) ).thenReturn( true );
-        when( registry.begin( any( TransactionHandle.class ) ) ).thenReturn( 123L );
-        when( transactionManager
-                      .runProgram( any( String.class ), any( LoginContext.class ), eq( "neo4j" ), eq( queryText ), eq( MapValue.EMPTY ),
-                                   eq( emptyList() ), eq( true ), eq( emptyMap() ), nullable( Duration.class ), eq( "123" ) ) )
-                .thenReturn( new DefaultProgramResultReference( "123", metadata ) );
-        TransactionHandle handle = getTransactionHandle( executionEngine, registry );
-
-        InputEventStream inputEventStream = mock( InputEventStream.class );
-        Statement statement = new Statement( queryText, map() );
-        when( inputEventStream.read() ).thenReturn( statement, NULL_STATEMENT );
-
-        setupResultMocks();
-
-        Invocation invocation =
-                new Invocation( log, handle, uriScheme.txCommitUri( 123L ), mock( MemoryPool.class, RETURNS_MOCKS ), inputEventStream, true );
-
-        // when
-        invocation.execute( outputEventStream );
-
-        // then verify transactionManager interaction
-        InOrder txManagerOrder = inOrder( transactionManager );
-        txManagerOrder.verify( transactionManager ).initialize( any( InitializeContext.class ) );
-        txManagerOrder.verify( transactionManager )
-                      .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
-        txManagerOrder.verify( transactionManager ).rollback( "123" );
-        txManagerOrder.verify( transactionManager )
-                      .runProgram( any( String.class ), any( LoginContext.class ), eq( "neo4j" ), eq( queryText ), eq( MapValue.EMPTY ),
-                                   eq( emptyList() ), eq( true ), eq( emptyMap() ), nullable( Duration.class ), eq( "123" ) );
-        txManagerOrder.verify( transactionManager ).pullData( any( String.class ), any( Integer.class ), any( Long.class ), any( ResultConsumer.class ) );
-        txManagerOrder.verify( transactionManager )
-                      .begin( any( LoginContext.class ), anyString(), anyList(), eq( true ), anyMap(), nullable( Duration.class ), anyString() );
-        txManagerOrder.verify( transactionManager ).commit( "123" );
-        txManagerOrder.verify( transactionManager ).cleanUp( any( CleanUpTransactionContext.class ) );
-        verifyNoMoreInteractions( transactionManager );
-
-        // then verify output
-        InOrder outputOrder = inOrder( outputEventStream );
-        outputOrder.verify( outputEventStream ).writeStatementStart( statement, List.of( "c1", "c2", "c3" ) );
-        verifyDefaultResultRows( outputOrder );
-        outputOrder.verify( outputEventStream ).writeStatementEnd( any(), any(), any(), any() ); //todo work out why the actual args fails
-        outputOrder.verify( outputEventStream ).writeTransactionInfo( TransactionNotificationState.COMMITTED, uriScheme.txCommitUri( 123L ), -1 );
-        verifyNoMoreInteractions( outputEventStream );
-    }
-
-    @Test
     void shouldCommitTransactionAndTellRegistryToForgetItsHandle() throws Throwable
     {
         // given

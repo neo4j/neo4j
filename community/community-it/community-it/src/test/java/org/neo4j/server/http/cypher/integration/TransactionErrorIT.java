@@ -20,6 +20,7 @@
 package org.neo4j.server.http.cypher.integration;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -84,11 +85,12 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
         assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
+    @Disabled( "USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS" )
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
     public void begin_and_execute_periodic_commit_that_fails( String txUri ) throws Exception
     {
-        Path file = Files.createTempFile("begin_and_execute_periodic_commit_that_fails", ".csv").toAbsolutePath();
+        Path file = Files.createTempFile( "begin_and_execute_periodic_commit_that_fails", ".csv" ).toAbsolutePath();
         try
         {
             try ( PrintStream out = new PrintStream( Files.newOutputStream( file ) ) )
@@ -99,18 +101,18 @@ public class TransactionErrorIT extends ParameterizedTransactionEndpointsTestBas
                 out.println( "3" );
             }
 
-            String url = file.toUri().toURL().toString().replace("\\", "\\\\");
+            String url = file.toUri().toURL().toString().replace( "\\", "\\\\" );
             String query = "USING PERIODIC COMMIT 1 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ({name: 1/toInteger(line[0])});";
 
             // begin and execute and commit
-            HTTP.RawPayload payload = quotedJson("{ 'statements': [ { 'statement': '" + query + "' } ] }");
+            HTTP.RawPayload payload = quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" );
             HTTP.Response response = POST( txUri + "/commit", payload );
 
             assertThat( response.status() ).isEqualTo( 200 );
             assertThat( response ).satisfies( hasErrors( Status.Statement.ArithmeticError ) );
 
             JsonNode message = response.get( "errors" ).get( 0 ).get( "message" );
-            assertTrue( message.toString().contains("on line 3."), "Expected LOAD CSV line number information" );
+            assertTrue( message.toString().contains( "on line 3." ), "Expected LOAD CSV line number information" );
         }
         finally
         {

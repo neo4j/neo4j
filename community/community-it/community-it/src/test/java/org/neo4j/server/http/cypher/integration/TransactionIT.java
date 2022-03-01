@@ -22,6 +22,7 @@ package org.neo4j.server.http.cypher.integration;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -275,6 +276,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         assertThat( countNodes() ).isEqualTo( nodesInDatabaseBeforeTransaction );
     }
 
+    @Disabled( "USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS" )
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
     public void begin_and_execute_periodic_commit_and_commit( String txUri ) throws Exception
@@ -314,6 +316,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         } );
     }
 
+    @Disabled( "USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS" )
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
     public void begin_and_execute_periodic_commit_that_returns_data_and_commit( String txUri ) throws Exception
@@ -359,6 +362,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         } );
     }
 
+    @Disabled( "USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS" )
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit( String txUri ) throws Exception
@@ -396,6 +400,7 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         assertThat( response ).satisfies( hasErrors( Status.Statement.SyntaxError ) );
     }
 
+    @Disabled( "USING PERIODIC COMMIT has been removed and the HTTP api does not accept CALL IN TRANSACTIONS" )
     @ParameterizedTest
     @MethodSource( "argumentsProvider" )
     public void begin_and_execute_multiple_periodic_commit_last_and_commit( String txUri ) throws Exception

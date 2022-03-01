@@ -158,11 +158,6 @@ public class TransactionHandle implements TransactionTerminationHandle
         return true;
     }
 
-    boolean isPeriodicCommit( String statement )
-    {
-        return engine.isPeriodicCommit( statement );
-    }
-
     void ensureActiveTransaction() throws KernelException
     {
         if ( txManagerTxId == null )
@@ -171,21 +166,8 @@ public class TransactionHandle implements TransactionTerminationHandle
         }
     }
 
-    StatementMetadata executeStatement( Statement statement, boolean periodicCommit ) throws KernelException, TransactionNotFoundException
+    StatementMetadata executeStatement( Statement statement ) throws KernelException, TransactionNotFoundException
     {
-        if ( periodicCommit )
-        {
-            var programResultReference = transactionManager.runProgram(
-                    UUID.randomUUID().toString(), // todo: verify the uuid sent here
-                    loginContext, databaseName, statement.getStatement(),
-                    asParameterMapValue( statement.getParameters() ), Collections.emptyList(),
-                    readByDefault, Collections.emptyMap(),
-                    customTransactionTimeout,
-                    Long.toString( id ) );
-            txManagerTxId = programResultReference.transactionId();
-            return programResultReference.statementMetadata();
-        }
-
         return transactionManager.runQuery( txManagerTxId, statement.getStatement(), asParameterMapValue( statement.getParameters() ) );
     }
 
@@ -232,16 +214,6 @@ public class TransactionHandle implements TransactionTerminationHandle
     boolean hasTransactionContext()
     {
         return txManagerTxId != null;
-    }
-
-    void closeTransactionForPeriodicCommit() throws TransactionNotFoundException
-    {
-        transactionManager.rollback( txManagerTxId );
-    }
-
-    void reopenAfterPeriodicCommit() throws KernelException
-    {
-        beginTransaction();
     }
 
     /*
