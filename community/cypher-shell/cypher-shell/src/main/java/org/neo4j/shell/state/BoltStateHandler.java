@@ -451,7 +451,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             try
             {
-                // Note that PERIODIC COMMIT can't execute in a transaction, so if the user has not typed BEGIN, then
+                // Note that CALL IN TRANSACTIONS can't execute in an explicit transaction, so if the user has not typed BEGIN, then
                 // the statement should NOT be executed in a transaction.
                 return getBoltResult( cypher, queryParams );
             }
