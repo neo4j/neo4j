@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.DeleteNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeletePathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeleteRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.BFSPruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerTestBase
@@ -196,6 +197,7 @@ class InterpretedOptionalExpandIntoTest extends OptionalExpandIntoTestBase(COMMU
 class InterpretedVarExpandAllTest extends VarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedPruningVarExpandTest extends PruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedPruningVarExpandFuzzTest extends PruningVarLengthExpandFuzzTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedBFSPruningVarExpandTest extends BFSPruningVarLengthExpandTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedProjectEndpointsTest extends ProjectEndpointsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

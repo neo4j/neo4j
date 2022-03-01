@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
 import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.PrimitiveCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipTypeCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -1219,24 +1220,6 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
     cursor
   }
 
-  abstract class PrimitiveCursorIterator extends ClosingLongIterator {
-    private var _next: Long = fetchNext()
-
-    protected def fetchNext(): Long
-
-    override def innerHasNext: Boolean = _next >= 0
-
-    override def next(): Long = {
-      if (!hasNext) {
-        Iterator.empty.next()
-      }
-
-      val current = _next
-      _next = fetchNext()
-      current
-    }
-  }
-
   override def entityTransformer: EntityTransformer = new TransactionBoundEntityTransformer
 
   class TransactionBoundEntityTransformer extends EntityTransformer {
@@ -1283,6 +1266,24 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
 }
 
 object TransactionBoundQueryContext {
+
+  abstract class PrimitiveCursorIterator extends ClosingLongIterator {
+    private var _next: Long = fetchNext()
+
+    protected def fetchNext(): Long
+
+    override def innerHasNext: Boolean = _next >= 0
+
+    override def next(): Long = {
+      if (!hasNext) {
+        Iterator.empty.next()
+      }
+
+      val current = _next
+      _next = fetchNext()
+      current
+    }
+  }
 
   abstract class CursorIterator[T] extends ClosingIterator[T] {
     private var _next: T = fetchNext()

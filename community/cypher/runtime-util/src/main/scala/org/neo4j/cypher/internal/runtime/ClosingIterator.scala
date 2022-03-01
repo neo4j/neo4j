@@ -382,10 +382,29 @@ object ClosingLongIterator {
 
     override def next(): Long = ClosingIterator.empty.next()
 
-    override def startNodeId(): Long = ???
+    override def startNodeId(): Long = fail()
 
-    override def endNodeId(): Long = ???
+    override def endNodeId(): Long = fail()
 
-    override def typeId(): Int = ???
+    override def typeId(): Int = fail()
+
+    private def fail() = throw new IllegalStateException("Iterator is empty")
+  }
+
+  def prepend(valueToPrepend: Long, iterator: ClosingLongIterator): ClosingLongIterator = new ClosingLongIterator {
+    private var first = true
+
+    override def close(): Unit = {
+      iterator.close()
+    }
+
+    override protected[this] def innerHasNext: Boolean = if (first) true else iterator.hasNext
+
+    override def next(): Long = if (first) {
+      first = false
+      valueToPrepend
+    } else {
+      iterator.next()
+    }
   }
 }

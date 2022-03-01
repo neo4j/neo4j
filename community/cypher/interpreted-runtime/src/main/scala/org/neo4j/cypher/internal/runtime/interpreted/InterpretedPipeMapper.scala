@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
@@ -187,6 +188,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.AntiSemiApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ArgumentPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AssertSameNodePipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.BFSPruningVarLengthExpandPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CachePropertiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CartesianProductPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommandPipe
@@ -602,6 +604,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
         PruningVarLengthExpandPipe(source, from, toName, RelationshipTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
+      case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, max, nodePredicate, relationshipPredicate) =>
+        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
+        BFSPruningVarLengthExpandPipe(source, from, to, RelationshipTypes(types.toArray), dir, includeStartNode, max, predicate)(id = id)
+
       case Sort(_, sortItems) =>
         SortPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder)))(id = id)
 
@@ -897,14 +903,17 @@ case class InterpretedPipeMapper(readOnly: Boolean,
           }, Some(command))
       }
 
-    val (nodeCommand, maybeNodeCommandPred) = asCommand(nodePredicate)
-    val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
+    (nodePredicate, relationshipPredicate) match {
+      case (None, None) => VarLengthPredicate.NONE
+      case _ =>
+        val (nodeCommand, maybeNodeCommandPred) = asCommand(nodePredicate)
+        val (relCommand, maybeRelCommandPred) = asCommand(relationshipPredicate)
 
-    new VarLengthPredicate {
-      override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = nodeCommand(row, state, node)
-      override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = relCommand(row, state, rel)
-
-      override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
+        new VarLengthPredicate {
+          override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean = nodeCommand(row, state, node)
+          override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean = relCommand(row, state, rel)
+          override def predicateExpressions: Seq[Predicate] = maybeNodeCommandPred.toSeq ++ maybeRelCommandPred
+        }
     }
   }
 
