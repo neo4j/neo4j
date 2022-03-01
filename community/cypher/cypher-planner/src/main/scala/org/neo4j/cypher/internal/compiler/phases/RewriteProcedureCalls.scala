@@ -92,27 +92,32 @@ trait RewriteProcedureCalls {
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
     case q @ Query(None, part @ SingleQuery(Seq(resolved: ResolvedCall))) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
-      q.copy(part = part.copy(clauses = Seq(newResolved, projection))(part.position))(q.position)
+      q.copy(part = part.copy(clauses = newResolved +: projection.toSeq)(part.position))(q.position)
 
     case q @ Query(None, part @ SingleQuery(Seq(graph: GraphSelection, resolved: ResolvedCall))) =>
       val (newResolved, projection) = getResolvedAndProjection(resolved)
-      q.copy(part = part.copy(clauses = Seq(graph, newResolved, projection))(part.position))(q.position)
+      q.copy(part = part.copy(clauses = Seq(graph, newResolved) ++ projection)(part.position))(q.position)
   }
 
-  private def getResolvedAndProjection(resolved: ResolvedCall) = {
+  private def getResolvedAndProjection(resolved: ResolvedCall): (ResolvedCall, Option[Return]) = {
     val newResolved = resolved.withFakedFullDeclarations
 
     //Add the equivalent of a return for each item yielded by the procedure
-    val projection = Return(
-      distinct = false,
-      returnItems = ReturnItems(
-        includeExisting = false,
-        items = newResolved.callResults.map(item => AliasedReturnItem(
-          item.variable.copyId,
-          item.variable.copyId)(resolved.position, isAutoAliased = true))
-      )(resolved.position),
-      None, None, None
-    )(resolved.position)
+    val projection =
+      Option(newResolved.callResults)
+        .filter(_.nonEmpty)
+        .map { callResults =>
+          Return(
+            distinct = false,
+            returnItems = ReturnItems(
+              includeExisting = false,
+              items = callResults.map(item => AliasedReturnItem(
+                item.variable.copyId,
+                item.variable.copyId)(resolved.position, isAutoAliased = true))
+            )(resolved.position),
+            None, None, None
+          )(resolved.position)
+        }
 
     (newResolved, projection)
   }

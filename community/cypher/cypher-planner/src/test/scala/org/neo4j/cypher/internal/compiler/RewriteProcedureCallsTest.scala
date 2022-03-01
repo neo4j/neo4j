@@ -114,6 +114,22 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
     rewrittenTry should equal(original)
   }
 
+  test("should not generate a Return clause when resolving a standalone procedure call with no output signature (aka unit procedure)") {
+    val unresolved = UnresolvedCall(ns, name, None, None)(pos)
+    val original = Query(None, SingleQuery(Seq(unresolved))(pos))(pos)
+
+    val procLookupNoOutput: QualifiedName => ProcedureSignature = _ => signature.copy(outputSignature = None)
+
+    val rewritten = rewriteProcedureCalls(procLookupNoOutput, fcnLookup, original)
+    val rewrittenTry = tryRewriteProcedureCalls(procLookupNoOutput, fcnLookup, original)
+
+    val resolved = ResolvedCall(procLookupNoOutput)(unresolved).coerceArguments.withFakedFullDeclarations
+    val expected = Query(None, SingleQuery(Seq(resolved))(pos))(pos)
+
+    rewritten should equal(expected)
+    rewrittenTry should equal(expected)
+  }
+
   def rewriteProcedureCalls(procSignatureLookup: QualifiedName => ProcedureSignature,
                             funcSignatureLookup: QualifiedName => Option[UserFunctionSignature],
                             original: Query): Query = {
