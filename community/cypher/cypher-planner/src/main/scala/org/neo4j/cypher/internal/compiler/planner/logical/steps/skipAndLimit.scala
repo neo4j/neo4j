@@ -40,7 +40,7 @@ object skipAndLimit extends PlanTransformer {
     def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan match {
       case _: UpdatingPlan => true
       case _: EagerLogicalPlan => false
-      case p: LogicalBinaryPlan => p.hasUpdatingRhs || shouldPlanExhaustiveLimit(p.left)
+      case p: LogicalBinaryPlan => if (p.hasUpdatingRhs) true else shouldPlanExhaustiveLimit(p.left)
       case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get) else false
     }
 
