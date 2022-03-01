@@ -105,6 +105,8 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
@@ -154,6 +156,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                    waitUntilComplete: WaitUntilComplete): plans.DatabaseAdministrationLogicalPlan = waitUntilComplete match {
       case NoWait => logicalPlan
       case _ =>  plans.WaitForCompletion(logicalPlan, databaseName, waitUntilComplete)
+    }
+
+    def planSystemProcedureCall(resolved: ResolvedCall, returns: Option[Return]): LogicalPlan = {
+      val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
+      errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
+      val signature = resolved.signature
+      val checkCredentialsExpired = !signature.allowExpiredCredentials
+      plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired)
     }
 
     val maybeLogicalPlan: Option[plans.LogicalPlan] = from.statement() match {
@@ -480,9 +490,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
-        val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
-        errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
-        Some(plans.SystemProcedureCall(signature.name.toString, resolved, returns, context.params, checkCredentialsExpired = !signature.allowExpiredCredentials))
+        Some(planSystemProcedureCall(resolved, Some(returns)))
+
+      case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _)))) if signature.systemProcedure =>
+        Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
       // Currently doesn't allow WITH, is this a problem for rewrites?

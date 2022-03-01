@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.MapValue
  * This class should only be used to transport a system procedure query to the ManagementCommandRuntime.
  * Check that the query is an allowed system-only query BEFORE creating a SystemProcedureCall
  */
-case class SystemProcedureCall(procedureName: String, call: ResolvedCall, returns: Return, params: MapValue, checkCredentialsExpired: Boolean)(implicit idGen: IdGen)
+case class SystemProcedureCall(procedureName: String, call: ResolvedCall, returns: Option[Return], params: MapValue, checkCredentialsExpired: Boolean)(implicit idGen: IdGen)
   extends LogicalPlan(idGen)  {
 
   override def lhs: Option[LogicalPlan] = None
