@@ -37,15 +37,16 @@ import static org.neo4j.bolt.v4.messaging.BoltV4Messages.pullAll;
 import static org.neo4j.bolt.v4.messaging.BoltV4Messages.run;
 import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.IRIS_DATA;
 import static org.neo4j.bolt.v4.runtime.BoltConnectionIT.createLocalIrisData;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
 
-class PeriodicCommitBoltconnectionIT
+class CallInTransactionsBoltConnectionIT
 {
     @RegisterExtension
     static final SessionExtension env = new SessionExtension(
             () -> new TestDatabaseManagementServiceBuilder().setConfig( GraphDatabaseSettings.memory_tracking, false ) );
 
     @Test
-    void shouldSupportUsingPeriodicCommitInSession() throws Exception
+    void shouldSupportUsingCallInTransactionsInSession() throws Exception
     {
         // Given
         var machine = BoltStateMachineV4StateTestBase.newStateMachineAfterAuth(env);
@@ -56,14 +57,20 @@ class PeriodicCommitBoltconnectionIT
         // When
         var recorder = new BoltResponseRecorder();
         machine.process( run(
-                "USING PERIODIC COMMIT " + batch + "\n" +
-                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l\n" +
-                        "MATCH (c:Class {name: l.class_name})\n" +
-                        "CREATE (s:Sample {sepal_length: l.sepal_length, sepal_width: l.sepal_width, " +
-                        "petal_length: l.petal_length, petal_width: l.petal_width})\n" +
-                        "CREATE (c)<-[:HAS_CLASS]-(s)\n" +
-                        "RETURN count(*) AS c",
-                params ), recorder
+                joinAsLines(
+                        "LOAD CSV WITH HEADERS FROM $csvFileUrl AS l",
+                        "CALL {",
+                        "  WITH l",
+                        "  MATCH (c:Class {name: l.class_name})",
+                        "  CREATE (s:Sample {sepal_length: l.sepal_length,",
+                        "                    sepal_width: l.sepal_width,",
+                        "                    petal_length: l.petal_length,",
+                        "                    petal_width: l.petal_width})",
+                        "  CREATE (c)<-[:HAS_CLASS]-(s)",
+                        "  RETURN c, s",
+                        "} IN TRANSACTIONS OF 40 ROWS",
+                        "RETURN count(*) AS c"
+                ), params ), recorder
         );
         machine.process( pullAll(), recorder );
 

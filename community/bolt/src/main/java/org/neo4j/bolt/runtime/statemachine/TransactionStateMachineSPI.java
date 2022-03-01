@@ -40,8 +40,6 @@ public interface TransactionStateMachineSPI
     BoltTransaction beginTransaction( KernelTransaction.Type transactionType, LoginContext loginContext, List<Bookmark> bookmarks, Duration txTimeout,
                                       AccessMode accessMode, Map<String,Object> txMetaData, RoutingContext routingContext );
 
-    boolean isPeriodicCommit( String query );
-
     BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params );
 
     boolean supportsNestedStatementsInTransaction();

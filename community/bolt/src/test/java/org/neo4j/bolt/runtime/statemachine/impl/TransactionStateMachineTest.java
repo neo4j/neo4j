@@ -62,15 +62,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.internal.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class TransactionStateMachineTest
 {
-    private static final String PERIODIC_COMMIT_QUERY =
-            "USING PERIODIC COMMIT 1 " +
-            "LOAD CSV FROM ''https://neo4j.com/test.csv'' AS line " +
-            "CREATE (:Node {id: line[0], name: line[1]})";
+    private static final String CALL_IN_TRANSACTIONS_QUERY = joinAsLines(
+            "LOAD CSV FROM ''https://neo4j.com/test.csv'' AS line",
+            "CALL { ",
+            "  CREATE (:Node {id: line[0], name: line[1]})",
+            "} IN TRANSACTIONS OF 1 ROW"
+    );
 
     private TransactionStateMachineSPI stateMachineSPI;
     private MutableTransactionState mutableState;
@@ -362,7 +365,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldOpenImplicitTransactionForPeriodicCommitQuery() throws Exception
+    void shouldOpenImplicitTransactionForCallInTransactionsQuery() throws Exception
     {
         BoltTransaction transaction = newTransaction();
         TransactionStateMachineSPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -371,16 +374,16 @@ class TransactionStateMachineTest
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
-        stateMachine.run( PERIODIC_COMMIT_QUERY, EMPTY_MAP );
+        stateMachine.run( CALL_IN_TRANSACTIONS_QUERY, EMPTY_MAP );
 
-        // transaction was created only to stream back result of the periodic commit query
+        // transaction was created only to stream back result of the query
         assertEquals( periodicTransaction, stateMachine.ctx.currentTransaction );
 
         InOrder inOrder = inOrder( stateMachineSPI );
-        // implicit transaction was started for periodic query execution
+        // implicit transaction was started for query execution
         inOrder.verify( stateMachineSPI ).beginTransaction( eq(IMPLICIT), any( LoginContext.class ), any(), any(), any(), any(), any() );
-        // periodic commit query was executed after specific transaction started
-        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ) );
+        // query was executed after specific transaction started
+        inOrder.verify( stateMachineSPI ).executeQuery( any( BoltQueryExecutor.class ), eq( CALL_IN_TRANSACTIONS_QUERY ), eq( EMPTY_MAP ) );
     }
 
     @Test

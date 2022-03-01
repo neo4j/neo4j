@@ -79,12 +79,6 @@ public abstract class AbstractTransactionStateMachineSPI implements TransactionS
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        return boltGraphDatabaseServiceSPI.isPeriodicCommit( query );
-    }
-
-    @Override
     public BoltResultHandle executeQuery( BoltQueryExecutor boltQueryExecutor, String statement, MapValue params )
     {
         return newBoltResultHandle( statement, params, boltQueryExecutor );

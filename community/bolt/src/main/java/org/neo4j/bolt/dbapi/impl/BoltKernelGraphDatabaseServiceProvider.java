@@ -116,12 +116,6 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        return queryExecutionEngine.isPeriodicCommit( query );
-    }
-
-    @Override
     public NamedDatabaseId getNamedDatabaseId()
     {
         return namedDatabaseId;

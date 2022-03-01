@@ -311,27 +311,18 @@ public class TransactionStateMachine implements StatementProcessor
                         checkState( txTimeout == null, "Explicit Transaction should not run with tx_timeout" );
                         checkState( isEmpty( txMetadata ), "Explicit Transaction should not run with tx_metadata" );
 
-                        if ( spi.isPeriodicCommit( statement ) )
-                        {
-                            throw new QueryExecutionKernelException( new InvalidSemanticsException(
-                                    "A query with 'PERIODIC COMMIT' can only be executed in an implicit transaction, " +
-                                    "but tried to execute in an explicit transaction.", null ) );
-                        }
-                        else
-                        {
-                            // generate real statement ID only when nested statements in transaction are supported
-                            int statementId = spi.supportsNestedStatementsInTransaction() ? ctx.nextStatementId() : StatementMetadata.ABSENT_QUERY_ID;
+                        // generate real statement ID only when nested statements in transaction are supported
+                        int statementId = spi.supportsNestedStatementsInTransaction() ? ctx.nextStatementId() : StatementMetadata.ABSENT_QUERY_ID;
 
-                            BoltResultHandle resultHandle = spi.executeQuery( ctx.currentTransaction, statement, params);
-                            BoltResult result = startExecution( resultHandle );
-                            ctx.statementOutcomes.put( statementId, new StatementOutcome( resultHandle, result ) );
+                        BoltResultHandle resultHandle = spi.executeQuery( ctx.currentTransaction, statement, params);
+                        BoltResult result = startExecution( resultHandle );
+                        ctx.statementOutcomes.put( statementId, new StatementOutcome( resultHandle, result ) );
 
-                            String[] fieldNames = result.fieldNames();
-                            ctx.lastStatementId = statementId;
-                            ctx.lastStatementMetadata = new ExplicitTxStatementMetadata( fieldNames, statementId );
+                        String[] fieldNames = result.fieldNames();
+                        ctx.lastStatementId = statementId;
+                        ctx.lastStatementMetadata = new ExplicitTxStatementMetadata( fieldNames, statementId );
 
-                            return EXPLICIT_TRANSACTION;
-                        }
+                        return EXPLICIT_TRANSACTION;
                     }
 
                     @Override

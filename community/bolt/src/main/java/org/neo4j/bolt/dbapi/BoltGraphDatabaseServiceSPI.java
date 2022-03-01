@@ -39,8 +39,6 @@ public interface BoltGraphDatabaseServiceSPI
     BoltTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, List<Bookmark> bookmarks,
             Duration txTimeout, AccessMode accessMode, Map<String,Object> txMetadata, RoutingContext routingContext );
 
-    boolean isPeriodicCommit( String query );
-
     NamedDatabaseId getNamedDatabaseId();
 
     void freeTransaction();

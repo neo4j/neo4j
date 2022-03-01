@@ -394,7 +394,6 @@ class BoltStateMachineV4Test
     {
         // Given
         TransactionStateMachineSPI transactionSPI = mock( TransactionStateMachineSPI.class );
-        when( transactionSPI.isPeriodicCommit( any() )).thenReturn( false );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) )
                 .when( transactionSPI ).beginTransaction( any(), any(), any(), any(), any(), any(), any() );
 
