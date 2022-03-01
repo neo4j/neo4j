@@ -531,8 +531,6 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def rollback(): Unit
 
-  def commitAndRestartTx(): Unit
-
   def kernelStatisticProvider: KernelStatisticProvider
 
   def dbmsInfo: DbmsInfo

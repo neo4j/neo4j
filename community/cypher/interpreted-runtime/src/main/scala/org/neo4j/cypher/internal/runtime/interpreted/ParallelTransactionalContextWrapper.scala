@@ -86,8 +86,6 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler = tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
 
-  override def commitAndRestartTx(): Unit = unsupported()
-
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(): Unit = {

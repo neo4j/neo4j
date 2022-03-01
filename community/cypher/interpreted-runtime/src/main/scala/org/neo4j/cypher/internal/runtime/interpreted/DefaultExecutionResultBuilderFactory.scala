@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.createParameterArray
-import org.neo4j.cypher.internal.runtime.interpreted.load_csv.LoadCsvPeriodicCommitObserver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LinenumberPipeDecorator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NullPipeDecorator
@@ -55,10 +54,6 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                    doProfile: Boolean): QueryState
 
     def queryContext: QueryContext
-
-    override def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit = {
-      externalResource = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
-    }
 
     def addProfileDecorator(profileDecorator: PipeDecorator): Unit = pipeDecorator match {
       case decorator: LinenumberPipeDecorator => decorator.setInnerDecorator(profileDecorator)

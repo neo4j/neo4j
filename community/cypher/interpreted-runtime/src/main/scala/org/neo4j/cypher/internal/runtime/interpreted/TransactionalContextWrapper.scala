@@ -106,8 +106,6 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler = tc.kernelTransaction.securityAuthorizationHandler()
 
-  override def commitAndRestartTx(): Unit = tc.commitAndRestartTx()
-
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(): Unit = tc.close()
