@@ -97,12 +97,10 @@ class PreParser(
     val preParserResult = new CypherPreParser(exceptionFactory, new PreParserCharStream(queryText)).
       parse()
     val preParsedStatement = PreParsedStatement(queryText.substring(preParserResult.position.offset), preParserResult.options.asScala.toList, preParserResult.position)
-    val isPeriodicCommit = PreParser.periodicCommitHintRegex.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
     val options = PreParser.queryOptions(
       preParsedStatement.options,
       preParsedStatement.offset,
-      isPeriodicCommit,
       configuration,
     )
 
@@ -111,12 +109,10 @@ class PreParser(
 }
 
 object PreParser {
-  val periodicCommitHintRegex: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
 
   def queryOptions(
     preParsedOptions: List[PreParserOption],
     offset: InputPosition,
-    isPeriodicCommit: Boolean,
     configuration: CypherConfiguration): QueryOptions = {
 
     val preParsedOptionsSet = preParsedOptions.map(o => (o.key, o.value)).toSet
@@ -125,7 +121,6 @@ object PreParser {
 
     QueryOptions(
       offset,
-      isPeriodicCommit,
       options,
     )
   }

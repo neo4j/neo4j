@@ -113,48 +113,6 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER connectComponentsPlanner=greedy connectComponentsPlanner=idp RETURN 42"))
   }
 
-  test("should parse all variants of periodic commit") {
-    val variants =
-      List(
-        "USING PERIODIC COMMIT",
-        " USING PERIODIC COMMIT",
-        "USING  PERIODIC COMMIT",
-        "USING PERIODIC  COMMIT",
-        """USING
-           PERIODIC
-           COMMIT""",
-        "CYPHER 3.5 planner=cost debug=tostring USING PERIODIC COMMIT",
-        "CYPHER 4.3 planner=cost debug=tostring USING PERIODIC COMMIT",
-        "CYPHER 4.4 planner=cost debug=tostring USING PERIODIC COMMIT",
-        "using periodic commit",
-        "UsING pERIOdIC COMmIT"
-      )
-
-    for (x <- variants) {
-      val query = " LOAD CSV file://input.csv AS row CREATE (n)"
-      preParser.preParseQuery(x+query).options.isPeriodicCommit should be(true)
-    }
-  }
-
-  test("should not call periodic commit on innocent (but evil) queries") {
-    val queries =
-      List(
-        "MATCH (n) RETURN n",
-        "CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CREATE ({`USING PERIODIC COMMIT`: true})",
-        "CREATE (:`USING PERIODIC COMMIT`)",
-        "CYPHER 3.5 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.3 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        "CYPHER 4.4 debug=tostring PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
-        """CREATE ({name: '
-          |USING PERIODIC COMMIT')""".stripMargin
-      )
-
-    for (query <- queries) {
-      preParser.preParseQuery(query).options.isPeriodicCommit should be(false)
-    }
-  }
-
   test("should take defaults from config") {
     preParserWith(GraphDatabaseSettings.cypher_planner -> GraphDatabaseSettings.CypherPlanner.COST)
       .preParseQuery("RETURN 1").options.queryOptions.planner shouldEqual CypherPlannerOption.cost

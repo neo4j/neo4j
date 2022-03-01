@@ -156,12 +156,6 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public boolean isPeriodicCommit( String query )
-    {
-        return cypherExecutionEngine.isPeriodicCommit( query );
-    }
-
-    @Override
     public long clearQueryCaches()
     {
         return cypherExecutionEngine.clearQueryCaches();

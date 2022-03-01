@@ -278,14 +278,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def clearQueryCaches(): Long =
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
-  /**
-   * @return { @code true} if the query is a PERIODIC COMMIT query and not an EXPLAIN query
-   */
-  def isPeriodicCommit(query: String): Boolean = {
-    val preParsedQuery = preParser.preParseQuery(query)
-    preParsedQuery.options.queryOptions.executionMode != CypherExecutionMode.explain && preParsedQuery.options.isPeriodicCommit
-  }
-
   def getCypherFunctions: java.util.List[FunctionInformation] = {
     val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
     val predicateInformations: Seq[FunctionInformation] = org.neo4j.cypher.internal.expressions.IterablePredicateExpression.functionInfo.map(FunctionWithInformation)

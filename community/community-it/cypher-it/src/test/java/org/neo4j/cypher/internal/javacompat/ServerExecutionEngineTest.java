@@ -76,34 +76,4 @@ class ServerExecutionEngineTest
             tx.commit();
         }
     }
-
-    @Test
-    void shouldDetectPeriodicCommitQueries()
-    {
-        // WHEN
-        boolean result = executionEngine.isPeriodicCommit("USING PERIODIC COMMIT LOAD CSV FROM 'file:///tmp/foo.csv' AS line CREATE ()");
-
-        // THEN
-        assertTrue( result, "Did not detect periodic commit query" );
-    }
-
-    @Test
-    void shouldNotDetectNonPeriodicCommitQueriesAsPeriodicCommitQueries()
-    {
-        // WHEN
-        boolean result = executionEngine.isPeriodicCommit("CREATE ()");
-
-        // THEN
-        assertFalse( result, "Did detect non-periodic commit query as periodic commit query" );
-    }
-
-    @Test
-    void shouldNotDetectInvalidQueriesAsPeriodicCommitQueries()
-    {
-        // WHEN
-        boolean result = executionEngine.isPeriodicCommit("MATCH n RETURN m");
-
-        // THEN
-        assertFalse( result, "Did detect an invalid query as periodic commit query" );
-    }
 }

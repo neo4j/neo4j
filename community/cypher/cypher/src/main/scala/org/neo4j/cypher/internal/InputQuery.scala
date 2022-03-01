@@ -84,7 +84,6 @@ case class FullyParsedQuery(state: BaseState, options: QueryOptions) extends Inp
  * Query execution options
  */
 case class QueryOptions(offset: InputPosition,
-                        isPeriodicCommit: Boolean,
                         queryOptions: CypherQueryOptions,
                         recompilationLimitReached: Boolean = false,
                         materializedEntitiesMode: Boolean = false) {
@@ -106,7 +105,7 @@ case class QueryOptions(offset: InputPosition,
   }
 
   def runtimeCacheKey: String = {
-    cacheKey + isPeriodicCommit + recompilationLimitReached + materializedEntitiesMode
+    cacheKey + recompilationLimitReached + materializedEntitiesMode
   }
 
   def render: Option[String] = {
@@ -119,7 +118,6 @@ case class QueryOptions(offset: InputPosition,
 object QueryOptions {
   val default: QueryOptions = QueryOptions(
     offset = InputPosition.NONE,
-    isPeriodicCommit = false,
     queryOptions = CypherQueryOptions.default,
   )
 
