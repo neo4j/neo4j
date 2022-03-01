@@ -49,4 +49,9 @@ public class CommunitySecurityComponentVersion_2_41 extends SupportedCommunitySe
             this.setVersionProperty( tx, version );
         }
     }
+
+    @Override
+    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
+    {
+    }
 }

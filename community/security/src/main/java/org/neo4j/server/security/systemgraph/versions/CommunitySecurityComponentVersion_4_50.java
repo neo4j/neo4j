@@ -19,23 +19,24 @@
  */
 package org.neo4j.server.security.systemgraph.versions;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.server.security.auth.UserRepository;
 
-import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_50;
 
 /**
- * This is the UserSecurityComponent version for Neo4j 4.3-Drop04
+ * This is the UserSecurityComponent version for Neo4j 5.0
  */
-public class CommunitySecurityComponentVersion_3_43D4 extends SupportedCommunitySecurityComponentVersion
+public class CommunitySecurityComponentVersion_4_50 extends SupportedCommunitySecurityComponentVersion
 {
     private final KnownCommunitySecurityComponentVersion previous;
 
-    public CommunitySecurityComponentVersion_3_43D4( AbstractSecurityLog securityLog, UserRepository userRepository,
-            KnownCommunitySecurityComponentVersion previous )
+    public CommunitySecurityComponentVersion_4_50( AbstractSecurityLog securityLog, UserRepository userRepository,
+                                                   KnownCommunitySecurityComponentVersion previous )
     {
-        super( COMMUNITY_SECURITY_43D4, securityLog, userRepository );
+        super( COMMUNITY_SECURITY_50, securityLog, userRepository );
         this.previous = previous;
     }
 
@@ -46,12 +47,30 @@ public class CommunitySecurityComponentVersion_3_43D4 extends SupportedCommunity
         {
             previous.upgradeSecurityGraph( tx, fromVersion );
             this.setVersionProperty( tx, version );
-            this.setUserIds( tx );
         }
     }
 
     @Override
-    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
+    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion ) throws Exception
     {
+        if ( fromVersion < version )
+        {
+            previous.upgradeSecurityGraphSchema( tx, fromVersion );
+            try
+            {
+                tx.schema()
+                  .constraintFor( USER_LABEL )
+                  .assertPropertyIsUnique( USER_ID )
+                  .create();
+            }
+            catch ( ConstraintViolationException e )
+            {
+                // Makes the creation of constraints for security idempotent
+                if ( !e.getMessage().startsWith( "An equivalent constraint already exists" ) )
+                {
+                    throw e;
+                }
+            }
+        }
     }
 }

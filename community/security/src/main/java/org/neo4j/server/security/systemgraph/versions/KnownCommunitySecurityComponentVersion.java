@@ -44,6 +44,7 @@ import static org.neo4j.kernel.api.security.AuthManager.INITIAL_USER_NAME;
 public abstract class KnownCommunitySecurityComponentVersion extends KnownSystemComponentVersion
 {
     public static final Label USER_LABEL = Label.label( "User" );
+    public static final String USER_ID = "id";
     private final SecureHasher secureHasher = new SecureHasher();
 
     KnownCommunitySecurityComponentVersion( ComponentVersion componentVersion, AbstractSecurityLog securityLog )
@@ -70,7 +71,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
 
         if ( version >= UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4.getVersion() )
         {
-            node.setProperty( "id",  UUID.randomUUID().toString() );
+            node.setProperty( USER_ID,  UUID.randomUUID().toString() );
         }
     }
 
@@ -111,9 +112,9 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
             while ( nodes.hasNext() )
             {
                 Node node = nodes.next();
-                if ( !node.hasProperty( "id" ) )
+                if ( !node.hasProperty( USER_ID ) )
                 {
-                    node.setProperty( "id", UUID.randomUUID().toString() );
+                    node.setProperty( USER_ID, UUID.randomUUID().toString() );
                 }
             }
         }
@@ -127,4 +128,13 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
      * @param fromVersion the detected version, upgrade will be performed rolling from this
      */
     public abstract void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception;
+
+    /**
+     * Upgrade the security graph schema to this version.
+     * This method recursively calls older versions and performs the upgrades in steps.
+     *
+     * @param tx open transaction to perform the upgrade in
+     * @param fromVersion the detected version, upgrade will be performed rolling from this
+     */
+    public abstract void upgradeSecurityGraphSchema( Transaction tx, int fromVersion ) throws Exception;
 }

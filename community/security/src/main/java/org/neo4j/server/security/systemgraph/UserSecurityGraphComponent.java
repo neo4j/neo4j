@@ -27,16 +27,21 @@ import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_1_40;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_2_41;
 import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_3_43D4;
+import org.neo4j.server.security.systemgraph.versions.CommunitySecurityComponentVersion_4_50;
 import org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion;
 import org.neo4j.server.security.systemgraph.versions.NoCommunitySecurityComponentVersion;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.dbms.database.ComponentVersion.SECURITY_USER_COMPONENT;
 import static org.neo4j.dbms.database.KnownSystemComponentVersion.UNKNOWN_VERSION;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_ID;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 /**
@@ -57,10 +62,12 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
         KnownCommunitySecurityComponentVersion version1 = new CommunitySecurityComponentVersion_1_40( securityLog, initialPasswordRepo );
         KnownCommunitySecurityComponentVersion version2 = new CommunitySecurityComponentVersion_2_41( securityLog, initialPasswordRepo, version1 );
         KnownCommunitySecurityComponentVersion version3 = new CommunitySecurityComponentVersion_3_43D4( securityLog, initialPasswordRepo, version2 );
+        KnownCommunitySecurityComponentVersion version4 = new CommunitySecurityComponentVersion_4_50( securityLog, initialPasswordRepo, version3 );
 
         knownUserSecurityComponentVersions.add( version1 );
         knownUserSecurityComponentVersions.add( version2 );
         knownUserSecurityComponentVersions.add( version3 );
+        knownUserSecurityComponentVersions.add( version4 );
     }
 
     @Override
@@ -91,6 +98,7 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     public void initializeSystemGraphConstraints( Transaction tx )
     {
         initializeSystemGraphConstraint( tx, USER_LABEL, "name" );
+        initializeSystemGraphConstraint( tx, USER_LABEL, USER_ID );
     }
 
     private void initializeLatestSystemGraph( Transaction tx ) throws Exception
@@ -125,29 +133,36 @@ public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
     @Override
     public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
-        SystemGraphComponent.executeWithFullAccess( system, tx ->
+        KnownCommunitySecurityComponentVersion currentVersion;
+        try ( TransactionImpl tx = (TransactionImpl) system.beginTx();
+              KernelTransaction.Revertable ignore = tx.kernelTransaction().overrideWith( SecurityContext.AUTH_DISABLED ) )
         {
-            KnownCommunitySecurityComponentVersion currentVersion = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
-            securityLog.debug( String.format( "Trying to upgrade component '%s' with version %d and status %s to latest version",
-                               SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus() ) );
-            if ( currentVersion.version == UNKNOWN_VERSION )
-            {
-                securityLog.debug( "The current version does not have a security graph, doing a full initialization" );
-                initializeLatestSystemGraph( tx );
-            }
-            else
-            {
-                if ( currentVersion.migrationSupported() )
-                {
-                    securityLog.info( "Upgrading security graph to latest version" );
-                    knownUserSecurityComponentVersions.latestComponentVersion().upgradeSecurityGraph( tx, currentVersion.version );
-                }
-                else
-                {
-                    throw currentVersion.unsupported();
-                }
-            }
-        } );
+            currentVersion = knownUserSecurityComponentVersions.detectCurrentComponentVersion( tx );
+            tx.commit();
+        }
+
+        securityLog.debug( String.format( "Trying to upgrade component '%s' with version %d and status %s to latest version",
+                                          SECURITY_USER_COMPONENT, currentVersion.version, currentVersion.getStatus() ) );
+        if ( currentVersion.version == UNKNOWN_VERSION )
+        {
+            securityLog.debug( "The current version does not have a security graph, doing a full initialization" );
+            SystemGraphComponent.executeWithFullAccess( system, this::initializeLatestSystemGraph );
+            SystemGraphComponent.executeWithFullAccess( system, this::initializeSystemGraphConstraints );
+        }
+        else if ( currentVersion.migrationSupported() )
+        {
+            securityLog.info( "Upgrading security graph to latest version" );
+            SystemGraphComponent.executeWithFullAccess( system, tx ->
+                    knownUserSecurityComponentVersions.latestComponentVersion().upgradeSecurityGraph( tx, currentVersion.version )
+            );
+            SystemGraphComponent.executeWithFullAccess( system, tx ->
+                    knownUserSecurityComponentVersions.latestComponentVersion().upgradeSecurityGraphSchema( tx, currentVersion.version )
+            );
+        }
+        else
+        {
+            throw currentVersion.unsupported();
+        }
     }
 
     public KnownCommunitySecurityComponentVersion findSecurityGraphComponentVersion( ComponentVersion version )

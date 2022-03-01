@@ -45,4 +45,9 @@ public class CommunitySecurityComponentVersion_1_40 extends SupportedCommunitySe
     public void upgradeSecurityGraph( Transaction tx, int fromVersion ) throws Exception
     {
     }
+
+    @Override
+    public void upgradeSecurityGraphSchema( Transaction tx, int fromVersion )
+    {
+    }
 }

@@ -44,6 +44,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -75,6 +76,11 @@ import static org.neo4j.dbms.database.SystemGraphComponent.Status.CURRENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.server.security.auth.SecurityTestUtils.credentialFor;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4;
+import static org.neo4j.server.security.systemgraph.UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_50;
+import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_ID;
 import static org.neo4j.server.security.systemgraph.versions.KnownCommunitySecurityComponentVersion.USER_LABEL;
 
 @TestDirectoryExtension
@@ -122,6 +128,7 @@ class UserSecurityGraphComponentIT
             n.getRelationships().forEach( Relationship::delete );
             n.delete();
         } ) );
+        inTx( tx -> tx.schema().getConstraints().forEach( ConstraintDefinition::drop ) );
         // Remove the SecurityUserComponent, to be able to initialize it with the correct version
         systemGraphComponents.deregister( SECURITY_USER_COMPONENT );
         systemGraphComponents.initializeSystemGraph( system );
@@ -172,14 +179,15 @@ class UserSecurityGraphComponentIT
     static Stream<Arguments> versionAndStatusProvider()
     {
         return Stream.of(
-                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40, REQUIRES_UPGRADE ),
-                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_41, REQUIRES_UPGRADE ),
-                Arguments.arguments( UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_43D4, CURRENT )
+                Arguments.arguments( COMMUNITY_SECURITY_40, REQUIRES_UPGRADE ),
+                Arguments.arguments( COMMUNITY_SECURITY_41, REQUIRES_UPGRADE ),
+                Arguments.arguments( COMMUNITY_SECURITY_43D4, REQUIRES_UPGRADE ),
+                Arguments.arguments( COMMUNITY_SECURITY_50, CURRENT )
         );
     }
 
     @ParameterizedTest
-    @MethodSource( "supportedPreviousVersions" )
+    @MethodSource( "beforeUserId" )
     void shouldAddUserIdsOnUpgradeFromOlderSystemDb( UserSecurityGraphComponentVersion version ) throws Exception
     {
         // Given
@@ -202,10 +210,62 @@ class UserSecurityGraphComponentIT
         assertThat( usernameAndIdsAfterUpgrade.get( "alice" ) ).isNotNull();
     }
 
+    @ParameterizedTest
+    @MethodSource( "beforeUserIdConstraint" )
+    void shouldAddConstraintForUserIdsOnUpgradeFromOlderSystemDb( UserSecurityGraphComponentVersion version ) throws Exception
+    {
+        // Given
+        initUserSecurityComponent( version );
+
+        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
+        {
+            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints( USER_LABEL );
+            for ( ConstraintDefinition constraint : constraints )
+            {
+                for ( String property : constraint.getPropertyKeys() )
+                {
+                    assertThat( property ).isIn( "name" );
+                }
+            }
+            tx.commit();
+        }
+
+        // When running dbms.upgrade
+        systemGraphComponents.upgradeToCurrent( system );
+
+        // Then
+        try ( Transaction tx = system.beginTransaction( KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED ) )
+        {
+            Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints( USER_LABEL );
+            for ( ConstraintDefinition constraint : constraints )
+            {
+                for ( String property : constraint.getPropertyKeys() )
+                {
+                    assertThat( property ).isIn( "name", USER_ID );
+                }
+            }
+            tx.commit();
+        }
+    }
+
     private static Stream<Arguments> supportedPreviousVersions()
     {
         return Arrays.stream( UserSecurityGraphComponentVersion.values() )
                      .filter( version -> version.runtimeSupported() && !version.isCurrent() )
+                     .map( Arguments::of );
+    }
+
+    private static Stream<Arguments> beforeUserId()
+    {
+        return Arrays.stream( UserSecurityGraphComponentVersion.values() )
+                     .filter( version -> version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_43D4.getVersion() )
+                     .map( Arguments::of );
+    }
+
+    private static Stream<Arguments> beforeUserIdConstraint()
+    {
+        return Arrays.stream( UserSecurityGraphComponentVersion.values() )
+                     .filter( version -> version.runtimeSupported() && version.getVersion() < COMMUNITY_SECURITY_50.getVersion() )
                      .map( Arguments::of );
     }
 
@@ -284,12 +344,16 @@ class UserSecurityGraphComponentIT
     private static void initUserSecurityComponent( UserSecurityGraphComponentVersion version ) throws Exception
     {
         KnownCommunitySecurityComponentVersion builder = userSecurityGraphComponent.findSecurityGraphComponentVersion( version );
-        inTx( tx -> userSecurityGraphComponent.initializeSystemGraphConstraints( tx ) );
+        inTx( tx -> tx.schema().constraintFor( USER_LABEL ).assertPropertyIsUnique( "name" ).create() );
 
         inTx( builder::setupUsers );
-        if ( version != UserSecurityGraphComponentVersion.COMMUNITY_SECURITY_40 )
+        if ( version != COMMUNITY_SECURITY_40 )
         {
             inTx( tx -> builder.setVersionProperty( tx, version.getVersion() ) );
+        }
+        if ( version.getVersion() >= COMMUNITY_SECURITY_50.getVersion() )
+        {
+            inTx( tx -> tx.schema().constraintFor( USER_LABEL ).assertPropertyIsUnique( USER_ID ).create() );
         }
         userSecurityGraphComponent.postInitialization( system, true );
 
