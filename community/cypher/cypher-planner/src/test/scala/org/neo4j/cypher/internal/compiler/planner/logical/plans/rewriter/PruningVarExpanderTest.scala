@@ -67,7 +67,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("simplest possible query that can use DistinctBFSPruningVarExpand") {
+  test("simplest possible query that can use BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
 
@@ -86,7 +86,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("do not use DistinctBFSPruningVarExpand for undirected search") {
+  test("do not use BFSPruningVarExpand for undirected search") {
     val fromId = "from"
     val allNodes = AllNodesScan(fromId, Set.empty)
     val dir = SemanticDirection.BOTH
@@ -118,7 +118,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("ordered distinct with DistinctBFSPruningVarExpand") {
+  test("ordered distinct with BFSPruningVarExpand") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("a"), "a AS a")
       .expandAll("(a)-[*1..3]->(b)")
@@ -154,7 +154,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("query with distinct aggregation and DistinctBFSPruningVarExpand") {
+  test("query with distinct aggregation and BFSPruningVarExpand") {
     // Simplest query:
     // match (from)-[1..3]->(to) return count(distinct to)
 
@@ -212,7 +212,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("Simple query that filters between expand and distinct and DistinctBFSPruningVarExpand") {
+  test("Simple query that filters between expand and distinct and BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b:X) return distinct b
 
@@ -274,7 +274,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("Double var expand with distinct result with DistinctBFSPruningVarExpand") {
+  test("Double var expand with distinct result with BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[:R*1..3]->(b)-[:T*1..3]->(c) return distinct c
 
@@ -320,7 +320,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("var expand followed by normal expand with DistinctBFSPruningVarExpand") {
+  test("var expand followed by normal expand with BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[:R*..3]->(b)-[:T]->(c) return distinct c
 
@@ -380,7 +380,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(distinct1) should equal(distinct2)
   }
 
-  test("optional match can be solved with PruningVarExpand with DistinctBFSPruningVarExpand") {
+  test("optional match can be solved with PruningVarExpand with BFSPruningVarExpand") {
     /* Simplest query:
        match (a) optional match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
        in logical plans:

@@ -665,6 +665,29 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
+  test("should kill distinct-pruning-var-expand before it runs out of memory") {
+    // given
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(100)), "Test")
+    restartTx()
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .bfsPruningVarExpand("(x)<-[*1..6]-(y)")
+      .nodeByLabelScan("x", "C", IndexOrderNone)
+      .build()
+
+    // when
+    nestedStarGraphCenterOnly(6, 6, "C", "L")
+
+    // Creating the graph needs more memory than querying it, so we need to lower the max size to trigger the MemoryLimitExceeded exception
+    getConfig.setDynamic(GraphDatabaseSettings.memory_transaction_max_size, Long.box(ByteUnit.mebiBytes(1)), "Test")
+    restartTx()
+
+    // then
+    a[MemoryLimitExceededException] should be thrownBy {
+      consume(execute(logicalQuery, runtime))
+    }
+  }
+
   test("should kill distinct aggregation query before it runs out of memory") {
     // given
     val logicalQuery = new LogicalQueryBuilder(this)

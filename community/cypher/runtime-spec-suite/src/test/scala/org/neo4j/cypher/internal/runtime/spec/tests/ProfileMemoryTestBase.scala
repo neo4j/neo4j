@@ -290,6 +290,23 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](edition: Edition
     assertOnMemory(logicalQuery, NO_INPUT, 4, 1, 2)
   }
 
+  test("should profile memory of distinct var-length-expand") {
+    // given
+    given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .bfsPruningVarExpand("(x)-[*1..4]->(y)")
+      .nodeByLabelScan("x", "START", IndexOrderNone)
+      .build()
+
+    execute(logicalQuery, runtime)
+
+    // then
+    assertOnMemory(logicalQuery, NO_INPUT, 3, 1)
+  }
+
   test("should profile memory of IN") {
     given {
       nodePropertyGraph(SIZE, {

@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -32,28 +35,32 @@ import scala.collection.immutable.IndexedSeq
 import scala.util.Random
 
 abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
-  edition: Edition[CONTEXT],
-  runtime: CypherRuntime[CONTEXT],
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                                              edition: Edition[CONTEXT],
+                                                                              runtime: CypherRuntime[CONTEXT],
+                                                                            ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  private val population: Int = 1000
+  private val seed = System.currentTimeMillis()
+  private val random = new Random(seed)
 
   test("random and compare") {
-    val POPULATION: Int = 1 * 1000
-    val seed = System.currentTimeMillis()
-    val nodes = setUpGraph(seed, POPULATION, 20)
-    val r = new Random
+    val nodes = setUpGraph(15 + random.nextInt(10))
+    val millisToRun = 10000
 
-    val start = System.currentTimeMillis()
-
-    while(System.currentTimeMillis() - start < 10000) {
-      withClue("seed used: " + seed) {
-        testNode(nodes(r.nextInt(POPULATION)), r)
-      }
+    withClue("seed used: " + seed) {
+      runForMillis(millisToRun)(() => testPruningVarExpand(nodes(random.nextInt(population)), random))
+      runForMillis(millisToRun)(() => testDistinctPruningVarExpand(nodes(random.nextInt(population)), OUTGOING, random))
+      runForMillis(millisToRun)(() => testDistinctPruningVarExpand(nodes(random.nextInt(population)), INCOMING, random))
     }
-
   }
 
-  private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int): IndexedSeq[Node] = {
-    val r = new Random(seed)
+  private def runForMillis(millisToRun: Long)(f: () => Unit): Unit = {
+    val start = System.currentTimeMillis()
+    while (System.currentTimeMillis() - start < millisToRun) {
+      f()
+    }
+  }
+
+  private def setUpGraph(friendCount: Int): IndexedSeq[Node] = {
 
     var count = 0
 
@@ -65,16 +72,16 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
       }
     }
 
-    val nodes = (0 to POPULATION) map { _ =>
+    val nodes = (0 to population) map { _ =>
       checkAndSwitch()
       tx.createNode()
     }
 
     for {
       n1 <- nodes
-      friends = r.nextInt(friendCount)
+      friends = random.nextInt(friendCount)
       _ <- 0 to friends
-      n2 = nodes(r.nextInt(POPULATION))
+      n2 = nodes(random.nextInt(population))
     } {
       checkAndSwitch()
       tx.getNodeById(n1.getId).createRelationshipTo(n2, REL)
@@ -85,7 +92,7 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
     nodes
   }
 
-  private def testNode(startNode: Node, r: Random): Unit = {
+  private def testPruningVarExpand(startNode: Node, r: Random): Unit = {
     val min = r.nextInt(3)
     val max = min + 1 + r.nextInt(3)
 
@@ -109,19 +116,66 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
       val missingFromNew = distinctVarExpandResult -- pruningVarExpandResult
       val shouldNotBeInNew = pruningVarExpandResult -- distinctVarExpandResult
       var message =
-        s"""startNode: $startNode
+        s"""Failed to do PruningVarExpand
+           |startNode: $startNode
            |size of old result ${distinctVarExpandResult.size}
            |size of new result ${pruningVarExpandResult.size}
            |min $min
            |max $max
            |""".stripMargin
-      if(missingFromNew.nonEmpty) {
+      if (missingFromNew.nonEmpty) {
         message += s"missing from new result: ${missingFromNew.mkString(",")}\n"
       }
-      if(shouldNotBeInNew.nonEmpty) {
+      if (shouldNotBeInNew.nonEmpty) {
         message += s"should not be in new result: ${shouldNotBeInNew.mkString(",")}\n"
       }
 
+      fail(message)
+    }
+  }
+
+  private def testDistinctPruningVarExpand(startNode: Node, direction: SemanticDirection, r: Random): Unit = {
+    val min = r.nextInt(2)
+    val max = min + 1 + r.nextInt(3)
+
+    val pattern = direction match {
+      case OUTGOING => s"(from)-[*$min..$max]->(to)"
+      case SemanticDirection.INCOMING => s"(from)<-[*$min..$max]-(to)"
+      case SemanticDirection.BOTH => s"(from)-[*$min..$max]-(to)"
+    }
+    val pruningQuery = new LogicalQueryBuilder(this)
+      .produceResults("from", "to")
+      .bfsPruningVarExpand(pattern)
+      .input(nodes = Seq("from"))
+      .build()
+
+    val distinctQuery = new LogicalQueryBuilder(this)
+      .produceResults("from", "to")
+      .distinct("from AS from", "to AS to")
+      .expand(pattern)
+      .input(nodes = Seq("from"))
+      .build()
+
+    val distinctVarExpandResult = consume(execute(distinctQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+    val pruningVarExpandResult = consume(execute(pruningQuery, runtime, inputValues(Array(startNode)))).map(_.toList).toSet
+
+    if (distinctVarExpandResult != pruningVarExpandResult) {
+      val missingFromNew = distinctVarExpandResult -- pruningVarExpandResult
+      val shouldNotBeInNew = pruningVarExpandResult -- distinctVarExpandResult
+      var message =
+        s"""Failed to do $direction BFSPruningVarExpand
+           |startNode: $startNode
+           |size of old result ${distinctVarExpandResult.size}
+           |size of new result ${pruningVarExpandResult.size}
+           |min $min
+           |max $max
+           |""".stripMargin
+      if (missingFromNew.nonEmpty) {
+        message += s"missing from new result: ${missingFromNew.mkString(",")}\n"
+      }
+      if (shouldNotBeInNew.nonEmpty) {
+        message += s"should not be in new result: ${shouldNotBeInNew.mkString(",")}\n"
+      }
       fail(message)
     }
   }

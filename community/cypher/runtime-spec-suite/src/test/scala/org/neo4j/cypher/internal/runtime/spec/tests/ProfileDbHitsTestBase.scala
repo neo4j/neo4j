@@ -45,6 +45,8 @@ import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
@@ -944,6 +946,29 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     result.runtimeResult.queryProfile().operatorProfile(0).dbHits() should be (2 *(sizeHint * (1 /* read node */ + 2 * costOfProperty)))// produceresults
+  }
+
+  test("should profile dbhits with bfs pruning var-expand") {
+    // given
+    given {
+      val x = tx.createNode(Label.label("START"))
+      val relType = RelationshipType.withName("R")
+      x.createRelationshipTo(tx.createNode(), relType)
+      x.createRelationshipTo(tx.createNode(), relType)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("y")
+      .distinct("y AS y")
+      .bfsPruningVarExpand("(x)-[*1..1]->(y)")
+      .nodeByLabelScan("x", "START")
+      .build()
+
+    val runtimeResult = profile(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult.runtimeResult.queryProfile().operatorProfile(2).dbHits() should be (3)
   }
 }
 

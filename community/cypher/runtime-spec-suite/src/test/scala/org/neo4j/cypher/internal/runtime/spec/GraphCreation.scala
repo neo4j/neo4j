@@ -288,9 +288,9 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *       +>    sb1 +> sb2     +>
    *       ->        sa1        ->
    * start ----------------------> middle <---------------------- end
-   *                                      ->        sa1        ->
-   *                                      +>    sb1 +> sb2     +>
-   *                                      -> sc1 -> sc2 -> sc3 ->
+   *                                      ->        ea1        ->
+   *                                      +>    eb1 +> eb2     +>
+   *                                      -> ec1 -> ec2 -> ec3 ->
    *
    * where
    *   start has label :START
