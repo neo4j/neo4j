@@ -258,7 +258,11 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
          * thread will close down the connection eventually.
          */
         connectionState.markTerminated();
-        transactionManager().interrupt( connectionState.getCurrentTransactionId() );
+        var txId = connectionState.getCurrentTransactionId();
+        if ( txId != null )
+        {
+            transactionManager().interrupt( txId );
+        }
         transactionManager().cleanUp( new CleanUpConnectionContext( context.connectionId() ) );
     }
 
