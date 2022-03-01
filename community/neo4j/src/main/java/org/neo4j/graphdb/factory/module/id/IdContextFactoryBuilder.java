@@ -92,7 +92,7 @@ public final class IdContextFactoryBuilder
         {
             // There's no point allocating large ID caches for the system database because it generally sees very low activity.
             // Also take into consideration if user has explicitly overridden the behaviour to always force small caches.
-            boolean allowLargeIdCaches = !config.get( GraphDatabaseInternalSettings.force_small_id_cache );
+            boolean allowLargeIdCaches = !config.get( GraphDatabaseInternalSettings.force_small_id_cache ) && !databaseId.isSystemDatabase();
             return new DefaultIdGeneratorFactory( fs, immediate(), allowLargeIdCaches, databaseId.name() );
         };
     }
