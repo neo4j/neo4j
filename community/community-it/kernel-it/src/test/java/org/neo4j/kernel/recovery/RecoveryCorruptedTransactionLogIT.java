@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -920,11 +921,35 @@ class RecoveryCorruptedTransactionLogIT
             try ( StoreChannel storeChannel = fileSystem.write( checkpointFile.getDetachedCheckpointFileForVersion( logPosition.getLogVersion() ) )  )
             {
                 storeChannel.position( logPosition.getByteOffset() );
-                var array = random.nextBytes( new byte[bytesToAdd] );
-                // zero at the begining marks end of records
-                array[0] = randomNonZeroByte();
+                var array = new byte[bytesToAdd];
+                do
+                {
+                    random.nextBytes( array );
+                    // zero at the beginning marks end of records
+                    array[0] = randomNonZeroByte();
+                }
+                while ( !checkpointEntryLooksCorrupted( array ) );
                 storeChannel.writeAll( ByteBuffer.wrap( array ) );
             }
+        }
+    }
+
+    private boolean checkpointEntryLooksCorrupted( byte[] array )
+    {
+        var testReader = new VersionAwareLogEntryReader( version -> null );
+        var ch = new InMemoryVersionableReadableClosablePositionAwareChannel();
+        for ( byte b : array )
+        {
+            ch.put( b );
+        }
+        try
+        {
+            testReader.readLogEntry( ch );
+            return false;
+        }
+        catch ( Exception e )
+        {
+            return true;
         }
     }
 
