@@ -38,17 +38,21 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object countStorePlanner {
 
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
     query.horizon match {
-      case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, _)
+      case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, selections)
         if groupingKeys.isEmpty && query.queryInput.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
-        countStorePlan.map(p => projection(p, groupingKeys, groupingKeys, context))
+        countStorePlan.map { plan =>
+          val projectionPlan = projection(plan, groupingKeys, groupingKeys, context)
+          context.logicalPlanProducer.planHorizonSelection(projectionPlan, selections.flatPredicates, InterestingOrder.empty, context)
+        }
 
       case _ => None
     }
