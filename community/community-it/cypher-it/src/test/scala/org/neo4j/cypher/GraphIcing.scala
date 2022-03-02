@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import java.util.concurrent.TimeUnit
-
 import scala.collection.JavaConverters.iterableAsScalaIterableConverter
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
@@ -168,14 +167,6 @@ trait GraphIcing {
 
     def createNodeIndex(indexType: IndexType, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties, indexType)
-    }
-
-    def createBtreeNodeIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, IndexType.BTREE, Map("indexProvider" -> s"'$provider'"))
-    }
-
-    def createBtreeRelationshipIndexWithProvider(label: String, provider: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, label, properties, IndexType.BTREE, Map("indexProvider" -> s"'$provider'"))
     }
 
     def createBtreeRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
