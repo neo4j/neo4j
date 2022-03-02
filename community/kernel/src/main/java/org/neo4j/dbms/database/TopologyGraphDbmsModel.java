@@ -120,6 +120,7 @@ public interface TopologyGraphDbmsModel
     String DATABASE_STORE_VERSION_PROPERTY = "store_version";
     String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
     String DATABASE_STORAGE_ENGINE_PROPERTY = "storage_engine";
+    String DATABASE_STORE_FORMAT_NEW_DB_PROPERTY = "creation_store_format";
     String DATABASE_PRIMARIES_PROPERTY = "primaries";
     String DATABASE_SECONDARIES_PROPERTY = "secondaries";
     String DATABASE_CREATED_AT_PROPERTY = "created_at";

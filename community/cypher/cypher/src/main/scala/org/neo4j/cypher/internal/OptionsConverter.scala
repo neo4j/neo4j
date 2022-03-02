@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.MapValueOps.Ops
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
@@ -98,14 +99,15 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
   val NUM_PRIMARIES = "primaries"
   val NUM_SECONDARIES = "secondaries"
   val STORAGE_ENGINE = "storageEngine"
-  val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE'"
+  val STORE_FORMAT = "storeFormat"
+  val VISIBLE_PERMITTED_OPTIONS = s"'$EXISTING_DATA', '$EXISTING_SEED_INSTANCE', '$STORE_FORMAT'"
 
   //existing Data values
   val USE_EXISTING_DATA = "use"
 
   override def convert(map: MapValue): CreateDatabaseOptions = {
 
-      map.foldLeft(CreateDatabaseOptions(None, None, None, None, None)) { case (ops, (key, value)) =>
+      map.foldLeft(CreateDatabaseOptions(None, None, None, None, None, None)) { case (ops, (key, value)) =>
       //existingData
       if (key.equalsIgnoreCase(EXISTING_DATA)) {
         value match {
@@ -143,6 +145,22 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
           case storageEngine: TextValue => ops.copy(storageEngine = Some(storageEngine.stringValue()))
           case _ =>
             throw new InvalidArgumentsException(s"Could not create database with specified $STORAGE_ENGINE '$value', String expected.")
+        }
+        //storeFormat
+      } else if (key.equalsIgnoreCase(STORE_FORMAT)) {
+        value match {
+          case storeFormat: TextValue =>
+            try {
+              // Convert to DatabaseRecordFormat to see that it is a valid value but let's store it as a string to open up for when formats for the next storage engine are also added.
+              ops.copy(storeFormatNewDb = Some(GraphDatabaseSettings.DatabaseRecordFormat.valueOf(storeFormat.stringValue()).name()))
+            }
+            catch {
+              case _: Exception =>
+                throw new InvalidArgumentsException(s"Could not create database with specified $STORE_FORMAT '${storeFormat.stringValue()}'. Unknown format, supported formats are "
+                  + GraphDatabaseSettings.DatabaseRecordFormat.values().mkString("('", "', '", "')"))
+            }
+          case _ =>
+            throw new InvalidArgumentsException(s"Could not create database with specified $STORE_FORMAT '$value', String expected.")
         }
       } else {
         throw new InvalidArgumentsException(s"Could not create database with unrecognised option: '$key'. Expected $VISIBLE_PERMITTED_OPTIONS.")
@@ -581,7 +599,8 @@ case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescript
 case class CreateIndexWithStringProviderOptions(provider: Option[String], config: IndexConfig)
 case class CreateIndexWithProviderDescriptorOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
 case class CreateDatabaseOptions(existingData: Option[String], databaseSeed: Option[String],
-                                 primaries: Option[Integer], secondaries: Option[Integer], storageEngine: Option[String])
+                                 primaries: Option[Integer], secondaries: Option[Integer], storageEngine: Option[String],
+                                 storeFormatNewDb: Option[String])
 
 object MapValueOps {
 

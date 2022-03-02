@@ -19,9 +19,11 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 
 public class DatabaseOptions
@@ -30,12 +32,24 @@ public class DatabaseOptions
 
     public static DatabaseOptions fromProperties( Map<String,Object> allProperties )
     {
-        var storageEngineName = (String) allProperties.get( "storage_engine" );
+        var storageEngineName = (String) allProperties.get( TopologyGraphDbmsModel.DATABASE_STORAGE_ENGINE_PROPERTY );
+        var storeFormat = (String) allProperties.get( TopologyGraphDbmsModel.DATABASE_STORE_FORMAT_NEW_DB_PROPERTY );
+
+        if ( storageEngineName == null && storeFormat == null )
+        {
+            return EMPTY;
+        }
+        Map<Setting<?>,Object> settings = new HashMap<>();
+
         if ( storageEngineName != null )
         {
-            return new DatabaseOptions( Map.of( GraphDatabaseInternalSettings.storage_engine, storageEngineName ) );
+            settings.put( GraphDatabaseInternalSettings.storage_engine, storageEngineName );
         }
-        return EMPTY;
+        if ( storeFormat != null )
+        {
+            settings.put( GraphDatabaseSettings.record_format_created_db, GraphDatabaseSettings.DatabaseRecordFormat.valueOf( storeFormat ) );
+        }
+        return new DatabaseOptions( settings );
     }
 
     private final Map<Setting<?>,Object> settings;
