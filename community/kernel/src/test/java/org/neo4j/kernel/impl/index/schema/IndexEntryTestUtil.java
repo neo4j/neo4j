@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.TextValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,7 +29,7 @@ public class IndexEntryTestUtil
 {
     public static <KEY extends NativeIndexKey<KEY>> String generateStringResultingInIndexEntrySize( int size )
     {
-        GenericLayout layout = new GenericLayout( 1, IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() ) );
+        RangeLayout layout = new RangeLayout( 1 );
         return generateStringValueResultingInIndexEntrySize( layout, size ).stringValue();
     }
 

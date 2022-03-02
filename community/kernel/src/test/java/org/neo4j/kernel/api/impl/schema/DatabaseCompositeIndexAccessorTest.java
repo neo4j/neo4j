@@ -30,7 +30,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -318,9 +316,7 @@ public class DatabaseCompositeIndexAccessorTest
     private static Iterable<IndexProvider> getIndexProviders( PageCache pageCache, JobScheduler jobScheduler, FileSystemAbstraction fileSystem,
             TestDirectory testDirectory )
     {
-        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = Arrays.asList(
-                new GenericNativeIndexProviderFactory(),
-                new RangeIndexProviderFactory() );
+        Collection<AbstractIndexProviderFactory<?>> indexProviderFactories = List.of( new RangeIndexProviderFactory() );
         return indexProviderFactories.stream().map( f -> f.create( pageCache, fileSystem, new SimpleLogService( logProvider ),
                                                                    new Monitors(), CONFIG, writable(), DbmsInfo.UNKNOWN, RecoveryCleanupWorkCollector.ignore(),
                                                                    DatabaseLayout.ofFlat( testDirectory.homePath() ),

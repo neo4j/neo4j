@@ -775,7 +775,6 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
     /**
      * If this test fails because size of index key has changed, documentation needs to be updated accordingly.
      */
-    @SuppressWarnings( "DuplicateBranchesInSwitch" )
     @ParameterizedTest
     @MethodSource( "singleValueGeneratorsStream" )
     void testDocumentedKeySizesNonArrays( ValueGenerator generator )
@@ -784,52 +783,37 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
         KEY key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
-        int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
+        int keyOverhead = NativeIndexKey.ENTITY_ID_SIZE;
         int actualSizeOfData = keySize - keyOverhead;
 
         int expectedSizeOfData;
         String typeName = value.getTypeName();
-        switch ( value.valueGroup() )
-        {
-        case NUMBER:
-            expectedSizeOfData = getNumberSize( value );
-            break;
-        case BOOLEAN:
-            expectedSizeOfData = 2;
-            break;
-        case DATE:
-            // typeName: Date
-            expectedSizeOfData = 9;
-            break;
-        case ZONED_TIME:
-            // typeName: Time
-            expectedSizeOfData = 13;
-            break;
-        case LOCAL_TIME:
-            // typeName: LocalTime
-            expectedSizeOfData = 9;
-            break;
-        case ZONED_DATE_TIME:
-            // typeName: DateTime
-            expectedSizeOfData = 17;
-            break;
-        case LOCAL_DATE_TIME:
-            // typeName: LocalDateTime
-            expectedSizeOfData = 13;
-            break;
-        case DURATION:
-            // typeName: Duration or Period
-            expectedSizeOfData = 29;
-            break;
-        case GEOMETRY:
-            expectedSizeOfData = getGeometrySize( value );
-            break;
-        case TEXT:
-            expectedSizeOfData = getStringSize( value );
-            break;
-        default:
-            throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value );
-        }
+        expectedSizeOfData = switch ( value.valueGroup() )
+                {
+                    case NUMBER -> getNumberSize( value );
+                    case BOOLEAN -> 2;
+                    case DATE ->
+                            // typeName: Date
+                            9;
+                    case ZONED_TIME ->
+                            // typeName: Time
+                            13;
+                    case LOCAL_TIME ->
+                            // typeName: LocalTime
+                            9;
+                    case ZONED_DATE_TIME ->
+                            // typeName: DateTime
+                            17;
+                    case LOCAL_DATE_TIME ->
+                            // typeName: LocalDateTime
+                            13;
+                    case DURATION ->
+                            // typeName: Duration or Period
+                            29;
+                    case GEOMETRY -> getGeometrySize( value );
+                    case TEXT -> getStringSize( value );
+                    default -> throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value );
+                };
         assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );
     }
 
@@ -845,7 +829,7 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
         KEY key = newKeyState();
         key.initFromValue( 0, value, NEUTRAL );
         int keySize = key.size();
-        int keyOverhead = BtreeKey.ENTITY_ID_SIZE;
+        int keyOverhead = NativeIndexKey.ENTITY_ID_SIZE;
         int actualSizeOfData = keySize - keyOverhead;
 
         int arrayLength = 0;
@@ -863,53 +847,54 @@ abstract class IndexKeyStateTest<KEY extends GenericKey<KEY>>
         String typeName = value.getTypeName();
         switch ( value.valueGroup() )
         {
-        case NUMBER_ARRAY:
+        case NUMBER_ARRAY -> {
             arrayOverhead = numberArrayOverhead;
             arrayElementSize = getNumberArrayElementSize( value );
-            break;
-        case BOOLEAN_ARRAY:
+        }
+        case BOOLEAN_ARRAY -> {
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 1;
-            break;
-        case DATE_ARRAY:
+        }
+        case DATE_ARRAY -> {
             // typeName: Date
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 8;
-            break;
-        case ZONED_TIME_ARRAY:
+        }
+        case ZONED_TIME_ARRAY -> {
             // typeName: Time
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 12;
-            break;
-        case LOCAL_TIME_ARRAY:
+        }
+        case LOCAL_TIME_ARRAY -> {
             // typeName: LocalTime
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 8;
-            break;
-        case ZONED_DATE_TIME_ARRAY:
+        }
+        case ZONED_DATE_TIME_ARRAY -> {
             // typeName: DateTime
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 16;
-            break;
-        case LOCAL_DATE_TIME_ARRAY:
+        }
+        case LOCAL_DATE_TIME_ARRAY -> {
             // typeName: LocalDateTime
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 12;
-            break;
-        case DURATION_ARRAY:
+        }
+        case DURATION_ARRAY -> {
             // typeName: Duration or Period
             arrayOverhead = normalArrayOverhead;
             arrayElementSize = 28;
-            break;
-        case GEOMETRY_ARRAY:
+        }
+        case GEOMETRY_ARRAY -> {
             arrayOverhead = geometryArrayOverhead;
             arrayElementSize = getGeometryArrayElementSize( value, arrayLength );
-            break;
-        case TEXT_ARRAY:
+        }
+        case TEXT_ARRAY -> {
             assertTextArraySize( value, actualSizeOfData, normalArrayOverhead, typeName );
             return;
-        default:
-            throw new RuntimeException( "Did not expect this type to be tested in this test. Value was " + value + " is value group " + value.valueGroup() );
+        }
+        default -> throw new RuntimeException(
+                "Did not expect this type to be tested in this test. Value was " + value + " is value group " + value.valueGroup() );
         }
         int expectedSizeOfData = arrayOverhead + arrayLength * arrayElementSize;
         assertKeySize( expectedSizeOfData, actualSizeOfData, typeName );

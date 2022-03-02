@@ -64,9 +64,4 @@ interface IndexParams
     {
         return true;
     }
-
-    default boolean indexSupportsGeometryRange()
-    {
-        return true;
-    }
 }

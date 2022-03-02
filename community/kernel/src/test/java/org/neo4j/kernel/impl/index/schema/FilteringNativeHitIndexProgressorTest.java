@@ -59,7 +59,7 @@ class FilteringNativeHitIndexProgressorTest
             keys.add( random.nextString() );
         }
 
-        Seeker<BtreeKey,NullValue> cursor = new ResultCursor( keys.iterator() );
+        Seeker<RangeKey,NullValue> cursor = new ResultCursor( keys.iterator() );
         NodeValueIterator valueClient = new NodeValueIterator()
         {
             @Override
@@ -71,7 +71,7 @@ class FilteringNativeHitIndexProgressorTest
         PropertyIndexQuery[] predicates = new PropertyIndexQuery[]{mock( PropertyIndexQuery.class )};
         Predicate<String> filter = string -> string.contains( "a" );
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue) invocation.getArgument( 0 )).stringValue() ) );
-        try ( FilteringNativeHitIndexProgressor<BtreeKey> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
+        try ( FilteringNativeHitIndexProgressor<RangeKey> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 predicates ) )
         {
             valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, AccessMode.Static.READ, false, unorderedValues(), predicates );

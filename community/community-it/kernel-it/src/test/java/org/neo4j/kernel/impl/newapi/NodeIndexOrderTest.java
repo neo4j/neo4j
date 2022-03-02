@@ -138,17 +138,6 @@ class NodeIndexOrderTest
     }
 
     @Nested
-    class BtreeIndexTest extends NodeIndexOrderTestBase
-    {
-
-        @Override
-        IndexType indexType()
-        {
-            return IndexType.BTREE;
-        }
-    }
-
-    @Nested
     class RangeIndexTest extends NodeIndexOrderTestBase
     {
 

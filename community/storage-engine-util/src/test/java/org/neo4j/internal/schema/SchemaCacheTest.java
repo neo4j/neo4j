@@ -232,7 +232,7 @@ class SchemaCacheTest
 
         // When
         IndexDescriptor actual = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.TEXT );
-        IndexDescriptor wrongType = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.BTREE );
+        IndexDescriptor wrongType = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.RANGE );
 
         // Then
         assertThat( actual ).isEqualTo( expected );
@@ -248,12 +248,12 @@ class SchemaCacheTest
         IndexDescriptor expected;
         IndexDescriptor expected2;
         cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
-        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.RANGE, 1, 3 ) );
         cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
         cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
 
         // When
-        var actual = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.BTREE );
+        var actual = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.RANGE );
         var actual2 = cache.indexForSchemaAndType( forLabel( 1, 3 ), IndexType.TEXT );
 
         // Then
@@ -270,7 +270,7 @@ class SchemaCacheTest
         IndexDescriptor expected;
         IndexDescriptor expected2;
         cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
-        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.RANGE, 1, 3 ) );
         cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
         cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
 
@@ -307,7 +307,7 @@ class SchemaCacheTest
         // Given
         SchemaCache cache = newSchemaCache();
 
-        cache.addSchemaRule( newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( newIndexRule( 2L, IndexType.RANGE, 1, 3 ) );
         cache.addSchemaRule( newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
 
         // When
@@ -343,7 +343,7 @@ class SchemaCacheTest
         IndexDescriptor expected;
         IndexDescriptor expected2;
         cache.addSchemaRule( newIndexRule( 1L, 1, 2 ) );
-        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.BTREE, 1, 3 ) );
+        cache.addSchemaRule( expected = newIndexRule( 2L, IndexType.RANGE, 1, 3 ) );
         cache.addSchemaRule( expected2 = newIndexRule( 3L, IndexType.TEXT, 1, 3 ) );
         cache.addSchemaRule( newIndexRule( 4L, 2, 2 ) );
 
@@ -753,9 +753,9 @@ class SchemaCacheTest
     @Test
     void hasConstraintRuleShouldMatchBySchemaAndTypeAndIndexType()
     {
-        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4, IndexType.BTREE );
+        ConstraintDescriptor existing = uniquenessConstraint( 1, 2, 3, 4, IndexType.RANGE );
         // Different rule id, but same type, schema and index type.
-        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4, IndexType.BTREE );
+        ConstraintDescriptor checked = uniquenessConstraint( 0, 2, 3, 4, IndexType.RANGE );
         SchemaCache cache = newSchemaCache( existing );
         assertTrue( cache.hasConstraintRule( checked ) );
     }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.concurrencytest;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -48,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.internal.schema.IndexType.fromPublicApi;
 
 @ImpermanentDbmsExtension
 @ExtendWith( ThreadingExtension.class )
@@ -59,9 +56,8 @@ class ConstraintIndexConcurrencyTest
     @Inject
     private Threading threads;
 
-    @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
-    void shouldNotAllowConcurrentViolationOfConstraint( IndexType indexType ) throws Exception
+    @Test
+    void shouldNotAllowConcurrentViolationOfConstraint() throws Exception
     {
         // Given
         Label label = label( "Foo" );
@@ -72,7 +68,7 @@ class ConstraintIndexConcurrencyTest
         // a constraint
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).withIndexType( indexType ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withName( constraintName ).create();
             tx.commit();
         }
 
@@ -109,7 +105,7 @@ class ConstraintIndexConcurrencyTest
 
             var e = assertThrows( UniquePropertyValueValidationException.class,
                     () -> ktx.dataWrite().nodeSetProperty( node, propertyKeyId, Values.of( conflictingValue ) ) );
-            assertEquals( ConstraintDescriptorFactory.uniqueForLabel( fromPublicApi( indexType ), labelId, propertyKeyId ), e.constraint() );
+            assertEquals( ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKeyId ), e.constraint() );
             IndexEntryConflictException conflict = Iterators.single( e.conflicts().iterator() );
             assertEquals( Values.stringValue( conflictingValue ), conflict.getSinglePropertyValue() );
 

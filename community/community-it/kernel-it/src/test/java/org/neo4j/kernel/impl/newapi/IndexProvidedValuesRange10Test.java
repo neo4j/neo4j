@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -54,7 +53,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 @ExtendWith( RandomExtension.class )
 @TestInstance( TestInstance.Lifecycle.PER_CLASS )
-abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
+abstract class IndexProvidedValuesRange10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static final int N_ENTITIES = 10000;
     public static final String TOKEN = "Token";
@@ -140,14 +139,13 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).withIndexType( IndexType.BTREE ).create();
+                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).create();
                     }
 
                     @Override
                     void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
                     {
-                        tx.schema().indexFor( label( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).withIndexType( IndexType.BTREE )
-                                .create();
+                        tx.schema().indexFor( label( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
                     }
 
                     @Override
@@ -194,15 +192,13 @@ abstract class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBas
                     @Override
                     public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).withIndexType( IndexType.BTREE )
-                                .create();
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).create();
                     }
 
                     @Override
                     void createIndex( Transaction tx, String token, String propertyKey1, String propertyKey2, String indexName )
                     {
-                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName )
-                                .withIndexType( IndexType.BTREE ).create();
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey1 ).on( propertyKey2 ).withName( indexName ).create();
                     }
 
                     @Override

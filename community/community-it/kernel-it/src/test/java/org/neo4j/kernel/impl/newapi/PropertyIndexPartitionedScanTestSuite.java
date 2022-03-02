@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.test.RandomSupport;
@@ -227,7 +226,6 @@ abstract class PropertyIndexPartitionedScanTestSuite<QUERY extends Query<?>, CUR
 
     protected enum TestIndexType
     {
-        BTREE( IndexType.BTREE, GenericNativeIndexProvider.DESCRIPTOR ),
         RANGE( IndexType.RANGE, RangeIndexProvider.DESCRIPTOR );
 
         private final IndexType type;

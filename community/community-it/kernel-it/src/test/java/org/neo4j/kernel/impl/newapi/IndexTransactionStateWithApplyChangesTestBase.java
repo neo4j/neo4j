@@ -183,8 +183,6 @@ abstract class IndexTransactionStateWithApplyChangesTestBase extends KernelAPIWr
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-                Arguments.of( IndexType.BTREE, true ),
-                Arguments.of( IndexType.BTREE, false ),
                 Arguments.of( IndexType.RANGE, true ),
                 Arguments.of( IndexType.RANGE, false )
         );

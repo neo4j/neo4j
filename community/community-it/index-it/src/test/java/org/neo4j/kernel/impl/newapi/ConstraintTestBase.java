@@ -27,7 +27,6 @@ import java.util.List;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -50,8 +49,6 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
     protected abstract LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds );
 
     protected abstract ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds );
-
-    protected abstract IndexType indexType();
 
     @BeforeEach
     public void setup()
@@ -115,9 +112,9 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
         {
 
-            tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).withIndexType( indexType() ).create();
+            tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop1" ).create();
             ConstraintDefinition dropped =
-                    tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).withIndexType( indexType() ).create();
+                    tx.schema().constraintFor( label( "FOO" ) ).assertPropertyIsUnique( "prop2" ).create();
             dropped.drop();
             tx.commit();
         }
@@ -277,8 +274,7 @@ public abstract class ConstraintTestBase<G extends KernelAPIWriteTestSupport> ex
         {
             for ( int i = 0; i < labelProps.length; i += 2 )
             {
-                tx.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] )
-                        .withIndexType( indexType() ).create();
+                tx.schema().constraintFor( label( labelProps[i] ) ).assertPropertyIsUnique( labelProps[i + 1] ).create();
             }
             tx.commit();
         }

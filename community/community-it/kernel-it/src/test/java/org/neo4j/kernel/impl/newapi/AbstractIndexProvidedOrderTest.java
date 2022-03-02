@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -93,8 +92,6 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         return new ReadTestSupport();
     }
 
-    abstract IndexType getIndexType();
-
     abstract EntityControl getEntityControl();
 
     @Override
@@ -102,7 +99,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            getEntityControl().createIndex( tx, TOKEN, PROPERTY_KEY, getIndexType(), INDEX_NAME );
+            getEntityControl().createIndex( tx, TOKEN, PROPERTY_KEY, INDEX_NAME );
             tx.commit();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -237,9 +234,9 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         NODE
                 {
                     @Override
-                    public void createIndex( Transaction tx, String token, String propertyKey, IndexType type, String indexName )
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withIndexType( type ).withName( indexName ).create();
+                        tx.schema().indexFor( label( token ) ).on( propertyKey ).withName( indexName ).create();
                     }
 
                     @Override
@@ -270,9 +267,9 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
         RELATIONSHIP
                 {
                     @Override
-                    public void createIndex( Transaction tx, String token, String propertyKey, IndexType type, String indexName )
+                    public void createIndex( Transaction tx, String token, String propertyKey, String indexName )
                     {
-                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withIndexType( type ).withName( indexName ).create();
+                        tx.schema().indexFor( RelationshipType.withName( token ) ).on( propertyKey ).withName( indexName ).create();
                     }
 
                     @Override
@@ -300,7 +297,7 @@ public abstract class AbstractIndexProvidedOrderTest extends KernelAPIReadTestBa
                     }
                 };
 
-        abstract void createIndex( Transaction tx, String token, String propertyKey, IndexType type, String indexName );
+        abstract void createIndex( Transaction tx, String token, String propertyKey, String indexName );
 
         abstract List<Long> findEntities( KernelTransaction tx, CursorFactory cursors, IndexReadSession index, IndexOrder indexOrder,
                                           PropertyIndexQuery.RangePredicate<?> range ) throws KernelException;

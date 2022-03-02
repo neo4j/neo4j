@@ -67,8 +67,6 @@ import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84_3D;
-import static org.neo4j.values.storable.PointValue.maxPointValueOf;
-import static org.neo4j.values.storable.PointValue.minPointValueOf;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -558,51 +556,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
     }
 
     @Test
-    void shouldPerformSpatialRangeSearch() throws KernelException
-    {
-        assumeTrue( indexParams.indexSupportsGeometryRange() );
-
-        // given
-        boolean needsValues = indexParams.indexProvidesSpatialValues();
-        IndexQueryConstraints constraints = unordered( needsValues );
-        int prop = token.propertyKey( PROP_NAME );
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( PROP_INDEX_NAME ) );
-        IndexValueCapability spatialCapability = index.reference().getCapability().valueCapability( ValueCategory.GEOMETRY );
-        try ( var cursor = entityParams.allocateEntityValueIndexCursor( tx, cursors ) )
-        {
-            MutableLongSet uniqueIds = new LongHashSet();
-
-            // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
-
-            // then
-            assertFoundEntitiesAndValue( cursor, 5, uniqueIds, spatialCapability, needsValues );
-
-            // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN_3D ), maxPointValueOf( CARTESIAN_3D ) ) );
-
-            // then
-            assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
-
-            // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( WGS_84 ), maxPointValueOf( WGS_84 ) ) );
-
-            // then
-            assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
-
-            // when
-            entityParams.entityIndexSeek( tx, index, cursor, constraints,
-                    PropertyIndexQuery.boundingBox( prop, minPointValueOf( WGS_84_3D ), maxPointValueOf( WGS_84_3D ) ) );
-
-            // then
-            assertFoundEntitiesAndValue( cursor, 1, uniqueIds, spatialCapability, needsValues );
-        }
-    }
-
-    @Test
     void shouldPerformBooleanSearch() throws KernelException
     {
         // given
@@ -762,39 +715,6 @@ public abstract class EntityValueIndexCursorTestBase<ENTITY_VALUE_INDEX_CURSOR e
                 // when
                 entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
                                               PropertyIndexQuery.range( prop, DateValue.date( 1986, 11, 18 ), true, DateValue.date( 1989, 3, 24 ), true ) );
-
-                // then
-                assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );
-            }
-        }
-    }
-
-    @Test
-    void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
-    {
-        assumeTrue( indexParams.indexSupportsGeometryRange() );
-
-        // given
-        boolean needsValues = indexParams.indexProvidesSpatialValues();
-        int prop = token.propertyKey( PROP_NAME );
-        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( PROP_INDEX_NAME ) );
-        IndexOrderCapability orderCapabilities = index.reference().getCapability().orderCapability( ValueCategory.GEOMETRY );
-        try ( var cursor = entityParams.allocateEntityValueIndexCursor( tx, cursors ) )
-        {
-            if ( orderCapabilities.supportsAsc() )
-            {
-                // when
-                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.ASCENDING, needsValues ),
-                        PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
-
-                // then
-                assertFoundEntitiesInOrder( cursor, IndexOrder.ASCENDING );
-            }
-            if ( orderCapabilities.supportsDesc() )
-            {
-                // when
-                entityParams.entityIndexSeek( tx, index, cursor, constrained( IndexOrder.DESCENDING, needsValues ),
-                        PropertyIndexQuery.boundingBox( prop, minPointValueOf( CARTESIAN ), maxPointValueOf( CARTESIAN ) ) );
 
                 // then
                 assertFoundEntitiesInOrder( cursor, IndexOrder.DESCENDING );

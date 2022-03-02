@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -33,7 +32,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -51,14 +49,12 @@ import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueVal
 import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
-public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,NullValue,IndexLayout<BtreeKey>>
+public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey,NullValue,RangeLayout>
 {
-    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-
     private static final IndexDescriptor index = forSchema( forLabel( 42, 666 ) ).withName( "index" ).materialise( 0 );
 
-    NativeValueIndexUtility<BtreeKey> valueUtil;
-    ValueCreatorUtil<BtreeKey> valueCreatorUtil;
+    NativeValueIndexUtility<RangeKey> valueUtil;
+    ValueCreatorUtil<RangeKey> valueCreatorUtil;
 
     @BeforeEach
     void setupValueCreator()
@@ -76,9 +72,9 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
+        try ( GBPTree<RangeKey,NullValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            FullScanNonUniqueIndexSampler<RangeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sample = sampler.sample( NULL_CONTEXT );
         }
 
@@ -100,9 +96,9 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
 
         assertZeroCursor( cursorContext );
 
-        try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
+        try ( GBPTree<RangeKey,NullValue> gbpTree = getTree() )
         {
-            FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            FullScanNonUniqueIndexSampler<RangeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
             sampler.sample( cursorContext );
         }
 
@@ -134,11 +130,11 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
 
     private void buildTree( Value[] values ) throws IOException
     {
-        try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
+        try ( GBPTree<RangeKey,NullValue> gbpTree = getTree() )
         {
-            try ( Writer<BtreeKey,NullValue> writer = gbpTree.writer( NULL_CONTEXT ) )
+            try ( Writer<RangeKey,NullValue> writer = gbpTree.writer( NULL_CONTEXT ) )
             {
-                BtreeKey key = layout.newKey();
+                RangeKey key = layout.newKey();
                 long nodeId = 0;
                 for ( Value number : values )
                 {
@@ -152,7 +148,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
         }
     }
 
-    private static ValueCreatorUtil<BtreeKey> createValueCreatorUtil()
+    private static ValueCreatorUtil<RangeKey> createValueCreatorUtil()
     {
         return new ValueCreatorUtil<>( index, typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
@@ -164,8 +160,8 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
     }
 
     @Override
-    IndexLayout<BtreeKey> layout()
+    RangeLayout layout()
     {
-        return new GenericLayout( 1,specificSettings );
+        return new RangeLayout( 1 );
     }
 }

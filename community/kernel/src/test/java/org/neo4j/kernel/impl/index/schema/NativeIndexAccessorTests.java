@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -47,7 +46,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueType;
 
 import static java.lang.String.format;
@@ -84,11 +82,6 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     abstract ValueCreatorUtil<KEY> createValueCreatorUtil();
 
     abstract IndexCapability indexCapability();
-
-    boolean supportedBoundingBoxQueries()
-    {
-        return indexCapability().isQuerySupported( IndexQueryType.BOUNDING_BOX, ValueCategory.GEOMETRY );
-    }
 
     // UPDATER
 

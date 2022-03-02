@@ -20,8 +20,7 @@
 package org.neo4j.kernel.impl.api.constraints;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,9 +29,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.DbmsExtension;
@@ -65,21 +62,19 @@ class ConstraintCreationIT
         }
     }
 
-    @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = {"RANGE", "BTREE"} )
-    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails( IndexType indexType )
+    @Test
+    void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        attemptAndFailConstraintCreation( indexType );
+        attemptAndFailConstraintCreation();
 
         // then
-        IndexProvider indexProvider = indexType == IndexType.BTREE ? indexProviderMap.getBtreeIndexProvider() : indexProviderMap.getDefaultProvider();
-        Path indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
+        Path indexDir = indexProviderMap.getDefaultProvider().directoryStructure().directoryForIndex( indexId );
 
         assertFalse( Files.exists( indexDir ) );
     }
 
-    private void attemptAndFailConstraintCreation( IndexType indexType )
+    private void attemptAndFailConstraintCreation()
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -97,7 +92,7 @@ class ConstraintCreationIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).withIndexType( indexType ).create();
+                tx.schema().constraintFor( LABEL ).assertPropertyIsUnique( "prop" ).create();
                 tx.commit();
             }
         } );

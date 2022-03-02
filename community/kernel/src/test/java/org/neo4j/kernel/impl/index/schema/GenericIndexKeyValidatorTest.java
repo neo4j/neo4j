@@ -24,15 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -61,7 +58,7 @@ class GenericIndexKeyValidatorTest
     void shouldNotBotherSerializingToRealBytesIfFarFromThreshold()
     {
         // given
-        Layout<BtreeKey,NullValue> layout = mock( Layout.class );
+        RangeLayout layout = mock( RangeLayout.class );
         doThrow( RuntimeException.class ).when( layout ).newKey();
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 120, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
@@ -75,8 +72,8 @@ class GenericIndexKeyValidatorTest
     void shouldInvolveSerializingToRealBytesIfMayCrossThreshold()
     {
         // given
-        Layout<BtreeKey,NullValue> layout = mock( Layout.class );
-        when( layout.newKey() ).thenReturn( new CompositeBtreeKey( 3, spatialSettings() ) );
+        RangeLayout layout = mock( RangeLayout.class );
+        when( layout.newKey() ).thenReturn( new CompositeRangeKey( 3 ) );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( 48, descriptor, layout, SIMPLE_NAME_LOOKUP );
 
         // when
@@ -92,9 +89,9 @@ class GenericIndexKeyValidatorTest
         // given
         int slots = random.nextInt( 1, 6 );
         int maxLength = random.nextInt( 15, 30 ) * slots;
-        GenericLayout layout = new GenericLayout( slots, spatialSettings() );
+        RangeLayout layout = new RangeLayout( slots );
         GenericIndexKeyValidator validator = new GenericIndexKeyValidator( maxLength, descriptor, layout, SIMPLE_NAME_LOOKUP );
-        BtreeKey key = layout.newKey();
+        RangeKey key = layout.newKey();
 
         for ( int i = 0; i < 100; i++ )
         {
@@ -122,12 +119,7 @@ class GenericIndexKeyValidatorTest
         }
     }
 
-    private static IndexSpecificSpaceFillingCurveSettings spatialSettings()
-    {
-        return IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    }
-
-    private static int actualSize( Value[] tuple, BtreeKey key )
+    private static int actualSize( Value[] tuple, RangeKey key )
     {
         key.initialize( 0 );
         for ( int i = 0; i < tuple.length; i++ )

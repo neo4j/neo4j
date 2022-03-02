@@ -28,10 +28,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.test.RandomSupport;
@@ -53,7 +51,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class IndexKeyStorageTest
 {
     private static final int BLOCK_SIZE = 2000;
-    private static final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
 
     @Inject
     protected TestDirectory directory;
@@ -61,23 +58,23 @@ class IndexKeyStorageTest
     @Inject
     protected RandomSupport random;
 
-    private GenericLayout layout;
+    private RangeLayout layout;
     private int numberOfSlots;
 
     @BeforeEach
     void createLayout()
     {
         this.numberOfSlots = random.nextInt( 1, 3 );
-        this.layout = new GenericLayout( numberOfSlots, spatialSettings );
+        this.layout = new RangeLayout( numberOfSlots );
     }
 
     @Test
     void shouldAddAndReadZeroKey() throws IOException
     {
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage() )
         {
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<RangeKey> reader = keyStorage.reader() )
             {
                 assertFalse( reader.next(), "Didn't expect reader to have any entries." );
             }
@@ -87,15 +84,15 @@ class IndexKeyStorageTest
     @Test
     void shouldAddAndReadOneKey() throws IOException
     {
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage() )
         {
-            BtreeKey expected = randomKey( 1 );
+            RangeKey expected = randomKey( 1 );
             keyStorage.add( expected );
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<RangeKey> reader = keyStorage.reader() )
             {
                 assertTrue( reader.next(), "Expected reader to have one entry" );
-                BtreeKey actual = reader.key();
+                RangeKey actual = reader.key();
                 assertEquals( 0, layout.compare( expected, actual ), "Expected stored key to be equal to original." );
                 assertFalse( reader.next(), "Expected reader to have only one entry, second entry was " + reader.key() );
             }
@@ -105,25 +102,25 @@ class IndexKeyStorageTest
     @Test
     void shouldAddAndReadMultipleKeys() throws IOException
     {
-        List<BtreeKey> keys = new ArrayList<>();
+        List<RangeKey> keys = new ArrayList<>();
         int numberOfKeys = 1000;
         for ( int i = 0; i < numberOfKeys; i++ )
         {
             keys.add( randomKey( i ) );
         }
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage() )
         {
-            for ( BtreeKey key : keys )
+            for ( RangeKey key : keys )
             {
                 keyStorage.add( key );
             }
             keyStorage.doneAdding();
-            try ( IndexKeyStorage.KeyEntryCursor<BtreeKey> reader = keyStorage.reader() )
+            try ( IndexKeyStorage.KeyEntryCursor<RangeKey> reader = keyStorage.reader() )
             {
-                for ( BtreeKey expected : keys )
+                for ( RangeKey expected : keys )
                 {
                     assertTrue( reader.next() );
-                    BtreeKey actual = reader.key();
+                    RangeKey actual = reader.key();
                     assertEquals( 0, layout.compare( expected, actual ), "Expected stored key to be equal to original." );
                 }
                 assertFalse( reader.next(), "Expected reader to have no more entries, but had at least one additional " + reader.key() );
@@ -136,7 +133,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             assertFalse( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
             keyStorage.doneAdding();
@@ -150,7 +147,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
             keyStorage.doneAdding();
@@ -164,7 +161,7 @@ class IndexKeyStorageTest
     {
         FileSystemAbstraction fs = directory.getFileSystem();
         Path makeSureImDeleted = directory.file( "makeSureImDeleted" );
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage( makeSureImDeleted ) )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage( makeSureImDeleted ) )
         {
             keyStorage.add( randomKey( 1 ) );
             assertTrue( fs.fileExists( makeSureImDeleted ), "Expected this file to exist now so that we can assert deletion later." );
@@ -179,7 +176,7 @@ class IndexKeyStorageTest
         LocalMemoryTracker allocationTracker = new LocalMemoryTracker();
         Path file = directory.file( "file" );
         try ( UnsafeDirectByteBufferAllocator bufferFactory = new UnsafeDirectByteBufferAllocator();
-              IndexKeyStorage<BtreeKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
+              IndexKeyStorage<RangeKey> keyStorage = keyStorage( file, bufferFactory, allocationTracker ) )
         {
             assertEquals( 0, allocationTracker.usedNativeMemory(), "Expected to not have any buffers allocated yet" );
             assertFalse( fs.fileExists( file ), "Expected file to be created lazily" );
@@ -193,7 +190,7 @@ class IndexKeyStorageTest
     @Test
     void shouldReportCorrectCount() throws IOException
     {
-        try ( IndexKeyStorage<BtreeKey> keyStorage = keyStorage() )
+        try ( IndexKeyStorage<RangeKey> keyStorage = keyStorage() )
         {
             assertEquals( 0, keyStorage.count() );
             keyStorage.add( randomKey( 1 ) );
@@ -205,9 +202,9 @@ class IndexKeyStorageTest
         }
     }
 
-    private BtreeKey randomKey( int entityId )
+    private RangeKey randomKey( int entityId )
     {
-        BtreeKey key = layout.newKey();
+        RangeKey key = layout.newKey();
         key.initialize( entityId );
         for ( int i = 0; i < numberOfSlots; i++ )
         {
@@ -217,17 +214,17 @@ class IndexKeyStorageTest
         return key;
     }
 
-    private IndexKeyStorage<BtreeKey> keyStorage()
+    private IndexKeyStorage<RangeKey> keyStorage()
     {
         return keyStorage( directory.file( "file" ) );
     }
 
-    private IndexKeyStorage<BtreeKey> keyStorage( Path file )
+    private IndexKeyStorage<RangeKey> keyStorage( Path file )
     {
         return keyStorage( file, heapBufferFactory( 0 ).newLocalAllocator(), INSTANCE );
     }
 
-    private IndexKeyStorage<BtreeKey> keyStorage( Path file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
+    private IndexKeyStorage<RangeKey> keyStorage( Path file, ByteBufferFactory.Allocator bufferFactory, MemoryTracker memoryTracker )
     {
         return new IndexKeyStorage<>( directory.getFileSystem(), file, bufferFactory, BLOCK_SIZE, layout, memoryTracker );
     }

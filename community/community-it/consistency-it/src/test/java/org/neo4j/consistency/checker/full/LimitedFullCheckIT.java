@@ -92,8 +92,8 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 ) // the duplicate in the 2 unique indexes
-                .verify( RecordType.INDEX, 6 ) // the index entries pointing to node that should not be in index (3 BTREE and 3 RANGE)
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in the unique index
+                .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index (3 RANGE)
                 .andThatsAllFolks();
     }
 
@@ -117,8 +117,8 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest
                         CACHE_LINE_SIZE_BYTES, highNodeId, highRelationshipId, 1 );
         ConsistencySummaryStatistics stats = check( factory );
 
-        on( stats ).verify( RecordType.NODE, 4 ) // 4 node indexes with 1 entry removed
-                .verify( RecordType.RELATIONSHIP, 4 ) // 4 relationship indexes with 1 entry removed
+        on( stats ).verify( RecordType.NODE, 2 ) // 2 node indexes with 1 entry removed
+                .verify( RecordType.RELATIONSHIP, 2 ) // 2 relationship indexes with 1 entry removed
                 .andThatsAllFolks();
     }
 

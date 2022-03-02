@@ -38,90 +38,38 @@ class PartitionedScanTest
     // Property Indexes
 
     @Nested
-    class NodePropertyIndexSeek
+    class NodePropertyIndexSeek extends NodePropertyIndexSeekPartitionedScanTestSuite
     {
-        @Nested
-        class BTree extends NodePropertyIndexSeekPartitionedScanTestSuite
+        NodePropertyIndexSeek()
         {
-            BTree()
-            {
-                super( TestIndexType.BTREE );
-            }
-        }
-
-        @Nested
-        class Range extends NodePropertyIndexSeekPartitionedScanTestSuite
-        {
-            Range()
-            {
-                super( TestIndexType.RANGE );
-            }
+            super( TestIndexType.RANGE );
         }
     }
 
     @Nested
-    class NodePropertyIndexScan
+    class NodePropertyIndexScan extends NodePropertyIndexScanPartitionedScanTestSuite
     {
-        @Nested
-        class BTree extends NodePropertyIndexScanPartitionedScanTestSuite
+        NodePropertyIndexScan()
         {
-            BTree()
-            {
-                super( TestIndexType.BTREE );
-            }
-        }
-
-        @Nested
-        class Range extends NodePropertyIndexScanPartitionedScanTestSuite
-        {
-            Range()
-            {
-                super( TestIndexType.RANGE );
-            }
+            super( TestIndexType.RANGE );
         }
     }
 
     @Nested
-    class RelationshipPropertyIndexSeek
+    class RelationshipPropertyIndexSeek extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
     {
-        @Nested
-        class BTree extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
+        RelationshipPropertyIndexSeek()
         {
-            BTree()
-            {
-                super( TestIndexType.BTREE );
-            }
-        }
-
-        @Nested
-        class Range extends RelationshipPropertyIndexSeekPartitionedScanTestSuite
-        {
-            Range()
-            {
-                super( TestIndexType.RANGE );
-            }
+            super( TestIndexType.RANGE );
         }
     }
 
     @Nested
-    class RelationshipPropertyIndexScan
+    class RelationshipPropertyIndexScan extends RelationshipPropertyIndexScanPartitionedScanTestSuite
     {
-        @Nested
-        class BTree extends RelationshipPropertyIndexScanPartitionedScanTestSuite
+        RelationshipPropertyIndexScan()
         {
-            BTree()
-            {
-                super( TestIndexType.BTREE );
-            }
-        }
-
-        @Nested
-        class Range extends RelationshipPropertyIndexScanPartitionedScanTestSuite
-        {
-            Range()
-            {
-                super( TestIndexType.RANGE );
-            }
+            super( TestIndexType.RANGE );
         }
     }
 }

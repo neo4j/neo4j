@@ -26,10 +26,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.test.RandomSupport;
@@ -48,7 +46,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 @ExtendWith( RandomExtension.class )
 class IndexUpdateStorageTest
 {
-    private static final IndexSpecificSpaceFillingCurveSettings spatialSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private static final SchemaDescriptorSupplier descriptor = () -> SchemaDescriptors.forLabel( 1, 1 );
 
     @Inject
@@ -57,13 +54,13 @@ class IndexUpdateStorageTest
     @Inject
     protected RandomSupport random;
 
-    private final GenericLayout layout = new GenericLayout( 1, spatialSettings );
+    private final RangeLayout layout = new RangeLayout( 1 );
 
     @Test
     void shouldAddZeroEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -80,7 +77,7 @@ class IndexUpdateStorageTest
     void shouldAddFewEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 1000, layout, INSTANCE
         ) )
         {
@@ -97,7 +94,7 @@ class IndexUpdateStorageTest
     void shouldAddManyEntries() throws IOException
     {
         // given
-        try ( IndexUpdateStorage<BtreeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
+        try ( IndexUpdateStorage<RangeKey> storage = new IndexUpdateStorage<>( directory.getFileSystem(), directory.file( "file" ),
                 heapBufferFactory( 0 ).globalAllocator(), 10_000, layout, INSTANCE
         ) )
         {
@@ -110,7 +107,7 @@ class IndexUpdateStorageTest
         }
     }
 
-    private static void storeAll( IndexUpdateStorage<BtreeKey> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
+    private static void storeAll( IndexUpdateStorage<RangeKey> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
             throws IOException
     {
         for ( IndexEntryUpdate<SchemaDescriptorSupplier> update : expected )
@@ -120,10 +117,10 @@ class IndexUpdateStorageTest
         storage.doneAdding();
     }
 
-    private static void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<BtreeKey> storage )
+    private static void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<RangeKey> storage )
             throws IOException
     {
-        try ( IndexUpdateCursor<BtreeKey,NullValue> reader = storage.reader() )
+        try ( IndexUpdateCursor<RangeKey,NullValue> reader = storage.reader() )
         {
             for ( IndexEntryUpdate<SchemaDescriptorSupplier> expectedUpdate : expected )
             {
@@ -134,19 +131,14 @@ class IndexUpdateStorageTest
         }
     }
 
-    private static IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<BtreeKey,NullValue> reader )
+    private static IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<RangeKey,NullValue> reader )
     {
-        switch ( reader.updateMode() )
-        {
-        case ADDED:
-            return IndexEntryUpdate.add( reader.key().getEntityId(), descriptor, reader.key().asValue() );
-        case CHANGED:
-            return IndexEntryUpdate.change( reader.key().getEntityId(), descriptor, reader.key().asValue(), reader.key2().asValue() );
-        case REMOVED:
-            return IndexEntryUpdate.remove( reader.key().getEntityId(), descriptor, reader.key().asValue() );
-        default:
-            throw new IllegalArgumentException();
-        }
+        return switch ( reader.updateMode() )
+                {
+                    case ADDED -> IndexEntryUpdate.add( reader.key().getEntityId(), descriptor, reader.key().asValue() );
+                    case CHANGED -> IndexEntryUpdate.change( reader.key().getEntityId(), descriptor, reader.key().asValue(), reader.key2().asValue() );
+                    case REMOVED -> IndexEntryUpdate.remove( reader.key().getEntityId(), descriptor, reader.key().asValue() );
+                };
     }
 
     private List<IndexEntryUpdate<SchemaDescriptorSupplier>> generateSomeUpdates( int count )
@@ -157,17 +149,10 @@ class IndexUpdateStorageTest
             long entityId = random.nextLong( 10_000_000 );
             switch ( random.among( UpdateMode.MODES ) )
             {
-            case ADDED:
-                updates.add( IndexEntryUpdate.add( entityId, descriptor, random.nextValue() ) );
-                break;
-            case REMOVED:
-                updates.add( IndexEntryUpdate.remove( entityId, descriptor, random.nextValue() ) );
-                break;
-            case CHANGED:
-                updates.add( IndexEntryUpdate.change( entityId, descriptor, random.nextValue(), random.nextValue() ) );
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case ADDED -> updates.add( IndexEntryUpdate.add( entityId, descriptor, random.nextValue() ) );
+            case REMOVED -> updates.add( IndexEntryUpdate.remove( entityId, descriptor, random.nextValue() ) );
+            case CHANGED -> updates.add( IndexEntryUpdate.change( entityId, descriptor, random.nextValue(), random.nextValue() ) );
+            default -> throw new IllegalArgumentException();
             }
         }
         return updates;

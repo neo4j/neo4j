@@ -26,9 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.exceptions.KernelException;
@@ -38,7 +36,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
@@ -66,24 +63,18 @@ public class CompositeUniquenessConstraintValidationIT
 
     public static Stream<Arguments> parameterValues()
     {
-        List<Arguments> args = new ArrayList<>();
-        IndexType[] indexTypes = { IndexType.BTREE, IndexType.RANGE };
-
-        for ( IndexType indexType : indexTypes )
-        {
-            args.add( Arguments.of( indexType, values( 10 ), values( 10d ) ) );
-            args.add( Arguments.of( indexType, values( 10, 20 ), values( 10, 20 ) ) );
-            args.add( Arguments.of( indexType, values( 10L, 20L ), values( 10, 20 ) ) );
-            args.add( Arguments.of( indexType, values( 10, 20 ), values( 10L, 20L ) ) );
-            args.add( Arguments.of( indexType, values( 10, 20 ), values( 10.0, 20.0 ) ) );
-            args.add( Arguments.of( indexType, values( 10, 20 ), values( 10.0, 20.0 ) ) );
-            args.add( Arguments.of( indexType, values( new int[]{1, 2}, "v2" ), values( new int[]{1, 2}, "v2" ) ) );
-            args.add( Arguments.of( indexType, values( "a", "b", "c" ), values( "a", "b", "c" ) ) );
-            args.add( Arguments.of( indexType, values( 285414114323346805L ), values( 285414114323346805L ) ) );
-            args.add( Arguments.of( indexType, values( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), values( 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d ) ) );
-        }
-
-        return args.stream();
+        return Stream.of(
+                Arguments.of( values( 10 ), values( 10d ) ),
+                Arguments.of( values( 10, 20 ), values( 10, 20 ) ),
+                Arguments.of( values( 10L, 20L ), values( 10, 20 ) ),
+                Arguments.of( values( 10, 20 ), values( 10L, 20L ) ),
+                Arguments.of( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                Arguments.of( values( 10, 20 ), values( 10.0, 20.0 ) ),
+                Arguments.of( values( new int[]{1, 2}, "v2" ), values( new int[]{1, 2}, "v2" ) ),
+                Arguments.of( values( "a", "b", "c" ), values( "a", "b", "c" ) ),
+                Arguments.of( values( 285414114323346805L ), values( 285414114323346805L ) ),
+                Arguments.of( values( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ), values( 1d, 2d, 3d, 4d, 5d, 6d, 7d, 8d, 9d, 10d ) )
+        );
     }
 
     private static Object[] values( Object... values )
@@ -110,12 +101,12 @@ public class CompositeUniquenessConstraintValidationIT
         commit();
     }
 
-    private void setupConstraintDescriptor( IndexType indexType, int nbrOfProperties ) throws KernelException
+    private void setupConstraintDescriptor( int nbrOfProperties ) throws KernelException
     {
         newTransaction();
         constraintDescriptor =
                 transaction.schemaWrite().uniquePropertyConstraintCreate(
-                        IndexPrototype.uniqueForSchema( forLabel( label, propertyIds( nbrOfProperties ) ) ).withIndexType( indexType ) );
+                        IndexPrototype.uniqueForSchema( forLabel( label, propertyIds( nbrOfProperties ) ) ) );
         commit();
     }
 
@@ -148,9 +139,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         long node = createNodeWithLabelAndProps( label, lhs );
@@ -167,9 +158,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         long node = createNodeWithLabelAndProps( label, lhs );
@@ -186,9 +177,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         long node = createNodeWithLabelAndProps( label, lhs );
@@ -205,9 +196,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         long node = createNodeWithLabelAndProps( label, lhs );
@@ -224,9 +215,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldPreventConflictingDataInTx( IndexType indexType, Object[] lhs, Object[] rhs ) throws Throwable
+    public void shouldPreventConflictingDataInTx( Object[] lhs, Object[] rhs ) throws Throwable
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // Given
 
@@ -247,9 +238,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldEnforceOnSetProperty( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldEnforceOnSetProperty( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         createNodeWithLabelAndProps( label, lhs );
@@ -267,9 +258,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldEnforceOnSetLabel( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldEnforceOnSetLabel( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         createNodeWithLabelAndProps( label, lhs );
@@ -285,9 +276,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldEnforceOnSetPropertyInTx( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldEnforceOnSetPropertyInTx( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // when
         newTransaction();
@@ -305,9 +296,9 @@ public class CompositeUniquenessConstraintValidationIT
 
     @ParameterizedTest( name = "{0}: lhs={1}, rhs={2}" )
     @MethodSource( "parameterValues" )
-    public void shouldEnforceOnSetLabelInTx( IndexType indexType, Object[] lhs, Object[] rhs ) throws Exception
+    public void shouldEnforceOnSetLabelInTx( Object[] lhs, Object[] rhs ) throws Exception
     {
-        setupConstraintDescriptor( indexType, lhs.length );
+        setupConstraintDescriptor( lhs.length );
 
         // given
         createNodeWithLabelAndProps( label, lhs );

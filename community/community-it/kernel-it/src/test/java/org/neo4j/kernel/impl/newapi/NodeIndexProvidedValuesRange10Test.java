@@ -20,7 +20,7 @@
 
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeIndexProvidedValuesNativeBTree10Test extends IndexProvidedValuesNativeBTree10Test
+public class NodeIndexProvidedValuesRange10Test extends IndexProvidedValuesRange10Test
 {
     @Override
     EntityControl getEntityControl()

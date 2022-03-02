@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -39,7 +36,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -68,11 +64,10 @@ class UniqueIndexSeekIT
     private TestDirectory directory;
     private DatabaseManagementService managementService;
 
-    @ParameterizedTest
-    @MethodSource( "indexProviderFactories" )
-    void uniqueIndexSeekDoNotLeakIndexReaders( AbstractIndexProviderFactory<?> providerFactory, IndexType indexType ) throws KernelException
+    @Test
+    void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException
     {
-        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( providerFactory );
+        TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory( new RangeIndexProviderFactory() );
         GraphDatabaseAPI database = createDatabase( indexExtensionFactory );
         DependencyResolver dependencyResolver = database.getDependencyResolver();
         Config config = dependencyResolver.resolveDependency( Config.class );
@@ -80,7 +75,7 @@ class UniqueIndexSeekIT
         {
             Label label = label( "spaceship" );
             String nameProperty = "name";
-            createUniqueConstraint( database, label, nameProperty, indexType );
+            createUniqueConstraint( database, label, nameProperty );
 
             generateRandomData( database, label, nameProperty );
 
@@ -97,13 +92,6 @@ class UniqueIndexSeekIT
         {
             managementService.shutdown();
         }
-    }
-
-    private static Stream<Arguments> indexProviderFactories()
-    {
-        return Stream.of(
-                Arguments.of( new GenericNativeIndexProviderFactory(), IndexType.BTREE ),
-                Arguments.of( new RangeIndexProviderFactory(), IndexType.RANGE ) );
     }
 
     private GraphDatabaseAPI createDatabase( TrackingIndexExtensionFactory indexExtensionFactory )
@@ -146,12 +134,12 @@ class UniqueIndexSeekIT
         }
     }
 
-    private static void createUniqueConstraint( GraphDatabaseAPI database, Label label, String nameProperty, IndexType indexType ) throws KernelException
+    private static void createUniqueConstraint( GraphDatabaseAPI database, Label label, String nameProperty ) throws KernelException
     {
         try ( TransactionImpl transaction = (TransactionImpl) database.beginTx() )
         {
             IndexingTestUtil.createNodePropUniqueConstraintWithSpecifiedProvider( transaction, TrackingIndexExtensionFactory.DESCRIPTOR, label,
-                    nameProperty, indexType, CONSTRAINT_NAME );
+                    nameProperty, CONSTRAINT_NAME );
             transaction.commit();
         }
         try ( Transaction transaction = database.beginTx() )

@@ -66,7 +66,7 @@ import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
-import static org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider.DESCRIPTOR;
+import static org.neo4j.kernel.impl.index.schema.RangeIndexProvider.DESCRIPTOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 class SchemaCheckerTest extends CheckerTestBase
@@ -358,7 +358,7 @@ class SchemaCheckerTest extends CheckerTestBase
         {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( label1, propertyKey1 ) )
-                    .withIndexType( IndexType.BTREE )
+                    .withIndexType( IndexType.TEXT )
                     .withName( NAME )
                     .withIndexProvider( DESCRIPTOR )
                     .materialise( schemaStore.nextId( cursorContext ) );

@@ -77,7 +77,6 @@ import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -174,7 +173,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private static Stream<Arguments> parameters()
     {
         return Stream.of(
-                Arguments.of( GenericNativeIndexProvider.DESCRIPTOR, IndexType.BTREE),
                 Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE),
                 Arguments.of( TextIndexProvider.DESCRIPTOR, IndexType.TEXT )
         );

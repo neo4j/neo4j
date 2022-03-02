@@ -31,10 +31,8 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
 import static org.neo4j.graphdb.schema.IndexType.POINT;
-import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.IndexType.TEXT;
 
 @ImpermanentDbmsExtension
@@ -59,11 +57,6 @@ class IndexDefinitionToStringTest
         try ( var tx = db.beginTx() )
         {
             var labelTokenIndex = tx.schema().indexFor( AnyTokens.ANY_LABELS ).withName( "labelTokenIndex" ).create();
-            var labelProperty = tx.schema().indexFor( Label.label( "someLabel" ) )
-                                  .on( "someProperty" ).withIndexType( BTREE ).withName( "labelIndexName" ).create();
-            var labelProperties = tx.schema().indexFor( Label.label( "someLabel" ) )
-                                    .on( "someProperty" ).withIndexType( BTREE ).on( "someOtherProperty" )
-                                    .withName( "labelIndexNames" ).create();
             var rangeLabelProperties = tx.schema().indexFor( Label.label( "someLabel" ) )
                     .on( "someProperty" ).on( "someOtherProperty" ).withName( "rangeLabelIndexNames" ).create();
             var fulltextLabelProperty = tx.schema().indexFor( Label.label( "Label" ) ).on( "prop" ).withIndexType( FULLTEXT )
@@ -77,11 +70,6 @@ class IndexDefinitionToStringTest
                     .withName( "pointLabelPropertyIndex" ).create();
 
             var relTypeTokenIndex = tx.schema().indexFor( AnyTokens.ANY_RELATIONSHIP_TYPES ).withName( "relTypeTokenIndex" ).create();
-            var relTypeProperty = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
-                                    .on( "someProperty" ).withIndexType( BTREE ).withName( "relTypeIndexName" ).create();
-            var relTypeProperties = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
-                                      .on( "someProperty" ).on( "someOtherProperty" ).withIndexType( BTREE )
-                                      .withName( "relTypeIndexNames" ).create();
             var rangeRelTypeProperties = tx.schema().indexFor( RelationshipType.withName( "someRelationship" ) )
                     .on( "someProperty" ).on( "someOtherProperty" ).withName( "rangeRelTypeIndexNames" ).create();
             var fulltextRelTypeProperty = tx.schema().indexFor( RelationshipType.withName( "TYPE" ) ).on( "prop" ).withIndexType( FULLTEXT )
@@ -98,14 +86,6 @@ class IndexDefinitionToStringTest
                                "IndexDefinition[label:<any-labels>] " +
                                "(Index( id=%d, name='labelTokenIndex', type='TOKEN LOOKUP', " +
                                "schema=(:<any-labels>), indexProvider='token-lookup-1.0' ))" );
-            assertIndexString( labelProperty,
-                               "IndexDefinition[label:someLabel on:someProperty] " +
-                               "(Index( id=%d, name='labelIndexName', type='GENERAL BTREE', " +
-                               "schema=(:someLabel {someProperty}), indexProvider='native-btree-1.0' ))" );
-            assertIndexString( labelProperties,
-                               "IndexDefinition[label:someLabel on:someProperty,someOtherProperty] " +
-                               "(Index( id=%d, name='labelIndexNames', type='GENERAL BTREE', " +
-                               "schema=(:someLabel {someProperty, someOtherProperty}), indexProvider='native-btree-1.0' ))" );
             assertIndexString( rangeLabelProperties,
                                "IndexDefinition[label:someLabel on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='rangeLabelIndexNames', type='GENERAL RANGE', " +
@@ -127,14 +107,6 @@ class IndexDefinitionToStringTest
                                "IndexDefinition[relationship type:<any-types>] " +
                                "(Index( id=%d, name='relTypeTokenIndex', type='TOKEN LOOKUP', " +
                                "schema=()-[:<any-types>]-(), indexProvider='token-lookup-1.0' ))" );
-            assertIndexString( relTypeProperty,
-                               "IndexDefinition[relationship type:someRelationship on:someProperty] " +
-                               "(Index( id=%d, name='relTypeIndexName', type='GENERAL BTREE', " +
-                               "schema=()-[:someRelationship {someProperty}]-(), indexProvider='native-btree-1.0' ))" );
-            assertIndexString( relTypeProperties,
-                               "IndexDefinition[relationship type:someRelationship on:someProperty,someOtherProperty] " +
-                               "(Index( id=%d, name='relTypeIndexNames', type='GENERAL BTREE', " +
-                               "schema=()-[:someRelationship {someProperty, someOtherProperty}]-(), indexProvider='native-btree-1.0' ))" );
             assertIndexString( rangeRelTypeProperties,
                                "IndexDefinition[relationship type:someRelationship on:someProperty,someOtherProperty] " +
                                "(Index( id=%d, name='rangeRelTypeIndexNames', type='GENERAL RANGE', " +

@@ -29,7 +29,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -74,10 +74,10 @@ class NativeIndexFileFilterTest
     }
 
     @Test
-    void shouldAcceptPureNativeBtreeIndexFile() throws IOException
+    void shouldAcceptRangeIndexFile() throws IOException
     {
         // given
-        Path dir = directoriesByProvider( storeDir ).forProvider( GenericNativeIndexProvider.DESCRIPTOR ).directoryForIndex( 1 );
+        Path dir = directoriesByProvider( storeDir ).forProvider( RangeIndexProvider.DESCRIPTOR ).directoryForIndex( 1 );
         shouldAcceptFileInDirectory( dir );
     }
 

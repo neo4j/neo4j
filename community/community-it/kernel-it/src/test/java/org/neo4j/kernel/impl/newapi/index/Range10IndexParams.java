@@ -81,10 +81,4 @@ class Range10IndexParams implements IndexParams
     {
         return false;
     }
-
-    @Override
-    public boolean indexSupportsGeometryRange()
-    {
-        return false;
-    }
 }

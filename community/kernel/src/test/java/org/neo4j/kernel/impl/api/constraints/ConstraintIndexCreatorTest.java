@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.AssertableLogProvider;
@@ -87,7 +87,7 @@ class ConstraintIndexCreatorTest
     private static final int LABEL_ID = 123;
     private static final long INDEX_ID = 0L;
 
-    private final IndexProviderDescriptor providerDescriptor = GenericNativeIndexProvider.DESCRIPTOR;
+    private final IndexProviderDescriptor providerDescriptor = RangeIndexProvider.DESCRIPTOR;
     private final LabelSchemaDescriptor schema = forLabel( LABEL_ID, PROPERTY_KEY_ID );
     private final UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( schema ).withName( "constraint" );
     private final IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema ).withName( "constraint" ).withIndexProvider( providerDescriptor );

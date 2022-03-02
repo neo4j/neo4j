@@ -27,8 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -39,8 +37,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRA
 
 class RawBitsTest
 {
-    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    public GenericLayout layout = new GenericLayout( 1, specificSettings );
+    public RangeLayout layout = new RangeLayout( 1 );
 
     private final List<Object> objects = Arrays.asList(
             Double.NEGATIVE_INFINITY,
@@ -95,7 +92,7 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
         Collections.shuffle( values );
         Collections.shuffle( numberIndexKeys );
 
@@ -113,19 +110,19 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
         values.sort( Values.COMPARATOR );
 
         // when
-        for ( BtreeKey genericKey : numberIndexKeys )
+        for ( RangeKey rangeKey : numberIndexKeys )
         {
-            List<BtreeKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
-            assertTrue( withoutThisOne.remove( genericKey ) );
+            List<RangeKey> withoutThisOne = new ArrayList<>( numberIndexKeys );
+            assertTrue( withoutThisOne.remove( rangeKey ) );
             withoutThisOne = unmodifiableList( withoutThisOne );
             for ( int i = 0; i < withoutThisOne.size(); i++ )
             {
-                List<BtreeKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
-                withThisOneInWrongPlace.add( i, genericKey );
+                List<RangeKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
+                withThisOneInWrongPlace.add( i, rangeKey );
                 withThisOneInWrongPlace.sort( layout );
                 List<Value> actual = asValues( withThisOneInWrongPlace );
 
@@ -140,18 +137,18 @@ class RawBitsTest
     {
         // given
         List<Value> values = asValueObjects( objects );
-        List<BtreeKey> numberIndexKeys = asNumberIndexKeys( values );
+        List<RangeKey> numberIndexKeys = asNumberIndexKeys( values );
 
         // when
         for ( int i = 0; i < values.size(); i++ )
         {
             Value value1 = values.get( i );
-            BtreeKey numberIndexKey1 = numberIndexKeys.get( i );
+            RangeKey numberIndexKey1 = numberIndexKeys.get( i );
             for ( int j = 0; j < values.size(); j++ )
             {
                 // then
                 Value value2 = values.get( j );
-                BtreeKey numberIndexKey2 = numberIndexKeys.get( j );
+                RangeKey numberIndexKey2 = numberIndexKeys.get( j );
                 assertEquals( Values.COMPARATOR.compare( value1, value2 ),
                         layout.compare( numberIndexKey1, numberIndexKey2 ) );
                 assertEquals( Values.COMPARATOR.compare( value2, value1 ),
@@ -160,7 +157,7 @@ class RawBitsTest
         }
     }
 
-    private static List<Value> asValues( List<BtreeKey> numberIndexKeys )
+    private static List<Value> asValues( List<RangeKey> numberIndexKeys )
     {
         return numberIndexKeys.stream()
                 .map( k -> RawBits.asNumberValue( k.long0, (byte) k.long1 ) )
@@ -196,12 +193,12 @@ class RawBitsTest
         return values;
     }
 
-    private List<BtreeKey> asNumberIndexKeys( List<Value> values )
+    private List<RangeKey> asNumberIndexKeys( List<Value> values )
     {
-        List<BtreeKey> numberIndexKeys = new ArrayList<>();
+        List<RangeKey> numberIndexKeys = new ArrayList<>();
         for ( Value value : values )
         {
-            BtreeKey key = layout.newKey();
+            RangeKey key = layout.newKey();
             key.initialize( 0 );
             key.initFromValue( 0, value, NEUTRAL );
             numberIndexKeys.add( key );

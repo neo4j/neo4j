@@ -836,7 +836,6 @@ public class FindEntityByTokenAndPropertyIT
 
     private enum SupportedIndexType
     {
-        BTREE( IndexType.BTREE, Predicates.alwaysTrue(), Predicates.alwaysTrue(), true ),
         RANGE( IndexType.RANGE, Predicates.alwaysTrue(), mode -> mode == StringSearchMode.EXACT || mode == StringSearchMode.PREFIX, true ),
         TEXT( IndexType.TEXT, value -> value instanceof String || value instanceof Character, Predicates.alwaysTrue(), false ),
         POINT( IndexType.POINT, value -> value instanceof Point, Predicates.alwaysFalse(), false ),

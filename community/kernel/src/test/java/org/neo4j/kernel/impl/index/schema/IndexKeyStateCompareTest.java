@@ -50,28 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class IndexKeyStateCompareTest
 {
     @Test
-    void compareBtreeKeyState()
-    {
-        List<Value> allValues = getValues( false );
-        allValues.sort( Values.COMPARATOR );
-
-        List<BtreeKey> states = new ArrayList<>();
-        for ( Value value : allValues )
-        {
-            BtreeKey state = new BtreeKey( null );
-            state.writeValue( value, NativeIndexKey.Inclusion.NEUTRAL );
-            states.add( state );
-        }
-        Collections.shuffle( states );
-        states.sort( BtreeKey::compareValueTo );
-        List<Value> sortedStatesAsValues = states.stream().map( BtreeKey::asValue ).collect( Collectors.toList() );
-        assertEquals( allValues, sortedStatesAsValues );
-    }
-
-    @Test
     void compareRangeKeyState()
     {
-        List<Value> allValues = getValues( true );
+        List<Value> allValues = getValues();
         allValues.sort( Values.COMPARATOR );
 
         List<RangeKey> states = new ArrayList<>();
@@ -87,9 +68,10 @@ class IndexKeyStateCompareTest
         assertEquals( allValues, sortedStatesAsValues );
     }
 
-    private List<Value> getValues( boolean includeGeometry )
+    private List<Value> getValues()
     {
-        List<Value> values = Arrays.asList(
+
+        return Arrays.asList(
                 Values.of( "string1" ),
                 Values.of( 42 ),
                 Values.of( true ),
@@ -150,37 +132,26 @@ class IndexKeyStateCompareTest
                 Values.durationArray( new DurationValue[]{
                         DurationValue.duration( 12, 10, 10, 10 ),
                         DurationValue.duration( 12, 10, 10, 10 )
-                } )
-        );
-
-        // In case of Btree, PointValue/PointArray comparison can't be compared to that of the BtreeKey
-        // for those points, since the index compares in a way which is designed to be queryable,
-        // so they have different sorting.
-        if ( includeGeometry )
-        {
-            values = new ArrayList<>( values );
-            values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.78, 56.7 ) );
-            values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.7566548, 56.7163465 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.13413478, 56.1343457 )
-            } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.78, 56.7, 666 ) );
-            values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.7566548, 56.7163465, 666 ),
-                    Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.13413478, 56.1343457, 555 )
-            } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ) );
-            values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ),
-                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.2000043, -0.0300000012341025786543 )
-            } ) );
-            values.add( Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ) );
-            values.add( Values.pointArray( new PointValue[]{
-                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ),
-                    Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.2000043, -0.0300000012341025786543, 555 )
-            } ) );
-        }
-
-        return values;
+                } ),
+                Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.78, 56.7 ),
+                Values.pointArray( new PointValue[]{
+                        Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.7566548, 56.7163465 ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS_84, 12.13413478, 56.1343457 )
+                } ),
+                Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.78, 56.7, 666 ),
+                Values.pointArray( new PointValue[]{
+                        Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.7566548, 56.7163465, 666 ),
+                        Values.pointValue( CoordinateReferenceSystem.WGS_84_3D, 12.13413478, 56.1343457, 555 )
+                } ),
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ),
+                Values.pointArray( new PointValue[]{
+                        Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.0000043, -0.0000000012341025786543 ),
+                        Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 0.2000043, -0.0300000012341025786543 )
+                } ),
+                Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ),
+                Values.pointArray( new PointValue[]{
+                        Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.0000043, -0.0000000012341025786543, 666 ),
+                        Values.pointValue( CoordinateReferenceSystem.CARTESIAN_3D, 0.2000043, -0.0300000012341025786543, 555 )
+                } ) );
     }
 }

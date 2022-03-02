@@ -85,7 +85,6 @@ class PointIndexProviderTest extends IndexProviderTests
         return List.of(
                 forSchema( forAnyEntityTokens( EntityType.NODE ) ).withName( "unsupported" ),
                 forSchema( fulltext( EntityType.NODE, new int[]{labelId}, new int[]{propId} ) ).withName( "unsupported" ),
-                forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.BTREE ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.RANGE ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ) ).withIndexType( IndexType.TEXT ).withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );

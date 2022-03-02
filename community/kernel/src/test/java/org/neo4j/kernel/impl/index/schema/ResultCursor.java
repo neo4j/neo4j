@@ -21,18 +21,15 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Iterator;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Seeker;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 import static org.neo4j.values.storable.Values.stringValue;
 
-class ResultCursor implements Seeker<BtreeKey,NullValue>
+class ResultCursor implements Seeker<RangeKey,NullValue>
 {
-    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
     private final Iterator<String> iterator;
     private int pos = -1;
-    private BtreeKey key;
+    private RangeKey key;
 
     ResultCursor( Iterator<String> keys )
     {
@@ -46,7 +43,7 @@ class ResultCursor implements Seeker<BtreeKey,NullValue>
         {
             String current = iterator.next();
             pos++;
-            key = new BtreeKey( specificSettings );
+            key = new RangeKey();
             key.initialize( pos );
             key.initFromValue( 0, stringValue( current ), NativeIndexKey.Inclusion.NEUTRAL );
             return true;
@@ -61,7 +58,7 @@ class ResultCursor implements Seeker<BtreeKey,NullValue>
     }
 
     @Override
-    public BtreeKey key()
+    public RangeKey key()
     {
         return key;
     }

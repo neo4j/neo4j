@@ -23,9 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -33,15 +31,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 class NativeIndexPopulatorTestCases
 {
     private static final Config config = Config.defaults();
-    static final IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( config );
-    private static final StandardConfiguration configuration = new StandardConfiguration();
-
-    static PopulatorFactory<BtreeKey> genericBlockBasedPopulatorFactory()
-    {
-        return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
-                new GenericBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, spaceFillingCurveSettings, configuration, false,
-                        heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
-    }
 
     static NativeIndexPopulatorTestCases.PopulatorFactory<RangeKey> rangeBlockBasedPopulatorFactory()
     {

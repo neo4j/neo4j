@@ -63,7 +63,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
@@ -548,7 +548,7 @@ public class PlainOperationsTest extends OperationsTest
         // given
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -1026,7 +1026,7 @@ public class PlainOperationsTest extends OperationsTest
         // given
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR )
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR )
                                                  .withIndexType( IndexType.FULLTEXT );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
@@ -1050,7 +1050,7 @@ public class PlainOperationsTest extends OperationsTest
         SchemaDescriptor schema = SchemaDescriptors.fulltext( NODE, this.schema.getEntityTokenIds(), this.schema.getPropertyIds() );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -1073,7 +1073,7 @@ public class PlainOperationsTest extends OperationsTest
         SchemaDescriptor schema = SchemaDescriptors.forRelType( this.schema.getEntityTokenIds()[0], this.schema.getPropertyIds() );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -1094,7 +1094,7 @@ public class PlainOperationsTest extends OperationsTest
         SchemaDescriptor schema = SchemaDescriptors.forAnyEntityTokens( NODE );
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );
@@ -1116,7 +1116,7 @@ public class PlainOperationsTest extends OperationsTest
         when( tokenHolders.propertyKeyTokens().getTokenById( anyInt() ) ).thenReturn( new NamedToken( "prop", 456 ) );
         IndexPrototype prototype = IndexPrototype.forSchema( schema )
                                                  .withName( "constraint name" )
-                                                 .withIndexProvider( GenericNativeIndexProvider.DESCRIPTOR );
+                                                 .withIndexProvider( RangeIndexProvider.DESCRIPTOR );
         IndexDescriptor constraintIndex = prototype.materialise( 42 );
         when( constraintIndexCreator.createUniquenessConstraintIndex( any(), any(), eq( prototype ) ) ).thenReturn( constraintIndex );
         IndexProxy indexProxy = mock( IndexProxy.class );

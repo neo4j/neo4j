@@ -127,12 +127,12 @@ public class IndexingTestUtil
     }
 
     public static ConstraintDescriptor createNodePropUniqueConstraintWithSpecifiedProvider( TransactionImpl tx, IndexProviderDescriptor provider, Label label,
-            String prop, IndexType indexType, String name ) throws KernelException
+            String prop, String name ) throws KernelException
     {
         KernelTransaction kernelTransaction = tx.kernelTransaction();
         TokenWrite tokenWrite = kernelTransaction.tokenWrite();
         IndexPrototype prototype = IndexPrototype.uniqueForSchema( SchemaDescriptors.forLabel( tokenWrite.labelGetOrCreateForName( label.name() ),
-                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withIndexType( indexType ).withName( name );
+                tokenWrite.propertyKeyGetOrCreateForName( prop ) ), provider ).withName( name );
         return kernelTransaction.schemaWrite().uniquePropertyConstraintCreate( prototype );
     }
 }

@@ -110,7 +110,7 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = {"BTREE", "RANGE", "TEXT"} )
+    @EnumSource( value = IndexType.class, names = {"RANGE", "TEXT"} )
     void shouldPerformEqualitySeek( IndexType indexType ) throws Exception
     {
         // given
@@ -359,8 +359,6 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     {
         // Text index doesn't contain values
         return Stream.of(
-                Arguments.of( IndexType.BTREE, true ),
-                Arguments.of( IndexType.BTREE, false ),
                 Arguments.of( IndexType.RANGE, true ),
                 Arguments.of( IndexType.RANGE, false ),
                 Arguments.of( IndexType.TEXT, false )
@@ -371,8 +369,6 @@ abstract class IndexTransactionStateTestBase extends KernelAPIWriteTestBase<Writ
     private static Stream<Arguments> parametersForSuffixAndContains()
     {
         return Stream.of(
-                Arguments.of( IndexType.BTREE, true ),
-                Arguments.of( IndexType.BTREE, false ),
                 Arguments.of( IndexType.TEXT, false )
         );
     }

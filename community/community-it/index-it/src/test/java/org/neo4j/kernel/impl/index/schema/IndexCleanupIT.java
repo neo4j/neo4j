@@ -80,8 +80,8 @@ public class IndexCleanupIT
     private static Stream<Arguments> indexProviders()
     {
         return Stream.of(
-                Arguments.of( GenericNativeIndexProvider.DESCRIPTOR, IndexType.BTREE ),
-                Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE ) );
+                Arguments.of( RangeIndexProvider.DESCRIPTOR, IndexType.RANGE ),
+                Arguments.of( PointIndexProvider.DESCRIPTOR, IndexType.POINT ) );
     }
 
     @ParameterizedTest

@@ -268,16 +268,6 @@ public class NodeIndexingAcceptanceTest
     }
 
     @Nested
-    class BtreeIndexTest extends NodeIndexingAcceptanceTestBase
-    {
-        @Override
-        protected IndexType indexType()
-        {
-            return IndexType.BTREE;
-        }
-    }
-
-    @Nested
     class RangeIndexTest extends NodeIndexingAcceptanceTestBase
     {
         @Override

@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -116,7 +115,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
+    @EnumSource( value = IndexType.class, names = { "RANGE", "TEXT", "POINT" } )
     void shouldCreateIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
@@ -176,7 +175,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
+    @EnumSource( value = IndexType.class, names = { "RANGE", "TEXT", "POINT" } )
     void shouldDropIndex( IndexType type ) throws Exception
     {
         IndexDescriptor index;
@@ -200,7 +199,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
+    @EnumSource( value = IndexType.class, names = { "RANGE", "TEXT", "POINT" } )
     void shouldDropIndexByName( IndexType type ) throws Exception
     {
         String indexName = "My fancy index";
@@ -282,7 +281,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = { "BTREE", "RANGE", "TEXT", "POINT" } )
+    @EnumSource( value = IndexType.class, names = { "RANGE", "TEXT", "POINT" } )
     void shouldFailIfExistingIndex( IndexType type ) throws Exception
     {
         //Given

@@ -21,10 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.ValueMerger.MergeResult;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettings;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -35,8 +33,7 @@ import static org.neo4j.internal.helpers.ArrayUtil.array;
 
 class ThrowingConflictDetectorTest
 {
-    private static final IndexSpecificSpaceFillingCurveSettings specificSettings = IndexSpecificSpaceFillingCurveSettings.fromConfig( Config.defaults() );
-    private final ThrowingConflictDetector<BtreeKey> detector = new ThrowingConflictDetector<>( true );
+    private final ThrowingConflictDetector<RangeKey> detector = new ThrowingConflictDetector<>( true );
 
     @Test
     void shouldReportConflictOnSameValueAndDifferentEntityIds()
@@ -80,9 +77,9 @@ class ThrowingConflictDetectorTest
         detector.checkConflict( array() ); // <-- should not throw conflict exception
     }
 
-    private static BtreeKey key( long entityId, Value value )
+    private static RangeKey key( long entityId, Value value )
     {
-        BtreeKey key = new BtreeKey( specificSettings );
+        RangeKey key = new RangeKey();
         key.initialize( entityId );
         key.initFromValue( 0, value, NativeIndexKey.Inclusion.NEUTRAL );
         return key;

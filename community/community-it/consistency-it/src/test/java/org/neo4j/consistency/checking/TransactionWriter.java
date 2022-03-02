@@ -292,6 +292,11 @@ public class TransactionWriter
             dynamicRecord.setInUse( true );
             dynamicRecord.setData( part );
             dynamicRecord.setCreated();
+            // Link the next block
+            if ( i + 1 < dynamicIds.length )
+            {
+                dynamicRecord.setNextBlock( dynamicIds[i + 1] );
+            }
             record.addNameRecord( dynamicRecord );
         }
         record.setNameId( dynamicIds[0] );

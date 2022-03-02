@@ -85,9 +85,6 @@ public class IndexingCompositeQueryAcceptanceTest
                 tx.commit();
             }
             break;
-        case PROPERTY_BTREE:
-            createAndWaitForIndex( keys, entityControl, IndexType.BTREE );
-            break;
         case PROPERTY_RANGE:
             createAndWaitForIndex( keys, entityControl, IndexType.RANGE );
             break;
@@ -315,8 +312,7 @@ public class IndexingCompositeQueryAcceptanceTest
     {
         NONE, // No index, fallback to scan
         TOKEN, // NLI or RTI only
-        PROPERTY_BTREE, // property index
-        PROPERTY_RANGE
+        PROPERTY_RANGE // property index
     }
 
     enum DataSet

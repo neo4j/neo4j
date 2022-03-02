@@ -91,8 +91,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
@@ -1207,7 +1207,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withIndexType( BTREE ).withName( "my_index" ).create();
+            IndexDefinition index = tx.schema().indexFor( label ).on( propertyKey ).withIndexType( POINT ).withName( "my_index" ).create();
             Map<IndexSetting,Object> config = index.getIndexConfiguration();
             assertNotNull( config );
             assertTrue( config.containsKey( IndexSettingImpl.SPATIAL_CARTESIAN_MIN ) );
@@ -1270,11 +1270,11 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void mustBeAbleToSetBtreeIndexConfig()
+    void mustBeAbleToSetPointIndexConfig()
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey )
+            IndexDefinition index = tx.schema().indexFor( label ).withName( "my_index" ).on( propertyKey ).withIndexType( POINT )
                     .withIndexConfiguration( Map.of(
                             IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {200.0, 200.0},
                             IndexSettingImpl.SPATIAL_WGS84_MIN, new double[] {-90.0, -90.0} ) )
@@ -1385,7 +1385,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
         {
             IndexCreator indexCreator = tx.schema().indexFor( AnyTokens.ANY_LABELS );
 
-            assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.BTREE ) )
+            assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.RANGE ) )
                     .isInstanceOf( ConstraintViolationException.class )
                     .hasMessageContaining( "Only LOOKUP index type supported for token indexes." );
             assertThatThrownBy( () -> indexCreator.withIndexType( IndexType.FULLTEXT ) )
@@ -1408,7 +1408,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
             assertThat( e ).hasMessageContaining( "'analyzer that does not exist'" );
 
             e = assertThrows( IllegalArgumentException.class, () -> creator
-                    .withIndexType( BTREE )
+                    .withIndexType( POINT )
                     .withIndexConfiguration( Map.of( IndexSettingImpl.SPATIAL_CARTESIAN_MAX, new double[] {100.0, 10.0, 1.0} ) )
                     .create() );
             assertThat( e ).hasMessageContaining( "Invalid spatial index settings" );
@@ -1568,25 +1568,6 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void mustBeAbleToCreateUniquenessConstraintWithBtreeIndexType()
-    {
-        String name;
-        try ( Transaction tx = db.beginTx() )
-        {
-            ConstraintDefinition constraint = tx.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).withIndexType( BTREE ).create();
-            name = constraint.getName();
-            IndexDefinition index = getIndex( tx, name );
-            assertThat( index.getIndexType() ).isEqualTo( BTREE );
-            tx.commit();
-        }
-        try ( Transaction tx = db.beginTx() )
-        {
-            IndexDefinition index = getIndex( tx, name );
-            assertThat( index.getIndexType() ).isEqualTo( BTREE );
-        }
-    }
-
-    @Test
     void creatingUniquenessConstraintWithFullTextIndexTypeMustThrow()
     {
         try ( Transaction tx = db.beginTx() )
@@ -1601,7 +1582,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyExists( propertyKey ).withIndexType( BTREE );
+            ConstraintCreator creator = tx.schema().constraintFor( label ).assertPropertyExists( propertyKey ).withIndexType( RANGE );
             assertThrows( IllegalArgumentException.class, creator::create );
             tx.commit();
         }
@@ -1612,7 +1593,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     {
         try ( Transaction tx = db.beginTx() )
         {
-            ConstraintCreator creator = tx.schema().constraintFor( relType ).assertPropertyExists( propertyKey ).withIndexType( BTREE );
+            ConstraintCreator creator = tx.schema().constraintFor( relType ).assertPropertyExists( propertyKey ).withIndexType( RANGE );
             assertThrows( IllegalArgumentException.class, creator::create );
             tx.commit();
         }
@@ -1667,7 +1648,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void creatingBtreeRelationshipIndex()
+    void creatingRangeRelationshipIndex()
     {
         IndexDefinition index = createIndex( db, relType, propertyKey );
 
@@ -1679,7 +1660,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
     }
 
     @Test
-    void creatingCompositeBtreeRelationshipIndex()
+    void creatingCompositeRangeRelationshipIndex()
     {
         IndexDefinition index = createIndex( db, relType, propertyKey, secondPropertyKey );
 
@@ -2653,7 +2634,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase
 
     public static IndexDefinition createIndex( GraphDatabaseService db, RelationshipType relType, String... properties )
     {
-        return createIndex( db, BTREE, null, relType, properties );
+        return createIndex( db, RANGE, null, relType, properties );
     }
 
     public static IndexDefinition createIndex( GraphDatabaseService db, IndexType indexType, RelationshipType relType, String... properties )

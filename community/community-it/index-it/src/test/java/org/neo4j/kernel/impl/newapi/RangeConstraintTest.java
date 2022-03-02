@@ -17,14 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.neo4j.kernel.impl.newapi;
 
-public class NodeIndexProvidedOrderNativeBTree10Test extends IndexProvidedOrderNativeBTree10Test
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+
+public class RangeConstraintTest extends ConstraintTestBase<WriteTestSupport>
 {
+
     @Override
-    EntityControl getEntityControl()
+    public WriteTestSupport newTestSupport()
     {
-        return EntityControl.NODE;
+        return new WriteTestSupport();
+    }
+
+    @Override
+    protected LabelSchemaDescriptor labelSchemaDescriptor( int labelId, int... propertyIds )
+    {
+        return SchemaDescriptors.forLabel( labelId, propertyIds );
+    }
+
+    @Override
+    protected ConstraintDescriptor uniqueConstraintDescriptor( int labelId, int... propertyIds )
+    {
+        return ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds );
     }
 }

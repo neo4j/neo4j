@@ -82,7 +82,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
-public class BTreeIndexKeySizeValidationIT
+public class RangeIndexKeySizeValidationIT
 {
     private static final String[] PROP_KEYS = new String[]{
             "prop0",
@@ -368,7 +368,7 @@ public class BTreeIndexKeySizeValidationIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE ).withIndexType( IndexType.BTREE );
+            IndexCreator indexCreator = tx.schema().indexFor( LABEL_ONE ).withIndexType( IndexType.RANGE );
             for ( String propKey : propKeys )
             {
                 indexCreator = indexCreator.on( propKey );
@@ -443,13 +443,13 @@ public class BTreeIndexKeySizeValidationIT
         localDateTimeArray( SIZE_LOCAL_DATE_TIME, 680, 677, ( random, i ) -> random.randomValues().nextLocalDateTimeArrayRaw( i, i ) ),
         durationArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextDurationArrayRaw( i, i ) ),
         periodArray( SIZE_DURATION, 291, 290, ( random, i ) -> random.randomValues().nextPeriodArrayRaw( i, i ) ),
-        cartesianPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
+        cartesianPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, 508,
                 ( random, i ) -> random.randomValues().nextCartesianPointArray( i, i ).asObjectCopy() ),
-        cartesian3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 255, 254,
+        cartesian3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
                 ( random, i ) -> random.randomValues().nextCartesian3DPointArray( i, i ).asObjectCopy() ),
-        geographicPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
+        geographicPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 510, 508,
                 ( random, i ) -> random.randomValues().nextGeographicPointArray( i, i ).asObjectCopy() ),
-        geographic3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 255, 254,
+        geographic3DPointArray( SIZE_GEOMETRY_DERIVED_SPACE_FILLING_CURVE_VALUE, 340, 338,
                 ( random, i ) -> random.randomValues().nextGeographic3DPointArray( i, i ).asObjectCopy() );
 
         private final int singleArrayEntrySize;

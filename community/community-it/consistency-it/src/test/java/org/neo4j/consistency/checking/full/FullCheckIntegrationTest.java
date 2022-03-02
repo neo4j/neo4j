@@ -93,7 +93,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -151,7 +151,6 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistence
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.schema.IndexType.BTREE;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.internal.helpers.collection.Iterables.asIterable;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
@@ -191,7 +190,7 @@ import static org.neo4j.util.Bits.bits;
 @EphemeralTestDirectoryExtension
 public class FullCheckIntegrationTest
 {
-    private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
+    private static final IndexProviderDescriptor DESCRIPTOR = RangeIndexProvider.DESCRIPTOR;
     protected static final String PROP1 = "key1";
     protected static final String PROP2 = "key2";
     protected static final Object VALUE1 = "value1";
@@ -453,7 +452,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 6 ) // 6 (3 BTREE and 3 RANGE) index entries are pointing to nodes not in use
+        on( stats ).verify( RecordType.INDEX, 3 ) // 3 index entries are pointing to nodes not in use
                    .verify( RecordType.LABEL_SCAN_DOCUMENT, 2 ) // the label scan is pointing to 2 nodes not in use
                    .verify( RecordType.COUNTS, 2 )
                    .andThatsAllFolks();
@@ -607,7 +606,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 6 ) // 1 node missing from 1 index + 1 node missing from 2 indexes (for both RANGE and BTREE)
+        on( stats ).verify( RecordType.NODE, 3 ) // 1 node missing from 1 index + 1 node missing from 2 indexes
                    .andThatsAllFolks();
     }
 
@@ -643,8 +642,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.RELATIONSHIP, 6 )
-                // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes (for both RANGE and BTREE)
+        on( stats ).verify( RecordType.RELATIONSHIP, 3 )
+                // 1 relationship missing from 1 index + 1 relationship missing from 2 indexes
                 .andThatsAllFolks();
     }
 
@@ -675,7 +674,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 4 ) // 2 BTREE and 2 RANGE indexes
+        on( stats ).verify( RecordType.INDEX, 2 ) // 2 RANGE indexes
                 .andThatsAllFolks();
     }
 
@@ -707,7 +706,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.INDEX, 4 ) // 2 BTREE and 2 RANGE indexes
+        on( stats ).verify( RecordType.INDEX, 2 ) // 2 RANGE indexes
                 .andThatsAllFolks();
     }
 
@@ -744,7 +743,7 @@ public class FullCheckIntegrationTest
 
         // then
         RecordType expectedType = indexSize == IndexSize.SMALL_INDEX ? RecordType.NODE : RecordType.INDEX;
-        on( stats ).verify( expectedType, 4 ) // 2 BTREE and 2 RANGE indexes
+        on( stats ).verify( expectedType, 2 ) // 2 RANGE indexes
                 .andThatsAllFolks();
     }
 
@@ -782,21 +781,18 @@ public class FullCheckIntegrationTest
 
         // then
         RecordType expectedType = indexSize == RelationshipIndexSize.SMALL_INDEX ? RecordType.RELATIONSHIP : RecordType.INDEX;
-        on( stats ).verify( expectedType, 4 ) // 2 BTREE and 2 RANGE indexes
+        on( stats ).verify( expectedType, 2 ) // 2 RANGE indexes
                 .andThatsAllFolks();
     }
 
     Value[] otherValues( IndexDescriptor indexRule )
     {
-        switch ( indexRule.schema().getPropertyIds().length )
-        {
-        case 1:
-            return Iterators.array( Values.of( VALUE2 ) );
-        case 2:
-            return Iterators.array( Values.of( VALUE2 ), Values.of( VALUE1 ) );
-        default:
-            throw new UnsupportedOperationException();
-        }
+        return switch ( indexRule.schema().getPropertyIds().length )
+                {
+                    case 1 -> Iterators.array( Values.of( VALUE2 ) );
+                    case 2 -> Iterators.array( Values.of( VALUE2 ), Values.of( VALUE1 ) );
+                    default -> throw new UnsupportedOperationException();
+                };
     }
 
     @ParameterizedTest
@@ -831,8 +827,8 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.NODE, 2 ) // the duplicate in the 2 unique indexes
-                   .verify( RecordType.INDEX, 6 ) // the index entries pointing to node that should not be in index (3 BTREE and 3 RANGE indexes)
+        on( stats ).verify( RecordType.NODE, 1 ) // the duplicate in the unique index
+                   .verify( RecordType.INDEX, 3 ) // the index entries pointing to node that should not be in index (3 RANGE indexes)
                    .andThatsAllFolks();
     }
 
@@ -1282,9 +1278,9 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.BTREE );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.RANGE );
                 rule1 = tx.completeConfiguration( rule1 );
-                IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.BTREE );
+                IndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1, IndexType.RANGE );
                 rule2 = tx.completeConfiguration( rule2 );
 
                 serializeRule( rule1, after1, tx, next );
@@ -1334,9 +1330,9 @@ public class FullCheckIntegrationTest
                 SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
                 SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
-                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2, IndexType.BTREE );
+                IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2, IndexType.RANGE );
                 rule1 = tx.completeConfiguration( rule1 );
-                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2, IndexType.BTREE );
+                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2, IndexType.RANGE );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -1382,7 +1378,8 @@ public class FullCheckIntegrationTest
 
                 IndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2, IndexType.RANGE );
                 rule1 = tx.completeConfiguration( rule1 );
-                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1, IndexType.BTREE );
+                // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here it's fine
+                ConstraintDescriptor rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId1, IndexType.TEXT );
 
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
@@ -2101,7 +2098,6 @@ public class FullCheckIntegrationTest
         // Given
         int entityTokenId = createEntityToken( entityType );
         int propertyKeyId = createPropertyKey();
-        createIndexRule( entityType, IndexType.BTREE, entityTokenId, propertyKeyId );
         createIndexRule( entityType, IndexType.RANGE, entityTokenId, propertyKeyId );
         createIndexRule( entityType, IndexType.TEXT, entityTokenId, propertyKeyId );
         createIndexRule( entityType, IndexType.POINT, entityTokenId, propertyKeyId );
@@ -2155,7 +2151,8 @@ public class FullCheckIntegrationTest
         // Given
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
-        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyId );
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here it's fine
+        createUniquenessConstraintRule( IndexType.TEXT, labelId, propertyKeyId );
         createUniquenessConstraintRule( IndexType.RANGE, labelId, propertyKeyId );
 
         // When
@@ -2209,7 +2206,8 @@ public class FullCheckIntegrationTest
         int propertyKeyId1 = createPropertyKey( "p1" );
         int propertyKeyId2 = createPropertyKey( "p2" );
         createNodeKeyConstraintRule( IndexType.RANGE, labelId, propertyKeyId1, propertyKeyId2 );
-        createNodeKeyConstraintRule( IndexType.BTREE, labelId, propertyKeyId1, propertyKeyId2 );
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here it's fine
+        createNodeKeyConstraintRule( IndexType.TEXT, labelId, propertyKeyId1, propertyKeyId2 );
 
         // When
         ConsistencySummaryStatistics stats = check();
@@ -2243,7 +2241,8 @@ public class FullCheckIntegrationTest
         int labelId = createLabel();
         int propertyKeyId = createPropertyKey();
 
-        createNodeKeyConstraintRule( IndexType.BTREE, labelId, propertyKeyId );
+        // We can't technically have a constraint backed by TEXT index but since we are writing the rule directly here it's fine
+        createNodeKeyConstraintRule( IndexType.TEXT, labelId, propertyKeyId );
         createUniquenessConstraintRule( IndexType.RANGE, labelId, propertyKeyId );
 
         // When
@@ -2882,17 +2881,12 @@ public class FullCheckIntegrationTest
                 // Create indexes
                 try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
                 {
-                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).withIndexType( RANGE ).create();
-                    tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( label( "label3" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
 
-                    tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).withIndexType( RANGE ).create();
 
-                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).withIndexType( RANGE ).create();
-                    tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).withIndexType( BTREE ).create();
                     tx.schema().indexFor( withName( "C" ) ).on( PROP1 ).on( PROP2 ).withIndexType( RANGE ).create();
                     tx.commit();
                 }
@@ -3120,7 +3114,7 @@ public class FullCheckIntegrationTest
 
     private void createIndexRule( EntityType entityType, final int entityTokenId, final int... propertyKeyIds ) throws Exception
     {
-        createIndexRule( entityType, IndexType.BTREE, entityTokenId, propertyKeyIds );
+        createIndexRule( entityType, IndexType.RANGE, entityTokenId, propertyKeyIds );
     }
 
     private void createIndexRule( EntityType entityType, IndexType indexType, final int entityTokenId, final int... propertyKeyIds ) throws Exception
@@ -3177,7 +3171,7 @@ public class FullCheckIntegrationTest
 
     private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
     {
-        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyIds );
+        createUniquenessConstraintRule( IndexType.RANGE, labelId, propertyKeyIds );
     }
 
     private void createUniquenessConstraintRule( IndexType indexType, final int labelId, final int... propertyKeyIds ) throws KernelException
@@ -3199,7 +3193,7 @@ public class FullCheckIntegrationTest
 
     private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
     {
-        createUniquenessConstraintRule( IndexType.BTREE, labelId, propertyKeyIds );
+        createNodeKeyConstraintRule( IndexType.RANGE, labelId, propertyKeyIds );
     }
 
     private void createNodeKeyConstraintRule( IndexType indexType, final int labelId, final int... propertyKeyIds ) throws KernelException

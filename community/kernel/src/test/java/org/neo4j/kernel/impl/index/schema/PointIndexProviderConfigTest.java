@@ -46,7 +46,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMaxSettingForCrs;
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMinSettingForCrs;
 
-class GenericNativeIndexProviderTest
+class PointIndexProviderConfigTest
 {
     @Test
     void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig()
@@ -54,7 +54,7 @@ class GenericNativeIndexProviderTest
         // Given
         var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, contextFactory, DEFAULT_DATABASE_NAME ).build();
-        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
+        PointIndexProvider provider = new PointIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
                 .withName( "index" ).materialise( 1 );
@@ -79,7 +79,7 @@ class GenericNativeIndexProviderTest
         // Given
         var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
         DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, contextFactory, DEFAULT_DATABASE_NAME ).build();
-        GenericNativeIndexProvider provider = new GenericNativeIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
+        PointIndexProvider provider = new PointIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
         CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.CARTESIAN;
         DoubleArray min = Values.doubleArray( new double[]{0, 0} );

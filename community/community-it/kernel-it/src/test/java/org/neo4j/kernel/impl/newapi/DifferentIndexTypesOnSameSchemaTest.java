@@ -60,53 +60,9 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
 
     @EnumSource( EntityType.class )
     @ParameterizedTest
-    void testNumberValueFromIndex( EntityType entityType ) throws KernelException
-    {
-        entityType.crateIndexes( graphDb );
-
-        Value value = Values.longValue( 1234 );
-        long entityId;
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            entityId = entityType.createEntity( tx, value );
-            tx.commit();
-        }
-
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE ) )
-            {
-                assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
-            }
-
-            tx.commit();
-        }
-    }
-
-    @EnumSource( EntityType.class )
-    @ParameterizedTest
-    void testNumberValueFromTxState( EntityType entityType ) throws KernelException
-    {
-        entityType.crateIndexes( graphDb );
-
-        Value value = Values.longValue( 1234 );
-        try ( KernelTransaction tx = beginTransaction() )
-        {
-            long entityId = entityType.createEntity( tx, value );
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE ) )
-            {
-                assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
-            }
-
-            tx.commit();
-        }
-    }
-
-    @EnumSource( EntityType.class )
-    @ParameterizedTest
     void testTextValueFromIndex( EntityType entityType ) throws KernelException
     {
-        entityType.crateIndexes( graphDb );
+        entityType.createIndexes( graphDb );
 
         Value value = Values.stringValue( "Some string" );
         long entityId;
@@ -118,7 +74,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE, IndexType.TEXT ) )
+            for ( IndexType indexType : List.of( IndexType.RANGE, IndexType.TEXT ) )
             {
                 assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
             }
@@ -131,13 +87,13 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     @ParameterizedTest
     void testTextValueFromTxState( EntityType entityType ) throws KernelException
     {
-        entityType.crateIndexes( graphDb );
+        entityType.createIndexes( graphDb );
 
         Value value = Values.stringValue( "Some string" );
         try ( KernelTransaction tx = beginTransaction() )
         {
             long entityId = entityType.createEntity( tx, value );
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE, IndexType.TEXT ) )
+            for ( IndexType indexType : List.of( IndexType.RANGE, IndexType.TEXT ) )
             {
                 assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
             }
@@ -150,7 +106,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     @ParameterizedTest
     void testPointValueFromIndex( EntityType entityType ) throws KernelException
     {
-        entityType.crateIndexes( graphDb );
+        entityType.createIndexes( graphDb );
 
         Value value = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2 );
         long entityId;
@@ -162,7 +118,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
 
         try ( KernelTransaction tx = beginTransaction() )
         {
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE, IndexType.POINT ) )
+            for ( IndexType indexType : List.of( IndexType.RANGE, IndexType.POINT ) )
             {
                 assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
             }
@@ -175,13 +131,13 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
     @ParameterizedTest
     void testPointValueFromTxState( EntityType entityType ) throws KernelException
     {
-        entityType.crateIndexes( graphDb );
+        entityType.createIndexes( graphDb );
 
         Value value = Values.pointValue( CoordinateReferenceSystem.CARTESIAN, 1, 2 );
         try ( KernelTransaction tx = beginTransaction() )
         {
             long entityId = entityType.createEntity( tx, value );
-            for ( IndexType indexType : List.of( IndexType.BTREE, IndexType.RANGE, IndexType.POINT ) )
+            for ( IndexType indexType : List.of( IndexType.RANGE, IndexType.POINT ) )
             {
                 assertThat( entityType.getEntitiesByPropertyValue( tx, indexType, value ) ).containsExactly( entityId );
             }
@@ -200,11 +156,11 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
         NODE
                 {
                     @Override
-                    void crateIndexes( GraphDatabaseService db )
+                    void createIndexes( GraphDatabaseService db )
                     {
                         try ( Transaction tx = db.beginTx() )
                         {
-                            List.of( IndexType.BTREE, IndexType.RANGE, IndexType.TEXT, IndexType.POINT )
+                            List.of( IndexType.RANGE, IndexType.TEXT, IndexType.POINT )
                                 .forEach( indexType ->
                                         tx.schema().indexFor( Label.label( TOKEN ) ).on( PROPERTY )
                                           .withName( nameForType( indexType ) )
@@ -253,11 +209,11 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
         RELATIONSHIP
                 {
                     @Override
-                    void crateIndexes( GraphDatabaseService db )
+                    void createIndexes( GraphDatabaseService db )
                     {
                         try ( Transaction tx = db.beginTx() )
                         {
-                            List.of( IndexType.BTREE, IndexType.RANGE, IndexType.TEXT, IndexType.POINT )
+                            List.of( IndexType.RANGE, IndexType.TEXT, IndexType.POINT )
                                 .forEach( indexType ->
                                         tx.schema().indexFor( RelationshipType.withName( TOKEN ) ).on( PROPERTY )
                                           .withName( nameForType( indexType ) )
@@ -304,7 +260,7 @@ class DifferentIndexTypesOnSameSchemaTest extends KernelAPIWriteTestBase<KernelA
                     }
                 };
 
-        abstract void crateIndexes( GraphDatabaseService db );
+        abstract void createIndexes( GraphDatabaseService db );
 
         abstract List<Long> getEntitiesByPropertyValue( KernelTransaction tx, IndexType indexType, Value value )
                 throws KernelException;

@@ -141,17 +141,6 @@ class RelationshipIndexOrderTest
     }
 
     @Nested
-    class BtreeIndexTest extends RelationshipIndexOrderTestBase
-    {
-
-        @Override
-        IndexType indexType()
-        {
-            return IndexType.BTREE;
-        }
-    }
-
-    @Nested
     class RangeIndexTest extends RelationshipIndexOrderTestBase
     {
 

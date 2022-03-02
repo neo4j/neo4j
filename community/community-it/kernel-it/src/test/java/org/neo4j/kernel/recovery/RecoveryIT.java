@@ -23,8 +23,6 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 
 import java.io.IOException;
@@ -369,9 +367,8 @@ class RecoveryIT
         }
     }
 
-    @ParameterizedTest
-    @EnumSource( value = IndexType.class, names = {"BTREE", "RANGE"} )
-    void recoverDatabaseWithConstraint( IndexType indexType ) throws Exception
+    @Test
+    void recoverDatabaseWithConstraint() throws Exception
     {
         GraphDatabaseService database = createDatabase();
 
@@ -381,7 +378,7 @@ class RecoveryIT
 
         try ( Transaction tx = database.beginTx() )
         {
-            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).withIndexType( indexType ).create();
+            tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
             tx.commit();
         }
         awaitIndexesOnline( database );
@@ -436,14 +433,12 @@ class RecoveryIT
         int numberOfNodes = 10;
         Label label = Label.label( "myLabel" );
         String property = "prop";
-        String btreeIndex = "b-tree index";
         String rangeIndex = "range index";
         String textIndex = "text index";
         String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.TEXT ).withName( textIndex ).create();
             transaction.schema().indexFor( label ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
@@ -470,7 +465,6 @@ class RecoveryIT
         awaitIndexesOnline( recoveredDatabase );
         try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
-            verifyNodeIndexEntries( numberOfNodes, btreeIndex, transaction, allEntries() );
             verifyNodeIndexEntries( numberOfNodes, rangeIndex, transaction, allEntries() );
             verifyNodeIndexEntries( numberOfNodes, textIndex, transaction, allEntries() );
             verifyNodeIndexEntries( numberOfNodes, fullTextIndex, transaction, fulltextSearch( "*" ) );
@@ -531,14 +525,12 @@ class RecoveryIT
         int numberOfRelationships = 10;
         RelationshipType type = RelationshipType.withName( "TYPE" );
         String property = "prop";
-        String btreeIndex = "b-tree index";
         String rangeIndex = "range index";
         String textIndex = "text index";
         String fullTextIndex = "full text index";
 
         try ( Transaction transaction = database.beginTx() )
         {
-            transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.BTREE ).withName( btreeIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.RANGE ).withName( rangeIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.TEXT ).withName( textIndex ).create();
             transaction.schema().indexFor( type ).on( property ).withIndexType( IndexType.FULLTEXT ).withName( fullTextIndex ).create();
@@ -566,7 +558,6 @@ class RecoveryIT
         awaitIndexesOnline( recoveredDatabase );
         try ( InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx() )
         {
-            verifyRelationshipIndexEntries( numberOfRelationships, btreeIndex, transaction, allEntries() );
             verifyRelationshipIndexEntries( numberOfRelationships, rangeIndex, transaction, allEntries() );
             verifyRelationshipIndexEntries( numberOfRelationships, textIndex, transaction, allEntries() );
             verifyRelationshipIndexEntries( numberOfRelationships, fullTextIndex, transaction, fulltextSearch( "*" ) );

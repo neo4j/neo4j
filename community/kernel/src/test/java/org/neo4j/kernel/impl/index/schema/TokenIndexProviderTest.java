@@ -75,9 +75,9 @@ public class TokenIndexProviderTest extends IndexProviderTests
     @Override
     List<IndexPrototype> invalidPrototypes()
     {
-        return List.of( forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.BTREE )
+        return List.of( forSchema( forAnyEntityTokens( EntityType.NODE ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.RANGE )
                         .withName( "unsupported" ),
-                forSchema( forAnyEntityTokens( EntityType.NODE ), GenericNativeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
+                forSchema( forAnyEntityTokens( EntityType.NODE ), RangeIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP )
                         .withName( "unsupported" ),
                 forSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ),
                 uniqueForSchema( forLabel( labelId, propId ), TokenIndexProvider.DESCRIPTOR ).withIndexType( IndexType.LOOKUP ).withName( "unsupported" ) );
