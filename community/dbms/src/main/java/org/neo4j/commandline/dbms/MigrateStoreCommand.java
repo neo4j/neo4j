@@ -63,14 +63,12 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.LogTailExtractor;
-import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.service.Services;
@@ -80,11 +78,9 @@ import org.neo4j.token.TokenHolders;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
-import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.factory.DbmsInfo.TOOL;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
-import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 // TODO: let's wait with better description until the discussion with the PM is over
 @Command(
@@ -137,13 +133,6 @@ public class MigrateStoreCommand extends AbstractCommand
             {
                 SimpleLogService logService = new SimpleLogService( logProvider );
                 life.add( logService );
-                InternalLog log = logProvider.getLog( MigrateStoreCommand.class );
-
-                Dependencies deps = new Dependencies();
-                Monitors monitors = new Monitors();
-
-                deps.satisfyDependencies( fs, config, pageCache, logService, monitors,
-                        RecoveryCleanupWorkCollector.immediate(), pageCacheTracer, databaseLayout, writable() );
 
                 StorageEngineFactory currentStorageEngineFactory = getCurrentStorageEngineFactory( fs, databaseLayout, pageCache );
                 var indexProviderMap = getIndexProviderMap( fs, databaseLayout, config, logService, pageCache, jobScheduler, life,

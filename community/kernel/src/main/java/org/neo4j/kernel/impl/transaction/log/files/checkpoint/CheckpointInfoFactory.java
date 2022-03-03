@@ -85,12 +85,12 @@ public class CheckpointInfoFactory
                 return TransactionIdStore.UNKNOWN_TRANSACTION_ID;
             }
             throw new IllegalStateException(
-                    "Checkpoint record pointed to " + transactionPosition + ", but log commit entry not found at that position. " + "Last checked position: " +
+                    "Checkpoint record pointed to " + transactionPosition + ", but log commit entry not found at that position. Last checked position: " +
                             checkedPosition );
         }
         catch ( IOException e )
         {
-            throw new UncheckedIOException( "Unable to find last transaction id log files. Position: " + transactionPosition, e );
+            throw new UncheckedIOException( "Unable to find last transaction in log files. Position: " + transactionPosition, e );
         }
     }
 }

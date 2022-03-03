@@ -69,6 +69,7 @@ public interface StoreMigrationParticipant
      * @param fromVersion the version to migrate from
      * @param toVersion the version to migrate to
      * @param indexImporterFactory the factory to create an index updater to keep the indexes updated.
+     * @param tailMetadata metadata about transaction log tail
      * @throws IOException if there was an error migrating.
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */

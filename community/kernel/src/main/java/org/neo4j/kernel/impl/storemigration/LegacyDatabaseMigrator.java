@@ -96,7 +96,7 @@ public class LegacyDatabaseMigrator
         var logTailSupplier = Suppliers.lazySingleton( () -> loadLogTail( databaseLayout ) );
         var logsUpgrader =
                 new LogsMigrator( fs, storageEngineFactory, storageEngineFactory, databaseLayout, pageCache, config, contextFactory, logTailSupplier );
-        InternalLog userLog = logService.getUserLog( LogsMigrator.class );
+        InternalLog userLog = logService.getUserLog( LegacyDatabaseMigrator.class );
         VisibleMigrationProgressMonitor progress = new VisibleMigrationProgressMonitor( userLog );
         InternalLogProvider logProvider = logService.getInternalLogProvider();
         StoreUpgrader storeUpgrader =
