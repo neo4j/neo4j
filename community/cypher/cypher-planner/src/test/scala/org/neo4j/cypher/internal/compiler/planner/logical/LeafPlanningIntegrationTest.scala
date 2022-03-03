@@ -679,7 +679,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private object nodeIndexHints {
     val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
       plannerBuilder()
-        .enablePlanningTextIndexes()
         .setAllNodesCardinality(1000)
         .setLabelCardinality("A", 1)
         .setLabelCardinality("B", 1000)
@@ -777,7 +776,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan range node index when index hint has range type") {
 
     val planner = nodeIndexHints.config
-      .enablePlanningRangeIndexes()
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .build()
@@ -796,7 +794,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan point node index when index hint has point type") {
 
     val planner = nodeIndexHints.config
-      .enablePlanningPointIndexes()
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.POINT)
       .build()
@@ -835,7 +832,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should warn when node index hint specifies an index type that does not exist") {
 
     val baseCfg = nodeIndexHints.config
-      .enablePlanningRangeIndexes()
       .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
 
     val basePlanner = baseCfg.build()
@@ -869,7 +865,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   private object relIndexHints {
     val config: StatisticsBackedLogicalPlanningConfigurationBuilder =
       plannerBuilder()
-        .enablePlanningTextIndexes()
         .setAllNodesCardinality(10)
         .setAllRelationshipsCardinality(100000)
         .setRelationshipCardinality("()-[:R]->()", 100000)
@@ -901,7 +896,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should warn when relationship index hint specifies an index type that does not exist") {
 
     val baseCfg = relIndexHints.config
-      .enablePlanningRangeIndexes()
       .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
 
     val basePlanner = baseCfg.build()
@@ -951,7 +945,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan range relationship index when index hint has range type") {
 
     val planner = relIndexHints.config
-      .enablePlanningRangeIndexes()
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
@@ -968,7 +961,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan point relationship index when index hint has point type") {
 
     val planner = relIndexHints.config
-      .enablePlanningPointIndexes()
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.POINT)
       .build()

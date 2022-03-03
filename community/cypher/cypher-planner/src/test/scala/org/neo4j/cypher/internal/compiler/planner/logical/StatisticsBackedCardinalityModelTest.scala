@@ -678,6 +678,4 @@ class BtreeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinal
 
 class RangeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinalityModelTest {
   override def getIndexType = IndexType.RANGE
-
-  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = super.plannerBuilder().enablePlanningRangeIndexes()
 }

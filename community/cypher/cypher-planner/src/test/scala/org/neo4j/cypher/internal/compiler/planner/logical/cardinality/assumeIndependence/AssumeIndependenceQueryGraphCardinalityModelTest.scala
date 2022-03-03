@@ -765,6 +765,4 @@ class BtreeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndepe
 
 class RangeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
   override def getIndexType: IndexType = IndexType.RANGE
-
-  override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder = super.plannerBuilder().enablePlanningRangeIndexes()
 }

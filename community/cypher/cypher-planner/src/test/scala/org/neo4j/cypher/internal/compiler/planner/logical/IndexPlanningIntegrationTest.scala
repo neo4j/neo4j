@@ -59,14 +59,12 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   private def plannerConfigForRangeIndexOnLabelPropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
       .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-      .enablePlanningRangeIndexes()
       .build()
 
   private def plannerConfigForRangeIndexOnRelationshipTypePropTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForIndexOnLabelPropTests()
       .setRelationshipCardinality("()-[:Type]->()", 20)
       .addRelationshipIndex("Type", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-      .enablePlanningRangeIndexes()
       .build()
 
   test("should not plan btree index seek if predicate depends on variable from same QueryGraph") {
@@ -126,7 +124,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       plannerBaseConfigForIndexOnLabelPropTests()
         .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.BTREE)
         .addNodeIndex("Label", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-        .enablePlanningRangeIndexes()
         .build()
 
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
@@ -191,7 +188,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   test("should plan composite range node index") {
     val cfg = plannerBaseConfigForIndexOnLabelPropTests()
       .addNodeIndex("Label", Seq("prop1", "prop2"), 0.1, 0.01, indexType = IndexType.RANGE)
-      .enablePlanningRangeIndexes()
       .build()
 
     // seekable first predicate
@@ -232,7 +228,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     val cfg = plannerBaseConfigForIndexOnLabelPropTests()
       .addRelationshipIndex("Type", Seq("prop1", "prop2"), 0.1, 0.01, indexType = IndexType.RANGE)
       .setRelationshipCardinality("()-[:Type]->()", 20)
-      .enablePlanningRangeIndexes()
       .build()
 
     // seekable first predicate
@@ -373,7 +368,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
   private def plannerConfigWithRangeIndexForDistancePredicateTests(): StatisticsBackedLogicalPlanningConfiguration =
     plannerBaseConfigForDistancePredicateTests()
       .addNodeIndex("Place", Seq("location"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
-      .enablePlanningRangeIndexes()
       .build()
 
   test("should plan range index scan for partial existence predicate for distance predicate") {
@@ -472,7 +466,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .addNodeIndex("S", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE)
       .addNodeIndex("T", Seq("p"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE) // This index is enforced by hint
       .addNodeIndex("T", Seq("foo"), existsSelectivity = 1.0, uniqueSelectivity = 0.1, indexType = IndexType.RANGE) // This index would normally be preferred
-      .enablePlanningRangeIndexes()
       .build()
 
   test("should allow one join and one index hint on the same variable using btree indexes") {
@@ -1487,7 +1480,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   private def plannerConfigForNodePointIndex: StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
-      .enablePlanningPointIndexes()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
@@ -1545,7 +1537,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   private def plannerConfigForRelPointIndex: StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
-      .enablePlanningPointIndexes()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
@@ -1603,7 +1594,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should prefer node point index usage over btree for compatible predicates") {
     val cfg = plannerBuilder()
-      .enablePlanningPointIndexes()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
@@ -1627,7 +1617,6 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
 
   test("should prefer relationship point index usage over btree for compatible predicates") {
     val cfg = plannerBuilder()
-      .enablePlanningPointIndexes()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 100)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
