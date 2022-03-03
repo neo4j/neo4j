@@ -39,6 +39,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -159,7 +160,7 @@ public class BuiltInDbmsProcedures
 
         config.getValues().forEach( ( setting, value ) ->
                                     {
-                                        if ( !setting.internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
+                                        if ( !((SettingImpl<?>) setting).internal() && setting.name().toLowerCase().contains( lowerCasedSearchString ) )
                                         {
                                             results.add( new ConfigResult( setting, value ) );
                                         }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import org.apache.commons.lang3.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +32,6 @@ import static java.lang.String.format;
 public final class SettingImpl<T> implements Setting<T>
 {
     private final String name;
-    private final String suffix;
     private final SettingImpl<T> dependency;
     private final SettingValueParser<T> parser;
     private final T defaultValue;
@@ -62,7 +59,6 @@ public final class SettingImpl<T> implements Setting<T>
         this.dynamic = dynamic;
         this.immutable = immutable;
         this.internal = name != null && name.contains( "unsupported." );
-        this.suffix = StringUtils.isNotEmpty( name ) ? name.substring( name.lastIndexOf( '.' ) + 1 ) : name;
     }
 
     public static <T> SettingBuilder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )
@@ -187,11 +183,6 @@ public final class SettingImpl<T> implements Setting<T>
         return name;
     }
 
-    public String suffix()
-    {
-        return suffix;
-    }
-
     @Override
     public boolean dynamic()
     {
@@ -203,7 +194,6 @@ public final class SettingImpl<T> implements Setting<T>
         return immutable;
     }
 
-    @Override
     public boolean internal()
     {
         return internal;

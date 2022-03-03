@@ -51,15 +51,6 @@ public interface Setting<T>
     boolean dynamic();
 
     /**
-     * An internal setting should not be accessed nor altered by any user
-     * Internal settings may be changed or removed between versions without notice
-     *
-     * @return true if the setting is internal, false otherwise
-     * // TODO : remove from API
-     */
-    boolean internal();
-
-    /**
      * A textual representation describing the usage if this setting
      *
      * @return the description of this setting

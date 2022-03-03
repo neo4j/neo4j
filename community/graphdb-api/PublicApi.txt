@@ -303,7 +303,6 @@ org.neo4j.graphdb.config.Setting<T extends java.lang.Object> public abstract int
 org.neo4j.graphdb.config.Setting<T>::defaultValue() #T public abstract
 org.neo4j.graphdb.config.Setting<T>::description() java.lang.String public abstract
 org.neo4j.graphdb.config.Setting<T>::dynamic() boolean public abstract
-org.neo4j.graphdb.config.Setting<T>::internal() boolean public abstract
 org.neo4j.graphdb.config.Setting<T>::name() java.lang.String public abstract
 org.neo4j.graphdb.event.DatabaseEventContext public abstract interface
 org.neo4j.graphdb.event.DatabaseEventContext::getDatabaseName() java.lang.String public abstract

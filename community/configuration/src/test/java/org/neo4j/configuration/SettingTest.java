@@ -95,19 +95,6 @@ import static org.neo4j.graphdb.config.Configuration.EMPTY;
 class SettingTest
 {
     @Test
-    void testSuffix()
-    {
-        var setting1 = (SettingImpl<Integer>) setting( "setting", INT );
-        assertEquals( "setting", setting1.suffix() );
-        var setting2 = (SettingImpl<Integer>) setting( "setting.suffix", INT );
-        assertEquals( "suffix", setting2.suffix() );
-        var setting3 = (SettingImpl<Integer>) setting( "", INT );
-        assertEquals( "", setting3.suffix() );
-        var setting4 = (SettingImpl<Integer>) setting( null, INT );
-        assertNull( setting4.suffix() );
-    }
-
-    @Test
     void testInteger()
     {
         var setting = (SettingImpl<Integer>) setting( "setting", INT );

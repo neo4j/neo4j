@@ -1,10 +1,3 @@
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract interface
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::<T extends java.lang.Object>setConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::addDatabaseListener(org.neo4j.graphdb.event.DatabaseEventListener) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::build() org.neo4j.dbms.api.DatabaseManagementService public abstract
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::loadPropertiesFromFile(java.nio.file.Path) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::setConfig(java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object>) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
-org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::setUserLogProvider(org.neo4j.logging.LogProvider) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder public final class extends java.lang.Object implements org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::<T extends java.lang.Object>setConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::DatabaseManagementServiceBuilder(java.nio.file.Path) void public
@@ -13,3 +6,10 @@ org.neo4j.dbms.api.DatabaseManagementServiceBuilder::build() org.neo4j.dbms.api.
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::loadPropertiesFromFile(java.nio.file.Path) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setConfig(java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object>) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
 org.neo4j.dbms.api.DatabaseManagementServiceBuilder::setUserLogProvider(org.neo4j.logging.LogProvider) org.neo4j.dbms.api.DatabaseManagementServiceBuilder public
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract interface
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::<T extends java.lang.Object>setConfig(org.neo4j.graphdb.config.Setting<T>, #T) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::addDatabaseListener(org.neo4j.graphdb.event.DatabaseEventListener) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::build() org.neo4j.dbms.api.DatabaseManagementService public abstract
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::loadPropertiesFromFile(java.nio.file.Path) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::setConfig(java.util.Map<org.neo4j.graphdb.config.Setting<?>,java.lang.Object>) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
+org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder::setUserLogProvider(org.neo4j.logging.LogProvider) org.neo4j.dbms.api.Neo4jDatabaseManagementServiceBuilder public abstract
