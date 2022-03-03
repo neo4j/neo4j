@@ -31,7 +31,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.event.DatabaseEventListener;
@@ -50,7 +49,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
-import static java.lang.Boolean.FALSE;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
 public class DatabaseManagementServiceBuilderImplementation implements Neo4jDatabaseManagementServiceBuilder
@@ -84,7 +82,6 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
 
     protected DatabaseManagementService newDatabaseManagementService( Config config, ExternalDependencies dependencies )
     {
-        config.set( GraphDatabaseInternalSettings.ephemeral_lucene, FALSE );
         return new DatabaseManagementServiceFactory( getDbmsInfo( config ), getEditionFactory( config ) )
                 .build( augmentConfig( config ), dependencies );
     }
