@@ -79,7 +79,7 @@ public interface StoreMigrationParticipant
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
-     * @param migrationLayout directory where the* {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, StoreVersion,
+     * @param migrationLayout directory where the {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, StoreVersion,
      * StoreVersion, IndexImporterFactory, LogTailMetadata) migration} put its files.
      * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from

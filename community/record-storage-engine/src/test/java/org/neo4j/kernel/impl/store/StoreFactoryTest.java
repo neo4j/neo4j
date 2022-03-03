@@ -48,7 +48,6 @@ import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
@@ -114,17 +113,6 @@ class StoreFactoryTest
 
         assertThat( pageCacheTracer.pins() ).isNotZero();
         assertThat( pageCacheTracer.unpins() ).isNotZero();
-    }
-
-    @Test
-    void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup()
-    {
-        // When
-        neoStores = storeFactory( defaults() ).openAllNeoStores( true );
-        MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-
-        // Then
-        assertNotNull( metaDataStore.getLastCommittedTransaction() );
     }
 
     @Test

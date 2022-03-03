@@ -613,7 +613,7 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setStoreIdShouldSetAllRelatedFields()
+    void regenerateSetStoreId()
     {
         // given
         int creationTime = 1;
@@ -637,7 +637,7 @@ class MetaDataStoreTest
     }
 
     @Test
-    void setExternalStoreIdShouldSetAllRelatedFields()
+    void regenerateSetExternalStoreId()
     {
         UUID externalStoreId = UUID.randomUUID();
         try ( MetaDataStore store = newMetaDataStore() )

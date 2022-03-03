@@ -51,16 +51,13 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
-import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.io.fs.FileUtils.copyFile;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -91,12 +88,6 @@ class AllNodesInStoreExistInLabelIndexTest
     private static final double DELETE_RATIO = 0.2;
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
-
-    @ExtensionCallback
-    void configuration( TestDatabaseManagementServiceBuilder builder )
-    {
-        builder.setConfig( use_old_token_index_location, false );
-    }
 
     @Test
     void mustReportSuccessfulForConsistentLabelTokenIndex() throws Exception
@@ -426,7 +417,6 @@ class AllNodesInStoreExistInLabelIndexTest
         DatabaseLayout databaseLayout = db.databaseLayout();
         Config config = Config.newBuilder()
                               .set( logs_directory, databaseLayout.databaseDirectory() )
-                              .set( use_old_token_index_location, false )
                               .build();
         return new ConsistencyCheckService( databaseLayout )
                 .with( addAdditionalConfigToCC( config ) )

@@ -305,9 +305,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     dstStore.flush( cursorContext );
                 }
 
-                MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION,
-                        StoreVersion.versionStringToLong( toVersion.storeVersion() ), migrationLayout.getDatabaseName(), cursorContext );
             }
+
+            MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
+                    migrationLayout.getDatabaseName(), cursorContext );
         }
     }
 

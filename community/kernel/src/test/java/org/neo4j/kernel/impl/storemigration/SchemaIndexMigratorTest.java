@@ -131,7 +131,7 @@ class SchemaIndexMigratorTest
                 contextFactory );
 
         // when
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, mock( StoreVersion.class ), mock( StoreVersion.class ), IndexImporterFactory.EMPTY,
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, fromVersion, toVersion, IndexImporterFactory.EMPTY,
                 EMPTY_LOG_TAIL );
         migrator.moveMigratedFiles( databaseLayout, migrationLayout, "from", "to" );
 

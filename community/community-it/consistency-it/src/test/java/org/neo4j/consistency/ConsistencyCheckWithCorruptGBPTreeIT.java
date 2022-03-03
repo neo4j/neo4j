@@ -84,7 +84,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.consistency.checking.full.ConsistencyFlags.DEFAULT;
@@ -723,7 +722,6 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     {
         Config config = Config.newBuilder()
                               .set( neo4j_home, neo4jHome )
-                              .set( use_old_token_index_location, false )
                               .build();
         adaptConfig.accept( config );
         return new ConsistencyCheckService( databaseLayout )
@@ -744,9 +742,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         TestDatabaseManagementServiceBuilder builder = new TestDatabaseManagementServiceBuilder( neo4jHome )
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) );
         dbConfiguration.accept( builder );
-        final DatabaseManagementService dbms = builder
-                .setConfig( use_old_token_index_location, false )
-                .build();
+        final DatabaseManagementService dbms = builder.build();
         try
         {
             final GraphDatabaseService db = dbms.database( DEFAULT_DATABASE_NAME );
