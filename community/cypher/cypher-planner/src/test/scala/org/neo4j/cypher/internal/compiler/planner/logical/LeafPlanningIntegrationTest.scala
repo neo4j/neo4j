@@ -868,9 +868,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         .setAllNodesCardinality(10)
         .setAllRelationshipsCardinality(100000)
         .setRelationshipCardinality("()-[:R]->()", 100000)
+        .setRelationshipCardinality("()-[:R]->(:B)", 100000)
+        .setLabelCardinality("B", 9)
 
     def query(hint: String): String =
-      s"""MATCH (a)-[r:R]->(b) $hint
+      s"""MATCH (a)-[r:R]->(b:B) $hint
          |WHERE r.prop STARTS WITH ''
          |RETURN a""".stripMargin
   }
@@ -887,8 +889,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planner.planBuilder()
           .produceResults("a")
           .filter("r.prop STARTS WITH ''")
-          .expandAll("(a)-[r:R]->(b)")
-          .allNodeScan("a")
+          .expandAll("(b)<-[r:R]-(a)")
+          .nodeByLabelScan("b", "B")
           .build()
       )
   }
@@ -937,6 +939,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
+          .filter("b:B")
           .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.TEXT)
           .build()
       )
@@ -953,6 +956,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
+          .filter("b:B")
           .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.RANGE)
           .build()
       )
