@@ -105,7 +105,6 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.TestDBMSBuilder;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -159,7 +158,7 @@ public class DetectRandomSabotageIT
         return addConfig( createBuilder( home ) ).build();
     }
 
-    protected TestDBMSBuilder createBuilder( Path home )
+    protected TestDatabaseManagementServiceBuilder createBuilder( Path home )
     {
         return new TestDatabaseManagementServiceBuilder( home );
     }
@@ -471,9 +470,9 @@ public class DetectRandomSabotageIT
         return t;
     }
 
-    private TestDBMSBuilder addConfig( TestDBMSBuilder builder )
+    private TestDatabaseManagementServiceBuilder addConfig( TestDatabaseManagementServiceBuilder builder )
     {
-        return addConfig( builder, TestDBMSBuilder::setConfig );
+        return addConfig( builder, TestDatabaseManagementServiceBuilder::setConfig );
     }
 
     private Config.Builder addConfig( Config.Builder builder )
