@@ -62,7 +62,7 @@ public class CheckpointInfoFactory
         }
     }
 
-    public static TransactionId readTransactionId( TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition )
+    private static TransactionId readTransactionId( TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition )
     {
         try ( var channel = logFile.openForVersion( transactionPosition.getLogVersion() );
               var reader = new ReadAheadLogChannel( new UnclosableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );

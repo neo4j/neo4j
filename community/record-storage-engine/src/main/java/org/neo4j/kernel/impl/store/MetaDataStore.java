@@ -570,6 +570,10 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 writeLongRecord( cursor, storeId.getCreationTime() );
                 writeLongRecord( cursor, storeId.getRandomId() );
             }
+            else
+            {
+                throw new IllegalStateException( "Unable to write metadata store page." );
+            }
         }
         catch ( IOException e )
         {
