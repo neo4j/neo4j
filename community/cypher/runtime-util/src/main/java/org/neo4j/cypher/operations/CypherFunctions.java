@@ -1272,7 +1272,7 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
-    public static AnyValue in(AnyValue findMe, AnyValue lookIn) {
+    public static Value in(AnyValue findMe, AnyValue lookIn) {
         if (lookIn == NO_VALUE) {
             return NO_VALUE;
         }

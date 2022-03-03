@@ -19,43 +19,47 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
 
 import scala.collection.mutable
 
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
-
-It uses a cache for the <constant-expression>, and turns it into a Set, for fast existence checking.
-The key for the cache is the expression and not the value, which saves in execution speed
  */
 case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    val inChecker = state.cachedIn.getOrElseUpdate(
-      list, {
-        val listValue = list(ctx, state)
-        val checker =
-          if (listValue eq Values.NO_VALUE)
-            NullListChecker
-          else {
-            val input = makeTraversable(listValue)
-            if (input.isEmpty) AlwaysFalseChecker
-            else new BuildUp(input, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
-          }
-        new InCheckContainer(checker)
+    val listValue = list(ctx, state)
+    if (listValue eq Values.NO_VALUE) {
+      None
+    } else {
+      val input = makeTraversable(listValue)
+      if (input.isEmpty) {
+        Some(false)
+      } else {
+        state.cachedIn.check(
+          value(ctx, state),
+          input,
+          state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
+        ) match {
+          case IsNoValue()     => None
+          case b: BooleanValue => Some(b.booleanValue())
+          case v               => throw new IllegalStateException(s"$v is not a supported value for a predicate")
+        }
       }
-    )
-
-    inChecker.contains(value(ctx, state))
+    }
   }
 
   override def containsIsNull = false
@@ -68,64 +72,28 @@ case class ConstantCachedIn(value: Expression, list: Expression, id: Id) extends
     f(ConstantCachedIn(value.rewrite(f), list.rewrite(f), id))
 }
 
-/*
-This class is used for making the common <exp> IN <rhs-expression> fast
+object EvaluateIn {
+  // Boolean boxing was showing up in micro benchmarks
+  private[this] val someFalse = Some(false)
+  private[this] val someTrue = Some(true)
 
-It uses a cache for the <rhs-expression> value, and turns it into a Set, for fast existence checking
- */
-case class DynamicCachedIn(value: Expression, list: Expression, id: Id) extends Predicate with ListSupport {
-
-  // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = {
-    val listValue: AnyValue = list(ctx, state)
-
-    if (listValue eq Values.NO_VALUE)
-      return None
-
-    val traversable = makeTraversable(listValue)
-
-    if (traversable.isEmpty)
-      return Some(false)
-
-    val inChecker = state.cachedIn.getOrElseUpdate(
-      traversable, {
-        val checker = new BuildUp(traversable, state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x))
-        new InCheckContainer(checker)
-      }
-    )
-
-    inChecker.contains(value(ctx, state))
-  }
-
-  override def containsIsNull = false
-
-  override def arguments: Seq[Expression] = Seq(list)
-
-  override def children: Seq[AstNode[_]] = Seq(value, list)
-
-  override def rewrite(f: Expression => Expression): Expression =
-    f(DynamicCachedIn(value.rewrite(f), list.rewrite(f), id))
-}
-
-object CachedIn {
-
-  def unapply(arg: Expression): Option[(Expression, Expression)] = arg match {
-    case DynamicCachedIn(value, list, _)  => Some((value, list))
-    case ConstantCachedIn(value, list, _) => Some((value, list))
-    case _                                => None
+  def apply(value: AnyValue, list: ListValue): Option[Boolean] = {
+    CypherFunctions.in(value, list) match {
+      case BooleanValue.FALSE => someFalse
+      case BooleanValue.TRUE  => someTrue
+      case Values.NO_VALUE    => None
+    }
   }
 }
 
-/*
-This is a simple container that keep the latest state of the cached IN check
- */
-class InCheckContainer(var checker: Checker) {
+class ReferenceCacheKey(private val reference: AnyRef) {
 
-  def contains(value: AnyValue): Option[Boolean] = {
-    val (result, newChecker) = checker.contains(value)
-    checker = newChecker
-    result
+  override def equals(other: Any): Boolean = other match {
+    case otherCacheKey: ReferenceCacheKey => reference eq otherCacheKey.reference
+    case _                                => false
   }
+
+  override def hashCode(): Int = System.identityHashCode(reference)
 }
 
 class ConcurrentLRUCache[K, V](maxSizePerThread: Int) extends InLRUCache[K, V] {
@@ -158,7 +126,7 @@ abstract class InLRUCache[K, V] {
     entry._2
   }
 
-  // Optimised version of ArrayDeque.indexWhere
+  // Boxing of booleans showed up in micro benchmarks when using the scala method
   private def findIndex(key: K): Int = {
     var i = 0
     while (i < cache.size) {

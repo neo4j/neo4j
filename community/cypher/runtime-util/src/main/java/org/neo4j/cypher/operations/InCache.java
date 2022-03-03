@@ -37,7 +37,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 public class InCache implements AutoCloseable {
-    private final LinkedHashMap<ListValue, InCacheChecker> seen;
+    private final LinkedHashMap<CacheKey, InChecker> seen;
 
     public InCache() {
         this(16);
@@ -46,36 +46,56 @@ public class InCache implements AutoCloseable {
     public InCache(int maxSize) {
         seen = new LinkedHashMap<>(maxSize >> 2, 0.75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<ListValue, InCacheChecker> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<CacheKey, InChecker> eldest) {
                 return super.size() > maxSize;
             }
         };
     }
 
     public Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
-        if (list.isEmpty()) {
-            return FALSE;
-        } else if (value == NO_VALUE) {
-            return NO_VALUE;
+        if (list.size() < 128 || value == NO_VALUE) {
+            return CypherFunctions.in(value, list);
         } else {
-            InCacheChecker checker =
-                    seen.computeIfAbsent(list, k -> new InCacheChecker(list.iterator(), memoryTracker));
-            return checker.check(value);
+            final var key = new CacheKey(list);
+            var checker = seen.get(key);
+
+            if (checker == null) {
+                seen.put(key, DelayInCacheChecker.INSTANCE);
+                return CypherFunctions.in(value, list);
+            } else if (checker instanceof InCacheChecker cachedChecker) {
+                return cachedChecker.check(value);
+            } else {
+                final var cachedChecker = new InCacheChecker(list, memoryTracker);
+                seen.put(key, cachedChecker);
+                return cachedChecker.check(value);
+            }
         }
     }
 
     @Override
     public void close() {
-        seen.values().forEach(InCacheChecker::close);
+        seen.values().forEach(InChecker::close);
     }
 
-    private static class InCacheChecker implements AutoCloseable {
+    interface InChecker extends AutoCloseable {
+        @Override
+        void close();
+    }
+
+    private static class DelayInCacheChecker implements InChecker {
+        private static final DelayInCacheChecker INSTANCE = new DelayInCacheChecker();
+
+        @Override
+        public void close() {}
+    }
+
+    private static class InCacheChecker implements InChecker, AutoCloseable {
         private final HeapTrackingUnifiedSet<AnyValue> seen;
         private final Iterator<AnyValue> iterator;
         private boolean seenUndefined; // Not valid for sequence values and maps
 
-        private InCacheChecker(Iterator<AnyValue> iterator, MemoryTracker memoryTracker) {
-            this.iterator = iterator;
+        private InCacheChecker(ListValue list, MemoryTracker memoryTracker) {
+            this.iterator = list.iterator();
             this.seen = HeapTrackingCollections.newSet(memoryTracker);
         }
 
@@ -114,5 +134,27 @@ public class InCache implements AutoCloseable {
         public void close() {
             seen.close();
         }
+    }
+}
+
+class CacheKey {
+    private final ListValue list;
+
+    CacheKey(ListValue list) {
+        this.list = list;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof CacheKey otherKey) {
+            return list == otherKey.list;
+        }
+
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return System.identityHashCode(list);
     }
 }

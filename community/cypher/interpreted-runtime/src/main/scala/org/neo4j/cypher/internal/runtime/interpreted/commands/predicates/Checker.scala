@@ -41,6 +41,24 @@ trait Checker {
   def close(): Unit
 }
 
+/**
+ * Evaluates in expression on first call to contains, starts buildup on second call. Avoids expensive set buildup in cases where list is only used once.
+ */
+class DelayedBuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends Checker {
+  private var firstUse: Boolean = true
+
+  override def contains(value: AnyValue): (Option[Boolean], Checker) = {
+    if (firstUse) {
+      firstUse = false
+      (EvaluateIn(value, list), this)
+    } else {
+      new BuildUp(list, memoryTracker).contains(value)
+    }
+  }
+
+  override def close(): Unit = {}
+}
+
 class BuildUp(list: ListValue, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends Checker {
   val iterator: util.Iterator[AnyValue] = list.iterator()
   checkOnlyWhenAssertionsAreEnabled(iterator.hasNext)

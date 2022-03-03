@@ -27,9 +27,11 @@ import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
+import static org.neo4j.values.virtual.VirtualValues.range;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -107,11 +109,12 @@ class InCacheTest {
     void shouldTrackMemory() {
         // given
         InCache cache = new InCache();
-        ListValue list = list(stringValue("a"), stringValue("b"), stringValue("c"));
+        ListValue list = range(1L, 256L, 1L);
 
         // when
         MemoryTracker memoryTracker = mock(MemoryTracker.class);
-        cache.check(stringValue("a"), list, memoryTracker);
+        cache.check(longValue(1L), list, memoryTracker);
+        cache.check(longValue(2L), list, memoryTracker);
 
         // then
         ArgumentCaptor<Long> arg = ArgumentCaptor.forClass(Long.class);
