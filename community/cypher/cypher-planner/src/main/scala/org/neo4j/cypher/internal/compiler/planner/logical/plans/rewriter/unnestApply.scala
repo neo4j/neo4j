@@ -111,12 +111,12 @@ case class unnestApply(override val solveds: Solveds,
       Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
 
     // L Ax (Arg LOJ R) => L LOJ R
-    case apply@RemovableApply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) =>
+    case apply@RemovableApply(lhs, join@LeftOuterHashJoin(_, arg:Argument, _), _) if preservesOrder(apply, join) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryLeft(apply, lhs, join)
 
     // L Ax (L2 ROJ Arg) => L2 ROJ L
-    case apply@RemovableApply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) =>
+    case apply@RemovableApply(lhs, join@RightOuterHashJoin(_, _, arg:Argument), _) if preservesOrder(apply, join) =>
       assertArgumentHasCardinality1(arg)
       unnestRightBinaryRight(apply, lhs, join)
 
@@ -245,5 +245,11 @@ trait UnnestingRewriter {
     // Argument plans are always supposed to have a Cardinality of 1.
     // If this should not hold, we would need to multiply Cardinality for this rewrite rule.
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(cardinalities(arg.id) == Cardinality.SINGLE, s"Argument plans should always have Cardinality 1. Had: ${cardinalities(arg.id)}")
+  }
+
+  protected def preservesOrder(apply: LogicalPlan, rhs: LogicalPlan): Boolean = {
+    val applyProvidedOrder = providedOrders.get(apply.id)
+    val rhsProvidedOrder = providedOrders.get(rhs.id)
+    applyProvidedOrder.commonPrefixWith(rhsProvidedOrder) == applyProvidedOrder
   }
 }
