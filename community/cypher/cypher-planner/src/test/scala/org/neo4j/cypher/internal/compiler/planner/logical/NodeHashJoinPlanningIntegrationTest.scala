@@ -104,7 +104,12 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
   }
 
+  // TODO: This is a suggestion for a (better) plan that the planner currently isn't capable of producing.
   ignore("Should plan sort (under hash join) if LeftOuterHashJoin can be unnested from apply") {
+    // The actual plan we get (sort on top of hash join) is correct, but sub-optimal.
+    // While leftOuterHashJoin preserves ordering for RHS we still don't consider placing the sort under hash join.
+    // That's because at the point in time when we plan a sort the hash join is in RHS of an apply, which only preserves order for the LHS.
+    // It's only when the apply has been unnested that the alternative placement of sort is feasible (and better).
     val cfg = plannerBuilder()
       .setAllNodesCardinality(10)
       .setAllRelationshipsCardinality(100)
