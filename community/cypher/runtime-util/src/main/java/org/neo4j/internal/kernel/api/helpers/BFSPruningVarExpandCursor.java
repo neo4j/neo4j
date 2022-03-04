@@ -21,11 +21,10 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.trackable.HeapTrackingArrayDeque;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
@@ -80,8 +79,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     private final RelationshipTraversalCursor relCursor;
     private RelationshipTraversalCursor selectionCursor;
     private int currentDepth;
-    //TODO: add memory tracking
-    private final Queue<NodeState> queue;
+    private final HeapTrackingArrayDeque<NodeState> queue;
     private final HeapTrackingLongHashSet seen;
     private final LongPredicate nodeFilter;
     private final Predicate<RelationshipTraversalCursor> relFilter;
@@ -214,7 +212,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         //start with empty cursor and will expand from the start node
         //that is added at the top of the queue
         this.selectionCursor = emptyTraversalCursor( read );
-        queue = new ArrayDeque<>();
+        queue = HeapTrackingCollections.newArrayDeque( memoryTracker );
         seen = HeapTrackingCollections.newLongSet( memoryTracker );
         if ( currentDepth < maxDepth )
         {
@@ -317,6 +315,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 selectionCursor.close();
             }
             seen.close();
+            queue.close();
             selectionCursor = null;
         }
     }

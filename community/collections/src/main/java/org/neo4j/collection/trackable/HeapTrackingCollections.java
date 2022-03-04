@@ -83,4 +83,9 @@ public final class HeapTrackingCollections
     {
         return new HeapTrackingStack<>( HeapTrackingArrayList.newArrayList( memoryTracker ) );
     }
+
+    public static <T> HeapTrackingArrayDeque<T> newArrayDeque( MemoryTracker memoryTracker )
+    {
+        return HeapTrackingArrayDeque.newArrayDeque( memoryTracker );
+    }
 }
