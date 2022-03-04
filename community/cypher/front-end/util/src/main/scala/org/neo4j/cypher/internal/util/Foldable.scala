@@ -74,15 +74,15 @@ object Foldable {
   /**
    * Any type is foldable
    */
-  implicit class FoldableAny(val that: Any) extends Foldable
+  implicit class FoldableAny(override val foldedOver: Any) extends Foldable
 
   /**
    * Exposes the various fold methods
    */
-  class Folder(that: Any, cancellation: CancellationChecker) {
+  class Folder(foldedOver: Any, cancellation: CancellationChecker) {
 
     def fold[R](init: R)(f: PartialFunction[Any, R => R]): R =
-      foldAcc(mutable.ArrayStack(that), init, f.lift, cancellation)
+      foldAcc(mutable.ArrayStack(foldedOver), init, f.lift, cancellation)
 
     /**
      * Fold of a tree structure
@@ -105,7 +105,7 @@ object Foldable {
      */
     def treeFold[R](init: R)(f: PartialFunction[Any, R => FoldingBehavior[R]]): R = {
       treeFoldAcc(
-        mutable.ArrayStack(that),
+        mutable.ArrayStack(foldedOver),
         init,
         f.andThen[R => (R, Option[R => R])](innerF => acc => {
           innerF(acc) match {
@@ -125,7 +125,7 @@ object Foldable {
      */
     def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => FoldingBehavior[R]]): R =
       treeFoldAcc(
-        mutable.ArrayStack(that),
+        mutable.ArrayStack(foldedOver),
         init,
         f.andThen[R => (R, Option[R => R])](innerF => acc => {
           innerF(acc) match {
@@ -143,34 +143,34 @@ object Foldable {
     Allows searching through object tree and object collections
      */
     def treeExists(f: PartialFunction[Any, Boolean]): Boolean =
-      existsAcc(mutable.ArrayStack(that), f.lift, cancellation)
+      existsAcc(mutable.ArrayStack(foldedOver), f.lift, cancellation)
 
     /*
     Allows searching through object tree and object collections
      */
     def treeFind[A: ClassTag](f: PartialFunction[A, Boolean]): Option[A] =
-      findAcc[A](mutable.ArrayStack(that), f.lift, cancellation)
+      findAcc[A](mutable.ArrayStack(foldedOver), f.lift, cancellation)
 
     /*
     Allows searching through object tree and object collections for a class
      */
     def treeFindByClass[A: ClassTag]: Option[A] =
-      optionFindAcc[A](mutable.ArrayStack(that), cancellation)
+      optionFindAcc[A](mutable.ArrayStack(foldedOver), cancellation)
 
     /*
     Searches in trees, counting how many matches are found
      */
     def treeCount(f: PartialFunction[Any, Boolean]): Int = {
       val lifted = f.lift
-      countAcc(mutable.ArrayStack(that), (a: Any) => lifted(a).map(_ => 1), 0, cancellation)
+      countAcc(mutable.ArrayStack(foldedOver), (a: Any) => lifted(a).map(_ => 1), 0, cancellation)
     }
 
     def treeCountAccumulation(f: PartialFunction[Any, Int]): Int = {
-      countAcc(mutable.ArrayStack(that), f.lift, 0, cancellation)
+      countAcc(mutable.ArrayStack(foldedOver), f.lift, 0, cancellation)
     }
 
     def findByAllClass[A: ClassTag]: Seq[A] = {
-      val remaining = mutable.ArrayStack(that)
+      val remaining = mutable.ArrayStack(foldedOver)
       val result = mutable.ListBuffer[A]()
 
       while (remaining.nonEmpty) {
@@ -336,9 +336,11 @@ object Foldable {
 }
 
 trait Foldable {
+  def foldedOver: Any = this
+
   def folder: Folder =
-    new Folder(this, CancellationChecker.NeverCancelled)
+    new Folder(foldedOver, CancellationChecker.NeverCancelled)
 
   def folder(cancellation: CancellationChecker): Folder =
-    new Folder(this, cancellation)
+    new Folder(foldedOver, cancellation)
 }
