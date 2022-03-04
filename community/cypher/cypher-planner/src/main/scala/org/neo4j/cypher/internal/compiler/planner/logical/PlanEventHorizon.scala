@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.aggregation
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.distinct
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.exceptions.InternalException
 
 /*
@@ -63,6 +65,29 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       disallowSplittingTop = context.debugOptions.disallowSplittingTopEnabled
     )
 
+    /*
+     * Depending on where a sort is planned, we sometimes can't unnest an apply (since it may break a provided order).
+     * Unnesting an apply can reduce the cost significantly and therefore we would like to favor sort plans which enable unnesting of apply.
+     *
+     * For example, both plans below have provided order "a":
+     *
+     * LogicalPlan 1                 | LogicalPlan 2
+     * -----------------------------------------------------------------
+     * .apply                        | .sort("a")
+     * .|.leftOuterHashJoin("n1")    | .apply
+     * .|. ...                       | .|.leftOuterHashJoin("n1")
+     * .sort("a")                    | .|. ...
+     * . ...                         | . ...
+     *
+     * In LogicalPlan 1 we can't unnest the apply, because it would break the provided order. However, it is possible to in LogicalPlan 2.
+     */
+    val costProjection: LogicalPlan => LogicalPlan = {
+      val unnest = unnestApply(context.planningAttributes.solveds, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders, Attributes(context.idGen))
+      lp: LogicalPlan => {
+        lp.endoRewrite(unnest)
+      }
+    }
+
     // Plans horizon on top of the current best-overall plan, ensuring ordering only if required by the current query part.
     def planSortIfSelfRequired = planHorizonForPlan(plannerQuery, incomingPlans.bestResult, prevInterestingOrder, context, sortIfSelfRequiredConfig)
     // Plans horizon on top of the current best-overall plan, ensuring ordering if required by the current OR later query part.
@@ -81,7 +106,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       // For best-overall keep the current best-overall plan
       val bestOverall = planSortIfSelfRequired
       // For best-sorted we can choose between the current best-sorted and the current best-overall with sorting planned on top
-      val bestSorted = pickBest(Seq(planSortIfTailOrSelfRequired) ++ maintainSort, "best sorted plan with horizon")
+      val bestSorted = pickBest(costProjection, Seq(planSortIfTailOrSelfRequired) ++ maintainSort, "best sorted plan with horizon")
       BestResults(bestOverall, bestSorted)
     } else {
       // No ordering requirements, only keep the best-overall plan

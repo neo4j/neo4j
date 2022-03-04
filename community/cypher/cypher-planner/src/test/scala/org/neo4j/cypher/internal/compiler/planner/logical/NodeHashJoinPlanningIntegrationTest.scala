@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
@@ -71,6 +72,64 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .|.nodeByLabelScan("c", "C")
       .expandAll("(a)-[r1:X]->(b)")
       .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  test("Should plan sort (on top of apply) such that LeftOuterHashJoin can be unnested from apply") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val array = (1 to 10).mkString("[", ",", "]")
+
+    val query =
+      s"""
+        |MATCH (n1)
+        |UNWIND $array AS a0
+        |OPTIONAL MATCH (n1), (n2)
+        |WITH a0
+        |RETURN a0 ORDER BY a0
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .sort(Seq(Ascending("a0")))
+      .leftOuterHashJoin("n1")
+      .|.cartesianProduct()
+      .|.|.allNodeScan("n2")
+      .|.allNodeScan("n1")
+      .unwind(s"$array AS a0")
+      .allNodeScan("n1")
+      .build()
+  }
+
+  ignore("Should plan sort (under hash join) if LeftOuterHashJoin can be unnested from apply") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val array = (1 to 10).mkString("[", ",", "]")
+
+    val query =
+      s"""
+         |MATCH (n1)
+         |UNWIND $array AS a0
+         |OPTIONAL MATCH (n1)--(n2)
+         |USING JOIN ON n1
+         |RETURN n2 ORDER BY n2
+         |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+
+    plan shouldEqual cfg.subPlanBuilder()
+      .leftOuterHashJoin("n1")
+      .|.sort(Seq(Ascending("n2")))
+      .|.expandAll("(n1)-[anon_0]-(n2)")
+      .|.allNodeScan("n1")
+      .unwind(s"$array AS a0")
+      .allNodeScan("n1")
       .build()
   }
 }
