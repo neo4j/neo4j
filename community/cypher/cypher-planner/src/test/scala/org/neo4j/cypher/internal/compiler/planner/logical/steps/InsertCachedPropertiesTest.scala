@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -55,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -584,7 +586,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       }
     }
 
-    val resultState =  icp.transform(state, mock[PlannerContext])
+    val plannerContext = mock[PlannerContext]
+    when(plannerContext.cancellationChecker).thenReturn(CancellationChecker.NeverCancelled)
+
+    val resultState =  icp.transform(state, plannerContext)
     (resultState.logicalPlan, resultState.semanticTable())
   }
 
