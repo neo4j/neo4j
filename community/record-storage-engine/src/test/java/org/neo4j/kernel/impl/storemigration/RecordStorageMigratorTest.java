@@ -309,6 +309,29 @@ class RecordStorageMigratorTest
         verifyNoMoreInteractions( access );
     }
 
+    @ParameterizedTest
+    @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
+    void filterOutBtreeIndexesShouldFailIfOrphanedUniqueBtreeIndexExists( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    {
+        // Given a unique index without a constraint and a RANGE constraint on the same schema
+        var btree = uniqueIndex( BTREE, labels[0], props[0], NAME_ONE, 1 );
+        var rangeUnique = constraint( constraintType, RANGE, labels[0], props[0], NAME_TWO );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( btree, rangeUnique.index(), rangeUnique.constraint() ) );
+
+        // When
+        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+
+        // Then we still fail since we can't be sure that the constraint was a replacement for the orphaned index
+        assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
+                .hasMessageContaining( btree.userDescription( tokenHolders ) );
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verifyNoInteractions( access );
+    }
+
     @Test
     void filterOutBtreeIndexesShouldRemoveMultipleIndexesAndConstraints() throws KernelException
     {

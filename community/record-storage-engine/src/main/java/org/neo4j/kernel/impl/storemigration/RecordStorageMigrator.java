@@ -385,16 +385,19 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // Organize indexes by SchemaDescriptor
 
         var indexesBySchema = new HashMap<SchemaDescriptor,List<SchemaRule44.Index>>();
-        var indexesByName = new HashMap<String,SchemaRule44.Index>();
+        var uniqueIndexesByName = new HashMap<String,SchemaRule44.Index>();
         var constraintBySchemaAndType = new HashMap<SchemaDescriptor,EnumMap<SchemaRule44.ConstraintRuleType,List<SchemaRule44.Constraint>>>();
         for ( var schemaRule : all )
         {
             if ( schemaRule instanceof SchemaRule44.Index index )
             {
-                indexesByName.put( index.name(), index );
                 if ( !index.unique() )
                 {
                     indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
+                }
+                else
+                {
+                    uniqueIndexesByName.put( index.name(), index );
                 }
             }
             if ( schemaRule instanceof SchemaRule44.Constraint constraint )
@@ -413,30 +416,19 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         var nonReplacedIndexes = new ArrayList<SchemaRule44.Index>();
         for ( var schema : indexesBySchema.keySet() )
         {
-            SchemaRule44.Index btreeIndex = null;
-            boolean hasReplacement = false;
-            for ( SchemaRule44.Index index : indexesBySchema.get( schema ) )
+            List<SchemaRule44.Index> indexes = indexesBySchema.get( schema );
+            for ( SchemaRule44.Index index : indexes )
             {
                 if ( index.indexType() == SchemaRule44.IndexType.BTREE )
                 {
-                    btreeIndex = index;
-                }
-                else if ( index.indexType() == SchemaRule44.IndexType.RANGE ||
-                          index.indexType() == SchemaRule44.IndexType.TEXT ||
-                          index.indexType() == SchemaRule44.IndexType.POINT )
-                {
-                    hasReplacement = true;
-                }
-            }
-            if ( btreeIndex != null )
-            {
-                if ( hasReplacement )
-                {
-                    indexesToDelete.add( btreeIndex );
-                }
-                else
-                {
-                    nonReplacedIndexes.add( btreeIndex );
+                    if ( indexes.size() == 1 )
+                    {
+                        nonReplacedIndexes.add( index );
+                    }
+                    else
+                    {
+                        indexesToDelete.add( index );
+                    }
                 }
             }
         }
@@ -444,40 +436,38 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // Figure out which constraints, backed by btree indexes, that has replacement and can be deleted and which don't
         var constraintsToDelete = new ArrayList<SchemaRule44.Constraint>();
         var nonReplacedConstraints = new ArrayList<SchemaRule44.Constraint>();
-        constraintBySchemaAndType.values() // Collection<EnumMap<ConstraintType,List<ConstraintDescriptor>>>
-                                 .stream().flatMap( enumMap -> enumMap.values().stream() ) // Stream<List<ConstraintDescriptor>>
+        constraintBySchemaAndType.values()
+                                 .stream().flatMap( enumMap -> enumMap.values().stream() )
                                  .forEach( constraintsGroupedBySchemaAndType ->
                                            {
-                                               SchemaRule44.Constraint btreeConstraint = null;
-                                               SchemaRule44.Index backingBtreeIndex = null;
-                                               boolean hasReplacement = false;
                                                for ( var constraint : constraintsGroupedBySchemaAndType )
                                                {
-                                                   var backingIndex = indexesByName.get( constraint.name() );
+                                                   var backingIndex = uniqueIndexesByName.remove( constraint.name() );
                                                    if ( backingIndex.indexType() == SchemaRule44.IndexType.BTREE )
                                                    {
-                                                       btreeConstraint = constraint;
-                                                       backingBtreeIndex = backingIndex;
-                                                   }
-                                                   else if ( backingIndex.indexType() == SchemaRule44.IndexType.RANGE )
-                                                   {
-                                                       hasReplacement = true;
-                                                   }
-                                               }
-                                               if ( btreeConstraint != null )
-                                               {
-                                                   if ( hasReplacement )
-                                                   {
-                                                       constraintsToDelete.add( btreeConstraint );
-                                                       indexesToDelete.add( backingBtreeIndex );
-                                                   }
-                                                   else
-                                                   {
-                                                       nonReplacedConstraints.add( btreeConstraint );
+                                                       if ( constraintsGroupedBySchemaAndType.size() == 1 )
+                                                       {
+                                                           nonReplacedConstraints.add( constraint );
+                                                       }
+                                                       else
+                                                       {
+                                                           constraintsToDelete.add( constraint );
+                                                           indexesToDelete.add( backingIndex );
+                                                       }
                                                    }
                                                }
                                            }
                                  );
+
+        for ( SchemaRule44.Index uniqueIndex : uniqueIndexesByName.values() )
+        {
+            // There could be a unique index not linked to a constraint e.g. by crashing in the middle of a constraint creation,
+            // since we don't know what constraint type it should be backing we can't know if it is replaced - let's just throw on it instead.
+            if ( uniqueIndex.indexType() == SchemaRule44.IndexType.BTREE )
+            {
+                nonReplacedIndexes.add( uniqueIndex );
+            }
+        }
 
         // Throw if non-replaced index exists
         if ( !nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty() )
