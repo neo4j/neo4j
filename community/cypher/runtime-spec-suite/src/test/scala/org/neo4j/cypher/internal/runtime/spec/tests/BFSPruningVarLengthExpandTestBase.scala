@@ -801,7 +801,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .distinct("y AS y")
+      //currently we would plan a distinct here because different x may lead to the same y
+      //so we cannot guarantee global uniqueness of y. However we still want bfsPruningVarExpand
+      //to produce unique ys given an x which is what we test here
       .bfsPruningVarExpand("(x)-[*0..25]->(y)")
       .nodeByLabelScan("x", "START")
       .build()
@@ -823,7 +825,9 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .distinct("y AS y")
+      //currently we would plan a distinct here because different x may lead to the same y
+      //so we cannot guarantee global uniqueness of y. However we still want bfsPruningVarExpand
+      //to produce unique ys given an x which is what we test here
       .bfsPruningVarExpand("(x)-[*0..25]->(y)", nodePredicate = Predicate("n", "id(n) <> -1"))
       .nodeByLabelScan("x", "START")
       .build()
