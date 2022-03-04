@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.BOTH
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import java.lang
 import scala.util.Random
@@ -940,7 +941,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
         .produceResults("n", "m")
         .shortestPath("(n)-[r:R*1..]-(m)", pathName = Some("p"))
         .apply()
-        .|.nodeIndexOperator("n:N(loc = ???)", paramExpr = Some(prop("m", "loc")), argumentIds = Set("m"))
+        .|.nodeIndexOperator("n:N(loc = ???)", paramExpr = Some(prop("m", "loc")), argumentIds = Set("m"), indexType = IndexType.RANGE)
         .nodeByLabelScan("m", "M")
         .build()
       )

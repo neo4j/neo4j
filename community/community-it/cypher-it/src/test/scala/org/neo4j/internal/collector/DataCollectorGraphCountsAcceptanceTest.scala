@@ -59,13 +59,11 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
     graph.createLookupIndex(isNodeIndex = true)
     graph.createNodeIndex(IndexType.TEXT, "Label", "textProp")
-    graph.createNodeIndex(IndexType.BTREE, "Label", "btreeProp")
     graph.createNodeIndex(IndexType.POINT, "Label", "pointProp")
     graph.createNodeIndex(IndexType.RANGE, "Label", "rangeProp")
 
     graph.createLookupIndex(isNodeIndex = false)
     graph.createRelationshipIndex(IndexType.TEXT, "RelationshipType", "textProp")
-    graph.createRelationshipIndex(IndexType.BTREE, "RelationshipType", "btreeProp")
     graph.createRelationshipIndex(IndexType.POINT, "RelationshipType", "pointProp")
     graph.createRelationshipIndex(IndexType.RANGE, "RelationshipType", "rangeProp")
 
@@ -75,13 +73,11 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     list(res("data"), "indexes") should contain only(
       Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "labels" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.BTREE.name, "properties" -> Seq("btreeProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "labels" -> Seq("Label"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
 
       Map("totalSize" -> 0, "indexType" -> IndexType.LOOKUP.name, "properties" -> Seq.empty, "relationshipTypes" -> Seq.empty, "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.TEXT.name, "properties" -> Seq("textProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
-      Map("totalSize" -> 0, "indexType" -> IndexType.BTREE.name, "properties" -> Seq("btreeProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.POINT.name, "properties" -> Seq("pointProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0),
       Map("totalSize" -> 0, "indexType" -> IndexType.RANGE.name, "properties" -> Seq("rangeProp"), "relationshipTypes" -> Seq("RelationshipType"), "updatesSinceEstimation" -> 0, "estimatedUniqueSize" -> 0)
     )

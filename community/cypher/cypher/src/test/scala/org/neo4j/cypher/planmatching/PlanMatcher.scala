@@ -114,7 +114,7 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
                                          labelName: String,
                                          properties: Seq[String],
                                          unique: Boolean = false,
-                                         indexType: IndexType = IndexType.BTREE,
+                                         indexType: IndexType = IndexType.RANGE,
                                          caches: Boolean = false): PlanMatcher = {
     val i = if (unique) "UNIQUE" else s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")
@@ -128,7 +128,7 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
                                         end: String,
                                         properties: Seq[String],
                                         directed: Boolean,
-                                        indexType: IndexType = IndexType.BTREE,
+                                        indexType: IndexType = IndexType.RANGE,
                                         caches: Boolean = false): PlanMatcher = {
     val i = s"${indexType.name()} INDEX"
     val p = properties.mkString(", ")

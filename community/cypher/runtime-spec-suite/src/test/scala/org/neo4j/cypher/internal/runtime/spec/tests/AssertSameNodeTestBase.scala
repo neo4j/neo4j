@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.MergeConstraintConflictException
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -45,8 +46,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -68,8 +69,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Honey(prop = 21)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("x:Honey(prop = 21)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -90,10 +91,10 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .assertSameNode("x")
       .|.assertSameNode("x")
       .|.|.assertSameNode("x")
-      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -117,10 +118,10 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .assertSameNode("x")
       .|.assertSameNode("x")
       .|.|.assertSameNode("x")
-      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.|.nodeIndexOperator("x:Honey(prop = 21)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.|.nodeIndexOperator("x:Honey(prop = 21)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -140,9 +141,9 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .assertSameNode("x")
       .|.assertSameNode("x")
-      .|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -165,9 +166,9 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .assertSameNode("x")
       .|.assertSameNode("x")
-      .|.|.nodeIndexOperator("x:Honey(prop = 21)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 21)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -187,8 +188,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .apply()
       .|.assertSameNode("x")
-      .|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .argument()
       .build()
 
@@ -212,8 +213,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .apply()
       .|.assertSameNode("x")
-      .|.|.nodeIndexOperator("x:Honey(prop = 20)")
-      .|.nodeIndexOperator("x:Honey(prop = 21)")
+      .|.|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:Honey(prop = 21)", indexType = IndexType.BTREE)
       .argument()
       .build()
 
@@ -233,8 +234,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})")
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -253,8 +254,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -273,8 +274,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})")
-      .nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})")
+      .|.nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})", indexType = IndexType.BTREE)
+      .nodeIndexOperator(s"x:Honey(prop = ${sizeHint + 1})", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -295,8 +296,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})")
-      .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})")
+      .|.nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexType = IndexType.BTREE)
+      .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexType = IndexType.BTREE)
       .build()
 
     // then
@@ -316,8 +317,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Person(email = 'smth@neo.com')", unique = true)
-      .nodeIndexOperator("x:Person(id = 42)", unique = true)
+      .|.nodeIndexOperator("x:Person(email = 'smth@neo.com')", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Person(id = 42)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -337,8 +338,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Person(email = 'smth@neo.com')", unique = true)
-      .nodeIndexOperator("x:Person(id = 42)", unique = true)
+      .|.nodeIndexOperator("x:Person(email = 'smth@neo.com')", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Person(id = 42)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -357,8 +358,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop2 = '20')")
-      .nodeIndexOperator("x:L(prop1 = 20)")
+      .|.nodeIndexOperator("x:L(prop2 = '20')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L(prop1 = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -381,8 +382,8 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop2 = '21')")
-      .nodeIndexOperator("x:L(prop1 = 20)")
+      .|.nodeIndexOperator("x:L(prop2 = '21')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L(prop1 = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -405,8 +406,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
         .assertSameNode("x")
-        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
-        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
+        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
+        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
         .build(readOnly = false)
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -428,8 +429,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop1 = 21, prop2 = '21')", unique = true)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true)
+      .|.nodeIndexOperator("x:L(prop1 = 21, prop2 = '21')", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     //then
@@ -449,8 +450,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop3 = 20, prop4 = '20')", unique = true)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true)
+      .|.nodeIndexOperator("x:L(prop3 = 20, prop4 = '20')", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -473,8 +474,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop3 = 21, prop4 = '21')", unique = true)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true)
+      .|.nodeIndexOperator("x:L(prop3 = 21, prop4 = '21')", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     //then
@@ -503,9 +504,9 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .projection("y.prop AS x")
-      .nodeIndexOperator("y:Honey(prop = 20)")
+      .nodeIndexOperator("y:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -525,8 +526,8 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .assertSameNode("x")
       .|.projection("y.prop AS x")
-      .|.nodeIndexOperator("y:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("y:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -545,9 +546,9 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:Honey(prop = 2)")
+      .|.nodeIndexOperator("x:Honey(prop = 2)", indexType = IndexType.BTREE)
       .expand("(x)--(y)")
-      .nodeIndexOperator("x:Honey(prop = 2)")
+      .nodeIndexOperator("x:Honey(prop = 2)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -570,8 +571,8 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .assertSameNode("x")
       .|.expand("(x)--(y)")
-      .|.nodeIndexOperator("x:Honey(prop = 20)")
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .|.nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -595,7 +596,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       .assertSameNode("x")
       .|.expand("(x)--(y)")
       .|.nodeByLabelScan("x", "Honey", IndexOrderNone)
-      .nodeIndexOperator("x:Honey(prop = 20)")
+      .nodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     execute(logicalQuery, runtime)

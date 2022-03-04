@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
@@ -1105,7 +1106,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop)")
+      .nodeIndexOperator("x:A(prop)", indexType = IndexType.BTREE)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1130,7 +1131,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop=42)")
+      .nodeIndexOperator("x:A(prop=42)", indexType = IndexType.BTREE)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1158,7 +1159,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop = 42 OR 1337)")
+      .nodeIndexOperator("x:A(prop = 42 OR 1337)", indexType = IndexType.BTREE)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1184,7 +1185,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop ENDS WITH 'lo')")
+      .nodeIndexOperator("x:A(prop ENDS WITH 'lo')", indexType = IndexType.BTREE)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1650,7 +1651,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:L1(prop = 20)")
+      .nodeIndexOperator("x:L1(prop = 20)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1675,7 +1676,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1700,7 +1701,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)")
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1725,7 +1726,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)")
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1750,7 +1751,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)")
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)

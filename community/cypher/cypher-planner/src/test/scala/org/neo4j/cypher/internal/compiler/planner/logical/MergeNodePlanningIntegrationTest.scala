@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
+import org.neo4j.graphdb.schema.IndexType
 
 class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
   test("should plan single merge node") {
@@ -111,8 +112,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .emptyResult()
       .merge(Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: 42}")), Seq(), Seq(), Seq())
       .assertSameNode("a")
-      .|.nodeIndexOperator("a:Y(prop = 42)", unique = true)
-      .nodeIndexOperator("a:X(prop = 42)", unique = true)
+      .|.nodeIndexOperator("a:Y(prop = 42)", unique = true, indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:X(prop = 42)", unique = true, indexType = IndexType.RANGE)
       .build()
     )
   }
@@ -134,8 +135,8 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .apply()
       .|.merge(Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: cacheNFromStore[n.prop]}")), Seq(), Seq(), Seq())
       .|.assertSameNode("a")
-      .|.|.nodeIndexOperator("a:Y(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true)
-      .|.nodeIndexOperator("a:X(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true)
+      .|.|.nodeIndexOperator("a:Y(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true, indexType = IndexType.RANGE)
+      .|.nodeIndexOperator("a:X(prop = ???)", argumentIds = Set("n"), paramExpr = Some(cachedNodePropFromStore("n", "prop")), unique = true, indexType = IndexType.RANGE)
       .nodeByLabelScan("n", "Z")
       .build()
     )
@@ -155,7 +156,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .emptyResult()
       .merge(Seq(createNodeWithProperties("a", Seq("X", "Y"), "{prop: 42}")), Seq(), Seq(), Seq())
       .filter("a:Y")
-      .nodeIndexOperator("a:X(prop = 42)", unique = true)
+      .nodeIndexOperator("a:X(prop = 42)", unique = true, indexType = IndexType.RANGE)
       .build()
     )
   }

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 import org.scalatest.FunSuiteLike
 
@@ -129,7 +130,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
       .|.apply()
       .|.|.aggregation(Seq("n AS n"), Seq("count(*) AS c"))
       .|.|.argument("n")
-      .|.nodeIndexOperator("n:M(prop = 1)")
+      .|.nodeIndexOperator("n:M(prop = 1)", indexType = IndexType.BTREE)
       .nodeByLabelScan("n", "N", IndexOrderNone)
       .build()
 
@@ -260,7 +261,7 @@ trait UpdatingProfilePageCacheStatsTestBase [CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a") // Populates results, thus can have page cache hits & misses
       .create(createNode("a", "A"))
-      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
+      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"), indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime)

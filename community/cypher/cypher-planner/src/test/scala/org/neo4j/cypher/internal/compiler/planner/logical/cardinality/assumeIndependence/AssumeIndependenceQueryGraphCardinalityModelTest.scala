@@ -759,10 +759,6 @@ abstract class AssumeIndependenceQueryGraphCardinalityModelTest extends CypherFu
     planShouldHaveCardinality(testName, findPlanId, expected)
 }
 
-class BtreeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
-  override def getIndexType: IndexType = IndexType.BTREE: @nowarn("msg=Symbol BTREE is deprecated") // we accept to use BTREE for now
-}
-
 class RangeAssumeIndependenceQueryGraphCardinalityModelTest extends AssumeIndependenceQueryGraphCardinalityModelTest {
   override def getIndexType: IndexType = IndexType.RANGE
 }

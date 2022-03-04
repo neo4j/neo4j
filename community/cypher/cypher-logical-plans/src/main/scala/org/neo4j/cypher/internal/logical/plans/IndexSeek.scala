@@ -117,7 +117,7 @@ object IndexSeek {
                     labelId: Int = 0,
                     unique: Boolean = false,
                     customQueryExpression: Option[QueryExpression[Expression]] = None,
-                    indexType: IndexType = IndexType.BTREE)(implicit idGen: IdGen): NodeIndexLeafPlan = {
+                    indexType: IndexType = IndexType.RANGE)(implicit idGen: IdGen): NodeIndexLeafPlan = {
 
     val NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) = indexSeekString.trim
     val label = LabelToken(labelStr, LabelId(labelId))
@@ -168,7 +168,7 @@ object IndexSeek {
                             propIds: Option[PartialFunction[String, Int]] = None,
                             typeId: Int = 0,
                             customQueryExpression: Option[QueryExpression[Expression]] = None,
-                            indexType: IndexType = IndexType.BTREE)(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
+                            indexType: IndexType = IndexType.RANGE)(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
 
     val REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) = indexSeekString.trim
     val (startNode, endNode, directed) = (incoming, outgoing) match {

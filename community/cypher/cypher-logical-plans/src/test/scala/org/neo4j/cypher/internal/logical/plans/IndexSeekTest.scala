@@ -146,13 +146,13 @@ class IndexSeekTest extends CypherFunSuite {
 
   test("custom value expression") {
     nodeIndexSeek("a:X(prop = ???)", paramExpr = Some(string("101"))) should be(
-      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactString("101"), Set.empty, IndexOrderNone, IndexType.BTREE)
+      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactString("101"), Set.empty, IndexOrderNone, IndexType.RANGE)
     )
   }
 
   test("custom query expression") {
     nodeIndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3)) ) should be(
-      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactInts(1, 2, 3), Set.empty, IndexOrderNone, IndexType.BTREE)
+      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue, NODE_TYPE)), exactInts(1, 2, 3), Set.empty, IndexOrderNone, IndexType.RANGE)
     )
   }
 

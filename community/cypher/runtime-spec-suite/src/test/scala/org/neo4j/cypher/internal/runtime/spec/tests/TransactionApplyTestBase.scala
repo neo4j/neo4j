@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
@@ -256,7 +257,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("b")
       .transactionApply(1)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
-      .|.nodeIndexOperator("a:Label(prop=2)")
+      .|.nodeIndexOperator("a:Label(prop=2)", indexType = IndexType.BTREE)
       .input(variables = Seq("x"))
       .build(readOnly = false)
 

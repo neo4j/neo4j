@@ -36,6 +36,7 @@ import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -339,7 +340,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .transactionForeach(1)
       .|.emptyResult()
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
-      .|.nodeIndexOperator("a:Label(prop=2)")
+      .|.nodeIndexOperator("a:Label(prop=2)", indexType = IndexType.BTREE)
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
@@ -505,7 +506,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.emptyResult()
       .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
-      .|.nodeIndexOperator("n:N(prop)")
+      .|.nodeIndexOperator("n:N(prop)", indexType = IndexType.BTREE)
       .unwind("[1, 2, 3] AS x")
       .argument()
       .build(readOnly = false)
@@ -532,7 +533,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.|.emptyResult()
       .|.|.create(createNodeWithProperties("newN", Seq("N"), "{prop: c}"))
       .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
-      .|.|.nodeIndexOperator("n:N(prop)")
+      .|.|.nodeIndexOperator("n:N(prop)", indexType = IndexType.BTREE)
       .|.create(createNodeWithProperties("newN", Seq("N"), "{prop: x}"))
       .|.argument("x")
       .unwind("[100, 101, 102] AS x")

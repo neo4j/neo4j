@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
@@ -79,7 +80,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasLabel")
       .projection("x:Other AS hasLabel")
-      .nodeIndexOperator("x:Label(prop)")
+      .nodeIndexOperator("x:Label(prop)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -191,7 +192,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("x.prop AS prop")
-      .nodeIndexOperator("x:Label(prop)")
+      .nodeIndexOperator("x:Label(prop)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -258,7 +259,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
       .projection("x.prop IS NOT NULL AS hasProp")
-      .nodeIndexOperator("x:Label(other)")
+      .nodeIndexOperator("x:Label(other)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

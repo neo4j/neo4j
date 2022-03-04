@@ -776,7 +776,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                         argumentIds: Set[String] = Set.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None,
-                        indexType: IndexType = IndexType.BTREE): IMPL = {
+                        indexType: IndexType = IndexType.RANGE): IMPL = {
     val planBuilder = (idGen: IdGen) => {
       val plan = nodeIndexSeek(indexSeekString, getValue, indexOrder, paramExpr.iterator.toSeq, argumentIds, unique, customQueryExpression, indexType)(idGen)
       plan
@@ -790,7 +790,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                 paramExpr: Iterable[Expression] = Seq.empty,
                                 argumentIds: Set[String] = Set.empty,
                                 customQueryExpression: Option[QueryExpression[Expression]] = None,
-                                indexType: IndexType = IndexType.BTREE): IMPL = {
+                                indexType: IndexType = IndexType.RANGE): IMPL = {
     val planBuilder = (idGen: IdGen) => {
       val plan = relationshipIndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, customQueryExpression, indexType)(idGen)
       plan
@@ -805,7 +805,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                     argumentIds: Set[String] = Set.empty,
                     unique: Boolean = false,
                     customQueryExpression: Option[QueryExpression[Expression]] = None,
-                    indexType: IndexType = IndexType.BTREE): IdGen => NodeIndexLeafPlan = {
+                    indexType: IndexType = IndexType.RANGE): IdGen => NodeIndexLeafPlan = {
     val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
@@ -825,7 +825,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                             paramExpr: Iterable[Expression] = Seq.empty,
                             argumentIds: Set[String] = Set.empty,
                             customQueryExpression: Option[QueryExpression[Expression]] = None,
-                            indexType: IndexType = IndexType.BTREE): IdGen => RelationshipIndexLeafPlan = {
+                            indexType: IndexType = IndexType.RANGE): IdGen => RelationshipIndexLeafPlan = {
     val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
       case x => resolver.getPropertyKeyId(x)
@@ -857,7 +857,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                  indexOrder: IndexOrder = IndexOrderNone,
                                  inclusive: Boolean = false,
                                  argumentIds: Set[String] = Set.empty,
-                                 indexType: IndexType = IndexType.BTREE): IMPL = {
+                                 indexType: IndexType = IndexType.POINT): IMPL = {
     pointDistanceNodeIndexSeekExpr(node, labelName, property, point, literalFloat(distance), getValue, indexOrder, inclusive, argumentIds, indexType)
   }
 
@@ -869,7 +869,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                     getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                     indexOrder: IndexOrder = IndexOrderNone,
                                     argumentIds: Set[String] = Set.empty,
-                                    indexType: IndexType = IndexType.BTREE): IMPL = {
+                                    indexType: IndexType = IndexType.POINT): IMPL = {
     pointBoundingBoxNodeIndexSeekExpr(node, labelName, property, lowerLeft, upperRight, getValue, indexOrder, argumentIds, indexType)
   }
 
@@ -882,7 +882,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                      indexOrder: IndexOrder = IndexOrderNone,
                                      inclusive: Boolean = false,
                                      argumentIds: Set[String] = Set.empty,
-                                     indexType: IndexType = IndexType.BTREE): IMPL = {
+                                     indexType: IndexType = IndexType.POINT): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -914,7 +914,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                         getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                         indexOrder: IndexOrder = IndexOrderNone,
                                         argumentIds: Set[String] = Set.empty,
-                                        indexType: IndexType = IndexType.BTREE): IMPL = {
+                                        indexType: IndexType = IndexType.POINT): IMPL = {
     val label = resolver.getLabelId(labelName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -950,7 +950,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                          getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                          indexOrder: IndexOrder = IndexOrderNone,
                                          argumentIds: Set[String] = Set.empty,
-                                         indexType: IndexType = IndexType.BTREE): IMPL = {
+                                         indexType: IndexType = IndexType.POINT): IMPL = {
     pointDistanceRelationshipIndexSeekExpr(rel, start, end, typeName, property, point, literalFloat(distance), directed, inclusive, getValue, indexOrder, argumentIds, indexType)
   }
 
@@ -966,7 +966,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                              getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                              indexOrder: IndexOrder = IndexOrderNone,
                                              argumentIds: Set[String] = Set.empty,
-                                             indexType: IndexType = IndexType.BTREE): IMPL = {
+                                             indexType: IndexType = IndexType.POINT): IMPL = {
     val typ = resolver.getRelTypeId(typeName)
 
     val propId = resolver.getPropertyKeyId(property)
@@ -1000,7 +1000,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                             getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                             indexOrder: IndexOrder = IndexOrderNone,
                                             argumentIds: Set[String] = Set.empty,
-                                            indexType: IndexType = IndexType.BTREE): IMPL = {
+                                            indexType: IndexType = IndexType.POINT): IMPL = {
     pointBoundingBoxRelationshipIndexSeekExpr(rel, start, end, typeName, property, lowerLeft, upperRight, directed, getValue, indexOrder, argumentIds, indexType)
   }
 
@@ -1015,7 +1015,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
                                                 getValue: GetValueFromIndexBehavior = DoNotGetValue,
                                                 indexOrder: IndexOrder = IndexOrderNone,
                                                 argumentIds: Set[String] = Set.empty,
-                                                indexType: IndexType = IndexType.BTREE): IMPL = {
+                                                indexType: IndexType = IndexType.POINT): IMPL = {
     val typ = resolver.getRelTypeId(typeName)
 
     val propId = resolver.getPropertyKeyId(property)

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.firstTwoColumns
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
@@ -377,7 +378,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -412,7 +413,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.firstTwoColumns
 import org.neo4j.cypher.internal.runtime.spec.tests.PartialSortTestBase.secondColumn
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -294,7 +295,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -328,7 +329,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialSort(Seq(Ascending("x")), Seq(Ascending("y")), skip)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

@@ -102,8 +102,6 @@ class HintsParserTest extends CypherFunSuite with TestName with AstConstructionT
       """MATCH (n)
         |USING INDEX n:N(p)
         |USING INDEX SEEK n:N(p)
-        |USING BTREE INDEX n:N(p)
-        |USING BTREE INDEX SEEK n:N(p)
         |USING TEXT INDEX n:N(p)
         |USING TEXT INDEX SEEK n:N(p)
         |USING RANGE INDEX n:N(p)
@@ -114,8 +112,6 @@ class HintsParserTest extends CypherFunSuite with TestName with AstConstructionT
     ) shouldBe Seq(
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingAnyIndexType)(pos),
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingAnyIndexType)(pos),
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingBtreeIndexType)(pos),
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingBtreeIndexType)(pos),
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingTextIndexType)(pos),
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingTextIndexType)(pos),
       UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingRangeIndexType)(pos),

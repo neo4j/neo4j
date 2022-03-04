@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 
 import java.util.Collections
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -206,7 +207,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nestedPlanExistsExpressionProjection("x")
       .|.expand("(b)<--(a)")
-      .|.nodeIndexOperator(s"b:B(prop > 0)")
+      .|.nodeIndexOperator(s"b:B(prop > 0)", indexType = IndexType.BTREE)
       .argument()
       .build()
 
@@ -343,8 +344,8 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .nestedPlanExistsExpressionProjection("x")
       .|.expandInto("(a)-->(b)")
       .|.cartesianProduct()
-      .|.|.nodeIndexOperator("b:B(p=1)")
-      .|.nodeIndexOperator("a:A(p=1)")
+      .|.|.nodeIndexOperator("b:B(p=1)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("a:A(p=1)", indexType = IndexType.BTREE)
       .argument()
       .build()
 

@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class ProvidedOrderTestBase[CONTEXT <: RuntimeContext](
                                                                  edition: Edition[CONTEXT],
@@ -95,7 +96,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("x.prop AS prop")
         .expand("(y)-->(z)") // 6x more rows
         .expand("(x)-->(y)") // 6x more rows
-        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
+        .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -130,7 +131,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.|.sort(Seq(Descending("zprop")))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
-        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("y.prop"))
         .input(variables = Seq("x"))
         .build()
 
@@ -160,7 +161,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("prop", "c").withLeveragedOrder()
         .aggregation(groupingExpressions = Seq("x.prop AS prop"), aggregationExpression = Seq("count(*) AS c"))
-        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("x.prop"))
+        .nodeIndexOperator("x:Honey(prop >= 0)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("x.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -198,7 +199,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS prop")
         .nodeHashJoin("y")
         .|.expand("(z)-->(y)")
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("z.prop"))
         .expand("(x)-->(y)")
         .filter("x.prop % 2 = 0")
         .nodeByLabelScan("x", "Honey", IndexOrderNone)
@@ -251,7 +252,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.filter("y.prop % 2 = 0")
         .|.argument("y")
         .expand("(z)-->(y)")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -286,7 +287,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .apply()
         .|.optional("x")
         .|.filter("x.prop % 2 = 0").withProvidedOrder(providedOrderFactory("z.prop"))
-        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, argumentIds = Set("x")).withProvidedOrder(providedOrderFactory("z.prop"))
+        .|.nodeIndexOperator(s"z:Honey(prop >= $zGTFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, argumentIds = Set("x"), indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("z.prop"))
         .input(Seq("x"))
         .build()
 
@@ -327,7 +328,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .apply()
         .|.aggregation(Seq.empty, Seq("count(*) AS c"))
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -355,7 +356,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.sort(Seq(Ascending("name")))
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -386,7 +387,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.top(Seq(Ascending("name")), 1)
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -421,7 +422,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.cartesianProduct()
         .|.|.argument("a")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -453,7 +454,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.nodeHashJoin("a")
         .|.|.argument("a")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -484,7 +485,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.optional("a")
         .|.projection("a.name AS name")
         .|.argument("a")
-        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(providedOrderFactory("a.num"))
+        .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("a.num"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -522,7 +523,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.|.sort(Seq(Descending("zprop")))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
-        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("y.prop"))
+        .|.nodeIndexOperator(s"y:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("y.prop"))
         .input(variables = Seq("x"))
         .build()
 
@@ -579,7 +580,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("z.prop AS prop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
         .|.allNodeScan("y")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -614,7 +615,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .|.sort(Seq(Descending("yprop")))
         .|.projection("y.prop AS yprop")
         .|.allNodeScan("y")
-        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue).withProvidedOrder(providedOrderFactory("z.prop"))
+        .nodeIndexOperator(s"z:Honey(prop >= $zGreaterThanFilter)", indexOrder = indexOrder, getValue = _ => DoNotGetValue, indexType = IndexType.BTREE).withProvidedOrder(providedOrderFactory("z.prop"))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)

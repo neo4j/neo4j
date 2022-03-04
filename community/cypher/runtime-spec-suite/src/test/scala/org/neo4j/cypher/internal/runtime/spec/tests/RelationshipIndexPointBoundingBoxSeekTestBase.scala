@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
@@ -54,7 +55,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("location")
       .projection("r.location.x AS location")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}")
+                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+                                        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -76,7 +78,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("location")
       .projection("r.location.x AS location")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}")
+                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -98,7 +101,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("location")
       .projection("r.location.longitude AS location")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}")
+                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -121,7 +125,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .projection("r.location.longitude AS location")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
                               "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
-        "{longitude: 10.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}")
+        "{longitude: 10.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -146,7 +151,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m",  "R", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}",
                               "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-                              getValue = GetValue)
+                              getValue = GetValue,
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -174,7 +180,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -205,7 +212,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -236,7 +244,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}")
+        "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -267,7 +276,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}")
+        "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -298,7 +308,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -328,7 +339,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}")
+        "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -358,7 +370,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m",  "R", "location",
-        "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}")
+        "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -388,7 +401,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -418,7 +432,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -448,7 +463,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}")
+        "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -478,7 +494,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}")
+        "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -508,7 +525,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}")
+        "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -538,7 +556,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}")
+        "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -564,7 +583,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}")
+        "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
+        indexType = IndexType.BTREE)
       .build()
 
     //then
@@ -606,7 +626,8 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("location")
       .projection("r.location.x AS location")
       .pointBoundingBoxRelationshipIndexSeekExpr("r", "n", "m", "R", "location",
-        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}")
+        "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
+      indexType = IndexType.BTREE)
       .build()
 
     //then

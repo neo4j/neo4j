@@ -95,8 +95,6 @@ class CypherQueryObfuscatorFactory {
 
     // unused
 
-    override def btreeIndexesGetForLabel(labelId: Int): Nothing = fail()
-    override def btreeIndexesGetForRelType(relTypeId: Int): Nothing = fail()
     override def textIndexesGetForLabel(labelId: Int): Nothing = fail()
     override def textIndexesGetForRelType(relTypeId: Int): Nothing = fail()
     override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = fail()
@@ -104,10 +102,6 @@ class CypherQueryObfuscatorFactory {
     override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = fail()
     override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = fail()
     override def indexExistsForLabel(labelId: Int): Nothing = fail()
-    override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Nothing = fail()
-    override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Nothing = fail()
-    override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Nothing = fail()
     override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = fail()
     override def canLookupNodesByLabel: Nothing = fail()
     override def canLookupRelationshipsByType: Nothing = fail()

@@ -651,8 +651,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans shouldEqual Set(
-        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.BTREE),
-        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.BTREE),
+        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.RANGE),
+        NodeIndexContainsScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.RANGE),
       )
     }
   }
@@ -806,8 +806,8 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans shouldEqual Set(
-        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.BTREE),
-        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.BTREE),
+        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litApa`, Set.empty, IndexOrderNone, IndexType.RANGE),
+        NodeIndexEndsWithScan(`idName`, awesomeLabelToken, IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE), `litBepa`, Set.empty, IndexOrderNone, IndexType.RANGE),
       )
     }
   }

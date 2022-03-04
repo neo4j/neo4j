@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
@@ -66,7 +67,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a")
       .union()
       .|.filter("cache[a.prop] IN [1, 2]")
-      .|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue)
+      .|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -90,7 +91,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a")
       .union()
       .|.filter("cache[a.prop] IN [1, 2]")
-      .|.nodeIndexOperator("a:A(prop >= 2)", getValue = _ => GetValue)
+      .|.nodeIndexOperator("a:A(prop >= 2)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -114,8 +115,8 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .union()
       .|.filter("cache[a.prop] IN [1, 2]")
       .|.assertSameNode("a")
-      .|.|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue)
-      .|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue)
+      .|.|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue, indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("a:A(prop = 2)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -138,7 +139,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a")
       .union()
       .|.filter("cache[a.prop] IN [1, 2]")
-      .|.nodeIndexOperator("a:A(prop = 2 OR 3)", getValue = _ => GetValue)
+      .|.nodeIndexOperator("a:A(prop = 2 OR 3)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -164,7 +165,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .union()
       .|.filter("cacheR[r.prop] IN [1, 2]")
-      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]->(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]->(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
@@ -190,7 +191,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .union()
       .|.filter("cacheR[r.prop] IN [1, 2]")
-      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]-(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop=2)]-(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
@@ -216,7 +217,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
         .produceResults("r")
         .union()
         .|.filter("cacheR[r.prop] IN [1, 2]")
-        .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]->(b)", getValue = _ => GetValue)
+        .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]->(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
         .relationshipTypeScan("(a)-[r:R]->(b)")
         .build()
 
@@ -242,7 +243,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .union()
       .|.filter("cacheR[r.prop] IN [1, 2]")
-      .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]-(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop>=2)]-(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
@@ -268,7 +269,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .union()
       .|.filter("cacheR[r.prop] IN [1, 2]")
-      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]->(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]->(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
@@ -294,7 +295,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .union()
       .|.filter("cacheR[r.prop] IN [1, 2]")
-      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]-(b)", getValue = _ => GetValue)
+      .|.relationshipIndexOperator("(a)-[r:R(prop = 2 OR 3)]-(b)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .relationshipTypeScan("(a)-[r:R]->(b)")
       .build()
 
@@ -319,7 +320,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("b")
       .apply()
-      .|.nodeIndexOperator("b:B(id = ???)", paramExpr = Some(cachedNodeProp("a", "id")), argumentIds = Set("b"))
+      .|.nodeIndexOperator("b:B(id = ???)", paramExpr = Some(cachedNodeProp("a", "id")), argumentIds = Set("b"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A")
       .build()
     val runtimeResult = execute(logicalQuery, runtime)

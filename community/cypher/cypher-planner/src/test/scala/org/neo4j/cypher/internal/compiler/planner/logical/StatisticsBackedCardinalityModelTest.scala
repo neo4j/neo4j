@@ -648,10 +648,6 @@ abstract class StatisticsBackedCardinalityModelTest extends CypherFunSuite with 
       queryShouldHaveCardinality(cfg, q, aNodeCount * textIndexSelectivity)
     }
   }
-}
-
-class BtreeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinalityModelTest {
-  override def getIndexType = IndexType.BTREE
 
   test("should use distance seekable predicate for cardinality estimation") {
     val labelCardinality = 50
@@ -659,7 +655,7 @@ class BtreeStatisticsBackedCardinalityModelTest extends StatisticsBackedCardinal
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop"), propSelectivity, 1, indexType = IndexType.BTREE)
+      .addNodeIndex("Person", Seq("prop"), propSelectivity, 1, indexType = IndexType.POINT)
       .build()
 
     val query = "MATCH (n:Person) WHERE point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5"

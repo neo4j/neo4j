@@ -181,7 +181,6 @@ import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -664,7 +663,6 @@ case class Prettifier(
           s"${INDENT}USING ",
           t match {
             case UsingAnyIndexType   => "INDEX "
-            case UsingBtreeIndexType => "BTREE INDEX "
             case UsingTextIndexType  => "TEXT INDEX "
             case UsingRangeIndexType  => "RANGE INDEX "
             case UsingPointIndexType  => "POINT INDEX "

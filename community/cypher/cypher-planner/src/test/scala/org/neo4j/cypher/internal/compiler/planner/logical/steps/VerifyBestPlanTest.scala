@@ -25,10 +25,10 @@ import org.mockito.Mockito.when
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
@@ -84,8 +84,8 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   private def getPlanContext(hasIndex: Boolean, hasTextIndex: Boolean = false, planningTextIndexesEnabled: Boolean = false): PlanContext = {
     val planContext = newMockedPlanContext()
-    when(planContext.btreeIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
-    when(planContext.btreeIndexExistsForRelTypeAndProperties(anyString(), any())).thenReturn(hasIndex)
+    when(planContext.rangeIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
+    when(planContext.rangeIndexExistsForRelTypeAndProperties(anyString(), any())).thenReturn(hasIndex)
     when(planContext.textIndexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasTextIndex)
     when(planContext.textIndexExistsForRelTypeAndProperties(anyString(), any())).thenReturn(hasTextIndex)
     planContext
@@ -232,26 +232,26 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingTextIndexType))
   }
 
-  test("should issue warning when finding plan that contains unfulfillable node btree index hint") {
+  test("should issue warning when finding plan that contains unfulfillable node range index hint") {
     val notificationLogger = new RecordingNotificationLogger
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
                                                   notificationLogger = notificationLogger,
                                                   semanticTable = getSemanticTable,
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(UsingBtreeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingBtreeIndexType))
+    VerifyBestPlan(getSimpleLogicalPlanWithAandB(context), newQueryWithNodeIndexHint(UsingRangeIndexType), context) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("a", "User", Seq("name"), EntityType.NODE, UsingRangeIndexType))
   }
 
-  test("should issue warning when finding plan that contains unfulfillable relationship btree index hint") {
+  test("should issue warning when finding plan that contains unfulfillable relationship range index hint") {
     val notificationLogger = new RecordingNotificationLogger
     val context = newMockedLogicalPlanningContext(planContext = getPlanContext(hasIndex = false, hasTextIndex = true),
                                                   notificationLogger = notificationLogger,
                                                   semanticTable = getSemanticTable,
                                                   useErrorsOverWarnings = false).copy(planningTextIndexesEnabled = true)
 
-    VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(UsingBtreeIndexType), context) // should not throw
-    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingBtreeIndexType))
+    VerifyBestPlan(getSimpleLogicalPlanWithAandBandR(context), newQueryWithRelationshipIndexHint(UsingRangeIndexType), context) // should not throw
+    notificationLogger.notifications should contain(IndexHintUnfulfillableNotification("r", "User", Seq("name"), EntityType.RELATIONSHIP, UsingRangeIndexType))
   }
 
   test("should issue warning when finding plan that contains unfulfillable join hint") {

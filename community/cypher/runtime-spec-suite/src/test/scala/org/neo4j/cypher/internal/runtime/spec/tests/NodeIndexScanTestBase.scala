@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -44,7 +45,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories)")
+      .nodeIndexOperator("x:Honey(calories)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -66,7 +67,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories)")
+      .nodeIndexOperator("x:Honey(calories)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -89,7 +90,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories,taste)")
+      .nodeIndexOperator("x:Honey(calories,taste)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -112,7 +113,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
       .projection("cache[x.calories] AS calories")
-      .nodeIndexOperator("x:Honey(calories)", _ => GetValue)
+      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -135,7 +136,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
       .projection("cache[x.calories] AS calories")
-      .nodeIndexOperator("x:Honey(calories)", _ => GetValue)
+      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

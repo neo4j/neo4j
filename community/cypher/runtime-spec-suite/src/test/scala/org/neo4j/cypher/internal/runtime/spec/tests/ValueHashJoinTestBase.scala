@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -384,7 +385,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .|.|.nodeByLabelScan("c", "A", IndexOrderNone)
       .|.nodeByLabelScan("b", "A", IndexOrderNone)
       .filter("a.row < 1")
-      .nodeIndexOperator("a:A(row)", indexOrder = IndexOrderNone, getValue = _ => GetValue)
+      .nodeIndexOperator("a:A(row)", indexOrder = IndexOrderNone, getValue = _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -68,8 +68,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
-                                  _.nodeIndexSeek("m:Label(prop=3)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -95,9 +95,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
-                                  _.nodeIndexSeek("m:Label(prop=3)"),
-                                  _.nodeIndexSeek("o:Label(prop=5)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("o:Label(prop=5)", indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -132,7 +132,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns: _*)
       .projection(projections: _*)
-      .multiNodeIndexSeekOperator(indexSeeks.map(s => (b: LogicalQueryBuilder) => b.nodeIndexSeek(s)): _*)
+      .multiNodeIndexSeekOperator(indexSeeks.map(s => (b: LogicalQueryBuilder) => b.nodeIndexSeek(s, indexType = IndexType.BTREE)): _*)
       .build()
 
     // then
@@ -153,9 +153,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
-                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
-                                  _.nodeIndexSeek("o:Label(prop > 8)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("o:Label(prop > 8)", indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -183,9 +183,9 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m", "o")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2))),
-                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6))),
-                                  _.nodeIndexSeek("o:Label(prop > 10)"))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop IN ???)",  paramExpr = Some(listOfInt(0, 1, 2)), indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("m:Label(prop IN ???)",  paramExpr = Some(listOfInt(5, 6)), indexType = IndexType.BTREE),
+                                  _.nodeIndexSeek("o:Label(prop > 10)", indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -207,8 +207,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
       .apply()
-      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i"))),
-                                    _.nodeIndexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i"))))
+      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.BTREE),
+                                    _.nodeIndexSeek("m:Label(prop=???)", paramExpr = Some(varFor("i")), indexType = IndexType.BTREE))
       .unwind("range(0, 2) AS i")
       .argument()
       .build()
@@ -240,8 +240,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
-        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt())))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.BTREE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(listOfInt()), indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -262,8 +262,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n", "m")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)"),
-        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral)))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.BTREE),
+        _.nodeIndexSeek("m:Label(prop IN ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
       .build()
 
     // then
@@ -280,7 +280,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(toExpression(lookFor))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -303,7 +303,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(toExpression(propertyValue))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(toExpression(propertyValue)), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -318,7 +318,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -334,7 +334,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = lookFor.map(toExpression)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = lookFor.map(toExpression), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -350,7 +350,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -365,7 +365,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalString("a"), nullLiteral, literalString("c")))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalString("a"), nullLiteral, literalString("c"))), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -380,7 +380,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalInt(10), nullLiteral, literalString("c")))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop IN ???)", paramExpr = Some(listOf(literalInt(10), nullLiteral, literalString("c"))), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -395,7 +395,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(listOf()))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(listOf())), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -411,7 +411,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -428,7 +428,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), toExpression(lookFor))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), toExpression(lookFor)), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -445,7 +445,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", unique = true, paramExpr = Some(toExpression(lookFor))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", unique = true, paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -462,7 +462,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", unique = true, paramExpr = Seq(toExpression(lookFor), toExpression(lookFor))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", unique = true, paramExpr = Seq(toExpression(lookFor), toExpression(lookFor)), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -479,7 +479,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ??? OR ???)", paramExpr = Seq(toExpression(lookFor), nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -496,7 +496,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -521,7 +521,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean > ???)", paramExpr = Some(falseLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean > ???)", paramExpr = Some(falseLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -545,7 +545,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean >= ???)", paramExpr = Some(falseLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean >= ???)", paramExpr = Some(falseLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -569,7 +569,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean < ???)", paramExpr = Some(falseLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean < ???)", paramExpr = Some(falseLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -593,7 +593,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean <= ???)", paramExpr = Some(falseLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean <= ???)", paramExpr = Some(falseLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -617,7 +617,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean > ???)", paramExpr = Some(trueLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean > ???)", paramExpr = Some(trueLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -641,7 +641,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean >= ???)", paramExpr = Some(trueLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean >= ???)", paramExpr = Some(trueLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -665,7 +665,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean < ???)", paramExpr = Some(trueLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean < ???)", paramExpr = Some(trueLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -687,7 +687,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean <= ???)", paramExpr = Some(trueLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:L(boolean <= ???)", paramExpr = Some(trueLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -706,7 +706,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 > prop < 2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 > prop < 2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -726,7 +726,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 > prop < 'foo')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 > prop < 'foo')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -745,7 +745,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(2 >= prop < 2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(2 >= prop < 2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -765,7 +765,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 < prop > 2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 < prop > 2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -785,7 +785,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 < prop > 'foo')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(1 < prop > 'foo')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -804,7 +804,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(2 <= prop > 2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(2 <= prop > 2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -827,7 +827,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -849,7 +849,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = '0', prop2 = '0')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = '0', prop2 = '0')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -872,7 +872,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -896,7 +896,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -919,7 +919,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = '10', prop2 > '10')"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = '10', prop2 > '10')", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -941,7 +941,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop > 10, prop2)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop > 10, prop2)", indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -964,7 +964,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = ???)", paramExpr = Some(nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -986,7 +986,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 > ???)", paramExpr = Some(nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 > ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1008,7 +1008,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10 OR ???, prop2)", paramExpr = Some(nullLiteral)))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10 OR ???, prop2)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1024,7 +1024,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "prop")
         .projection("cache[x.prop] AS prop")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", _ => GetValue))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", _ => GetValue, indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1048,7 +1048,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "prop", "prop2")
         .projection("cache[x.prop] AS prop", "cache[x.prop2] AS prop2")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", _ => GetValue))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", _ => GetValue, indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1068,7 +1068,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
         .apply()
-        .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value")))
+        .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"), indexType = IndexType.BTREE))
         .input(variables = Seq("value"))
         .build()
 
@@ -1086,7 +1086,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderAscending))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderAscending, indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1102,7 +1102,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderDescending))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderDescending, indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1126,6 +1126,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("prop")
         .projection("x.prop AS prop")
         .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)",
+          indexType = IndexType.BTREE,
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
           indexOrder = IndexOrderAscending))
         .build()
@@ -1153,6 +1154,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("prop")
         .projection("x.prop AS prop")
         .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)",
+          indexType = IndexType.BTREE,
           customQueryExpression = Some(ManyQueryExpression(listOf(literal("7"), literal("2"), literal("3")))),
           indexOrder = IndexOrderAscending))
         .build()
@@ -1180,6 +1182,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("prop")
         .projection("x.prop AS prop")
         .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)",
+          indexType = IndexType.BTREE,
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
           indexOrder = IndexOrderDescending))
         .build()
@@ -1207,6 +1210,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("prop")
         .projection("x.prop AS prop")
         .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop)",
+          indexType = IndexType.BTREE,
           customQueryExpression = Some(ManyQueryExpression(listOf(literal("7"), literal("2"), literal("3")))),
           indexOrder = IndexOrderDescending))
         .build()
@@ -1240,7 +1244,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x")
         .nonFuseable()
         .expandAll("(x)-->(y)")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:A(prop = 42 OR 1337)"))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:A(prop = 42 OR 1337)", indexType = IndexType.BTREE))
         .build()
       val runtimeResult = execute(logicalQuery, runtime)
 
@@ -1259,7 +1263,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20)))))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = ???)", paramExpr = Some(listOf(literalInt(20))), indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1274,7 +1278,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", unique = true))
+        .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop > ${sizeHint / 2})", unique = true, indexType = IndexType.BTREE))
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1332,7 +1336,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1355,7 +1359,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop1 = $propToFind, prop2 = '$propToFind')", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop1 = $propToFind, prop2 = '$propToFind')", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1378,7 +1382,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1400,7 +1404,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop = $propToFind)", unique = true, indexType = IndexType.BTREE))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1422,7 +1426,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1444,7 +1448,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop1 = 20, prop2 = '20')", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1466,7 +1470,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20 OR 20)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20 OR 20)", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1488,7 +1492,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop1 = 20, prop2 = '20')", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1510,7 +1514,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop1 > ${sizeHint / 2}, prop2)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek(s"x:Honey(prop1 > ${sizeHint / 2}, prop2)", unique = true, indexType = IndexType.BTREE))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1532,7 +1536,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20 OR 30)", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20 OR 30)", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1554,7 +1558,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1576,7 +1580,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10, prop2 = '10')", unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1599,7 +1603,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
       .projection("cache[x.prop] AS prop")
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10)", _ => GetValue, unique = true))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 10)", _ => GetValue, unique = true, indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1623,8 +1627,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true))
-      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true))
+      .|.multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true, indexType = IndexType.BTREE))
+      .multiNodeIndexSeekOperator(_.nodeIndexSeek("x:Honey(prop = 20)", unique = true, indexType = IndexType.BTREE))
       .build(false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1693,8 +1697,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("m")
       .deleteNode("n")
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("n:Label(prop=7)"),
-        _.nodeIndexSeek("m:Label(prop=3)"))
+        _.nodeIndexSeek("n:Label(prop=7)", indexType = IndexType.BTREE),
+        _.nodeIndexSeek("m:Label(prop=3)", indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     // then
@@ -1724,8 +1728,8 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
       .unwind(s"range(1, 10) AS r")
       .create(createNode("o", "A", "B", "C"))
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("n:L(prop IN ???)", paramExpr = Some(listOf((0 until 10).map(i => literalInt(i)):_*))),
-        _.nodeIndexSeek("m:L(prop IN ???)", paramExpr = Some(listOf((10 until 20).map(i => literalInt(i)):_*))))
+        _.nodeIndexSeek("n:L(prop IN ???)", paramExpr = Some(listOf((0 until 10).map(i => literalInt(i)):_*)), indexType = IndexType.BTREE),
+        _.nodeIndexSeek("m:L(prop IN ???)", paramExpr = Some(listOf((10 until 20).map(i => literalInt(i)):_*)), indexType = IndexType.BTREE))
       .build(readOnly = false)
 
     // then

@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Inside
 
 class OptionalMatchIDPPlanningIntegrationTest extends OptionalMatchPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
@@ -545,7 +546,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
-      .|.nodeIndexOperator("anon_1:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .|.nodeIndexOperator("anon_1:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -559,7 +560,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
       .|.filter("anon_1.prop = 42")
-      .|.nodeIndexOperator("anon_1:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .|.nodeIndexOperator("anon_1:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -599,7 +600,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.optional("n0", "n1")
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
-      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop = 42)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -614,7 +615,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .|.filter("not anon_0 = anon_2")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
       .|.filter("anon_2.prop = 42")
-      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"))
+      .|.relationshipIndexOperator("(anon_1)-[anon_2:R0(prop)]->(anon_3)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")

@@ -58,7 +58,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -75,7 +75,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -96,7 +96,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -117,7 +117,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -135,7 +135,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -152,7 +152,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -174,7 +174,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]->(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1)))))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1))))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -198,7 +199,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]-(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1)))))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor(0)), toExpression(lookFor(1))))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -217,7 +219,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]->(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -234,7 +236,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]-(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop IN ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -251,7 +253,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
+        .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", customQueryExpression = Some(ManyQueryExpression(listOf())), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -268,7 +270,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", customQueryExpression = Some(ManyQueryExpression(listOf())))
+        .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", customQueryExpression = Some(ManyQueryExpression(listOf())), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -287,7 +289,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]->(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral)))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -307,7 +310,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]-(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral)))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), nullLiteral))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -341,7 +345,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
           customQueryExpression = Some(CompositeQueryExpression(Seq(
             SingleQueryExpression(toExpression(lookFor1)),
             SingleQueryExpression(toExpression(lookFor2))
-          )))
+          ))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -363,7 +368,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]->(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor))))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor)))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -383,7 +389,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .produceResults("x", "r", "y")
         .relationshipIndexOperator(
           indexSeekString = "(x)-[r:R(prop)]-(y)",
-          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor))))
+          customQueryExpression = Some(ManyQueryExpression(listOf(toExpression(lookFor), toExpression(lookFor)))),
+          indexType = IndexType.BTREE
         )
         .build()
 
@@ -401,7 +408,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -417,7 +424,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -433,7 +440,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]->(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -449,7 +456,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]-(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 2)]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -465,7 +472,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]->(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -480,7 +487,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]-(y)")
+        .relationshipIndexOperator(s"(x)-[r:R(1 > prop < 'foo')]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -502,7 +509,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -524,7 +531,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -546,7 +553,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 0, prop2 = 0)]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 0, prop2 = 0)]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -569,7 +576,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = '0', prop2 = '0')]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = '0', prop2 = '0')]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -593,7 +600,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -615,7 +622,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10 OR 20, prop2 = '10' OR '30')]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -639,7 +646,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -665,7 +672,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2)]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -689,7 +696,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -713,7 +720,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 > 10)]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -739,7 +746,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]->(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]->(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -765,7 +772,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]-(y)")
+        .relationshipIndexOperator("(x)-[r:R(prop > 10, prop2)]-(y)", indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -789,7 +796,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]->(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -811,7 +818,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]-(y)", paramExpr = Some(nullLiteral))
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -829,7 +836,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop")
         .projection("cacheR[r.prop] AS prop")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue)
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -847,7 +854,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop")
         .projection("cacheR[r.prop] AS prop")
-        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue)
+        .relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", paramExpr = Some(toExpression(lookFor)), getValue = _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -864,7 +871,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop")
         .projection("cacheR[r.prop] AS prop")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", _ => GetValue)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -883,7 +890,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop")
         .projection("cacheR[r.prop] AS prop")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", _ => GetValue)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -907,7 +914,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop", "prop2")
         .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)", _ => GetValue)
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]->(y)", _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -930,7 +937,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r", "prop", "prop2")
         .projection("cacheR[r.prop] AS prop", "cacheR[r.prop2] AS prop2")
-        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)", _ => GetValue)
+        .relationshipIndexOperator("(x)-[r:R(prop = 10, prop2 = '10')]-(y)", _ => GetValue, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -946,7 +953,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
         .apply()
-        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]->(y)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"), indexType = IndexType.BTREE)
         .input(variables = Seq("value"))
         .build()
 
@@ -966,7 +973,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x", "r", "y")
         .apply()
-        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
+        .|.relationshipIndexOperator("(x)-[r:R(prop = ???)]-(y)", _ => GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"), indexType = IndexType.BTREE)
         .input(variables = Seq("value"))
         .build()
 
@@ -985,7 +992,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderAscending)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderAscending, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1001,7 +1008,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderAscending)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderAscending, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1017,7 +1024,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderDescending)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]->(y)", indexOrder = IndexOrderDescending, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1032,7 +1039,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("r")
-        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderDescending)
+        .relationshipIndexOperator(s"(x)-[r:R(prop > ${sizeHint / 2})]-(y)", indexOrder = IndexOrderDescending, indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1055,7 +1062,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-          indexOrder = IndexOrderAscending)
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1078,7 +1086,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
-          indexOrder = IndexOrderAscending)
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1101,7 +1110,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-          indexOrder = IndexOrderAscending)
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1124,7 +1134,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
-          indexOrder = IndexOrderAscending)
+          indexOrder = IndexOrderAscending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1147,7 +1158,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-          indexOrder = IndexOrderDescending)
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1170,7 +1182,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]->(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
-          indexOrder = IndexOrderDescending)
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1193,7 +1206,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalInt(7), literalInt(2), literalInt(3)))),
-          indexOrder = IndexOrderDescending)
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -1219,7 +1233,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
         .projection("r.prop AS prop")
         .relationshipIndexOperator("(x)-[r:R(prop)]-(y)",
           customQueryExpression = Some(ManyQueryExpression(listOf(literalString("7"), literalString("2"), literalString("3")))),
-          indexOrder = IndexOrderDescending)
+          indexOrder = IndexOrderDescending,
+          indexType = IndexType.BTREE)
         .build()
 
       val runtimeResult = execute(logicalQuery, runtime)

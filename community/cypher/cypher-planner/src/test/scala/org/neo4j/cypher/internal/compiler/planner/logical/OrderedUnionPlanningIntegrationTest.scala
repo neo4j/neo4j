@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
+import org.neo4j.graphdb.schema.IndexType
 
 class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
@@ -255,16 +256,16 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .projection("p.name AS `p.name`")
       .distinct("p AS p")
       .union()
-      .|.nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending)
-      .nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending)
+      .|.nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+      .nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
       .sort(Seq(Ascending("p.name")))
       .projection("p.name AS `p.name`")
       .distinct("p AS p")
       .union()
-      .|.nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending)
-      .nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending)
+      .|.nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
+      .nodeIndexOperator("p:Person(name > 5)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
       .build()))
   }
 }

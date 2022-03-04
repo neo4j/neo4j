@@ -29,9 +29,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 //noinspection NotImplementedCode
 class NotImplementedPlanContext extends PlanContext {
-  override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
-
-  override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = ???
 
   override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
 
@@ -48,14 +45,6 @@ class NotImplementedPlanContext extends PlanContext {
   override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = ???
 
   override def indexExistsForLabel(labelId: Int): Boolean = ???
-
-  override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
-
-  override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = ???
-
-  override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = ???
-
-  override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = ???
 
   override def canLookupNodesByLabel: Boolean = ???
 

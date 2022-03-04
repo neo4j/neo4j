@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
 
 import scala.language.postfixOps
@@ -263,7 +264,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     val input = new LogicalPlanBuilder()
       .produceResults("x", "n")
       .apply()
-      .|.nodeIndexOperator("n:Label(prop=???)", paramExpr = Some(varFor("x")), argumentIds = Set("x"))
+      .|.nodeIndexOperator("n:Label(prop=???)", paramExpr = Some(varFor("x")), argumentIds = Set("x"), indexType = IndexType.RANGE)
       .projection("5 AS x")
       .argument()
       .build()

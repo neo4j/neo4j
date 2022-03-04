@@ -66,7 +66,12 @@ trait FakeIndexAndConstraintManagement {
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   def indexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
+    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
+    IndexModifier(indexes(indexDef))
+  }
+
+  def pointIndexOn(label: String, properties: String*): IndexModifier = {
+    val indexDef = indexOn(label, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Point)
     IndexModifier(indexes(indexDef))
   }
 
@@ -76,7 +81,7 @@ trait FakeIndexAndConstraintManagement {
   }
 
   def relationshipIndexOn(relationshipType: String, properties: String*): IndexModifier = {
-    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
+    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
     IndexModifier(indexes(indexDef))
   }
 
@@ -85,8 +90,13 @@ trait FakeIndexAndConstraintManagement {
     IndexModifier(indexes(indexDef))
   }
 
+  def relationshipPointIndexOn(relationshipType: String, properties: String*): IndexModifier = {
+    val indexDef = relationshipIndexOn(relationshipType, properties, isUnique = false, withValues = false, IndexOrderCapability.NONE, IndexType.Point)
+    IndexModifier(indexes(indexDef))
+  }
+
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
-    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE, IndexType.Btree)
+    val indexDef = indexOn(label, properties, isUnique = true, withValues = false, IndexOrderCapability.NONE, IndexType.Range)
     IndexModifier(indexes(indexDef))
   }
 

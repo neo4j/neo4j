@@ -86,8 +86,9 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
 
   private def getNodeIndexBehaviours(indexType: graphdb.schema.IndexType, label: LabelToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
     val maybeDescriptor = IndexDescriptor.IndexType.fromPublicApi(indexType).flatMap {
-      case IndexDescriptor.IndexType.Btree => planContext.btreeIndexGetForLabelAndProperties(label.name, Seq(property.name))
       case IndexDescriptor.IndexType.Text => planContext.textIndexGetForLabelAndProperties(label.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Range => planContext.rangeIndexGetForLabelAndProperties(label.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Point => planContext.pointIndexGetForLabelAndProperties(label.name, Seq(property.name))
     }
 
     maybeDescriptor.fold(Set.empty[IndexBehaviour])(_.behaviours)
@@ -95,8 +96,9 @@ case class checkForSuboptimalIndexBehaviours(planContext: PlanContext) extends N
 
   private def getRelationshipIndexBehaviours(indexType: graphdb.schema.IndexType, relTypeToken: RelationshipTypeToken, property: PropertyKeyToken): Set[IndexBehaviour] = {
     val maybeDescriptor = IndexDescriptor.IndexType.fromPublicApi(indexType).flatMap {
-      case IndexDescriptor.IndexType.Btree => planContext.btreeIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Range => planContext.rangeIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
       case IndexDescriptor.IndexType.Text => planContext.textIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
+      case IndexDescriptor.IndexType.Point => planContext.pointIndexGetForRelTypeAndProperties(relTypeToken.name, Seq(property.name))
     }
 
     maybeDescriptor.fold(Set.empty[IndexBehaviour])(_.behaviours)

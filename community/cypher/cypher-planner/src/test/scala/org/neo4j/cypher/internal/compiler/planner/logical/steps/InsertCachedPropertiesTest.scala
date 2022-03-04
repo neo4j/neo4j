@@ -69,6 +69,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
@@ -973,15 +974,15 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val builder = new LogicalPlanBuilder(wholePlan = false)
       .projection("a.prop AS `a.prop`")
       .apply()
-      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(prop("a", "prop")))
-      .nodeIndexOperator("a:A(prop > 'foo')")
+      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(prop("a", "prop")), indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:A(prop > 'foo')", indexType = IndexType.RANGE)
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder(wholePlan = false)
       .projection("cacheN[a.prop] AS `a.prop`")
       .apply()
-      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(cachedNodePropFromStore("a", "prop")))
-      .nodeIndexOperator("a:A(prop > 'foo')")
+      .|.nodeIndexOperator("b:B(prop = ???)", argumentIds = Set("a"), paramExpr = Some(cachedNodePropFromStore("a", "prop")), indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:A(prop > 'foo')", indexType = IndexType.RANGE)
       .build()
   }
 
@@ -989,15 +990,15 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val builder = new LogicalPlanBuilder()
       .produceResults("a", "b")
       .valueHashJoin("a.x = b.y")
-      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => CanGetValue)
-      .nodeIndexOperator("a:A(x > 100)", getValue = _ => CanGetValue)
+      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => CanGetValue, indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:A(x > 100)", getValue = _ => CanGetValue, indexType = IndexType.RANGE)
 
     val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
     newPlan shouldBe new LogicalPlanBuilder()
       .produceResults("a", "b")
       .valueHashJoin("cacheN[a.x] = cacheN[b.y]")
-      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => GetValue)
-      .nodeIndexOperator("a:A(x > 100)", getValue = _ => GetValue)
+      .|.nodeIndexOperator("b:B(y < 200)", getValue = _ => GetValue, indexType = IndexType.RANGE)
+      .nodeIndexOperator("a:A(x > 100)", getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build()
   }
 

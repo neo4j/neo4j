@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class PushdownPropertyReadsTest
   extends CypherFunSuite
@@ -120,7 +121,7 @@ class PushdownPropertyReadsTest
       .expand("(n)--(o)").withEffectiveCardinality(100)
       .expand("(n)--(m)").withEffectiveCardinality(5)
       .projection("n.foo AS x").withEffectiveCardinality(100)
-      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue).withEffectiveCardinality(100)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(100)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -134,7 +135,7 @@ class PushdownPropertyReadsTest
       .expand("(n)--(o)").withEffectiveCardinality(100)
       .expand("(n)--(m)").withEffectiveCardinality(5)
       .projection("n AS x").withEffectiveCardinality(100)
-      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue).withEffectiveCardinality(100)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(100)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -144,13 +145,13 @@ class PushdownPropertyReadsTest
   test("should not pushdown past a leaf") {
     val plan = new LogicalPlanBuilder()
       .produceResults("x")
-      .nodeIndexOperator("n:N(prop > 0)").withEffectiveCardinality(1)
+      .nodeIndexOperator("n:N(prop > 0)", indexType = IndexType.RANGE).withEffectiveCardinality(1)
 
     val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
     rewritten shouldBe
       new LogicalPlanBuilder()
         .produceResults("x")
-        .nodeIndexOperator("n:N(prop > 0)")
+        .nodeIndexOperator("n:N(prop > 0)", indexType = IndexType.RANGE)
         .build()
   }
 
@@ -178,7 +179,7 @@ class PushdownPropertyReadsTest
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
       .apply().withEffectiveCardinality(50)
-      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withEffectiveCardinality(50)
+      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"), indexType = IndexType.RANGE).withEffectiveCardinality(50)
       .allNodeScan("m").withEffectiveCardinality(10)
 
     val rewritten = PushdownPropertyReads.pushdown(plan.build(), plan.effectiveCardinalities, Attributes(plan.idGen, plan.effectiveCardinalities), plan.getSemanticTable)
@@ -186,7 +187,7 @@ class PushdownPropertyReadsTest
       new LogicalPlanBuilder()
         .produceResults("n")
         .apply()
-        .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"))
+        .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"), indexType = IndexType.RANGE)
         .allNodeScan("m")
         .build()
   }
@@ -195,7 +196,7 @@ class PushdownPropertyReadsTest
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
       .apply().withEffectiveCardinality(55)
-      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m")).withEffectiveCardinality(55)
+      .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"), indexType = IndexType.RANGE).withEffectiveCardinality(55)
       .expandAll("(m)-->(q)").withEffectiveCardinality(50)
       .allNodeScan("m").withEffectiveCardinality(10)
 
@@ -204,7 +205,7 @@ class PushdownPropertyReadsTest
       new LogicalPlanBuilder()
         .produceResults("n")
         .apply()
-        .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"))
+        .|.nodeIndexOperator("n:N(prop > ???)", paramExpr = Some(prop("m", "prop")), argumentIds = Set("m"), indexType = IndexType.RANGE)
         .expandAll("(m)-->(q)")
         .cacheProperties("m.prop")
         .allNodeScan("m")
@@ -1019,7 +1020,7 @@ class PushdownPropertyReadsTest
       .produceResults("n", "m")
       .filter("n.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -1031,7 +1032,7 @@ class PushdownPropertyReadsTest
       .produceResults("n", "o")
       .filter("r.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .expand("(n)-->(o)").withEffectiveCardinality(235)
-      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -1106,7 +1107,7 @@ class PushdownPropertyReadsTest
       .filter("mysteryNode.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("n AS mysteryNode").withEffectiveCardinality(235)
       .expand("(n)-->(m)").withEffectiveCardinality(235)
-      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
+      .nodeIndexOperator("n:L(prop > 100)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)
@@ -1119,7 +1120,7 @@ class PushdownPropertyReadsTest
       .filter("mysteryRel.prop = 'NOT-IMPORTANT'").withEffectiveCardinality(100)
       .projection("r AS mysteryRel").withEffectiveCardinality(235)
       .expand("(n)-->(0)").withEffectiveCardinality(235)
-      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue).withEffectiveCardinality(90)
+      .relationshipIndexOperator("(n)-[r:R(prop > 100)]->(m)", getValue = _ => CanGetValue, indexType = IndexType.RANGE).withEffectiveCardinality(90)
 
     val plan = planBuilder.build()
     val rewritten = PushdownPropertyReads.pushdown(plan, planBuilder.effectiveCardinalities, Attributes(planBuilder.idGen, planBuilder.effectiveCardinalities), planBuilder.getSemanticTable)

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -58,7 +59,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.cartesianProduct()
       .|.|.argument("n")
       .|.argument("n")
-      .nodeIndexOperator("n:Label(prop)", getValue = _ => GetValue)
+      .nodeIndexOperator("n:Label(prop)", getValue = _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     // then
@@ -618,8 +619,8 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .projection("n.prop as nn", "m.prop as mm")
       .apply()
       .|.cartesianProduct()
-      .|.|.nodeIndexOperator("m:Label(prop < ???)", paramExpr = Some(varFor("j")), getValue = _ => DoNotGetValue)
-      .|.nodeIndexOperator("n:Label(prop < ???)", paramExpr = Some(varFor("i")), getValue = _ => GetValue)
+      .|.|.nodeIndexOperator("m:Label(prop < ???)", paramExpr = Some(varFor("j")), getValue = _ => DoNotGetValue, indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("n:Label(prop < ???)", paramExpr = Some(varFor("i")), getValue = _ => GetValue, indexType = IndexType.BTREE)
       .input(variables = Seq("i", "j"))
       .build()
 

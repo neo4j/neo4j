@@ -39,6 +39,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
 
@@ -199,7 +200,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop)")
+      .nodeIndexOperator("n:L(prop)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -218,7 +219,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop)")
+      .nodeIndexOperator("n:L(prop)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -240,7 +241,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop=42)")
+      .nodeIndexOperator("n:L(prop=42)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -261,7 +262,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 'hello'}")))
-      .nodeIndexOperator("n:L(prop = 'hello')")
+      .nodeIndexOperator("n:L(prop = 'hello')", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -286,7 +287,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
               relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:42}"))))
-      .relationshipIndexOperator("(n)-[r:R(prop=42)]->(m)")
+      .relationshipIndexOperator("(n)-[r:R(prop=42)]->(m)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -310,7 +311,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:'hello'}"))))
-      .relationshipIndexOperator("(n)-[r:R(prop='hello')]->(m)")
+      .relationshipIndexOperator("(n)-[r:R(prop='hello')]->(m)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -335,7 +336,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "R", "m")))
-      .relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
+      .relationshipIndexOperator("(n)-[r:R(prop)]->(m)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -355,7 +356,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "S", "m")))
-      .relationshipIndexOperator("(n)-[r:S(prop)]->(m)")
+      .relationshipIndexOperator("(n)-[r:S(prop)]->(m)", indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -1314,8 +1315,8 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
         )
       )
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("d:Drunk(prop=42)"),
-        _.nodeIndexSeek("c:Child(prop=42)")
+        _.nodeIndexSeek("d:Drunk(prop=42)", indexType = IndexType.BTREE),
+        _.nodeIndexSeek("c:Child(prop=42)", indexType = IndexType.BTREE)
       )
       .build(readOnly = false)
 
@@ -1344,8 +1345,8 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
         )
       )
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("d:Drunk(prop='hello')"),
-        _.nodeIndexSeek("c:Child(prop='hello')")
+        _.nodeIndexSeek("d:Drunk(prop='hello')", indexType = IndexType.BTREE),
+        _.nodeIndexSeek("c:Child(prop='hello')", indexType = IndexType.BTREE)
       )
       .build(readOnly = false)
 

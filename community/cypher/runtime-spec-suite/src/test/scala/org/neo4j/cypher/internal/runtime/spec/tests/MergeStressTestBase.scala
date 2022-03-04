@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 import scala.util.Random
 
@@ -60,7 +61,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     testNode(builder =>
       builder
-        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND))))
+        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND)), indexType = IndexType.BTREE))
   }
 
   test("typescan + filter") {
@@ -77,7 +78,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     testRelationship(builder =>
       builder
-        .|.relationshipIndexOperator(s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",  paramExpr = Some(varFor(VAR_TO_FIND))))
+        .|.relationshipIndexOperator(s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",  paramExpr = Some(varFor(VAR_TO_FIND)), indexType = IndexType.BTREE))
   }
 
   private def testNode(operator: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {

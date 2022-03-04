@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
                                                                       edition: Edition[CONTEXT],
@@ -268,7 +269,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .orderedDistinct(Seq("cache[x.prop]"), "cache[x.prop] AS prop")
-      .nodeIndexOperator(s"x:A(prop > ${sizeHint / 2})", _ => GetValue, indexOrder = IndexOrderAscending)
+      .nodeIndexOperator(s"x:A(prop > ${sizeHint / 2})", _ => GetValue, indexOrder = IndexOrderAscending, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

@@ -139,14 +139,6 @@ object TransactionBoundPlanContext {
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
   extends TransactionBoundReadTokenContext(tc) with PlanContext with IndexDescriptorCompatibility {
 
-  override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForLabel(labelId, Some(schema.IndexType.BTREE))
-  }
-
-  override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForRelType(relTypeId, schema.IndexType.BTREE)
-  }
-
   override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     indexesGetForLabel(labelId, Some(schema.IndexType.RANGE))
   }
@@ -194,10 +186,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     indexesGetForLabel(labelId, None).nonEmpty
   }
 
-  override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-    indexGetForLabelAndProperties(schema.IndexType.BTREE, labelName, propertyKeys)
-  }
-
   override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     indexGetForLabelAndProperties(schema.IndexType.TEXT, labelName, propertyKeys)
   }
@@ -208,10 +196,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
     indexGetForLabelAndProperties(schema.IndexType.POINT, labelName, propertyKeys)
-  }
-
-  override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-    indexGetForRelTypeAndProperties(schema.IndexType.BTREE, relTypeName, propertyKeys)
   }
 
   override def textIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
@@ -243,10 +227,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     if (itr.hasNext) Some(itr.next()) else None
   }
 
-  override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
-    btreeIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
-  }
-
   override def textIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
     textIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
   }
@@ -257,10 +237,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def pointIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean = {
     pointIndexGetForLabelAndProperties(labelName, propertyKey).isDefined
-  }
-
-  override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {
-    btreeIndexGetForRelTypeAndProperties(relTypeName, propertyKey).isDefined
   }
 
   override def textIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKey: Seq[String]): Boolean = {

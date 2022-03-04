@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
@@ -412,7 +413,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("p1", "p2")
       .projection("n.prop as p1", "n.other as p2")
       .setNodeProperties("n", ("other", "n.prop"), ("prop", "n.prop"))
-      .nodeIndexOperator("n:L(prop = 1)", unique = true)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then
@@ -436,7 +437,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("p1", "p2")
       .projection("n.prop as p1", "n.other as p2")
       .setNodeProperties("n", ("other", "n.prop + 1"), ("prop", "n.prop + 1"))
-      .nodeIndexOperator("n:L(prop = 1)", unique = true)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.helpers.collection.Iterators
 
@@ -795,7 +796,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .create(createNode("o", "A", "B", "C"))
-      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until size).map(i => literalInt(i)):_*)))
+      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until size).map(i => literalInt(i)):_*)), indexType = IndexType.BTREE)
       .build(readOnly = false)
 
     // then

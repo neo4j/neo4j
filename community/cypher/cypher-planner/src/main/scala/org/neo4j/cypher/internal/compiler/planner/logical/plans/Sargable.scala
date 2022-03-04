@@ -323,7 +323,7 @@ object PropertySeekable {
       case CTPoint  => Set(IndexType.Point)
       case _        => Set.empty
     }
-    Set[IndexType](IndexType.Btree, IndexType.Range) ++ otherIndexTypes
+    Set[IndexType](IndexType.Range) ++ otherIndexTypes
   }
 }
 

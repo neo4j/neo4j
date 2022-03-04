@@ -66,10 +66,6 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
     }
     override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
-    override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = indexMap.get(labelId).iterator
-
-    override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = indexMap.get(relTypeId).iterator
-
     override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
 
     override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
@@ -80,18 +76,10 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
   }
 }
 
-class BtreeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
-  override def getIndexType: IndexDescriptor.IndexType = IndexType.Btree
-
-  override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
-    Seq(startsWith _, contains _, endsWith _)
-      .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
-}
-
 class RangeCompositeExpressionSelectivityCalculatorWithSingleExpressionsTest extends CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest {
   override def getIndexType: IndexDescriptor.IndexType = IndexType.Range
 
   override val substringPredicatesWithClues: Seq[((Expression, Expression) => BooleanExpression, String)] =
-    Seq(startsWith _)
+    Seq(startsWith _, contains _, endsWith _)
       .map(mkExpr => (mkExpr, mkExpr(null, null).getClass.getSimpleName))
 }

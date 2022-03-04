@@ -133,12 +133,12 @@ object IndexCompatiblePredicatesProvider {
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range, IndexType.Text))
+          compatibleIndexTypes = Set(IndexType.Range, IndexType.Text))
 
       // n.prop < |<=| >| >= value
       case predicate@AsValueRangeSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
-        val rangeCapableIndexTypes = Set[IndexType](IndexType.Text, IndexType.Btree, IndexType.Range)
+        val rangeCapableIndexTypes = Set[IndexType](IndexType.Text, IndexType.Range)
         val compatibleIndexTypes = findCompatibleIndexTypes(seekable.propertyValueType(semanticTable)) intersect rangeCapableIndexTypes
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
@@ -148,7 +148,7 @@ object IndexCompatiblePredicatesProvider {
         val queryExpression = seekable.asQueryExpression
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(predicate), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
+          compatibleIndexTypes = Set(IndexType.Point))
 
       // An index seek for this will almost satisfy the predicate, but with the possibility of some false positives.
       // Since it reduces the cardinality to almost the level of the predicate, we can use the predicate to calculate cardinality,
@@ -157,23 +157,23 @@ object IndexCompatiblePredicatesProvider {
         val queryExpression = seekable.asQueryExpression
         IndexCompatiblePredicate(seekable.ident, seekable.property, predicate, queryExpression, seekable.propertyValueType(semanticTable),
           predicateExactness = NotExactPredicate, solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)), dependencies = seekable.dependencies,
-          compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
+          compatibleIndexTypes = Set(IndexType.Point))
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
         IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range)).convertToScannable
+          solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Range)).convertToScannable
 
       // n.prop ENDS WITH 'substring'
       case predicate@EndsWith(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
         IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Text))
 
       // n.prop CONTAINS 'substring'
       case predicate@Contains(prop@Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
         IndexCompatiblePredicate(variable, prop, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NonSeekablePredicate,
-          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
+          solvedPredicate = Some(predicate), dependencies = expr.dependencies, compatibleIndexTypes = Set(IndexType.Text))
     }
   }
 }

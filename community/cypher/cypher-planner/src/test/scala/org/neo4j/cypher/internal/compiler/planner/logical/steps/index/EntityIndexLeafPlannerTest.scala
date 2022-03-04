@@ -85,7 +85,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     in(property, listOfInt(1, 2)),
     isExact = true)
 
-  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Btree, IndexType.Range, IndexType.Text))
+  testFindIndexCompatiblePredicate("startsWith", startsWith(property, literalString("test")), indexTypes = Set(IndexType.Range, IndexType.Text))
 
   testFindIndexPredicateOnStringPredicate("endsWith", endsWith(property, literalString("test")))
 
@@ -100,11 +100,11 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       predicateExactness = NonSeekablePredicate,
       solvedPredicate = Some(stringPredicate),
       dependencies = Set.empty,
-      compatibleIndexTypes = Set(IndexType.Btree, IndexType.Text))
+      compatibleIndexTypes = Set(IndexType.Text))
     val implicitExistencePredicate = makeImplicitExistencePredicate(stringPredicate)
     testFindIndexCompatiblePredicate(predicateName,
       stringPredicate,
-      indexTypes = Set(IndexType.Btree, IndexType.Text),
+      indexTypes = Set(IndexType.Text),
       expectedPredicates = Seq(explicitPredicate, implicitExistencePredicate))
   }
 
@@ -151,7 +151,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       predicateExactness = NotExactPredicate,
       solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
       dependencies = Set.empty,
-      compatibleIndexTypes = Set(IndexType.Btree, IndexType.Point))
+      compatibleIndexTypes = Set(IndexType.Point))
     val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate).copy(propertyType = CTPoint)
     testFindIndexCompatiblePredicate(predicateName,
       pointPredicate,
@@ -177,7 +177,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                                                argumentIds: Set[String] = Set.empty,
                                                dependencies: Set[String] = Set.empty,
                                                propertyTypes: Map[Expression, TypeSpec] = Map.empty,
-                                               indexTypes: Set[IndexType] = Set(IndexType.Btree, IndexType.Range),
+                                               indexTypes: Set[IndexType] = Set(IndexType.Range),
                                                expectToExist: Boolean = true,
                                                expectedPredicates: Seq[IndexCompatiblePredicate] = Seq.empty,
                                               ): Unit = {

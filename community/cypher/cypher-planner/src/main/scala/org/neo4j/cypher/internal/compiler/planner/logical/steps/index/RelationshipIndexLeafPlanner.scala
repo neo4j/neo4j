@@ -229,7 +229,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                          planningTextIndexesEnabled: Boolean,
                                          planningRangeIndexesEnabled: Boolean,
                                          planningPointIndexesEnabled: Boolean): Iterator[IndexDescriptor] = {
-    planContext.btreeIndexesGetForRelType(relTypeId) ++ {
+    {
       if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForRelType(relTypeId)
       else Iterator.empty
     } ++ {

@@ -90,31 +90,26 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
   private val indexTypesPriorityForSubstringSargable: Seq[IndexType] = Seq(
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    Some(IndexType.Btree),
   ).flatten
 
   private val indexTypesPriorityForPropertyExistence: Seq[IndexType] = Seq(
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    Some(IndexType.Btree),
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
     if (planningPointIndexesEnabled) Some(IndexType.Point) else None,
   ).flatten
 
   private def indexTypesForPropertyEquality: Seq[IndexType] = Seq(
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    Some(IndexType.Btree),
     if (planningTextIndexesEnabled) Some(IndexType.Text) else None,
   ).flatten
 
   private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    Some(IndexType.Btree),
   ).flatten
 
   private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
     if (planningPointIndexesEnabled) Some(IndexType.Point) else None,
     if (planningRangeIndexesEnabled) Some(IndexType.Range) else None,
-    Some(IndexType.Btree),
   ).flatten
 
   def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(implicit semanticTable: SemanticTable): Selectivity = exp match {
@@ -229,7 +224,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
                                                        relTypeInfo: RelTypeInfo,
                                                        propertyKey: PropertyKeyName)
                                                       (implicit semanticTable: SemanticTable): Selectivity = {
-    val indexTypesAbleToAnswerIsNotNull: Set[IndexType] = Set(IndexType.Btree, IndexType.Range)
+    val indexTypesAbleToAnswerIsNotNull: Set[IndexType] = Set(IndexType.Range)
 
     val indexPropertyExistsSelectivities =
       multipleIndexPropertyExistsSelectivitiesFor(variable, labelInfo, relTypeInfo, propertyKey, indexTypesPriorityForPropertyExistence).map {
@@ -238,7 +233,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics,
             selectivity
           else
             Selectivity
-              .of(selectivity.factor + (selectivity.negate * DEFAULT_PROPERTY_SELECTIVITY).factor) // not as accurate as BTREE/RANGE, but can be an improvement over the default value
+              .of(selectivity.factor + (selectivity.negate * DEFAULT_PROPERTY_SELECTIVITY).factor) // not as accurate as RANGE, but can be an improvement over the default value
               .getOrElse(DEFAULT_PROPERTY_SELECTIVITY)
       }
 

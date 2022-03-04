@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -160,7 +159,6 @@ object VerifyBestPlan {
     def toException: IndexHintException = {
       val exceptionIndexType = hint.indexType match {
         case UsingAnyIndexType => IndexHintIndexType.ANY
-        case UsingBtreeIndexType => IndexHintIndexType.BTREE
         case UsingTextIndexType => IndexHintIndexType.TEXT
         case UsingRangeIndexType => IndexHintIndexType.RANGE
         case UsingPointIndexType => IndexHintIndexType.POINT
@@ -193,14 +191,12 @@ object VerifyBestPlan {
       val labelName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def btreeExists = planContext.btreeIndexExistsForLabelAndProperties(labelName, propertyNames)
       def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForLabelAndProperties(labelName, propertyNames)
       def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForLabelAndProperties(labelName, propertyNames)
       def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForLabelAndProperties(labelName, propertyNames)
 
       indexHintType match {
-        case UsingAnyIndexType   => btreeExists || textExists || rangeExists || pointExists
-        case UsingBtreeIndexType => btreeExists
+        case UsingAnyIndexType   => textExists || rangeExists || pointExists
         case UsingTextIndexType  => textExists
         case UsingRangeIndexType => rangeExists
         case UsingPointIndexType => pointExists
@@ -211,14 +207,12 @@ object VerifyBestPlan {
       val relTypeName = labelOrRelType.name
       val propertyNames = properties.map(_.name)
 
-      def btreeExists = planContext.btreeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
       def textExists = context.planningTextIndexesEnabled && planContext.textIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
       def rangeExists = context.planningRangeIndexesEnabled && planContext.rangeIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
       def pointExists = context.planningPointIndexesEnabled && planContext.pointIndexExistsForRelTypeAndProperties(relTypeName, propertyNames)
 
       indexHintType match {
-        case UsingAnyIndexType   => btreeExists || textExists || rangeExists || pointExists
-        case UsingBtreeIndexType => btreeExists
+        case UsingAnyIndexType   => textExists || rangeExists || pointExists
         case UsingTextIndexType  => textExists
         case UsingRangeIndexType  => rangeExists
         case UsingPointIndexType => pointExists

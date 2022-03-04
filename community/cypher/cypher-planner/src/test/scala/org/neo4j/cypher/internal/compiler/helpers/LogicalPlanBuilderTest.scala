@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -88,7 +89,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n:N")
-      .nodeIndexOperator("n:X(prop=1)")
+      .nodeIndexOperator("n:X(prop=1)", indexType = IndexType.RANGE)
       .build()
 
     plan should beLike {
@@ -102,7 +103,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     val plan = new LogicalPlanBuilder()
       .produceResults("n")
       .filter("n:N", "r:R", "m:M")
-      .relationshipIndexOperator("(n)-[r:X(prop=1)]->(m)")
+      .relationshipIndexOperator("(n)-[r:X(prop=1)]->(m)", indexType = IndexType.RANGE)
       .build()
 
     plan should beLike {

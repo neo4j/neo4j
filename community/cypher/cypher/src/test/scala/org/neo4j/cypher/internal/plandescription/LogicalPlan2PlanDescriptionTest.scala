@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.AllGraphsScope
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.AllPropertyResource
-import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
@@ -148,7 +147,6 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
@@ -454,32 +452,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("NodeIndexSeek") {
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop)", getValue = _ => GetValue), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop,Foo)"), 23.0),
-      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")), Set("x")))
+      planDescription(id, "NodeIndexScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop,Foo)", getValue = _ => GetValue), 23.0),
       planDescription(id, "NodeIndexScan", NoChildren,
-        Seq(details("BTREE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]")), Set("x")))
+        Seq(details("RANGE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 'Andres')"), 23.0),
-      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
+      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 'Andres')", getValue = _ => GetValue), 23.0),
-      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")), Set("x")))
+      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 'Andres')", unique = true), 23.0),
@@ -487,7 +485,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0),
-      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")), Set("x")))
+      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')", unique = true), 23.0),
@@ -495,19 +493,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop > 9)"), 23.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop > 9")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop > 9")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop < 9)"), 23.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop < 9")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop < 9")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(9 <= Prop <= 11)"), 23.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop STARTS WITH 'Foo')"), 23.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop STARTS WITH \"Foo\"")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop STARTS WITH \"Foo\"")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop STARTS WITH 'Foo')", indexType = IndexType.TEXT), 23.0),
@@ -519,15 +517,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop ENDS WITH 'Foo')"), 23.0),
-      planDescription(id, "NodeIndexEndsWithScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("x")))
+      planDescription(id, "NodeIndexEndsWithScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop ENDS WITH \"Foo\"")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop CONTAINS 'Foo')"), 23.0),
-      planDescription(id, "NodeIndexContainsScan", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("x")))
+      planDescription(id, "NodeIndexContainsScan", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop CONTAINS \"Foo\"")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)"), 23.0),
-      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("BTREE INDEX x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12")), Set("x")))
+      planDescription(id, "NodeIndexSeek", NoChildren, Seq(details("RANGE INDEX x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12")), Set("x")))
 
     assertGood(
       attach(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true), 23.0),
@@ -540,7 +538,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // This is ManyQueryExpression with only a single expression. That is possible to get, but the test utility IndexSeek cannot create those.
     assertGood(
       attach(NodeUniqueIndexSeek("x", LabelToken("Label", LabelId(0)), Seq(IndexedProperty(PropertyKeyToken("Prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
-        ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)), Set.empty, IndexOrderNone, IndexType.BTREE), 95.0),
+        ManyQueryExpression(ListLiteral(Seq(stringLiteral("Andres")))(pos)), Set.empty, IndexOrderNone, IndexType.RANGE), 95.0),
       planDescription(id, "NodeUniqueIndexSeek", NoChildren, Seq(details("UNIQUE x:Label(Prop) WHERE Prop = \"Andres\"")), Set("x")))
 
     assertGood(
@@ -569,39 +567,39 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             (key("y"), number("10")),
             (key("crs"), stringLiteral("cartesian"))
           ))(pos), FunctionName(Point.name)(pos))))(pos)),
-        Set.empty, IndexOrderNone, IndexType.BTREE),
+        Set.empty, IndexOrderNone, IndexType.RANGE),
         95.0),
-      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("BTREE INDEX x:Label(Prop) WHERE point.withinBBox(Prop, point(0, 0, \"cartesian\"), point(10, 10, \"cartesian\"))")), Set("x")))
+      planDescription(id, "NodeIndexSeekByRange", NoChildren, Seq(details("RANGE INDEX x:Label(Prop) WHERE point.withinBBox(Prop, point(0, 0, \"cartesian\"), point(10, 10, \"cartesian\"))")), Set("x")))
   }
 
   test("RelationshipIndexSeek") {
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop)]->(y)"), 23.0),
-      planDescription(id, "DirectedRelationshipIndexScan", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexScan", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop)]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexScan", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop IS NOT NULL")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue), 23.0),
-      planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexSeek", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexSeek", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]->(y)"), 23.0),
-      planDescription(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "DirectedRelationshipIndexContainsScan", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop CONTAINS 'Foo')]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexContainsScan", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop CONTAINS \"Foo\"")), Set("r", "x", "y")))
 
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]->(y)", indexType = IndexType.TEXT), 23.0),
       planDescription(id, "DirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("TEXT INDEX (x)-[r:R(Prop)]->(y) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop ENDS WITH 'Foo')]-(y)"), 23.0),
-      planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("BTREE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
+      planDescription(id, "UndirectedRelationshipIndexEndsWithScan", NoChildren, Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")), Set("r", "x", "y")))
   }
 
   test("RelationshipTypeScan") {
@@ -617,7 +615,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("MultiNodeIndexSeek") {
     assertGood(
       attach(MultiNodeIndexSeek(Seq(nodeIndexSeek("x:Label(Prop = 10,Foo = 12)", unique = true).asInstanceOf[NodeIndexSeekLeafPlan], nodeIndexSeek("y:Label(Prop = 12)", unique = false).asInstanceOf[NodeIndexSeekLeafPlan])), 230.0),
-      planDescription(id, "MultiNodeIndexSeek", NoChildren, Seq(details(Seq("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12", "BTREE INDEX y:Label(Prop) WHERE Prop = 12"))), Set("x", "y"))
+      planDescription(id, "MultiNodeIndexSeek", NoChildren, Seq(details(Seq("UNIQUE x:Label(Prop, Foo) WHERE Prop = 10 AND Foo = 12", "RANGE INDEX y:Label(Prop) WHERE Prop = 12"))), Set("x", "y"))
     )
   }
 
@@ -718,41 +716,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("CreateIndex") {
-
-    // BTREE
-
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR (:Label) ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""BTREE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.BTREE, None)),
-      Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty)
-      ), Seq(details("BTREE INDEX FOR (:Label) ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("""BTREE INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.BTREE, None)),
-      Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", SingleChild(
-        planDescription(id, "DoNothingIfExists(INDEX)", NoChildren, Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
-      ), Seq(details("BTREE INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty))
-
-    assertGood(attach(CreateBtreeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), OptionsParam(parameter("options", CTMap))), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("BTREE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")), Set.empty))
 
     // RANGE
 
@@ -931,9 +894,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(ShowIndexes(AllIndexes, verbose = true, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("allIndexes, allColumns")), Set.empty))
 
-    assertGood(attach(ShowIndexes(BtreeIndexes, verbose = false, List.empty), 1.0),
-      planDescription(id, "ShowIndexes", NoChildren, Seq(details("btreeIndexes, defaultColumns")), Set.empty))
-
     assertGood(attach(ShowIndexes(RangeIndexes, verbose = false, List.empty), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("rangeIndexes, defaultColumns")), Set.empty))
 
@@ -960,8 +920,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName FOR (x:Label) REQUIRE (x.prop1, x.prop2) IS UNIQUE")), Set.empty))
 
-    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` FOR (x:Label) REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+    assertGood(attach(CreateUniquePropertyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` FOR (x:Label) REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateUniquePropertyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), Uniqueness, None, NoOptions)),
       " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
@@ -980,8 +940,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), Seq(prop("x", "prop1"), prop("x", "prop2")), Some("constraintName"), NoOptions), 63.2),
       planDescription(id, "CreateConstraint", NoChildren, Seq(details("CONSTRAINT constraintName FOR (x:Label) REQUIRE (x.prop1, x.prop2) IS NODE KEY")), Set.empty))
 
-    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("native-btree-1.0")))), 63.2),
-      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` FOR (x:Label) REQUIRE (x.prop) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""")), Set.empty))
+    assertGood(attach(CreateNodeKeyConstraint(None, "x", label("Label"), List(prop("x", "prop")), Some("$constraintName"), OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))), 63.2),
+      planDescription(id, "CreateConstraint", NoChildren, Seq(details("""CONSTRAINT `$constraintName` FOR (x:Label) REQUIRE (x.prop) IS NODE KEY OPTIONS {indexProvider: "range-1.0"}""")), Set.empty))
 
     assertGood(attach(CreateNodeKeyConstraint(Some(DoNothingIfExistsForConstraint(" x", scala.util.Left(label("Label")), Seq(prop(" x", "prop")), NodeKey, Some("constraintName"), NoOptions)),
       " x", label("Label"), Seq(prop(" x", "prop")), Some("constraintName"), NoOptions), 63.2),

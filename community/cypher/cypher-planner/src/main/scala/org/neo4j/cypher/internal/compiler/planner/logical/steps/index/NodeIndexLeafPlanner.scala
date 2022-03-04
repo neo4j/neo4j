@@ -233,7 +233,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
                                        planningTextIndexesEnabled: Boolean,
                                        planningRangeIndexesEnabled: Boolean,
                                        planningPointIndexesEnabled: Boolean): Iterator[IndexDescriptor] = {
-    planContext.btreeIndexesGetForLabel(labelId) ++ {
+    {
       if (planningRangeIndexesEnabled) planContext.rangeIndexesGetForLabel(labelId)
       else Iterator.empty
     } ++ {

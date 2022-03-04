@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -46,7 +47,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]->(y)")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]->(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -70,7 +71,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]-(y)")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 'ca')]-(y)", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -94,7 +95,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]->(y)", paramExpr = Some(nullLiteral))
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -116,7 +117,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]-(y)", paramExpr = Some(nullLiteral))
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -140,7 +141,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]->(y)")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]->(y)", indexType = IndexType.BTREE)
       .build()
 
 
@@ -162,7 +163,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]-(y)")
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH 1337)]-(y)", indexType = IndexType.BTREE)
       .build()
 
 
@@ -184,7 +185,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]->(y)", _ => GetValue)
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]->(y)", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -208,7 +209,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]-(y)", _ => GetValue)
+      .relationshipIndexOperator("(x)-[r:R(text STARTS WITH '1')]-(y)", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

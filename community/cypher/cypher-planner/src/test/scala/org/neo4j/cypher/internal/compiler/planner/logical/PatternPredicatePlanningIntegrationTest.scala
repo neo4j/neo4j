@@ -644,7 +644,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
     val (plan, _, _) = new given {
-      indexOn("Label", "prop")
+      textIndexOn("Label", "prop")
     } getLogicalPlanFor q
 
     plan should beLike {
@@ -663,7 +663,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN r
       """.stripMargin
     val (plan, _, _) = new given {
-      relationshipIndexOn("R", "prop")
+      relationshipTextIndexOn("R", "prop")
     } getLogicalPlanFor q
 
     plan should beLike {
@@ -682,7 +682,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN r
       """.stripMargin
     val (plan, _, _) = new given {
-      relationshipIndexOn("R", "prop")
+      relationshipTextIndexOn("R", "prop")
     } getLogicalPlanFor q
 
     plan should beLike {
@@ -701,7 +701,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
     val (plan, _, _) = new given {
-      indexOn("Label", "prop")
+      textIndexOn("Label", "prop")
     } getLogicalPlanFor q
 
     plan should beLike {

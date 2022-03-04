@@ -36,16 +36,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
 
   /**
-   * Return all BTREE indexes (general and unique) for a given label, without taking any schema locks.
-   */
-  def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
-
-  /**
-   * Return all BTREE indexes for a given relationship type, without taking any schema locks.
-   */
-  def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor]
-
-  /**
    * Return all range indexes (general and unique) for a given label, without taking any schema locks.
    */
   def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]
@@ -86,11 +76,6 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def indexExistsForLabel(labelId: Int): Boolean
 
   /**
-   * Gets a BTREE index if it exists (general or unique) for a given label and properties, without taking any schema locks.
-   */
-  def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
-
-  /**
    * Gets a TEXT index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
@@ -104,11 +89,6 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Gets a POINT index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def pointIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
-
-  /**
-   * Gets a BTREE index if it exists for a given relationship type and properties, without taking any schema locks.
-   */
-  def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
    * Gets a TEXT index if it exists for a given relationship type and properties, without taking any schema locks.
@@ -126,11 +106,6 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def pointIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]
 
   /**
-   * Checks if a BTREE index exists (general or unique) for a given label and properties, without taking any schema locks.
-   */
-  def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
-
-  /**
    * Checks if a TEXT index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def textIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
@@ -144,11 +119,6 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Checks if a POINT index exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def pointIndexExistsForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Boolean
-
-  /**
-   * Checks if a BTREE exists for a given relationship type and properties, without taking any schema locks.
-   */
-  def btreeIndexExistsForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Boolean
 
   /**
    * Checks if a TEXT index exists for a given relationship type and properties, without taking any schema locks.

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.concurrent.ThreadLocalRandom
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -31,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType.withName
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.virtual.VirtualNodeValue
 
 abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
@@ -789,7 +789,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop)")
+      .|.nodeIndexOperator("x:A(prop)", indexType = IndexType.BTREE)
       .allNodeScan("a1")
       .build()
 
@@ -814,7 +814,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop = 42)")
+      .|.nodeIndexOperator("x:A(prop = 42)", indexType = IndexType.BTREE)
       .allNodeScan("a1")
       .build()
 
@@ -839,7 +839,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop = 42 OR 76)")
+      .|.nodeIndexOperator("x:A(prop = 42 OR 76)", indexType = IndexType.BTREE)
       .allNodeScan("a1")
       .build()
 
@@ -864,7 +864,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)")
+      .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)", indexType = IndexType.BTREE)
       .allNodeScan("a1")
       .build()
 

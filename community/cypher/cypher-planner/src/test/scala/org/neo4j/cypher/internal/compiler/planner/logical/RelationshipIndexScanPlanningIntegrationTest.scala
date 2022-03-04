@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContai
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
                                                    with LogicalPlanningIntegrationTestSupport
@@ -42,14 +43,16 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 10)
       .setRelationshipCardinality("()-[:REL2]-()", 50)
-      .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001)
+      .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001, indexType = IndexType.RANGE)
+      .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001, indexType = IndexType.TEXT)
+
 
   test("should plan undirected relationship index scan with IS NOT NULL") {
     val planner = plannerBuilder().build()
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -59,7 +62,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -69,7 +72,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)")
+        .relationshipIndexOperator("(a)<-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -79,13 +82,13 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]-(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
@@ -95,13 +98,13 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]->(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
@@ -111,13 +114,13 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop CONTAINS 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)<-[r:REL(prop CONTAINS 'test')]-(b)")
+        .relationshipIndexOperator("(a)<-[r:REL(prop CONTAINS 'test')]-(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
@@ -127,13 +130,13 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
@@ -143,13 +146,13 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)-[r:REL]->(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]->(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
@@ -159,21 +162,22 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(100)
       .setRelationshipCardinality("()-[:REL]-()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.TEXT)
       .build()
 
     planner.plan("MATCH (a)<-[r:REL]-(b) WHERE r.prop ENDS WITH 'test' RETURN r") should equal(
       planner.planBuilder()
         .produceResults("r")
-        .relationshipIndexOperator("(a)<-[r:REL(prop ENDS WITH 'test')]-(b)")
+        .relationshipIndexOperator("(a)<-[r:REL(prop ENDS WITH 'test')]-(b)", indexType = IndexType.TEXT)
         .build()
     )
   }
 
   test("should plan undirected relationship index scan with IS NOT NULL on the RHS of an Apply with correct arguments") {
     val planner = plannerBuilder()
-      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.01, indexType = IndexType.RANGE)
       .build()
+
     planner.plan(
       """MATCH (n)
         |CALL {
@@ -189,7 +193,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n", "r")
         .filter("b.prop = cacheN[n.prop]")
         .apply(fromSubquery = true)
-        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", argumentIds = Set("n"))
+        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", argumentIds = Set("n"), indexType = IndexType.RANGE)
         .cacheProperties("cacheNFromStore[n.prop]")
         .allNodeScan("n")
         .build()
@@ -214,14 +218,16 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n", "r")
         .filter("b.prop = n.prop")
         .apply(fromSubquery = true)
-        .|.relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]-(b)", argumentIds = Set("n"))
+        .|.relationshipIndexOperator("(a)-[r:REL(prop CONTAINS 'test')]-(b)", argumentIds = Set("n"), indexType = IndexType.TEXT)
         .allNodeScan("n")
         .build()
     )
   }
 
   test("should plan undirected relationship index scan with ENDS WITH on the RHS of an Apply with correct arguments") {
-    val planner = plannerBuilder().build()
+    val planner = plannerBuilder()
+      .addRelationshipIndex("REL", Seq("prop"), 1.0, 0.001, indexType = IndexType.TEXT)
+      .build()
 
     planner.plan(
       """MATCH (n)
@@ -238,7 +244,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n", "r")
         .filter("b.prop = n.prop")
         .apply(fromSubquery = true)
-        .|.relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)", argumentIds = Set("n"))
+        .|.relationshipIndexOperator("(a)-[r:REL(prop ENDS WITH 'test')]-(b)", argumentIds = Set("n"), indexType = IndexType.TEXT)
         .allNodeScan("n")
         .build()
     )
@@ -254,7 +260,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("r")
         .filterExpression(hasLabels("a", "A")) // TODO change to .filter("a:A") after https://github.com/neo-technology/neo4j/pull/9823 is merged
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -271,7 +277,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         // the filter got pushed up through the apply
         .filter("a = anon_0")
         .apply()
-        .|.relationshipIndexOperator("(anon_0)-[r:REL(prop)]-(b)", argumentIds = Set("a"))
+        .|.relationshipIndexOperator("(anon_0)-[r:REL(prop)]-(b)", argumentIds = Set("a"), indexType = IndexType.RANGE)
         .skip(0)
         .allNodeScan("a")
         .build()
@@ -288,7 +294,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         // the filter got pushed up through the apply
         .filter("b = anon_0")
         .apply()
-        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", argumentIds = Set("b"))
+        .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", argumentIds = Set("b"), indexType = IndexType.RANGE)
         .skip(0)
         .allNodeScan("b")
         .build()
@@ -305,7 +311,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         // the filter got pushed up through the apply
         .filter("a = anon_0", "b = anon_1")
         .apply()
-        .|.relationshipIndexOperator("(anon_0)-[r:REL(prop)]-(anon_1)", argumentIds = Set("a", "b"))
+        .|.relationshipIndexOperator("(anon_0)-[r:REL(prop)]-(anon_1)", argumentIds = Set("a", "b"), indexType = IndexType.RANGE)
         .skip(0)
         .cartesianProduct()
         .|.allNodeScan("b")
@@ -336,9 +342,9 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.plan(query) should equal(
         planner.planBuilder()
           .produceResults("r")
-          .filter("a = anon_1")
+          .filter("a = anon_2")
           .apply()
-          .|.relationshipIndexOperator(s"(anon_1)-[r:REL(prop $op 'foo')]-(b)", argumentIds = Set("a"))
+          .|.relationshipIndexOperator(s"(anon_2)-[r:REL(prop $op 'foo')]-(b)", argumentIds = Set("a"), indexType = IndexType.TEXT)
           .skip(0)
           .allNodeScan("a")
           .build()
@@ -357,9 +363,9 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.plan(query) should equal(
         planner.planBuilder()
           .produceResults("r")
-          .filter("b = anon_1")
+          .filter("b = anon_2")
           .apply()
-          .|.relationshipIndexOperator(s"(a)-[r:REL(prop $op 'foo')]-(anon_1)", argumentIds = Set("b"))
+          .|.relationshipIndexOperator(s"(a)-[r:REL(prop $op 'foo')]-(anon_2)", argumentIds = Set("b"), indexType = IndexType.TEXT)
           .skip(0)
           .allNodeScan("b")
           .build()
@@ -376,9 +382,9 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
-          .filter("a = anon_2", "b = anon_3")
+          .filter("a = anon_4", "b = anon_5")
           .apply()
-          .|.relationshipIndexOperator(s"(anon_2)-[r:REL(prop $op 'foo')]-(anon_3)", argumentIds = Set("a", "b"))
+          .|.relationshipIndexOperator(s"(anon_4)-[r:REL(prop $op 'foo')]-(anon_5)", argumentIds = Set("a", "b"), indexType = IndexType.TEXT)
           .skip(0)
           .cartesianProduct()
           .|.allNodeScan("b")
@@ -411,7 +417,7 @@ test("scan on inexact predicate if argument ids not provided") {
       planner.planBuilder()
         .produceResults("r")
         .filter("r.prop = b.prop")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -452,8 +458,8 @@ test("scan on inexact predicate if argument ids not provided") {
       .setRelationshipCardinality("(:B)-[:REL2]-()", 50)
       .setRelationshipCardinality("()-[:REL2]-(:C)", 50)
       .setRelationshipCardinality("(:B)-[:REL2]-(:C)", 50)
-      .addRelationshipIndex("REL", Seq("prop"), 0.25, 0.01)
-      .addRelationshipIndex("REL2", Seq("prop"), 0.5, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 0.25, 0.01, indexType = IndexType.RANGE)
+      .addRelationshipIndex("REL2", Seq("prop"), 0.5, 0.01, indexType = IndexType.RANGE)
       .build()
     planner.plan(
       """MATCH (a:A)-[r:REL]->(b:B)<-[r2:REL2]-(c:C)
@@ -465,7 +471,7 @@ test("scan on inexact predicate if argument ids not provided") {
         .filterExpression(hasLabels("c", "C"), isNotNull(prop("r2", "prop")))
         .expandAll("(b)<-[r2:REL2]-(c)")
         .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -485,8 +491,8 @@ test("scan on inexact predicate if argument ids not provided") {
       .setRelationshipCardinality("(:B)-[:REL2]-()", 5000)
       .setRelationshipCardinality("()-[:REL2]-(:C)", 5000)
       .setRelationshipCardinality("(:B)-[:REL2]-(:C)", 5000)
-      .addRelationshipIndex("REL", Seq("prop"), 0.02, 0.01)
-      .addRelationshipIndex("REL2", Seq("prop"), 0.1, 0.01)
+      .addRelationshipIndex("REL", Seq("prop"), 0.02, 0.01, indexType = IndexType.RANGE)
+      .addRelationshipIndex("REL2", Seq("prop"), 0.1, 0.01, indexType = IndexType.RANGE)
       .build()
     planner.plan(
       """MATCH (a:A)-[r:REL]->(b:B)<-[r2:REL2]-(c:C)
@@ -497,9 +503,9 @@ test("scan on inexact predicate if argument ids not provided") {
         .produceResults("r", "r2")
         .nodeHashJoin("b")
         .|.filterExpression(hasLabels("c", "C"))
-        .|.relationshipIndexOperator("(c)-[r2:REL2(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
+        .|.relationshipIndexOperator("(c)-[r2:REL2(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
         .filterExpression(hasLabels("b", "B"), hasLabels("a", "A"))
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = _ => DoNotGetValue, indexType = IndexType.RANGE)
         .build()
     )
   }
@@ -511,7 +517,7 @@ test("scan on inexact predicate if argument ids not provided") {
       planner.planBuilder()
         .produceResults("r")
         .filter("a = anon_0")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]-(anon_0)", indexType = IndexType.RANGE)
         .build()
     )
   }

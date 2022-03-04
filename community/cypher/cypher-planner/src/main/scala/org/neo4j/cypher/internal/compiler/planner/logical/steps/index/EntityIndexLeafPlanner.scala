@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
@@ -101,7 +100,7 @@ object EntityIndexLeafPlanner {
       solvedPredicate = None,
       dependencies = Set.empty,
       isImplicit = true,
-      compatibleIndexTypes = Set(IndexType.Btree, IndexType.Range)
+      compatibleIndexTypes = Set(IndexType.Range)
     )
   }
 
@@ -286,7 +285,6 @@ trait PredicateSet {
 
   private def fulfilledByIndexType(indexType: IndexType)(hint: UsingIndexHint): Boolean = (hint.indexType, indexType) match {
     case (UsingAnyIndexType, _)                 => true
-    case (UsingBtreeIndexType, IndexType.Btree) => true
     case (UsingTextIndexType, IndexType.Text)   => true
     case (UsingRangeIndexType, IndexType.Range) => true
     case (UsingPointIndexType, IndexType.Point) => true

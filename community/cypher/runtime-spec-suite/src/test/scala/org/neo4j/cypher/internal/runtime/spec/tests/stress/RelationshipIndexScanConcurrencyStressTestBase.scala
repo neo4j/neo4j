@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.ConcurrencyStressTestBase.SIZE_HINT
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class RelationshipIndexScanConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
                                                                                           edition: Edition[CONTEXT],
@@ -52,7 +53,7 @@ abstract class RelationshipIndexScanConcurrencyStressTestBase[CONTEXT <: Runtime
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("nId", "rId", "mId")
       .projection("id(n) AS nId", "id(r) AS rId", "id(m) AS mId")
-      .relationshipIndexOperator(pattern)
+      .relationshipIndexOperator(pattern, indexType = IndexType.BTREE)
       .build()
 
     executeWithConcurrentDeletes(rels, logicalQuery)

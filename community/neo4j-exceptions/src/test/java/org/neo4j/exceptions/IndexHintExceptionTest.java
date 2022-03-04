@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.ANY;
-import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.BTREE;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.POINT;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.RANGE;
 import static org.neo4j.exceptions.IndexHintException.IndexHintIndexType.TEXT;
@@ -59,12 +58,10 @@ class IndexHintExceptionTest
     {
         return Stream.of(
                 basicHint( NODE, ANY, "INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
-                basicHint( NODE, BTREE, "BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
                 basicHint( NODE, TEXT, "TEXT INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
                 basicHint( NODE, RANGE, "RANGE INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
                 basicHint( NODE, POINT, "POINT INDEX FOR (`person`:`Person`) ON (`person`.`name`)" ),
                 basicHint( RELATIONSHIP, ANY, "INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
-                basicHint( RELATIONSHIP, BTREE, "BTREE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
                 basicHint( RELATIONSHIP, TEXT, "TEXT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
                 basicHint( RELATIONSHIP, RANGE, "RANGE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),
                 basicHint( RELATIONSHIP, POINT, "POINT INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`)" ),

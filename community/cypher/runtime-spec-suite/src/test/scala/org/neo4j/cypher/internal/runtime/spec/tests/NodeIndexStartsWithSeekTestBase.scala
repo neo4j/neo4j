@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
                                                              edition: Edition[CONTEXT],
@@ -45,7 +46,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH 'ca')")
+      .nodeIndexOperator("x:Label(text STARTS WITH 'ca')", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -68,7 +69,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH 'ca')")
+      .nodeIndexOperator("x:Label(text STARTS WITH 'ca')", indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -91,7 +92,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH ???)", paramExpr = Some(nullLiteral))
+      .nodeIndexOperator("x:Label(text STARTS WITH ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -113,7 +114,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH 1337)")
+      .nodeIndexOperator("x:Label(text STARTS WITH 1337)", indexType = IndexType.BTREE)
       .build()
 
 
@@ -133,7 +134,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue)
+      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -155,7 +156,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue)
+      .nodeIndexOperator("x:Label(text STARTS WITH '1')", _ => GetValue, indexType = IndexType.BTREE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

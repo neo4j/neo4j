@@ -234,14 +234,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.graphStatistics,
         new MutableGraphStatisticsSnapshot())
 
-      override def btreeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-        config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Btree))
-      }
-
-      override def btreeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-        config.relTypesById.get(relTypeId).toIterator.flatMap(relType => indexesForRelType(relType, IndexType.Btree))
-      }
-
       override def rangeIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         config.labelsById.get(labelId).toIterator.flatMap(label => indexesForLabel(label, IndexType.Range))
       }
@@ -318,24 +310,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           case IndexDef(IndexDefinition.EntityType.Node(`labelName`), _, _) => true
           case _ => false
         }
-      }
-
-      override def btreeIndexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
-        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKey, IndexType.Btree))
-
-
-      override def btreeIndexExistsForRelTypeAndProperties(relTypeName: String,
-                                                           propertyKey: Seq[String]): Boolean =
-        config.indexes.contains(IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKey, IndexType.Btree))
-
-      override def btreeIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(IndexDefinition.EntityType.Node(labelName), propertyKeys, IndexType.Btree)
-        config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
-      }
-
-      override def btreeIndexGetForRelTypeAndProperties(relTypeName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {
-        val indexDef = IndexDef(IndexDefinition.EntityType.Relationship(relTypeName), propertyKeys, IndexType.Btree)
-        config.indexes.get(indexDef).map(indexType => newIndexDescriptor(indexDef, indexType))
       }
 
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =

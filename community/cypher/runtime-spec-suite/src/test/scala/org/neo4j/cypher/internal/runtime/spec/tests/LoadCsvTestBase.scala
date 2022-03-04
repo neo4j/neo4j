@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
+import org.neo4j.graphdb.schema.IndexType
 
 import java.io.PrintWriter
 import scala.collection.immutable
@@ -480,11 +481,11 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .apply()
       .|.merge(Seq(createNodeWithProperties("b", Seq("L"), "{prop: row.b}")), Seq(), Seq(), Seq(), Set())
-      .|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.BTREE)
       .eager()
       .apply()
       .|.merge(Seq(createNodeWithProperties("a", Seq("L"), "{prop: row.a}")), Seq(), Seq(), Seq(), Set())
-      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.BTREE)
       .loadCSV(url, "row", HasHeaders, None)
       .argument()
       .build(readOnly = false)
@@ -510,8 +511,8 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
       .|.|.relationshipTypeScan("(aa)-[r:T]->(bb)", IndexOrderNone, "a", "b")
       .|.apply()
       .|.|.cartesianProduct()
-      .|.|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
-      .|.|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue))
+      .|.|.|.nodeIndexOperator("b:L(prop = ???)", paramExpr = Some(prop("row", "b")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.BTREE)
+      .|.|.nodeIndexOperator("a:L(prop = ???)", paramExpr = Some(prop("row", "a")), argumentIds = Set("row"), getValue = Map("prop" -> DoNotGetValue), indexType = IndexType.BTREE)
       .|.argument("row")
       .loadCSV(url, "row", HasHeaders)
       .argument()

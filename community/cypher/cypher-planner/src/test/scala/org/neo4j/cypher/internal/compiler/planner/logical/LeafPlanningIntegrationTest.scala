@@ -102,10 +102,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should plan index seek by prefix for simple prefix search based on STARTS WITH with prefix") {
     (new given {
-      indexOn("Person", "name")
+      textIndexOn("Person", "name")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' RETURN a")._1 should equal(
-      nodeIndexSeek("a:Person(name STARTS WITH 'prefix')")
+      nodeIndexSeek("a:Person(name STARTS WITH 'prefix')", indexType = IndexType.TEXT)
     )
   }
 
@@ -137,10 +137,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should plan index seek by prefix for simple prefix search based on CONTAINS substring") {
     (new given {
-      indexOn("Person", "name")
+      textIndexOn("Person", "name")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name CONTAINS 'substring' RETURN a")._1 should equal(
-      nodeIndexSeek("a:Person(name CONTAINS 'substring')")
+      nodeIndexSeek("a:Person(name CONTAINS 'substring')", indexType = IndexType.TEXT)
     )
   }
 
@@ -205,7 +205,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           ManyQueryExpression(listOfString("prefix1", "prefix2")),
           Set.empty,
           IndexOrderNone,
-          IndexType.BTREE)
+          IndexType.RANGE)
       ))
   }
 
@@ -239,7 +239,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ),
         Set.empty,
         IndexOrderNone,
-        IndexType.BTREE)
+        IndexType.RANGE)
     )
   }
 
@@ -398,7 +398,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._1 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.BTREE)
+        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.RANGE)
     )
   }
 
@@ -600,7 +600,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._1 should equal(
       NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone, IndexType.BTREE)
+        ManyQueryExpression(listOfInt(42, 1337)), Set.empty, IndexOrderNone, IndexType.RANGE)
     )
   }
 
@@ -640,7 +640,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._1 should equal(
       NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
         Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
-        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.BTREE)
+        SingleQueryExpression(literalInt(42)), Set.empty, IndexOrderNone, IndexType.RANGE)
     )
   }
 
@@ -655,7 +655,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.BTREE)
+          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.RANGE)
       )
     )
   }
@@ -671,7 +671,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ands(equals(prop("n", "prop1"), literalInt(42))),
         NodeUniqueIndexSeek("n", LabelToken("Awesome", LabelId(0)),
           Seq(indexedProperty("prop2", 1, DoNotGetValue, NODE_TYPE)),
-          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.BTREE)
+          SingleQueryExpression(literalInt(3)), Set.empty, IndexOrderNone, IndexType.RANGE)
       )
     )
   }
@@ -723,7 +723,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not plan node index for this query without hints") {
 
     val planner = nodeIndexHints.config
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
@@ -751,24 +751,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .filter("a:A")
           .expandAll("(b)<-[r:R]-(a)")
           .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT)
-          .build()
-      )
-  }
-
-  test("should plan btree node index when index hint has btree type") {
-
-    val planner = nodeIndexHints.config
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
-      .build()
-
-    planner.plan(nodeIndexHints.query("USING BTREE INDEX b:B(prop)"))
-      .shouldEqual(
-        planner.planBuilder()
-          .produceResults("a")
-          .filter("a:A")
-          .expandAll("(b)<-[r:R]-(a)")
-          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.BTREE)
           .build()
       )
   }
@@ -814,7 +796,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan text node index when index hint has text type") {
 
     val planner = nodeIndexHints.config
-      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
@@ -836,7 +818,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val basePlanner = baseCfg.build()
 
-    val allTypes = Seq(IndexType.BTREE, IndexType.TEXT, IndexType.RANGE)
+    val allTypes = Seq(IndexType.TEXT, IndexType.RANGE, IndexType.POINT)
 
     allTypes.foreach { hintType =>
       val otherTypes = allTypes.filterNot(_ == hintType)
@@ -880,7 +862,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should not plan relationship index for this query without hints") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
@@ -902,7 +884,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val basePlanner = baseCfg.build()
 
-    val allTypes = Seq(IndexType.BTREE, IndexType.TEXT, IndexType.RANGE)
+    val allTypes = Seq(IndexType.TEXT, IndexType.RANGE, IndexType.POINT)
 
     allTypes.foreach { hintType =>
       val otherTypes = allTypes.filterNot(_ == hintType)
@@ -931,7 +913,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan text relationship index when index hint has text type") {
 
     val planner = relIndexHints.config
-      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.BTREE)
+      .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.RANGE)
       .addRelationshipIndex("R", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 1.0, indexType = IndexType.TEXT)
       .build()
 
@@ -1452,7 +1434,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val pb = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", 50)
-      .addNodeIndex("Person", Seq("prop"), 0.5, 1)
+      .addNodeIndex("Person", Seq("prop"), 0.5, 1, indexType = IndexType.POINT)
       .build()
 
     val query =
@@ -1465,7 +1447,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     val expectedPlan = pb.subPlanBuilder()
       .filter("point.distance(n.prop, point({x: 1.1, y: 5.4})) < 0.5")
-      .pointDistanceNodeIndexSeek("n", "Person", "prop", "{x: 1.1, y: 5.4}", 0.5, indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue)
+      .pointDistanceNodeIndexSeek("n", "Person", "prop", "{x: 1.1, y: 5.4}", 0.5, indexOrder = IndexOrderNone, argumentIds = Set(), getValue = DoNotGetValue, indexType = IndexType.POINT)
       .build()
 
     plan shouldEqual expectedPlan

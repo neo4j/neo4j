@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
@@ -124,7 +125,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     plan shouldEqual cfg.subPlanBuilder()
       .filter("a:A")
       .expandAll("(b)<-[r]-(a)")
-      .nodeIndexOperator("b:Person(name = 'Andres')")
+      .nodeIndexOperator("b:Person(name = 'Andres')", indexType = IndexType.RANGE)
       .build()
   }
 

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import java.util.Collections
-
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -30,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 
 abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
                                                                       edition: Edition[CONTEXT],
@@ -395,7 +395,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.orderedAggregation(Seq("b AS b"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
-      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -447,7 +447,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.orderedAggregation(Seq("b AS b", "number AS n"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
-      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

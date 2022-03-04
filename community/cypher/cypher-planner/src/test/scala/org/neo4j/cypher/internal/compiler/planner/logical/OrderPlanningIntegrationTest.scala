@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.schema.IndexType
 
 class OrderIDPPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithIDPConnectComponents)
 class OrderGreedyPlanningIntegrationTest extends OrderPlanningIntegrationTest(QueryGraphSolverWithGreedyConnectComponents)
@@ -480,7 +481,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
-      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
+      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     plan should equal(expectedPlan)
@@ -497,7 +498,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .distinct("cache[a.foo] AS x")
       .sort(Seq(Ascending("a.foo")))
       .projection("cacheN[a.foo] AS `a.foo`")
-      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
+      .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     plan should equal(expectedPlan)
@@ -1333,7 +1334,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .eager()
       .create(createNode("newNode"))
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
-      .nodeIndexOperator("a:A(foo)")
+      .nodeIndexOperator("a:A(foo)", indexType = IndexType.RANGE)
       .build()
 
     plan shouldEqual expectedPlan
@@ -2054,7 +2055,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val expectedPlan = cfg.subPlanBuilder()
       .sort(Seq(Ascending("other")))
       .orderedDistinct(Seq("cache[n.prop]"), "cache[n.prop] AS prop", "n.otherProp AS other")
-      .nodeIndexOperator("n:N(prop)", getValue = _ => GetValue, indexOrder = IndexOrderAscending)
+      .nodeIndexOperator("n:N(prop)", getValue = _ => GetValue, indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
       .build()
 
     plan shouldEqual expectedPlan

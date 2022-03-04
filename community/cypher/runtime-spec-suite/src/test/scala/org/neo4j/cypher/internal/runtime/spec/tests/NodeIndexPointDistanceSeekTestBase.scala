@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN
 import org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN_3D
 import org.neo4j.values.storable.CoordinateReferenceSystem.WGS_84
@@ -50,7 +51,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, inclusive = true)
+                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.BTREE, inclusive = true)
       .build()
 
     //then
@@ -71,7 +72,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, inclusive = false)
+                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.BTREE, inclusive = false)
       .build()
 
     //then
@@ -92,7 +93,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, inclusive = true)
+                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.BTREE, inclusive = true)
       .build()
 
     //then
@@ -113,7 +114,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, inclusive = false)
+                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.BTREE, inclusive = false)
       .build()
 
     //then
@@ -136,7 +137,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.longitude AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, inclusive = true)
+                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, indexType = IndexType.BTREE, inclusive = true)
       .build()
 
     //then
@@ -159,7 +160,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.longitude AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, inclusive = true)
+                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, indexType = IndexType.BTREE, inclusive = true)
       .build()
 
     //then
@@ -183,6 +184,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}",
                               2,
+                              indexType = IndexType.BTREE,
                               inclusive = true,
                               getValue = GetValue)
       .build()
