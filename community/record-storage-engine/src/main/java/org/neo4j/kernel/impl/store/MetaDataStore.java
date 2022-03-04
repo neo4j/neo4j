@@ -70,7 +70,6 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements MetadataProvider
 {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
-    // This value means the field has not been refreshed from the store. Normally, this should happen only once
     static final long NOT_INITIALIZED = Long.MIN_VALUE;
     static final UUID NOT_INITIALIZED_UUID = new UUID( NOT_INITIALIZED, NOT_INITIALIZED );
 
@@ -115,8 +114,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private final AtomicLong logVersion = new AtomicLong();
     private final AtomicLong checkpointLogVersion = new AtomicLong();
-    // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
-    // we do that when flushing, which performs better and fine from a recovery POV.
     private final AtomicLong lastCommittingTx = new AtomicLong( NOT_INITIALIZED );
     private volatile long latestConstraintIntroducingTxId;
     private volatile KernelVersion kernelVersion;

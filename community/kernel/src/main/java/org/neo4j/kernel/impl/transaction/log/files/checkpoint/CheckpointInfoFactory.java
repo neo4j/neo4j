@@ -79,7 +79,7 @@ public class CheckpointInfoFactory
                 }
             }
             // We have a checkpoint on this point but there is no transaction found that match it and log files are corrupted.
-            // Database should be restored from last the last valid backup or dump in normal circumstances.
+            // Database should be restored from the last valid backup or dump in normal circumstances.
             if ( !context.getConfig().get( fail_on_corrupted_log_files ) )
             {
                 return TransactionIdStore.UNKNOWN_TRANSACTION_ID;
