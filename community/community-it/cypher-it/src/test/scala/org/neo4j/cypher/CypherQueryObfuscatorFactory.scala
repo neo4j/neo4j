@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
@@ -83,7 +84,7 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       null,
-      null)
+      CancellationChecker.NeverCancelled)
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
 
