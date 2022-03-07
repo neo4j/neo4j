@@ -391,7 +391,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
                /   \                                /   \
        all-nodes   optional1      ===>       all-nodes  optional2
                      \                                    \
-                     var-length-expand                   pruning-var-expand
+                     var-length-expand               bfs-pruning-var-expand
                        \                                    \
                        argument                            argument
     */
