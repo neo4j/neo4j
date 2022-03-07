@@ -837,6 +837,41 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("a", "b").withRows(expected)
   }
 
+  test("should invalidate cached property if row do not match the predicate") {
+    // given
+    val size = 100
+
+    val (aNodes, bNodes) = given {
+      bipartiteGraph(
+        size,
+        "A",
+        "B",
+        "R",
+        bProperties = {
+          case i: Int => Map("prop" -> i)
+        })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .optionalExpandAll("(a)-[:R]->(b)", Some("cache[b.prop] > 20 AND cache[b.prop] < 40 "))
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected: Seq[Array[Node]] =
+      for {
+        a <- aNodes
+        b <- bNodes
+        row <- if (b.getProperty("prop").asInstanceOf[Int] > 20  && b.getProperty("prop").asInstanceOf[Int] < 40 ) List(Array(a, b)) else List.empty
+      } yield row
+
+    runtimeResult should beColumns("a", "b").withRows(expected)
+  }
+
   test("should handle relationship property predicate") {
     // given
     val node = given {
