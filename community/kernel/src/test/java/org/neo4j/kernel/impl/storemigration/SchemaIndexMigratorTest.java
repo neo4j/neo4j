@@ -118,8 +118,6 @@ class SchemaIndexMigratorTest
         StoreVersion fromVersion = mock( StoreVersion.class );
         StoreVersion toVersion = mock( StoreVersion.class );
         when( fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT ) ).thenReturn( false );
-        when( storageEngineFactory.versionInformation( "from" ) ).thenReturn( fromVersion );
-        when( storageEngineFactory.versionInformation( "to" ) ).thenReturn( toVersion );
         List<SchemaRule> schemaRules = new ArrayList<>();
         schemaRules.add( forSchema( SchemaDescriptors.forLabel( 1, 2, 3 ) ).withName( "n1" ).materialise( 1L ) );
         schemaRules.add( forSchema( SchemaDescriptors.forRelType( 5, 3 ) ).withName( "r1" ).materialise( 2L ) );
