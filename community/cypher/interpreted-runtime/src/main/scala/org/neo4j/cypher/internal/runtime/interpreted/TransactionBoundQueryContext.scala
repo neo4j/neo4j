@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.runtime.Expander
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.runtime.IsNoValue
-import org.neo4j.cypher.internal.runtime.KernelAPISupport.RANGE_SEEKABLE_VALUE_GROUPS
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.asKernelIndexOrder
+import org.neo4j.cypher.internal.runtime.KernelAPISupport.isImpossibleIndexQuery
 import org.neo4j.cypher.internal.runtime.KernelPredicate
 import org.neo4j.cypher.internal.runtime.NodeValueHit
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -126,7 +126,6 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ValueMapper
-import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -537,16 +536,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
                              needsValues: Boolean,
                              indexOrder: IndexOrder,
                              predicates: Seq[PropertyIndexQuery]): NodeValueIndexCursor = {
-    val impossiblePredicate =
-      predicates.exists {
-        case p: PropertyIndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
-        case _: PropertyIndexQuery.ExistsPredicate => predicates.length <= 1
-        case p: PropertyIndexQuery.RangePredicate[_] =>
-          !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
-        case _ => false
-      }
-
-    if (impossiblePredicate) {
+    if (predicates.exists(isImpossibleIndexQuery)) {
       NodeValueIndexCursor.EMPTY
     } else {
       innerNodeIndexSeek(index, needsValues, indexOrder, predicates: _*)
@@ -557,17 +547,7 @@ private[internal] class TransactionBoundReadQueryContext(val transactionalContex
                                      needsValues: Boolean,
                                      indexOrder: IndexOrder,
                                      predicates: Seq[PropertyIndexQuery]): RelationshipValueIndexCursor = {
-
-    val impossiblePredicate =
-      predicates.exists {
-        case p: PropertyIndexQuery.ExactPredicate => (p.value() eq Values.NO_VALUE) || (p.value().isInstanceOf[FloatingPointValue] && p.value().asInstanceOf[FloatingPointValue].isNaN)
-        case _: PropertyIndexQuery.ExistsPredicate => predicates.length <= 1
-        case p: PropertyIndexQuery.RangePredicate[_] =>
-          !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
-        case _ => false
-      }
-
-    if (impossiblePredicate) {
+    if (predicates.exists(isImpossibleIndexQuery)) {
       RelationshipValueIndexCursor.EMPTY
     } else {
       innerRelationshipIndexSeek(index, needsValues, indexOrder, predicates: _*)

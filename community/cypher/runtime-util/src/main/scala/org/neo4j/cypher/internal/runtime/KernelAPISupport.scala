@@ -20,20 +20,25 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.schema
+import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.ValueGroup
+import org.neo4j.values.storable.Values
 
 object KernelAPISupport {
-  val RANGE_SEEKABLE_VALUE_GROUPS = Array(ValueGroup.NUMBER,
-                                          ValueGroup.TEXT,
-                                          ValueGroup.GEOMETRY,
-                                          ValueGroup.DATE,
-                                          ValueGroup.LOCAL_DATE_TIME,
-                                          ValueGroup.ZONED_DATE_TIME,
-                                          ValueGroup.LOCAL_TIME,
-                                          ValueGroup.ZONED_TIME,
-                                          ValueGroup.DURATION,
-                                          ValueGroup.BOOLEAN)
+  /**
+   * Returns true if the specified property index query would never return any results
+   */
+  def isImpossibleIndexQuery(query: PropertyIndexQuery): Boolean = query match {
+    case p: PropertyIndexQuery.ExactPredicate => p.value() match {
+      case Values.NO_VALUE => true
+      case fp: FloatingPointValue => fp.isNaN
+      case _ => false
+    }
+    case p: PropertyIndexQuery.RangePredicate[_] => p.valueGroup() == ValueGroup.NO_VALUE
+    case _ => false
+  }
 
   def asKernelIndexOrder(indexOrder: plans.IndexOrder): schema.IndexOrder =
     indexOrder match {
