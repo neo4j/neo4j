@@ -45,10 +45,6 @@ case class DeprecatedHexLiteralSyntax(position: InputPosition) extends InternalN
 
 case class DeprecatedPatternExpressionOutsideExistsSyntax(position: InputPosition) extends InternalNotification
 
-case class DeprecatedDefaultDatabaseSyntax(position: InputPosition) extends InternalNotification
-
-case class DeprecatedDefaultGraphSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedPeriodicCommit(position: InputPosition) extends InternalNotification
 
 case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends InternalNotification

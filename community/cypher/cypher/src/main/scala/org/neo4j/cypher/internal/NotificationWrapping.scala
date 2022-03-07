@@ -47,8 +47,6 @@ import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
-import org.neo4j.cypher.internal.util.DeprecatedDefaultDatabaseSyntax
-import org.neo4j.cypher.internal.util.DeprecatedDefaultGraphSyntax
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
@@ -128,10 +126,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPropertyExistenceSyntax(pos) =>
       NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedDefaultDatabaseSyntax(pos) =>
-      NotificationCode.DEPRECATED_DEFAULT_DATABASE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedDefaultGraphSyntax(pos) =>
-      NotificationCode.DEPRECATED_DEFAULT_GRAPH_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPeriodicCommit(pos) =>
       NotificationCode.DEPRECATED_PERIODIC_COMMIT.notification(pos.withOffset(offset).asInputPosition)
     case ProcedureWarningNotification(pos, name, warning) =>
