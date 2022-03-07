@@ -62,7 +62,6 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 
 @Neo4jLayoutExtension
@@ -107,8 +106,6 @@ class DefaultDatabaseManagerUpgradeIT
         assertEquals( StandardV4_3.STORE_VERSION, check.storeVersion( CursorContext.NULL_CONTEXT ).orElseThrow() );
 
         // When
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.setDynamic( allow_upgrade, true, "test" );
         databaseManager.upgradeDatabase( db.databaseId() );
 
         // Then
@@ -169,7 +166,7 @@ class DefaultDatabaseManagerUpgradeIT
     private void useThrowingMigrationLogProvider( Exception e )
     {
         InternalLog mockedLog = mock( InternalLog.class, RETURNS_MOCKS );
-        when( userLogProvider.getLog( LogsMigrator.class ) ).thenReturn( mockedLog );
+        when( userLogProvider.getLog( LegacyDatabaseMigrator.class ) ).thenReturn( mockedLog );
         Mockito.doThrow( e ).when( mockedLog ).info( anyString() );
     }
 }
