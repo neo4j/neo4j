@@ -505,6 +505,7 @@ public class Database extends LifecycleAdapter
 
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth, ioController );
 
+            life.add( onStart( this::registerUpgradeListener ) );
             life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
@@ -513,7 +514,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
             life.start();
 
-            registerUpgradeListener();
             eventListeners.databaseStart( namedDatabaseId );
 
             /*
