@@ -65,7 +65,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 import static org.neo4j.test.TestLabels.LABEL_THREE;
 import static org.neo4j.test.TestLabels.LABEL_TWO;
 
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 @ExtendWith( RandomExtension.class )
 class AllNodesInStoreExistInLabelIndexTest
 {

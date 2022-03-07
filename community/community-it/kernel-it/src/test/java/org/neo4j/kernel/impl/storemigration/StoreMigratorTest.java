@@ -132,6 +132,7 @@ class StoreMigratorTest
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = neo4jLayout.databaseLayout( "migrationDir" );
         fileSystem.mkdirs( migrationLayout.databaseDirectory() );
+        fileSystem.write( migrationLayout.metadataStore() ).close();
 
         var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         migrator.migrate( dbLayout, migrationLayout, progressReporter, storageEngineFactory.versionInformation( StandardV4_3.STORE_VERSION ),

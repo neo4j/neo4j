@@ -57,7 +57,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
  * Tests functionality around missing or corrupted token indexes, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
-@DbmsExtension( configurationCallback = "configuration" )
+@DbmsExtension
 @ExtendWith( RandomExtension.class )
 public class TokenIndexChaosIT
 {
