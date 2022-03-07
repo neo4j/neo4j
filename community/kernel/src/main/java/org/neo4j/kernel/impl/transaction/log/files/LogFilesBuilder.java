@@ -322,6 +322,8 @@ public class LogFilesBuilder
             }
         }
 
+        // runtime repo is used to find out runtime version in cases when it does not exist in logs
+        // That can be in 2 cases: new database creation and logs removal
         DbmsRuntimeRepository dbmsRuntimeRepository;
         if ( SYSTEM_DATABASE_NAME.equals( databaseLayout.getDatabaseName() ) ||
                 dependencies == null ||
