@@ -182,7 +182,7 @@ public interface StorageEngineFactory
      * Reads schema rules from 4.4 schema store and ignores malformed rules while doing so.
      */
     List<SchemaRule44> load44SchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory );
+            CursorContextFactory contextFactory, LogTailMetadata logTailMetadata );
 
     List<SchemaRule> loadSchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, boolean lenient,
             Function<SchemaRule,SchemaRule> schemaRuleMigration, CursorContextFactory contextFactory );
@@ -244,7 +244,7 @@ public interface StorageEngineFactory
 
     Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
             Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace,
-            CursorContextFactory contextFactory );
+            CursorContextFactory contextFactory, LogTailMetadata logTailMetadata );
 
     /**
      * Calculates the optimal amount of memory that this consistency checker would want to have to perform optimally in terms of fitting

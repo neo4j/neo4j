@@ -308,7 +308,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public List<SchemaRule44> load44SchemaRules( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout layout,
-            PageCacheTracer pageCacheTracer, CursorContextFactory contextFactory )
+            CursorContextFactory contextFactory, LogTailMetadata logTailMetadata )
     {
         RecordDatabaseLayout recordDatabaseLayout = RecordDatabaseLayout.convert( layout );
         RecordFormats recordFormats = RecordFormatSelector.selectForStore( recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
@@ -324,7 +324,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
         IdGeneratorFactory idGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         StoreFactory factory = new StoreFactory( recordDatabaseLayout, config, idGeneratorFactory, pageCache, fs, NullLogProvider.getInstance(),
-                contextFactory, readOnly(), EMPTY_LOG_TAIL );
+                contextFactory, readOnly(), logTailMetadata );
         try ( var cursorContext = contextFactory.create( "loadSchemaRules" );
                 var stores = factory.openAllNeoStores();
                 var storeCursors = new CachedStoreCursors( stores, cursorContext ) )
@@ -538,11 +538,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
 
     @Override
     public Input asBatchImporterInput( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache pageCache,
-            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace, CursorContextFactory contextFactory )
+            Config config, MemoryTracker memoryTracker, ReadBehaviour readBehaviour, boolean compactNodeIdSpace, CursorContextFactory contextFactory,
+            LogTailMetadata logTailMetadata )
     {
         NeoStores neoStores =
                 new StoreFactory( databaseLayout, config, new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fileSystem, NullLogProvider.getInstance(),
-                        contextFactory, readOnly(), EMPTY_LOG_TAIL ).openAllNeoStores();
+                        contextFactory, readOnly(), logTailMetadata ).openAllNeoStores();
         return new LenientStoreInput( neoStores, readBehaviour.decorateTokenHolders( loadReadOnlyTokens( neoStores, true, contextFactory ) ),
                 compactNodeIdSpace, contextFactory, readBehaviour );
     }
