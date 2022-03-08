@@ -188,4 +188,25 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             return rebuilder.lastCommittedTxId();
         }
     }
+
+    public static class EmptyDegreesRebuilder implements DegreesRebuilder
+    {
+        private final long lastTxId;
+
+        public EmptyDegreesRebuilder( long lastTxId )
+        {
+            this.lastTxId = lastTxId;
+        }
+
+        @Override
+        public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
+        {
+        }
+
+        @Override
+        public long lastCommittedTxId()
+        {
+            return lastTxId;
+        }
+    }
 }

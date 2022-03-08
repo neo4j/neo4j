@@ -39,7 +39,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -263,17 +262,5 @@ class GBPTreeRelationshipGroupDegreesStoreTest
         }
     }
 
-    private static final DegreesRebuilder EMPTY_REBUILD = new DegreesRebuilder()
-    {
-        @Override
-        public void rebuild( Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-        {
-        }
-
-        @Override
-        public long lastCommittedTxId()
-        {
-            return TransactionIdStore.BASE_TX_ID;
-        }
-    };
+    private static final DegreesRebuilder EMPTY_REBUILD = new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder( BASE_TX_ID );
 }
