@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TimeZonesTest
@@ -111,7 +112,18 @@ class TimeZonesTest
         byte[] timeZonesInfo = Files.readAllBytes( path );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
         assertThat( timeZonesHash, equalTo(
-                new byte[]{-31, 62, 67, 16, 63, 24, 6, 6, -3, -29, 114, -49, -97, 107, 54, -96, 75, 69, -29, -66, -9, 18, -49, 89, 118, -28, -119, 115, -107,
-                           -64, -37, 30} ));
+                new byte[]{127, -106, 4, -18, -64, -55, 95, 19, -88, 99, -90, -47, -33, 71, -15, 0, -63, 122, 83, -10, -13, -126, 110, -38, -63, -10, -86, -41,
+                           -1, -77, -3, -84} ));
+    }
+
+    @Test
+    void allTimeZonesAreValidZoneIDs()
+    {
+        TimeZones.supportedTimeZones().forEach( timeZone ->
+        {
+            short zoneOffset = TimeZones.map( timeZone );
+            String timeZone2 = TimeZones.map( zoneOffset );
+            assertNotNull( ZoneId.of( timeZone2 ) );
+        });
     }
 }
