@@ -32,11 +32,12 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -213,8 +214,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             countsStore = openCountsStore( pageCache, fs, databaseLayout, internalLogProvider, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker,
                     config, cacheTracer );
 
-            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, userLogProvider, recoveryCleanupWorkCollector, readOnlyChecker, config,
-                    cacheTracer );
+            groupDegreesStore = openDegreesStore( pageCache, fs, databaseLayout, internalLogProvider, userLogProvider, recoveryCleanupWorkCollector,
+                    readOnlyChecker, config, cacheTracer );
 
             consistencyCheckApply = config.get( GraphDatabaseInternalSettings.consistency_check_on_apply );
             storeEntityCounters = new RecordDatabaseEntityCounters( idGeneratorFactory, countsStore );
@@ -297,13 +298,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     private RelationshipGroupDegreesStore openDegreesStore( PageCache pageCache, FileSystemAbstraction fs, RecordDatabaseLayout layout,
-            LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseReadOnlyChecker readOnlyChecker, Config config,
-            PageCacheTracer pageCacheTracer )
+            LogProvider internalLogProvider, LogProvider userLogProvider, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            DatabaseReadOnlyChecker readOnlyChecker, Config config, PageCacheTracer pageCacheTracer )
     {
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                    new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, pageCacheTracer, internalLogProvider, Configuration.DEFAULT ),
+                    readOnlyChecker, pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
                     config.get( counts_store_max_cached_entries ), userLogProvider );
         }
         catch ( IOException e )

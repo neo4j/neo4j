@@ -45,6 +45,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
@@ -294,7 +295,8 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
+                    new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, pageCacheTracer, logService.getInternalLogProvider(),
+                            Configuration.DEFAULT ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
                     databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ), logService.getUserLogProvider() );
             groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
 
