@@ -41,6 +41,8 @@ import org.neo4j.internal.batchimport.store.BatchingTokenRepository.BatchingRela
 import org.neo4j.internal.batchimport.store.io.IoTracer;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
+import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -430,6 +432,22 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         {
             countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+
+        // Also build an empty relationship group degrees store since the importer will not make any group degrees external.
+        // This will prevent an unnecessary rebuild on the first startup.
+        try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
+                databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
+                new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder( neoStores.getMetaDataStore().getLastCommittedTransactionId() ), writable(),
+                cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), neo4jConfig.get( counts_store_max_cached_entries ),
+                userLogProvider ) )
+        {
+            groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
+            groupDegreesStore.checkpoint( cursorContext );
         }
         catch ( IOException e )
         {

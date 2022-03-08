@@ -60,7 +60,6 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
-import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
@@ -717,21 +716,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // that is the last committed one at the upgrade time.
             long lastTxId = MetaDataStore.getRecord( pageCache, directoryLayout.metadataStore(), LAST_TRANSACTION_ID, directoryLayout.getDatabaseName(),
                     cursorContext );
-            return new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
-            {
-
-                @Override
-                public void rebuild( RelationshipGroupDegreesStore.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
-                {
-
-                }
-
-                @Override
-                public long lastCommittedTxId()
-                {
-                    return lastTxId;
-                }
-            };
+            return new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder( lastTxId );
         }
     }
 
