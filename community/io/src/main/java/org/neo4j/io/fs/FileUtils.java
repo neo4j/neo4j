@@ -504,8 +504,10 @@ public final class FileUtils
         // Attempts to fsync the directory, guaranting e.g. file creation/deletion/rename events are durable
         // See http://mail.openjdk.java.net/pipermail/nio-dev/2015-May/003140.html
         // See also https://github.com/apache/lucene-solr/commit/7bea628bf3961a10581833935e4c1b61ad708c5c
-        FileChannel directoryChannel = FileChannel.open( directory, singleton( READ ) );
-        directoryChannel.force( true );
+        try ( FileChannel directoryChannel = FileChannel.open( directory, singleton( READ ) ) )
+        {
+            directoryChannel.force( true );
+        }
     }
 
     public static boolean isDirectoryEmpty( Path directory ) throws IOException
