@@ -53,8 +53,8 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
             Monitor monitor, String databaseName, int maxCacheSize, InternalLogProvider userLogProvider,
             CursorContextFactory contextFactory ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, monitor,
-                databaseName, maxCacheSize, userLogProvider, contextFactory );
+        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, monitor, databaseName,
+                maxCacheSize, userLogProvider, contextFactory );
     }
 
     @Override

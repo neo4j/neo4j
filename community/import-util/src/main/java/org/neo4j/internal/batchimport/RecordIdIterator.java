@@ -21,6 +21,8 @@ package org.neo4j.internal.batchimport;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
+import org.neo4j.common.ProgressReporter;
+
 import static java.lang.Long.max;
 import static java.lang.Long.min;
 import static org.neo4j.collection.PrimitiveLongCollections.range;
@@ -130,5 +132,32 @@ public interface RecordIdIterator
         {
             return "]" + highExcluded + "-" + lowIncluded + "]";
         }
+    }
+
+    static RecordIdIterator withProgress( RecordIdIterator iterator, ProgressReporter reporter )
+    {
+        return () ->
+        {
+            LongIterator actual = iterator.nextBatch();
+            if ( actual == null )
+            {
+                return null;
+            }
+            return new LongIterator()
+            {
+                @Override
+                public long next()
+                {
+                    reporter.progress( 1 );
+                    return actual.next();
+                }
+
+                @Override
+                public boolean hasNext()
+                {
+                    return actual.hasNext();
+                }
+            };
+        };
     }
 }
