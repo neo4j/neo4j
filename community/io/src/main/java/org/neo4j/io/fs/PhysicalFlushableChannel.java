@@ -177,7 +177,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
         // channel before moving to a new position. This works in all cases, but there could be
         // made an optimization where we could see that we're moving within the current buffer range
         // and if so skip flushing and simply move the cursor in the buffer.
-        prepareForFlush().flush();
+        prepareForFlush();
         channel.position( position );
     }
 
