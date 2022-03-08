@@ -28,7 +28,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 
@@ -46,17 +46,17 @@ public class Scanner
     }
 
     @SafeVarargs
-    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store, PageCacheTracer pageCacheTracer,
+    public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store, CursorContextFactory contextFactory,
             final Predicate<? super R>... filters )
     {
-        return scan( store, true, pageCacheTracer, filters );
+        return scan( store, true, contextFactory, filters );
     }
 
     @SafeVarargs
     public static <R extends AbstractBaseRecord> ResourceIterable<R> scan( final RecordStore<R> store,
-            final boolean forward, PageCacheTracer pageCacheTracer, final Predicate<? super R>... filters )
+            final boolean forward, CursorContextFactory contextFactory, final Predicate<? super R>... filters )
     {
-        return () -> new Scan<>( store, forward, pageCacheTracer, filters );
+        return () -> new Scan<>( store, forward, contextFactory, filters );
     }
 
     private static class Scan<R extends AbstractBaseRecord> extends PrefetchingResourceIterator<R>
@@ -69,10 +69,10 @@ public class Scanner
         private final CursorContext cursorContext;
 
         @SafeVarargs
-        Scan( RecordStore<R> store, boolean forward, PageCacheTracer pageCacheTracer, final Predicate<? super R>... filters )
+        Scan( RecordStore<R> store, boolean forward, CursorContextFactory contextFactory, final Predicate<? super R>... filters )
         {
             this.filters = filters;
-            this.cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECORD_STORE_SCANNER_TAG ) );
+            this.cursorContext = contextFactory.create( RECORD_STORE_SCANNER_TAG );
             this.ids = new StoreIdIterator( store, forward, cursorContext );
             this.store = store;
             this.cursor = store.openPageCursorForReading( 0, cursorContext );

@@ -23,8 +23,7 @@ import java.nio.channels.ClosedByInterruptException;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -57,13 +56,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     private final ProgressReporter progressReporter;
     private final boolean failOnCorruptedLogFiles;
     private final RecoveryStartupChecker recoveryStartupChecker;
-    private final PageCacheTracer pageCacheTracer;
+    private final CursorContextFactory contextFactory;
     private final RecoveryPredicate recoveryPredicate;
     private int numberOfRecoveredTransactions;
 
     public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, Lifecycle schemaLife, RecoveryMonitor monitor,
             ProgressReporter progressReporter, boolean failOnCorruptedLogFiles, RecoveryStartupChecker recoveryStartupChecker,
-            RecoveryPredicate recoveryPredicate, PageCacheTracer pageCacheTracer )
+            RecoveryPredicate recoveryPredicate, CursorContextFactory contextFactory )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
@@ -72,7 +71,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         this.progressReporter = progressReporter;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.recoveryStartupChecker = recoveryStartupChecker;
-        this.pageCacheTracer = pageCacheTracer;
+        this.contextFactory = contextFactory;
         this.recoveryPredicate = recoveryPredicate;
     }
 
@@ -102,7 +101,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             {
                 long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
                 try ( var transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryStartPosition );
-                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, pageCacheTracer, REVERSE_RECOVERY_TAG ) )
+                      var recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG ) )
                 {
                     while ( transactionsToRecover.next() )
                     {
@@ -128,7 +127,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
 
                 boolean fullRecovery = true;
                 try ( var transactionsToRecover = recoveryService.getTransactions( recoveryStartPosition );
-                        var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, pageCacheTracer, RECOVERY_TAG ) )
+                        var recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY, contextFactory, RECOVERY_TAG ) )
                 {
                     while ( fullRecovery && transactionsToRecover.next() )
                     {
@@ -232,7 +231,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             logsTruncator.truncate( recoveryToPosition );
         }
 
-        try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( RECOVERY_COMPLETED_TAG ) ) )
+        try ( var cursorContext = contextFactory.create( RECOVERY_COMPLETED_TAG ) )
         {
             final boolean missingLogs = recoveryStartInformation.isMissingLogs();
             recoveryService.transactionsRecovered( lastTransaction, lastTransactionPosition, recoveryToPosition,

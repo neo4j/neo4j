@@ -144,8 +144,6 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
  */
 public final class Recovery
 {
-    private static final String RECOVERY_TAG = "recovery";
-
     private Recovery()
     {
     }
@@ -449,8 +447,8 @@ public final class Recovery
         var doParallelRecovery = config.get( GraphDatabaseInternalSettings.do_parallel_recovery );
         TransactionLogsRecovery transactionLogsRecovery = transactionLogRecovery( fs, metadataProvider, monitors.newMonitor( RecoveryMonitor.class ),
                 monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, metadataProvider,
-                schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, tracers.getPageCacheTracer(), memoryTracker,
-                doParallelRecovery, recoveryPredicate );
+                schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog, startupChecker, memoryTracker,
+                doParallelRecovery, recoveryPredicate, cursorContextFactory );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
         var checkpointAppender = logFiles.getCheckpointFile().getCheckpointAppender();
@@ -530,7 +528,7 @@ public final class Recovery
             RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
             Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, InternalLog log, RecoveryStartupChecker startupChecker,
-            PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, boolean doParallelRecovery, RecoveryPredicate recoveryPredicate )
+            MemoryTracker memoryTracker, boolean doParallelRecovery, RecoveryPredicate recoveryPredicate, CursorContextFactory contextFactory )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, transactionIdStore, logicalTransactionStore,
                                                                       logVersionRepository, logFiles, positionMonitor, log, doParallelRecovery );
@@ -538,7 +536,7 @@ public final class Recovery
                 new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles,
-                startupChecker, recoveryPredicate, pageCacheTracer );
+                startupChecker, recoveryPredicate, contextFactory );
     }
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()

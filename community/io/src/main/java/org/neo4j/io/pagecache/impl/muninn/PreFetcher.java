@@ -124,7 +124,8 @@ class PreFetcher implements Runnable, CancelListener
         long jump = offset;
 
         try ( var tracer = this.tracer.createPageCursorTracer( TRACER_PRE_FETCHER_TAG );
-                PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, new CursorContext( tracer ) ) )
+                //:TODO where and how to report this?
+                PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, CursorContext.NULL_CONTEXT ) )
         {
             currentPageId = getCurrentObservedPageId();
             while ( currentPageId != UNBOUND_PAGE_ID )

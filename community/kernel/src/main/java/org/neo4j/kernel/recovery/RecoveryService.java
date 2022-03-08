@@ -22,7 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -38,7 +38,7 @@ public interface RecoveryService
 
     RecoveryStartInformation getRecoveryStartInformation() throws IOException;
 
-    RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag ) throws Exception;
+    RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag ) throws Exception;
 
     void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext );

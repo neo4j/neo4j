@@ -25,7 +25,9 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -72,8 +74,9 @@ class RecoveryProgressIndicatorTest
         when( recoveryService.getTransactions( transactionLogPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY );
         TransactionLogsRecovery recovery = new TransactionLogsRecovery( recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor,
-                progressReporter, true, EMPTY_CHECKER, RecoveryPredicate.ALL, PageCacheTracer.NULL );
+                progressReporter, true, EMPTY_CHECKER, RecoveryPredicate.ALL, contextFactory );
         recovery.init();
 
         progressReporter.verify();

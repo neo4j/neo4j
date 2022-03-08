@@ -33,7 +33,8 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.InjectedNLIUpgradeCallback;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
@@ -70,11 +71,14 @@ import org.neo4j.test.Barrier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 class ParallelRecoveryVisitorTest
 {
+    private final CursorContextFactory contextFactory = new CursorContextFactory( NULL, EmptyVersionContextSupplier.EMPTY );
+
     @Test
     void shouldApplyUnrelatedInParallel() throws Exception
     {
@@ -103,7 +107,7 @@ class ParallelRecoveryVisitorTest
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, PageCacheTracer.NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -134,7 +138,7 @@ class ParallelRecoveryVisitorTest
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, PageCacheTracer.NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 99 ) ) );
@@ -179,7 +183,7 @@ class ParallelRecoveryVisitorTest
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, PageCacheTracer.NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
         {
             visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
             visitor.visit( tx( 3, commandsRelatedToNode( 999 ) ) );
@@ -210,7 +214,7 @@ class ParallelRecoveryVisitorTest
         };
 
         // when
-        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, PageCacheTracer.NULL, "test", 2 ) )
+        try ( ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 ) )
         {
             assertThatThrownBy( () ->
             {
@@ -243,7 +247,7 @@ class ParallelRecoveryVisitorTest
         };
 
         // when
-        ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, PageCacheTracer.NULL, "test", 2 );
+        ParallelRecoveryVisitor visitor = new ParallelRecoveryVisitor( storageEngine, RECOVERY, contextFactory, "test", 2 );
         visitor.visit( tx( 2, commandsRelatedToNode( 99 ) ) );
         assertThatThrownBy( visitor::close ).getCause().hasMessageContaining( failure );
     }
@@ -262,11 +266,6 @@ class ParallelRecoveryVisitorTest
         List<StorageCommand> commands = new ArrayList<>();
         commands.add( new CommandRelatedToNode( nodeId ) );
         return commands;
-    }
-
-    private boolean hasId( CommandStream commands, long txId )
-    {
-        return idOf( commands ) == txId;
     }
 
     private static long idOf( CommandStream commands )

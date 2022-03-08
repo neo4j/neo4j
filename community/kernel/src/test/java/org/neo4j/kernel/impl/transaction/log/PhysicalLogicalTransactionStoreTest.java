@@ -36,7 +36,9 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -61,7 +63,6 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreId;
@@ -82,7 +83,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -179,6 +179,7 @@ class PhysicalLogicalTransactionStoreTest
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
+        var contextFactory = new CursorContextFactory( new DefaultPageCacheTracer(), EmptyVersionContextSupplier.EMPTY );
         Config config = Config.defaults();
         final byte[] additionalHeader = new byte[]{1, 2, 5};
         final long timeStarted = 12345;
@@ -209,9 +210,8 @@ class PhysicalLogicalTransactionStoreTest
 
         life.add( createTransactionAppender( transactionIdStore, positionCache, logFiles, Config.defaults(), jobScheduler ) );
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem, INSTANCE );
-        life.add( new TransactionLogsRecovery( new TestRecoveryService( visitor, logFiles, txStore, recoveryPerformed ),
-                logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false, EMPTY_CHECKER,
-                RecoveryPredicate.ALL, PageCacheTracer.NULL ) );
+        life.add( new TransactionLogsRecovery( new TestRecoveryService( visitor, logFiles, txStore, recoveryPerformed ), logPruner, new LifecycleAdapter(),
+                mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false, EMPTY_CHECKER, RecoveryPredicate.ALL, contextFactory ) );
 
         // WHEN
         try
@@ -411,7 +411,7 @@ class PhysicalLogicalTransactionStoreTest
         }
 
         @Override
-        public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
+        public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag )
         {
             return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock( RecoveryApplier.class ) : visitor;
         }

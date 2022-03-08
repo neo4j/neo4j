@@ -30,12 +30,6 @@ public class CursorContext implements AutoCloseable
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;
 
-    @Deprecated( forRemoval = true )
-    public CursorContext( PageCursorTracer cursorTracer )
-    {
-        this( cursorTracer, EmptyVersionContext.EMPTY );
-    }
-
     CursorContext( PageCursorTracer cursorTracer, VersionContext versionContext )
     {
         this.cursorTracer = requireNonNull( cursorTracer );

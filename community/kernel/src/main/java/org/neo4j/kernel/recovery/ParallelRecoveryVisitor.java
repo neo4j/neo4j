@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -48,22 +48,23 @@ final class ParallelRecoveryVisitor implements RecoveryApplier
     private final StorageEngine storageEngine;
     private final LockService lockService = new ReentrantLockService();
     private final TransactionApplicationMode mode;
-    private final PageCacheTracer cacheTracer;
+    private final CursorContextFactory contextFactory;
     private final String tracerTag;
     private final ExecutorService appliers;
     private final AtomicReference<Throwable> failure = new AtomicReference<>();
     private final int stride;
 
-    ParallelRecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag )
+    ParallelRecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag )
     {
-        this( storageEngine, mode, cacheTracer, tracerTag, max( 1, Runtime.getRuntime().availableProcessors() - 1 ) );
+        this( storageEngine, mode, contextFactory, tracerTag, max( 1, Runtime.getRuntime().availableProcessors() - 1 ) );
     }
 
-    ParallelRecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag, int numAppliers )
+    ParallelRecoveryVisitor( StorageEngine storageEngine, TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag,
+            int numAppliers )
     {
         this.storageEngine = storageEngine;
         this.mode = mode;
-        this.cacheTracer = cacheTracer;
+        this.contextFactory = contextFactory;
         this.tracerTag = tracerTag;
         this.appliers = new ThreadPoolExecutor( numAppliers, numAppliers, 1, TimeUnit.HOURS, new ArrayBlockingQueue<>( numAppliers ),
                 new ThreadPoolExecutor.CallerRunsPolicy() );
@@ -115,7 +116,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier
 
     private void apply( CommittedTransactionRepresentation transaction ) throws Exception
     {
-        try ( CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( tracerTag ) );
+        try ( CursorContext cursorContext = contextFactory.create( tracerTag );
               var storeCursors = storageEngine.createStorageCursors( cursorContext ) )
         {
             TransactionRepresentation txRepresentation = transaction.getTransactionRepresentation();
