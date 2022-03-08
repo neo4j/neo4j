@@ -681,7 +681,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             // ... then just create an empty such store, so that there will be no rebuild triggered on the first startup (which would not find anything anyway)
             try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                     directoryLayout.relationshipGroupDegreesStore(), fileSystem, immediate(), rebuilder, writable(),
-                    cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
+                    cacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, directoryLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ),
+                    logService.getInternalLogProvider() );
                     CursorContext cursorContext = new CursorContext( cacheTracer.createPageCursorTracer( "empty group degrees store rebuild" ) ) )
             {
                 groupDegreesStore.start( cursorContext, memoryTracker );

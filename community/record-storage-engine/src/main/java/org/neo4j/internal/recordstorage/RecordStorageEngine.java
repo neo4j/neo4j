@@ -36,6 +36,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
@@ -291,8 +292,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer,
-                    GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
+                    new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, pageCacheTracer, logProvider, Configuration.DEFAULT ), readOnlyChecker,
+                    pageCacheTracer, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(), config.get( counts_store_max_cached_entries ),
+                    logProvider );
         }
         catch ( IOException e )
         {

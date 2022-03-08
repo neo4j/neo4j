@@ -262,7 +262,7 @@ public class ConsistencyCheckService
                     lastCommittedTransactionId ) );
             RelationshipGroupDegreesStoreManager groupDegreesStoreManager = life.add(
                     new RelationshipGroupDegreesStoreManager( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker,
-                            lastCommittedTransactionId ) );
+                            lastCommittedTransactionId, logProvider ) );
             // Load tokens before starting extensions, etc.
             try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_READER_TAG ) ) )
             {
@@ -482,10 +482,13 @@ public class ConsistencyCheckService
 
     private static class RelationshipGroupDegreesStoreManager extends CountsStorageManager<RelationshipGroupDegreesStore>
     {
+        private final LogProvider logProvider;
+
         RelationshipGroupDegreesStoreManager( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
-                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, long lastCommittedTxId )
+                PageCacheTracer pageCacheTracer, MemoryTracker memoryTracker, long lastCommittedTxId, LogProvider logProvider )
         {
             super( pageCache, fileSystem, databaseLayout, pageCacheTracer, memoryTracker, lastCommittedTxId );
+            this.logProvider = logProvider;
         }
 
         @Override
@@ -493,7 +496,7 @@ public class ConsistencyCheckService
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem,
                     RecoveryCleanupWorkCollector.ignore(), new RebuildPreventingDegreesInitializer( lastCommittedTxId ), readOnly(), pageCacheTracer,
-                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100 );
+                    GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, logProvider );
         }
     }
 }

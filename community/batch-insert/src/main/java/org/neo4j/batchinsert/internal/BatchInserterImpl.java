@@ -54,6 +54,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.counts.DegreesRebuildFromStore;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
@@ -321,8 +322,9 @@ public class BatchInserterImpl implements BatchInserter
             labelTokenStore = neoStores.getLabelTokenStore();
 
             groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                    new DegreesRebuildFromStore( neoStores ), readOnlyChecker, pageCacheTracer, NO_MONITOR,
-                    databaseLayout.getDatabaseName(), config.get( counts_store_max_cached_entries ) );
+                    new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, pageCacheTracer, logService.getInternalLogProvider(),
+                            Configuration.DEFAULT ), readOnlyChecker, pageCacheTracer, NO_MONITOR, databaseLayout.getDatabaseName(),
+                    config.get( counts_store_max_cached_entries ), logService.getInternalLogProvider() );
             groupDegreesStore.start( cursorContext, memoryTracker );
 
             degreeUpdater = groupDegreesStore.directApply( cursorContext );

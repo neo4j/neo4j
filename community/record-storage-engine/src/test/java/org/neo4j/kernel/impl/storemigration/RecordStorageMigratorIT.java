@@ -256,7 +256,8 @@ class RecordStorageMigratorIT
         };
         try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
                 databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
-                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue() ) )
+                PageCacheTracer.NULL, GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
+                logProvider ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
             groupDegreesStore.start( NULL, INSTANCE );

@@ -32,9 +32,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
-import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -50,11 +51,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
             RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
-            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize ) throws IOException
+            PageCacheTracer pageCacheTracer, Monitor monitor, String databaseName, int maxCacheSize, LogProvider logProvider ) throws IOException
     {
-        super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, pageCacheTracer, monitor,
-                databaseName,
-                maxCacheSize );
+        super( pageCache, file, fileSystem, recoveryCollector,
+                new RebuilderWrapper( rebuilder, logProvider.getLog( GBPTreeRelationshipGroupDegreesStore.class ) ), readOnlyChecker, NAME, pageCacheTracer,
+                monitor, databaseName, maxCacheSize );
     }
 
     @Override
@@ -170,16 +171,20 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     private static class RebuilderWrapper implements Rebuilder
     {
         private final DegreesRebuilder rebuilder;
+        private final Log log;
 
-        RebuilderWrapper( DegreesRebuilder rebuilder )
+        RebuilderWrapper( DegreesRebuilder rebuilder, Log log )
         {
             this.rebuilder = rebuilder;
+            this.log = log;
         }
 
         @Override
         public void rebuild( CountUpdater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
         {
+            log.warn( "Missing relationship degrees store, rebuilding it." );
             rebuilder.rebuild( new DegreeUpdater( updater ), cursorContext, memoryTracker );
+            log.warn( "Relationship degrees store rebuild completed." );
         }
 
         @Override

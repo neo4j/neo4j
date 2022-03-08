@@ -28,17 +28,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.batchimport.Configuration;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications;
 import org.neo4j.internal.recordstorage.FlatRelationshipModifications.RelationshipData;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.test.extension.Inject;
@@ -48,11 +56,12 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.configuration.helpers.DatabaseReadOnlyChecker.writable;
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combinedKeyOnGroupAndDirection;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.applyLogicalChanges;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineTestUtils.openSimpleStorageEngine;
@@ -80,9 +89,10 @@ class DegreesRebuildFromStoreTest
         DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
         int[] relationshipTypes;
         MutableLongLongMap expectedDegrees = LongLongMaps.mutable.empty();
+        Config config = config( denseThreshold );
         try ( Lifespan life = new Lifespan() )
         {
-            RecordStorageEngine storageEngine = openStorageEngine( layout, denseThreshold );
+            RecordStorageEngine storageEngine = openStorageEngine( layout, config );
             relationshipTypes = createRelationshipTypes( storageEngine );
             life.add( storageEngine );
             generateData( storageEngine, denseThreshold, relationshipTypes );
@@ -96,6 +106,9 @@ class DegreesRebuildFromStoreTest
             for ( int i = 10; i < highId; i++ )
             {
                 RelationshipGroupRecord record = groupStore.getRecord( i, new RelationshipGroupRecord( i ), RecordLoad.ALWAYS, NULL );
+                expectedDegrees.remove( combinedKeyOnGroupAndDirection( record.getId(), RelationshipDirection.OUTGOING ) );
+                expectedDegrees.remove( combinedKeyOnGroupAndDirection( record.getId(), RelationshipDirection.INCOMING ) );
+                expectedDegrees.remove( combinedKeyOnGroupAndDirection( record.getId(), RelationshipDirection.LOOP ) );
                 record.setInUse( false );
                 groupStore.updateRecord( record, NULL );
             }
@@ -104,21 +117,7 @@ class DegreesRebuildFromStoreTest
 
         // when
         directory.getFileSystem().deleteFile( layout.relationshipGroupDegreesStore() );
-        try ( Lifespan life = new Lifespan() )
-        {
-            RecordStorageEngine storageEngine = assertDoesNotThrow( () -> life.add( openStorageEngine( layout, denseThreshold ) ) );
-
-            // then
-            storageEngine.relationshipGroupDegreesStore().accept( ( groupId, direction, degree ) ->
-            {
-                long key = combinedKeyOnGroupAndDirection( groupId, direction );
-                assertThat( expectedDegrees.containsKey( key ) ).isTrue();
-                long expectedDegree = expectedDegrees.get( key );
-                expectedDegrees.remove( key );
-                assertThat( degree ).isEqualTo( expectedDegree );
-            }, NULL );
-            assertThat( expectedDegrees.size() ).isGreaterThan( 0 );
-        }
+        rebuildAndVerify( layout, config, expectedDegrees );
     }
 
     @Test
@@ -130,9 +129,10 @@ class DegreesRebuildFromStoreTest
         DatabaseLayout layout = DatabaseLayout.ofFlat( directory.homePath() );
         int[] relationshipTypes;
         MutableLongLongMap expectedDegrees = LongLongMaps.mutable.empty();
+        Config config = config( denseThreshold );
         try ( Lifespan life = new Lifespan() )
         {
-            RecordStorageEngine storageEngine = openStorageEngine( layout, denseThreshold );
+            RecordStorageEngine storageEngine = openStorageEngine( layout, config );
             relationshipTypes = createRelationshipTypes( storageEngine );
             life.add( storageEngine );
             generateData( storageEngine, denseThreshold, relationshipTypes );
@@ -144,21 +144,52 @@ class DegreesRebuildFromStoreTest
 
         // when
         directory.getFileSystem().deleteFile( layout.relationshipGroupDegreesStore() );
+        rebuildAndVerify( layout, config, expectedDegrees );
+    }
+
+    private void rebuildAndVerify( DatabaseLayout layout, Config config, MutableLongLongMap expectedDegrees )
+    {
+        rebuildAndVerifyDirectlyUsingRebuilderDirectly( layout, config, expectedDegrees );
+        rebuildAndVerifyByStartingStorageEngine( layout, config, expectedDegrees );
+    }
+
+    private void rebuildAndVerifyDirectlyUsingRebuilderDirectly( DatabaseLayout layout, Config config, MutableLongLongMap expectedDegrees )
+    {
+        MutableLongLongMap builtExpectedDegrees = LongLongMaps.mutable.empty();
+        try ( NeoStores neoStores = new StoreFactory( layout, config,
+                new DefaultIdGeneratorFactory( directory.getFileSystem(), immediate(), layout.getDatabaseName() ), pageCache, directory.getFileSystem(),
+                NullLogProvider.nullLogProvider(), PageCacheTracer.NULL, writable() ).openAllNeoStores() )
+        {
+            DegreesRebuildFromStore rebuild =
+                    new DegreesRebuildFromStore( pageCache, neoStores, layout, PageCacheTracer.NULL, NullLogProvider.nullLogProvider(),
+                            Configuration.withBatchSize( Configuration.DEFAULT, 100 ) );
+            rebuild.rebuild( new RelationshipGroupDegreesStore.Updater()
+            {
+                @Override
+                public void increment( long groupId, RelationshipDirection direction, long degree )
+                {
+                    builtExpectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree );
+                }
+
+                @Override
+                public void close()
+                {
+                }
+            }, NULL, EmptyMemoryTracker.INSTANCE );
+        }
+        assertThat( builtExpectedDegrees ).isEqualTo( expectedDegrees );
+    }
+
+    private void rebuildAndVerifyByStartingStorageEngine( DatabaseLayout layout, Config config, MutableLongLongMap expectedDegrees )
+    {
+        MutableLongLongMap builtExpectedDegrees = LongLongMaps.mutable.empty();
         try ( Lifespan life = new Lifespan() )
         {
-            RecordStorageEngine storageEngine = life.add( openStorageEngine( layout, denseThreshold ) );
-
-            // then
-            storageEngine.relationshipGroupDegreesStore().accept( ( groupId, direction, degree ) ->
-            {
-                long key = combinedKeyOnGroupAndDirection( groupId, direction );
-                assertThat( expectedDegrees.containsKey( key ) ).isTrue();
-                long expectedDegree = expectedDegrees.get( key );
-                expectedDegrees.remove( key );
-                assertThat( degree ).isEqualTo( expectedDegree );
-            }, NULL );
+            RecordStorageEngine storageEngine = life.add( openStorageEngine( layout, config ) );
+            storageEngine.relationshipGroupDegreesStore().accept(
+                    ( groupId, direction, degree ) -> builtExpectedDegrees.put( combinedKeyOnGroupAndDirection( groupId, direction ), degree ), NULL );
         }
-        assertThat( expectedDegrees.size() ).isEqualTo( 0 );
+        assertThat( builtExpectedDegrees ).isEqualTo( expectedDegrees );
     }
 
     private static int[] createRelationshipTypes( RecordStorageEngine storageEngine )
@@ -203,9 +234,13 @@ class DegreesRebuildFromStoreTest
                 } );
     }
 
-    private RecordStorageEngine openStorageEngine( DatabaseLayout layout, int denseThreshold )
+    private RecordStorageEngine openStorageEngine( DatabaseLayout layout, Config config )
     {
-        Config config = Config.defaults( dense_node_threshold, denseThreshold );
         return openSimpleStorageEngine( directory.getFileSystem(), pageCache, layout, config );
+    }
+
+    private static Config config( int denseThreshold )
+    {
+        return Config.defaults( dense_node_threshold, denseThreshold );
     }
 }
