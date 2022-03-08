@@ -1304,58 +1304,6 @@
     "enterpriseOnly": false
   },
   {
-    "name": "dbms.functions",
-    "description": "List all functions in the DBMS.",
-    "mode": "DBMS",
-    "worksOnSystem": true,
-    "signature": "dbms.functions() :: (name :: STRING?, signature :: STRING?, category :: STRING?, description :: STRING?, aggregating :: BOOLEAN?, defaultBuiltInRoles :: LIST? OF STRING?)",
-    "argumentDescription": [],
-    "returnDescription": [
-      {
-        "name": "name",
-        "description": "name :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "signature",
-        "description": "signature :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "category",
-        "description": "category :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "description",
-        "description": "description :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "aggregating",
-        "description": "aggregating :: BOOLEAN?",
-        "type": "BOOLEAN?"
-      },
-      {
-        "name": "defaultBuiltInRoles",
-        "description": "defaultBuiltInRoles :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
-      }
-    ],
-    "admin": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": true
-    },
-    "enterpriseOnly": false
-  },
-  {
     "name": "dbms.info",
     "description": "Provides information regarding the DBMS.",
     "mode": "DBMS",
@@ -2191,58 +2139,6 @@
         "name": "statusDetails",
         "description": "statusDetails :: STRING?",
         "type": "STRING?"
-      }
-    ],
-    "admin": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": true
-    },
-    "enterpriseOnly": false
-  },
-  {
-    "name": "dbms.procedures",
-    "description": "List all procedures in the DBMS.",
-    "mode": "DBMS",
-    "worksOnSystem": true,
-    "signature": "dbms.procedures() :: (name :: STRING?, signature :: STRING?, description :: STRING?, mode :: STRING?, defaultBuiltInRoles :: LIST? OF STRING?, worksOnSystem :: BOOLEAN?)",
-    "argumentDescription": [],
-    "returnDescription": [
-      {
-        "name": "name",
-        "description": "name :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "signature",
-        "description": "signature :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "description",
-        "description": "description :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "mode",
-        "description": "mode :: STRING?",
-        "type": "STRING?"
-      },
-      {
-        "name": "defaultBuiltInRoles",
-        "description": "defaultBuiltInRoles :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
-      },
-      {
-        "name": "worksOnSystem",
-        "description": "worksOnSystem :: BOOLEAN?",
-        "type": "BOOLEAN?"
       }
     ],
     "admin": false,

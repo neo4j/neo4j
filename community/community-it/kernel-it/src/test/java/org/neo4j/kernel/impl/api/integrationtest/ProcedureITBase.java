@@ -78,14 +78,6 @@ public interface ProcedureITBase
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?)", "List all available relationship types in the database.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
-                proc( "dbms.procedures",
-                        "() :: (name :: STRING?, signature :: STRING?, description :: STRING?, mode :: STRING?, defaultBuiltInRoles :: LIST? OF STRING?, " +
-                                "worksOnSystem :: BOOLEAN?)",
-                        "List all procedures in the DBMS.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
-                proc( "dbms.functions",
-                        "() :: (name :: STRING?, signature :: STRING?, category :: STRING?, description :: STRING?, aggregating :: BOOLEAN?, " +
-                                "defaultBuiltInRoles :: LIST? OF STRING?)",
-                        "List all functions in the DBMS.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.components", "() :: (name :: STRING?, versions :: LIST? OF" + " STRING?, edition :: STRING?)",
                         "List DBMS components and their versions.", stringArray( "reader", "editor", "publisher", "architect", "admin" ), "DBMS" ),
                 proc( "dbms.queryJmx", "(query :: STRING?) :: (name :: STRING?, " + "description :: STRING?, attributes :: MAP?)",

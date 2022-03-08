@@ -51,7 +51,7 @@ import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class SystemBuiltInProceduresIT extends CommunityProcedureITBase
+class SystemBuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase
 {
     @Override
     public String getDatabaseName()

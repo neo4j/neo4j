@@ -72,7 +72,7 @@ import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-class BuiltInProceduresIT extends CommunityProcedureITBase
+class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase
 {
     @Test
     void listAllLabels() throws Throwable

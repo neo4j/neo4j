@@ -232,45 +232,6 @@ public class BuiltInDbmsProcedures
         return Stream.of( ((InternalTransaction) transaction).kernelTransaction().getMetaData() ).map( MetadataResult::new );
     }
 
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    @SystemProcedure
-    @Description( "List all procedures in the DBMS." )
-    @Procedure( name = "dbms.procedures", mode = DBMS, deprecatedBy = "SHOW PROCEDURES command" )
-    public Stream<ProcedureResult> listProcedures()
-    {
-        return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllProcedures().stream()
-                    .filter( proc -> !proc.internal() )
-                    .sorted( Comparator.comparing( a -> a.name().toString() ) )
-                    .map( ProcedureResult::new );
-    }
-
-    @Deprecated( since = "4.3.0", forRemoval = true )
-    @SystemProcedure
-    @Description( "List all functions in the DBMS." )
-    @Procedure( name = "dbms.functions", mode = DBMS, deprecatedBy = "SHOW FUNCTIONS command" )
-    public Stream<FunctionResult> listFunctions()
-    {
-        DependencyResolver resolver = graph.getDependencyResolver();
-        QueryExecutionEngine queryExecutionEngine = resolver.resolveDependency( QueryExecutionEngine.class );
-        List<FunctionInformation> providedLanguageFunctions = queryExecutionEngine.getProvidedLanguageFunctions();
-        var globalProcedures = resolver.resolveDependency( GlobalProcedures.class );
-
-        // gets you all functions provided by the query language
-        Stream<FunctionResult> languageFunctions =
-                providedLanguageFunctions.stream().map( FunctionResult::new );
-
-        // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedFunctions = globalProcedures.getAllNonAggregatingFunctions()
-                                                                 .map( f -> new FunctionResult( f, false ) );
-
-        // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedAggregationFunctions = globalProcedures.getAllAggregatingFunctions()
-                                                                            .map( f -> new FunctionResult( f, true ) );
-
-        return Stream.concat( Stream.concat( languageFunctions, loadedFunctions ), loadedAggregationFunctions )
-                     .sorted( Comparator.comparing( a -> a.name ) );
-    }
-
     @Admin
     @SystemProcedure
     @Description( "Clears all query caches." )
@@ -822,53 +783,6 @@ public class BuiltInDbmsProcedures
 
     public record SystemInfo( String id, String name, String creationDate )
     {
-    }
-
-    public static class FunctionResult
-    {
-        public final String name;
-        public final String signature;
-        public final String category;
-        public final String description;
-        public final boolean aggregating;
-        public final List<String> defaultBuiltInRoles = null; // this is just so that the community version has the same signature as in enterprise
-
-        private FunctionResult( UserFunctionSignature signature, boolean isAggregation )
-        {
-            this.name = signature.name().toString();
-            this.signature = signature.toString();
-            this.category = signature.category().orElse( "" );
-            this.description = signature.description().orElse( "" );
-            this.aggregating = isAggregation;
-        }
-
-        private FunctionResult( FunctionInformation info )
-        {
-            this.name = info.getFunctionName();
-            this.signature = info.getSignature();
-            this.category = info.getCategory();
-            this.description = info.getDescription();
-            this.aggregating = info.isAggregationFunction();
-        }
-    }
-
-    public static class ProcedureResult
-    {
-        public final String name;
-        public final String signature;
-        public final String description;
-        public final String mode;
-        public final List<String> defaultBuiltInRoles = null; // this is just so that the community version has the same signature as in enterprise
-        public final boolean worksOnSystem;
-
-        private ProcedureResult( ProcedureSignature signature )
-        {
-            this.name = signature.name().toString();
-            this.signature = signature.toString();
-            this.description = signature.description().orElse( "" );
-            this.mode = signature.mode().toString();
-            this.worksOnSystem = signature.systemProcedure();
-        }
     }
 
     public static class StringResult
