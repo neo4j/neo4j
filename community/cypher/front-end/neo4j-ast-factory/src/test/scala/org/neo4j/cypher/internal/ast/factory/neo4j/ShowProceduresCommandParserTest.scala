@@ -57,7 +57,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     }
 
     test(s"USE db SHOW $procKeyword") {
-      assertAst(Query( SingleQuery(
+      assertAst(Query(SingleQuery(
         List(use(Variable("db")(1, 5, 4)), ShowProceduresClause(None, None, hasYield = false)(1, 8, 7)))(1, 8, 7))(1, 8, 7))
     }
 

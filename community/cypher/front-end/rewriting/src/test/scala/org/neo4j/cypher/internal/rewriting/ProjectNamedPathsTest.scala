@@ -317,7 +317,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(PathExpression(NodePathStep(a, SingleRelationshipPathStep(r, SemanticDirection.OUTGOING, Some(b), NilPathStep()(pos))(pos))(pos))(pos), p)(pos, isAutoAliased = false),
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -385,7 +385,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
             SingleRelationshipPathStep(s, SemanticDirection.INCOMING, Some(c), NilPathStep()(pos))(pos))(pos))(pos))(pos), p)(pos, isAutoAliased = false),
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -433,7 +433,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos, isAutoAliased = false),
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -482,7 +482,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos, isAutoAliased = false),
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -553,7 +553,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep()(pos))(pos))(pos), p)(pos, isAutoAliased = false),
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, CALL, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -581,7 +581,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(p, p)(pos, isAutoAliased = false)
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -611,7 +611,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(p, p)(pos, isAutoAliased = false)
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -657,7 +657,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(q, q)(pos, isAutoAliased = false)
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH1, WITH1, MATCH2, WITH2, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH1, WITH1, MATCH2, WITH2, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -732,7 +732,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         None, None
       )(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -770,7 +770,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         None, None, None
       )(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -808,7 +808,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
           AliasedReturnItem(add(l, x), varFor("l + x"))(pos, isAutoAliased = false)
         ))(pos), None, None, None)(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, WITH1, WITH2, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, WITH1, WITH2, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
@@ -853,7 +853,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         None, None, None
       )(pos)
 
-    val expected: Query = Query( SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
+    val expected: Query = Query(SingleQuery(List(MATCH, WITH, RETURN))(pos))(pos)
 
     rewritten should equal(expected)
   }
