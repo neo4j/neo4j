@@ -53,7 +53,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans for simple WITH that adds a constant to the rows") {
-    val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")._2
+    val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")._1
     val expected =
       Projection(
         Limit(
@@ -67,7 +67,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that contain multiple WITH") {
-    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`")._2
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`")._1
     val expected = Limit(
       Expand(
         Limit(
@@ -83,7 +83,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans with WITH and selections") {
-    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")._2
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")._1
     val expected = Selection(
       Seq(equals(prop("r1", "prop"), literalInt(42))),
       Expand(
@@ -99,7 +99,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans for two matches separated by WITH") {
-    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._2
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._1
     val expected = Expand(
       Limit(
         AllNodesScan("a", Set()),
@@ -112,7 +112,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project endpoints of re-matched directed relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH r LIMIT 1 MATCH (u)-[r]->(v) RETURN r")._1
     val expected = Apply(
       Limit(
         Expand(
@@ -131,7 +131,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project endpoints of re-matched reversed directed relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH r AS r, a AS a LIMIT 1 MATCH (b2)<-[r]-(a) RETURN r")._1
     val expected = Apply(
       Limit(
         Expand(
@@ -150,7 +150,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that verify endpoints of re-matched directed relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH * LIMIT 1 MATCH (a)-[r]->(b) RETURN r")._1
     val expected = Apply(
       Limit(
         Expand(
@@ -169,7 +169,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched directed relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]->(b2) RETURN r")._1
     val expected = Apply(
       Limit(
         Expand(
@@ -188,7 +188,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched undirected relationship arguments") {
-    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r]-(b2) RETURN r")._1
     val expected = Apply(
       Limit(
         Expand(
@@ -207,7 +207,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans that project and verify endpoints of re-matched directed var length relationship arguments") {
-    val result = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._2
+    val result = planFor("MATCH (a)-[r*]->(b) WITH a AS a, r AS r LIMIT 1 MATCH (a)-[r*]->(b2) RETURN r")._1
     val expected = Apply(
       Limit(
         VarExpand(
@@ -230,7 +230,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH n1 LIMIT 10 WHERE rand() < p
-                      RETURN n1""")._2
+                      RETURN n1""")._1
 
     result should beLike {
       case
@@ -248,7 +248,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
-                      RETURN n1"""))._2
+                      RETURN n1"""))._1
     plan should beLike {
       case
         SelectionMatcher(Seq(
@@ -268,7 +268,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                       WITH 0.1 AS p
                       MATCH (n1)
                       WITH count(n1) AS n, p WHERE rand() < p
-                      RETURN n"""))._2
+                      RETURN n"""))._1
     plan should beLike {
       case
         SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
@@ -284,7 +284,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor( """
                       MATCH (n1)-->(n2)
                       WITH n1 LIMIT 10 WHERE NOT (n1)<--(n2)
-                      RETURN n1""")._2
+                      RETURN n1""")._1
 
     result should beLike {
       case
@@ -298,7 +298,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor( """
                       MATCH (n1)-->(n2)
                       WITH DISTINCT n1, n2 LIMIT 10 WHERE NOT (n1)<--(n2)
-                      RETURN n1""")._2
+                      RETURN n1""")._1
 
     result should beLike {
       case
@@ -312,7 +312,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val result = planFor( """
                       MATCH (n1)-->(n2)
                       WITH count(n1) AS n, n2 LIMIT 10 WHERE NOT ()<--(n2)
-                      RETURN n""")._2
+                      RETURN n""")._1
 
     result should beLike {
       case

@@ -58,7 +58,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       }
     } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
-    plan._2 match {
+    plan._1 match {
       case NodeHashJoin(_,
       NodeHashJoin(_,
       NodeByLabelScan(_, _, _, _),
@@ -86,7 +86,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       }
     } getLogicalPlanFor "CALL getNode() YIELD node WHERE node:Label RETURN node"
 
-    inside(plan._2) {
+    inside(plan._1) {
       case Selection(Ands(exprs), ProcedureCall(Argument(_), _)) =>
         exprs.toList should matchPattern {
           case List(HasLabelsOrTypes(_, _)) => ()
@@ -111,7 +111,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       }
     } getLogicalPlanFor query
 
-    plan._2 should beLike {
+    plan._1 should beLike {
       case
         Apply
           (NodeByLabelScan("n", _, _, _),
@@ -137,7 +137,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       }
     } getLogicalPlanFor query
 
-    plan._2 should beLike {
+    plan._1 should beLike {
       case
         Apply
           (NodeByLabelScan("n", _, _, _),

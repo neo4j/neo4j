@@ -102,7 +102,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
@@ -114,7 +114,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor(s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
           .projection("n.prop AS p")
@@ -127,7 +127,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order") {
       val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN n ORDER BY n $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("n")
           .nodeByLabelScan("n", "Awesome", plannedOrder)
@@ -207,7 +207,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       // This test does not show we pick this plan under normal conditions. We don't.
       // Instead, it shows, that the correct index order can get injected into a LabelScan produced by [[selectHasLabelWithJoin]].
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("n")
           .nodeHashJoin("n")
@@ -220,7 +220,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(s"$cypherToken-$orderCapability: Should not order label scan if ORDER BY aggregation of that node") {
       val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome)-[r]-(m) RETURN m AS mm, count(n) AS c ORDER BY c $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("mm", "c")
           .sort(Seq(sortOrder("c")))
@@ -237,7 +237,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                                                   |MATCH (m)-[r]->(nnn)
                                                   |RETURN nnn ORDER BY nnn $cypherToken""".stripMargin, stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("nnn")
           .expandAll("(nnn)<-[r]-(m)")
@@ -250,7 +250,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order and PartialSort") {
       val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) WITH n, n.foo AS foo RETURN n ORDER BY n $cypherToken, foo", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("n")
           .partialSort(Seq(sortOrder("n")), Seq(Ascending("foo")))
@@ -319,7 +319,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop")
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Sort(
           Projection(
             nodeIndexSeek(
@@ -335,7 +335,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor(s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("p")
           .projection("n.prop AS p")
@@ -351,7 +351,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo ASC"
 
-      plan._2 should equal(
+      plan._1 should equal(
         PartialSort(
           Projection(
             Projection(
@@ -414,7 +414,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
 
-      plan._2 should equal(
+      plan._1 should equal(
         PartialSort(
           Projection(
             Projection(
@@ -432,7 +432,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n, n.prop AS p, n.foo AS f ORDER BY p $cypherToken, f ASC RETURN p ORDER BY p $cypherToken, f ASC, n.bar ASC"
 
 
-      plan._2 should equal(
+      plan._1 should equal(
         PartialSort(
           Projection(
             PartialSort(
@@ -455,7 +455,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |MATCH (m)-[r]->(nnn)
            |RETURN nnn.prop ORDER BY nnn.prop $cypherToken""".stripMargin
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           Expand(
             Projection(
@@ -474,7 +474,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
            |RETURN n AS m ORDER BY m.prop $cypherToken""".stripMargin
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
           Map("m" -> varFor("n")))
@@ -490,8 +490,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         stripProduceResults = false)
 
       val so = sortOrder("m.prop")
-      withClue(plan._2) {
-        plan._2.treeCount {
+      withClue(plan._1) {
+        plan._1.treeCount {
           case Sort(_, Seq(`so`)) => true
         } shouldBe 1
       }
@@ -508,8 +508,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         stripProduceResults = false)
 
       val so = sortOrder("m.prop")
-      withClue(plan._2) {
-        plan._2.treeCount {
+      withClue(plan._1) {
+        plan._1.treeCount {
           case Sort(_, Seq(`so`)) => true
         } shouldBe 1
       }
@@ -520,7 +520,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
@@ -534,7 +534,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop CONTAINS 'foo')", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
@@ -547,7 +547,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop ENDS WITH 'foo')", indexOrder = plannedOrder),
           Map("n.prop" -> prop("n", "prop")))
@@ -559,7 +559,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
@@ -713,7 +713,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         )))
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           Apply(
             nodeIndexSeek(
@@ -757,7 +757,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("B", "prop")
       }.getLogicalPlanFor(s"MATCH (a:A), (b:B) WHERE a.prop = b.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("a")
           .apply()
@@ -796,7 +796,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("B", "prop").providesOrder(orderCapability)
       }.getLogicalPlanFor(s"MATCH (a:A), (b:B)-[r]-(c) WHERE a.prop = b.prop - c.prop RETURN a ORDER BY a $cypherToken", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("a")
           .filter("a.prop = b.prop - c.prop")
@@ -815,7 +815,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         // This query is very fragile in the sense that the slightest modification will result in a stupid plan
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop $cypherToken, b.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         PartialSort(
           Projection(
             Apply(
@@ -835,7 +835,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "a:A(prop > 'foo')", indexOrder = plannedOrder),
@@ -853,7 +853,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         OrderedAggregation(
           Expand(
             nodeIndexSeek(
@@ -873,7 +873,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
-      plan._2 should equal(
+      plan._1 should equal(
         PartialSort(
           Projection(
             Projection(
@@ -901,7 +901,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b)-[q]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Selection(Seq(not(equals(varFor("q"), varFor("r")))),
           Expand(
             PartialSort(
@@ -928,7 +928,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN DISTINCT a.prop ORDER BY a.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         OrderedDistinct(
           Expand(
             nodeIndexSeek(
@@ -993,7 +993,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         }
       } getLogicalPlanFor s"MATCH (b) OPTIONAL MATCH (a:A)-[r]->(b) USING JOIN ON b WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           LeftOuterHashJoin(Set("b"),
             AllNodesScan("b", Set.empty),
@@ -1013,7 +1013,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |MATCH (b)
            |RETURN a.prop, b ORDER BY a.prop $cypherToken""".stripMargin
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           Apply(
             Skip(
@@ -1087,7 +1087,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
       } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Projection(
           nodeIndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
@@ -1122,7 +1122,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -1140,7 +1140,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.foo, a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -1158,7 +1158,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.foo, a.prop")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.foo, a.prop")._1
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -1176,7 +1176,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.prop, a.foo")._2
+      }.getLogicalPlanFor("MATCH (a:A) WHERE a.prop IS NOT NULL AND a.foo IS NOT NULL RETURN DISTINCT a.prop, a.foo")._1
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -1194,7 +1194,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
-      }.getLogicalPlanFor(s"MATCH (a:A) WHERE a.prop > 0 RETURN a.prop, count(*) AS c ORDER BY c $cypherToken")._2
+      }.getLogicalPlanFor(s"MATCH (a:A) WHERE a.prop > 0 RETURN a.prop, count(*) AS c ORDER BY c $cypherToken")._1
 
       // We should prefer ASC index order if we can choose between both
       val expectedPlannedOrder = if (orderCapability == DESC) IndexOrderDescending else IndexOrderAscending
@@ -1319,7 +1319,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
         // Then
         val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
-        plan._2 should equal {
+        plan._1 should equal {
           if (shouldPartialSort)
             PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
           else if (shouldFullSort && sortOnOnlyOne)
@@ -1428,7 +1428,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         } getLogicalPlanFor query
 
         // Then
-        plan._2 should equal(
+        plan._1 should equal(
           PartialSort(
             Projection(
               Selection(
@@ -1587,7 +1587,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
         // Then
         val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = _ => GetValue)
-        plan._2 should equal {
+        plan._1 should equal {
           if (fullSort)
             Sort(Projection(Selection(expr, leafPlan), projectionsAll), sortItems)
           else if (partialSort)
@@ -1694,7 +1694,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
         // Then
         val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')", indexOrder = indexOrder, getValue = _ => GetValue)
-        plan._2 should equal {
+        plan._1 should equal {
           if (sort)
             Projection(PartialSort(Projection(Selection(expr, leafPlan), projections), alreadySorted, toSort), projectionsAfterSort)
           else
@@ -1854,7 +1854,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         // Then
         val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')", indexOrder = indexOrder)
         withClue(query) {
-          plan._2 should equal {
+          plan._1 should equal {
             if (fullSort)
               Sort(Projection(Projection(Selection(selectionExpression, leafPlan), returnProjections), sortProjections), sortItems)
             else if (partialSort)
@@ -1960,7 +1960,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           // Then
           val leafPlan = nodeIndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
-          plan._2 should equal {
+          plan._1 should equal {
             if (shouldSort)
               PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
             else
@@ -2048,7 +2048,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           // Then
           val leafPlan = Selection(ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))), nodeIndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue))
-          plan._2 should equal {
+          plan._1 should equal {
             if (shouldSort)
               Sort(Projection(leafPlan, projection), toBeSorted)
             else
@@ -2135,7 +2135,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
           } getLogicalPlanFor query
 
-          plan._2 should equal(Projection(nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue), projection))
+          plan._1 should equal(Projection(nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue), projection))
         }
     }
   }
@@ -2183,7 +2183,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(s"$orderCapability-$functionName: should use node label scan order") {
       val plan = new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
 
-      plan._2 should equal(
+      plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults(s"`$functionName(n)`")
           .optional()
@@ -2201,7 +2201,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Optional(
           Limit(
             Projection(
@@ -2225,7 +2225,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Aggregation(
           NodeIndexScan(
             "n",
@@ -2247,7 +2247,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Optional(
           Limit(
             Projection(
@@ -2265,7 +2265,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Optional(
           Limit(
             Projection(
@@ -2288,7 +2288,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $inverseOrder"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Sort(
           Optional(
             Limit(
@@ -2308,7 +2308,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Limit(
           Optional(
             Limit(
@@ -2333,7 +2333,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
            |RETURN agg
            |ORDER BY agg $cypherToken""".stripMargin
 
-      plan._2 should equal(
+      plan._1 should equal(
         Optional(
           Limit(
             Projection(
@@ -2351,7 +2351,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Aggregation(
           nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = IndexOrderNone, getValue = _ => GetValue),
           Map.empty,
@@ -2547,7 +2547,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Aggregation(
           NodeIndexScan(
             "n",
@@ -2567,7 +2567,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
-      plan._2 should equal(
+      plan._1 should equal(
         Aggregation(
           nodeIndexSeek("n:Awesome(prop > 0)", getValue = _ => GetValue),
           Map.empty,
@@ -2611,7 +2611,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   }
 
   test("should mark leveragedOrder in collect with ORDER BY") {
-    val (_, plan, _, attributes) = new given {
+    val (plan, _, attributes) = new given {
       indexOn("Awesome", "prop").providesOrder(BOTH)
     } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n.prop AS p ORDER BY n.prop RETURN collect(p)"
     val leveragedOrders = attributes.leveragedOrders

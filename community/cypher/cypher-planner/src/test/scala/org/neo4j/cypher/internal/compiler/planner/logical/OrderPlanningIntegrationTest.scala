@@ -76,7 +76,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
          .enableConnectComponentsPlanner(queryGraphSolverSetup.useIdpConnectComponents)
 
   test("ORDER BY previously unprojected column in WITH") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -90,7 +90,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in WITH and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name, a.age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name, a.age")._1
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val nameProperty = prop("a", "name")
 
@@ -102,7 +102,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a, a.age AS age ORDER BY age RETURN a.name, age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a, a.age AS age ORDER BY age RETURN a.name, age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -116,7 +116,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY renamed column old name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a RETURN b.name, age", stripProduceResults = false)._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a RETURN b.name, age", stripProduceResults = false)._1
 
     plan should equal(
       new LogicalPlanBuilder()
@@ -129,7 +129,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY renamed column new name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b RETURN b.name, age", stripProduceResults = false)._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b RETURN b.name, age", stripProduceResults = false)._1
 
     plan should equal(
       new LogicalPlanBuilder()
@@ -142,7 +142,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY renamed column expression with old name in WITH and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a.foo, a.age + 5 RETURN b.name, age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a.foo, a.age + 5 RETURN b.name, age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -159,7 +159,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY renamed column expression with new name in WITH and project and return that column") {
     val plan = new given()
-      .getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b.foo, b.age + 5 RETURN b.name, age", stripProduceResults = false)._2
+      .getLogicalPlanFor("MATCH (a:A) WITH a AS b, a.age AS age ORDER BY b.foo, b.age + 5 RETURN b.name, age", stripProduceResults = false)._1
     val cachedProperties: Set[LogicalProperty] = Set(cachedNodeProp("a", "foo", "b", knownToAccessStore = true),
       cachedNodeProp("a", "age", "b", knownToAccessStore = true))
 
@@ -179,7 +179,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a.name ORDER BY a.age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a.name ORDER BY a.age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -193,7 +193,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN and return that column") {
-    val plan = new given().getLogicalPlanFor("""MATCH (a:A) RETURN a.name, a.age ORDER BY a.age""")._2
+    val plan = new given().getLogicalPlanFor("""MATCH (a:A) RETURN a.name, a.age ORDER BY a.age""")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -207,7 +207,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a.name, a.age AS age ORDER BY age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a.name, a.age AS age ORDER BY age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -221,7 +221,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN *") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN * ORDER BY a.age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN * ORDER BY a.age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -233,7 +233,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN * and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age ORDER BY a.age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age ORDER BY a.age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -245,7 +245,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column in RETURN * and project and return that column") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age AS age ORDER BY age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age AS age ORDER BY age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -257,7 +257,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column with expression in WITH") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age + 4 RETURN a.name")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age + 4 RETURN a.name")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -271,7 +271,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected DISTINCT column in WITH and project and return it") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.age AS age ORDER BY age RETURN age")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.age AS age ORDER BY age RETURN age")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
@@ -283,7 +283,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY column that isn't referenced in WITH DISTINCT") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.name AS name, a ORDER BY a.age RETURN name")._1
 
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty, IndexOrderAscending)
     val ageProperty = prop("a", "age")
@@ -298,7 +298,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY previously unprojected AGGREGATING column in WITH and project and return it") {
     val plan = new given()
-      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY age RETURN name, age", stripProduceResults = false)._2
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY age RETURN name, age", stripProduceResults = false)._1
 
     plan should equal(new LogicalPlanBuilder()
       .produceResults("name", "age")
@@ -311,7 +311,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY previously unprojected GROUPING column in WITH and project and return it") {
     val plan = new given()
-      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY name RETURN name, age", stripProduceResults = false)._2
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, sum(a.age) AS age ORDER BY name RETURN name, age", stripProduceResults = false)._1
 
     plan should equal(new LogicalPlanBuilder()
       .produceResults("name", "age")
@@ -324,7 +324,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("ORDER BY column that isn't referenced in WITH GROUP BY") {
     val plan = new given()
-      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age", stripProduceResults = false)._2
+      .getLogicalPlanFor("MATCH (a:A) WITH a.name AS name, a, sum(a.age) AS age ORDER BY a.foo RETURN name, age", stripProduceResults = false)._1
 
     plan should equal(new LogicalPlanBuilder()
       .produceResults("name", "age")
@@ -337,7 +337,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there is one grouping column, ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
@@ -351,7 +351,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
 
   test("should not use ordered aggregation if the execution model does not preserve order (one grouping column, ordered)") {
     val plan = new given { executionModel = BatchedParallel(1,2) }
-      .getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._2
+      .getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"))
@@ -364,7 +364,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there is one aliased grouping column, ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("cache[a.foo] AS x"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("cache[a.foo]"))
       .sort(Seq(Ascending("a.foo")))
@@ -376,7 +376,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there are two identical grouping columns (first aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS x", "`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
       .sort(Seq(Ascending("a.foo")))
@@ -388,7 +388,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there are two identical grouping columns (second aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.foo AS y, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.foo AS y, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS `a.foo`", "`a.foo` AS y"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
       .sort(Seq(Ascending("a.foo")))
@@ -400,7 +400,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there are two identical grouping columns (both aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo AS y, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo AS y, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("cache[a.foo] AS x", "cache[a.foo] AS y"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("cache[a.foo]"))
       .sort(Seq(Ascending("a.foo")))
@@ -412,7 +412,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there are two grouping columns, one ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS `a.foo`", "a.bar AS `a.bar`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
       .sort(Seq(Ascending("a.foo")))
@@ -424,7 +424,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered aggregation if there are two grouping columns, both ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN a.foo, a.bar, count(a.foo)")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN a.foo, a.bar, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`", "`a.bar`"))
       .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
@@ -437,7 +437,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there is one grouping column, ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`")
       .sort(Seq(Ascending("a.foo")))
@@ -449,7 +449,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should not use ordered distinct if the execution model does not preserve order (one grouping column, ordered)") {
-    val plan = new given { executionModel = BatchedParallel(1,2) }.getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
+    val plan = new given { executionModel = BatchedParallel(1,2) }.getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .distinct("`a.foo` AS `a.foo`")
       .sort(Seq(Ascending("a.foo")))
@@ -461,7 +461,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there is one aliased grouping column, ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
       .sort(Seq(Ascending("a.foo")))
@@ -477,7 +477,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("A", "foo")
         .providesOrder(IndexOrderCapability.BOTH)
         .providesValues()
-    }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x")
       .nodeIndexOperator("a:A(foo)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
@@ -492,7 +492,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         .providesOrder(IndexOrderCapability.BOTH)
         .providesValues()
       executionModel = BatchedParallel(1,2)
-    }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._2
+    }.getLogicalPlanFor("MATCH (a:A) WHERE a.foo IS NOT NULL WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .distinct("cache[a.foo] AS x")
       .sort(Seq(Ascending("a.foo")))
@@ -504,7 +504,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there are two identical grouping columns (first aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS x", "`a.foo` AS `a.foo`")
       .sort(Seq(Ascending("a.foo")))
@@ -516,7 +516,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there are two identical grouping columns (second aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.foo AS y")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.foo AS y")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "`a.foo` AS y")
       .sort(Seq(Ascending("a.foo")))
@@ -527,7 +527,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should equal(expectedPlan)
   }
   test("should use ordered distinct if there are two identical grouping columns (both aliased), ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo AS y")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo AS y")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("cache[a.foo]"), "cache[a.foo] AS x", "cache[a.foo] AS y")
       .sort(Seq(Ascending("a.foo")))
@@ -539,7 +539,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there are two grouping columns, one ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "a.bar AS `a.bar`")
       .sort(Seq(Ascending("a.foo")))
@@ -551,7 +551,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should use ordered distinct if there are two grouping columns, both ordered") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("`a.foo`", "`a.bar`"), "`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`")
       .sort(Seq(Ascending("a.foo"), Ascending("a.bar")))
@@ -576,49 +576,49 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should mark leveragedOrder in collect with ORDER BY") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN collect(a.name)")
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN collect(a.name)")
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(true)
   }
 
   test("should not mark leveragedOrder in count with ORDER BY") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN count(a.name)")
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age RETURN count(a.name)")
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(false)
   }
 
   test("should not mark leveragedOrder in collect with no ORDER BY") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN collect(a.name)")
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN collect(a.name)")
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(false)
   }
 
   test("should mark leveragedOrder if using ORDER BY in RETURN") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age", stripProduceResults = false)
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age", stripProduceResults = false)
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(true)
   }
 
   test("should mark leveragedOrder if using ORDER BY in RETURN after a WITH") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a AS a, 1 AS foo RETURN a ORDER BY a.age", stripProduceResults = false)
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a AS a, 1 AS foo RETURN a ORDER BY a.age", stripProduceResults = false)
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(true)
   }
 
   test("should not mark leveragedOrder if using ORDER BY in RETURN in a UNION") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age UNION RETURN 1 AS a", stripProduceResults = false)
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) RETURN a ORDER BY a.age UNION RETURN 1 AS a", stripProduceResults = false)
     val leveragedOrders = attrs.leveragedOrders
 
     leveragedOrders.get(plan.id) should be(false)
   }
 
   test("should mark leveragedOrder in LIMIT with ORDER BY") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age LIMIT 1 RETURN a.name")
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age LIMIT 1 RETURN a.name")
     val leveragedOrders = attrs.leveragedOrders
 
     val projection = plan.asInstanceOf[Projection]
@@ -629,7 +629,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("should mark leveragedOrder in SKIP with ORDER BY") {
-    val (_, plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age SKIP 1 RETURN a.name")
+    val (plan, _, attrs) = new given().getLogicalPlanFor("MATCH (a) WITH a ORDER BY a.age SKIP 1 RETURN a.name")
     val leveragedOrders = attrs.leveragedOrders
 
     val projection = plan.asInstanceOf[Projection]
@@ -647,7 +647,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY u.name""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -672,7 +672,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name, b.title
         |ORDER BY u""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -695,7 +695,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name AS name, b.title
         |ORDER BY name""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -718,7 +718,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name AS name, b.title
         |ORDER BY u.name""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -741,7 +741,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u AS v, b.title
         |ORDER BY v.name""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -774,7 +774,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 50.0
         case _ => throw new IllegalStateException("Unexpected PlannerQuery")
       }
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -799,7 +799,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a
@@ -822,7 +822,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a
@@ -851,7 +851,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // It should maintain the
     // order from a
@@ -873,7 +873,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c
@@ -898,7 +898,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different cartesian product variants are OK, but it should maintain the
     // order from a and only need to partially sort c
@@ -930,7 +930,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.connectedComponents.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("B", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // It should maintain the
     // order from a and only need to partially sort b
@@ -966,7 +966,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       indexOn("C", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("D", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("E", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort e
@@ -995,7 +995,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("A", "foo")
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c.
@@ -1025,7 +1025,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("A", "foo")
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort b, c.
@@ -1058,7 +1058,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
       indexOn("A", "foo")
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort c.
@@ -1086,7 +1086,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new given {
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     // Different join and expand variants are OK, but it should maintain the
     // order from a and only need to partially sort b.
@@ -1115,7 +1115,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new given {
       cardinality = selectivitiesCardinality(selectivities, qg => Math.pow(100.0, qg.patternNodes.size))
       indexOn("A", "prop").providesOrder(IndexOrderCapability.BOTH)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     withClue(plan) {
       // Different join and expand variants are OK, but it should maintain the
@@ -1140,7 +1140,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new given {
       indexOn("Person", "name")
       labelCardinality = Map("Person" -> 10, "Book" -> 1000)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -1158,7 +1158,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new given{
       indexOn("Person", "name")
       labelCardinality = Map("Person" -> 10, "Book" -> 1000)
-    }.getLogicalPlanFor(query)._2
+    }.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -1173,7 +1173,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name + p.name AS add, b.title
         |ORDER BY add""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -1192,7 +1192,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name + p.name, b.title
         |ORDER BY u.name + p.name""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -1211,7 +1211,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u.name AS uname, p.name AS pname, b.title
         |ORDER BY uname + pname""".stripMargin
-    val plan = idpGiven.getLogicalPlanFor(query)._2
+    val plan = idpGiven.getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Projection(
@@ -1230,7 +1230,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |WHERE u.name STARTS WITH 'Joe'
         |RETURN u, b.title
         |ORDER BY u.name + b.title""".stripMargin
-    val plan = new given().getLogicalPlanFor(query)._2
+    val plan = new given().getLogicalPlanFor(query)._1
 
     plan should beLike {
       case Sort(_,Seq(Ascending("u.name + `b.title`"))) => ()
@@ -1249,7 +1249,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |  Label_OPERATIONS_Operation: [(n_labels)-[:`OPERATIONS`]->(n_labels_operations:`Operation`)|n_labels_operations{.id, .date, .description, .amount}]}]} ORDER by n.id
         |""".stripMargin
 
-    val (_, plan, _, _) = new given().getLogicalPlanFor(query)
+    val (plan, _, _) = new given().getLogicalPlanFor(query)
     plan shouldBe a[Sort]
   }
 
@@ -1722,7 +1722,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test(s"Should use OrderedDistinct on node variable") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN DISTINCT a")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN DISTINCT a")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedDistinct(Seq("a"), "a AS a")
@@ -1733,7 +1733,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test(s"Should use OrderedAggregation on node variable") {
-    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a, count(*) AS c")._2
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a, count(*) AS c")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(Seq("a AS a"), Seq("count(*) AS c"), Seq("a"))

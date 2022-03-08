@@ -356,7 +356,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
                           stripProduceResults: Boolean = true,
                           deduplicateNames: Boolean = deduplicateNames,
                           debugOptions: CypherDebugOptions = CypherDebugOptions.default
-                         ): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) = {
+                         ): (LogicalPlan, SemanticTable, PlanningAttributes) = {
       val context = getContext(queryString, cypherConfig, queryGraphSolver, debugOptions)
       val state = createInitState(queryString)
       val output = pipeLine(deduplicateNames).transform(state, context)
@@ -364,10 +364,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case p: ProduceResult if stripProduceResults => p.source
         case p => p
       }
-      (None, logicalPlan, output.semanticTable(), output.planningAttributes)
+      (logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
-    def getLogicalPlanForAst(initialState: BaseState): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) = {
+    def getLogicalPlanForAst(initialState: BaseState): (LogicalPlan, SemanticTable, PlanningAttributes) = {
       // As the test only checks ast -> planning, the query string can be an empty string
       val context = getContext("")
 
@@ -376,7 +376,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case p: ProduceResult => p.source
         case p => p
       }
-      (None, logicalPlan, output.semanticTable(), output.planningAttributes)
+      (logicalPlan, output.semanticTable(), output.planningAttributes)
     }
 
     private def getContext(
@@ -479,7 +479,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
               queryGraphSolver: QueryGraphSolver = queryGraphSolver,
               stripProduceResults: Boolean = true,
               deduplicateNames: Boolean = deduplicateNames
-             ): (Option[Nothing], LogicalPlan, SemanticTable, PlanningAttributes) =
+             ): (LogicalPlan, SemanticTable, PlanningAttributes) =
     new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

@@ -83,7 +83,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         case (_: Argument, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
-    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
+    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       LeftOuterHashJoin(Set("b"),
         Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
         Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
@@ -102,7 +102,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         case (_: Argument, _, _, _) => 1.0
         case _ => Double.MaxValue
       }
-    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
+    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       RightOuterHashJoin(Set("b"),
         Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
         Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
@@ -130,7 +130,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       cost = {
         case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
-    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
+    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       LeftOuterHashJoin(Set("b"),
         Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
         Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
@@ -158,7 +158,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       cost = {
         case (_: OptionalExpand, _, _, _) => Double.MaxValue
       }
-    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
+    } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       RightOuterHashJoin(Set("b"),
         Expand(NodeByLabelScan("c", labelName("Y"), Set.empty, IndexOrderNone), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
         Expand(NodeByLabelScan("a", labelName("X"), Set.empty, IndexOrderNone), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
@@ -167,12 +167,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
-    planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(
+    planFor("OPTIONAL MATCH (a) RETURN a")._1 should equal(
       Optional(AllNodesScan("a", Set.empty)))
   }
 
   test("should allow MATCH after OPTIONAL MATCH") {
-    planFor("OPTIONAL MATCH (a) MATCH (b) RETURN a, b")._2 should equal(
+    planFor("OPTIONAL MATCH (a) MATCH (b) RETURN a, b")._1 should equal(
       Apply(
         Optional(AllNodesScan("a", Set.empty)),
         AllNodesScan("b", Set("a"))
@@ -181,14 +181,14 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should allow MATCH after OPTIONAL MATCH on same node") {
-    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._2 should equal(
+    planFor("OPTIONAL MATCH (a) MATCH (a:A) RETURN a")._1 should equal(
       Selection(Seq(HasLabels(varFor("a"), Seq(LabelName("A")(pos)))(pos)),
         Optional(AllNodesScan("a", Set.empty)))
     )
   }
 
   test("should build simple optional expand") {
-    planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n")._2.endoRewrite(unnestOptional) match {
+    planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n")._1.endoRewrite(unnestOptional) match {
       case OptionalExpand(
       AllNodesScan("n", _),
       "n",
@@ -203,7 +203,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build optional ProjectEndpoints") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._2 match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._1 match {
       case
         Apply(
         Limit(
@@ -220,7 +220,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._2 match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._1 match {
       case Apply(
       Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
       Optional(
@@ -240,7 +240,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build optional ProjectEndpoints with extra predicates 2") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2 match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._1 match {
       case Apply(
       Limit(Expand(AllNodesScan(_, _), _, _, _, _, _, _), _),
       Optional(
@@ -255,7 +255,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[r1:R1]->(x1) OPTIONAL MATCH (a)-[r2:R2]->(x2) RETURN a, x1, x2")._2
+    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[r1:R1]->(x1) OPTIONAL MATCH (a)-[r2:R2]->(x2) RETURN a, x1, x2")._1
     val alternative1 = new LogicalPlanBuilder(wholePlan = false)
       .optionalExpandAll("(a)-[r2:R2]->(x2)")
       .optionalExpandAll("(a)-[r1:R1]->(x1)")
@@ -278,7 +278,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       """MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
-        |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
+        |RETURN m""".stripMargin)._1.endoRewrite(unnestOptional)
     val allNodesN: LogicalPlan = NodeByLabelScan("n", labelName("X"), Set.empty, IndexOrderNone)
 
     plan should equal(
@@ -372,7 +372,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       }
     }
 
-    val plan = cfg.getLogicalPlanFor(query)._2
+    val plan = cfg.getLogicalPlanFor(query)._1
     withClue(plan) {
       plan.treeExists {
         case _: RightOuterHashJoin => true
@@ -506,7 +506,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -537,7 +537,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -590,7 +590,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -639,7 +639,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -672,7 +672,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -703,7 +703,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -734,7 +734,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")
@@ -765,7 +765,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |RETURN n0
         |LIMIT 0""".stripMargin
 
-    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val plan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     val expected = new LogicalPlanBuilder()
       .produceResults("n0")

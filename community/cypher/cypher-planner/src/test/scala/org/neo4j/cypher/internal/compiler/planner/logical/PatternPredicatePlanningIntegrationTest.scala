@@ -111,7 +111,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         case _ => 4000000
       }
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
-    } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2
+    } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._1
 
     plan match {
       case Projection(_, expressions) =>
@@ -134,7 +134,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     // The important thing for this test is "RETURN u.id" instead of "RETURN u".
     // Like this the scoping is challenged to propagate `u` from the previous scope into the pattern expression
 
-    val logicalPlan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false, stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (u:User) RETURN u.id ORDER BY size([(u)-[r:FOLLOWS]->(u2:User) | u2.id])", deduplicateNames = false, stripProduceResults = false)._1
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -156,7 +156,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   // We heuristically always choose SemiApply, which will do better on average.
 
   test("should build plans with SemiApply for a single pattern predicate") {
-    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -169,7 +169,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate") {
-    val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -182,7 +182,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with exists") {
-    val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -195,7 +195,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with exists") {
-    val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->()) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -208,7 +208,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with size") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())>0 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())>0 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -221,7 +221,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with size") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())=0 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())=0 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -234,7 +234,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with 2 SemiApplies for two pattern predicates") {
-    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -250,7 +250,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SelectOrSemiApply for a pattern predicate and an expression") {
-    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -263,7 +263,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SelectOrSemiApply for a pattern predicate and multiple expressions") {
-    val logicalPlan = planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -276,7 +276,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SelectOrAntiSemiApply for a single negated pattern predicate and an expression") {
-    val logicalPlan = planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -295,7 +295,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val query = "MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
 
-    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -318,7 +318,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val query = "MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
 
-    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -341,7 +341,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     val query = "MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a"
 
-    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._2
+    val logicalPlan = config.getLogicalPlanFor(query, stripProduceResults = false)._1
 
     logicalPlan should equal(
       new LogicalPlanBuilder()
@@ -358,7 +358,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -372,7 +372,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE NOT (a)-[:X]->(:Foo) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -386,7 +386,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with exists with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -400,7 +400,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with exists with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -414,7 +414,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with SemiApply for a single pattern predicate with size with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))>0 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))>0 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -428,7 +428,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with size with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))=0 RETURN a", stripProduceResults = false)._2
+    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))=0 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -442,7 +442,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should plan all predicates along with named varlength pattern") {
-    planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._1 should beLike {
       case Projection(
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
@@ -455,7 +455,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
   }
 
   test("should plan none predicates along with named varlength pattern") {
-    planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
+    planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._1 should beLike {
       case Projection(
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
@@ -500,7 +500,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -517,7 +517,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -531,7 +531,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Apply(
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  NodeByIdSeek("n", _, SetExtractor(argumentName)), _
@@ -547,7 +547,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN r
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Apply(
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  DirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)), _
@@ -563,7 +563,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN r
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Apply(
                  RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, collectionName, _),
                  UndirectedRelationshipByIdSeek("r", _, _, _, SetExtractor(argumentName)), _
@@ -578,7 +578,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -624,7 +624,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       uniqueIndexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -643,7 +643,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -662,7 +662,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE r.prop CONTAINS toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN r
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       relationshipIndexOn("R", "prop")
     } getLogicalPlanFor q
 
@@ -681,7 +681,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE r.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN r
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       relationshipIndexOn("R", "prop")
     } getLogicalPlanFor q
 
@@ -700,7 +700,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |WHERE n.prop ENDS WITH toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))
         |RETURN n
       """.stripMargin
-    val (_, plan, _, _) = new given {
+    val (plan, _, _) = new given {
       indexOn("Label", "prop")
     } getLogicalPlanFor q
 
@@ -720,7 +720,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Selection(
       Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
@@ -737,7 +737,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Selection(
       Ands(Seq(Equals(Property(Variable("n"), PropertyKeyName("prop")), _))),
       RollUpApply(Projection(AllNodesScan("n", SetExtractor()), MapKeys("one"))/* <- This is the subQuery */, _, _, _),
@@ -753,7 +753,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SelectOrAntiSemiApply(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
@@ -770,7 +770,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SelectOrAntiSemiApply(
       LetSelectOrAntiSemiApply(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
@@ -792,7 +792,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SelectOrSemiApply(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
       _ /* <- This is the (n)-[:R]->(:M) subQuery */,
@@ -809,7 +809,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SelectOrSemiApply(
       LetSelectOrSemiApply(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the (a)-->(b) subQuery */, _, _),
@@ -830,7 +830,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN [(n)-->(b) | b.age] AS ages
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _) => ()
     }
   }
@@ -842,7 +842,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN (n)-->() AS bs
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "bs", _) => ()
     }
   }
@@ -854,7 +854,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN [(n)-->(b) | b.age] AS ages, sum(n.foo)
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Aggregation(
         RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
       _,
@@ -870,7 +870,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN collect([(n)-->(b) | b.age]) AS ages, n.foo
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Aggregation(
         RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, _, _),
       _,
@@ -886,7 +886,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN DISTINCT [(n)-->(b) | b.age] AS ages
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Distinct(
       RollUpApply(AllNodesScan("n", _), _/* <- This is the subQuery */, "ages", _),
       _
@@ -900,7 +900,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |LOAD CSV FROM toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)) AS foo RETURN foo
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case LoadCSV(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _, _, _, _
@@ -914,7 +914,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |UNWIND [reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)] AS foo RETURN foo
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case UnwindCollection(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       "foo",
@@ -930,7 +930,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
       """.stripMargin
 
     // This will be solved with a NestedPlanExpression instead of RollupApply
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case FindShortestPaths(_, _, Seq(
       NoneIterablePredicate(FilterScope(_, Some(Equals(_, ReduceExpression(_, _, _:NestedPlanExpression)))), _)
       ), _, _) => ()
@@ -943,7 +943,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |CREATE (n {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)}) RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case Create(
       RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _
@@ -959,7 +959,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
     new given {
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
-    }.getLogicalPlanFor(q)._2 should beLike {
+    }.getLogicalPlanFor(q)._1 should beLike {
       case Merge(
             Selection(_,
               RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _) // Match part
@@ -978,7 +978,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     new given {
       addTypeToSemanticTable(varFor("r"), CTRelationship)
       lookupRelationshipsByType = LookupRelationshipsByTypeDisabled
-    }.getLogicalPlanFor(q)._2 should beLike {
+    }.getLogicalPlanFor(q)._1 should beLike {
       case Merge(
                Selection(_,
                        RollUpApply(
@@ -996,7 +996,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |DELETE nodes[reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)]
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
         DeleteNode(_, ContainerIndex(Variable("nodes"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
       ) => ()
@@ -1011,7 +1011,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |DELETE rels[reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)]
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
         DeleteRelationship(_, ContainerIndex(Variable("rels"), ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
       ) => ()
@@ -1026,7 +1026,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |DELETE rels[toString(reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x))]
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
         DeleteExpression(_, ContainerIndex(Variable("rels"), FunctionInvocation(_, _, _, Vector(ReduceExpression(_, _, NestedPlanCollectExpression(_, _, _))))
       ))) => ()
@@ -1039,7 +1039,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |MATCH (n) SET n.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SetNodeProperty(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
@@ -1053,7 +1053,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |MATCH (n) SET n = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN n
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SetNodePropertiesFromMap(
       RollUpApply(AllNodesScan("n", SetExtractor()), _/* <- This is the subQuery */, _, _),
       _, _, _
@@ -1067,7 +1067,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |MATCH ()-[r]->() SET r.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x) RETURN r
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SetRelationshipProperty(
       RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
@@ -1081,7 +1081,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |MATCH ()-[r]->() SET r = {foo: reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)} RETURN r
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case SetRelationshipPropertiesFromMap(
       RollUpApply(Expand(AllNodesScan(_, SetExtractor()), _, _, _, _, _, _), _/* <- This is the subQuery */, _, _),
       _, _, _
@@ -1095,7 +1095,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |SET $param.foo = reduce(sum=0, x IN [(a)-->(b) | b.age] | sum + x)
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
                        SetProperty(
                                    RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
@@ -1111,7 +1111,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |  MERGE ({foo: num}) )
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
                        ForeachApply(
                                    RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _),
@@ -1127,7 +1127,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |  CREATE ({foo: num}) )
       """.stripMargin
 
-    planFor(q)._2 should beLike {
+    planFor(q)._1 should beLike {
       case EmptyResult(
       Foreach(
         RollUpApply(Eager(Argument(SetExtractor()), _), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
@@ -1142,7 +1142,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -1156,7 +1156,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -1170,7 +1170,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)
@@ -1184,7 +1184,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
         |RETURN a
       """.stripMargin
 
-    val plan = planFor(q)._2
+    val plan = planFor(q)._1
     plan.treeExists({
       case _:RollUpApply => true
     }) should be(false)

@@ -66,7 +66,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         |WHERE n.prop = 5
         |AND n = $param
         |AND n.foo = n.bar
-        |RETURN n""".stripMargin)._2
+        |RETURN n""".stripMargin)._1
     val noArgs = Set.empty[String]
     plan should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
