@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 
@@ -323,5 +324,33 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("sea").withRows(singleColumn(Seq(seas(2))))
+  }
+
+  test("should support cartesianProduct inside nestedPlan") {
+    given {
+      nodeIndex("A", "p")
+      nodeIndex("B", "p")
+      val a = tx.createNode(Label.label("A"))
+      a.setProperty("p", 1)
+      val b = tx.createNode(Label.label("B"))
+      b.setProperty("p", 1)
+      a.createRelationshipTo(b, RelationshipType.withName("R"))
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nestedPlanExistsExpressionProjection("x")
+      .|.expandInto("(a)-->(b)")
+      .|.cartesianProduct()
+      .|.|.nodeIndexOperator("b:B(p=1)")
+      .|.nodeIndexOperator("a:A(p=1)")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(true)
   }
 }
