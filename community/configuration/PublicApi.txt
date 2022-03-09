@@ -276,6 +276,7 @@ org.neo4j.configuration.ssl.SslPolicyScope::CLUSTER org.neo4j.configuration.ssl.
 org.neo4j.configuration.ssl.SslPolicyScope::FABRIC org.neo4j.configuration.ssl.SslPolicyScope public static final
 org.neo4j.configuration.ssl.SslPolicyScope::HTTPS org.neo4j.configuration.ssl.SslPolicyScope public static final
 org.neo4j.configuration.ssl.SslPolicyScope::TESTING org.neo4j.configuration.ssl.SslPolicyScope public static final
+org.neo4j.configuration.ssl.SslPolicyScope::fromName(java.lang.String) org.neo4j.configuration.ssl.SslPolicyScope public static
 org.neo4j.configuration.ssl.SslPolicyScope::isClientOnly() boolean public
 org.neo4j.configuration.ssl.SslPolicyScope::valueOf(java.lang.String) org.neo4j.configuration.ssl.SslPolicyScope public static
 org.neo4j.configuration.ssl.SslPolicyScope::values() org.neo4j.configuration.ssl.SslPolicyScope[] public static

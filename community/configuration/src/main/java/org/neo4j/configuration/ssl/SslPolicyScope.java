@@ -52,7 +52,7 @@ public enum SslPolicyScope {
         return clientOnly;
     }
 
-    static SslPolicyScope fromName(String name) {
+    public static SslPolicyScope fromName(String name) {
         for (SslPolicyScope value : values()) {
             if (value.name().equalsIgnoreCase(name)) {
                 return value;
