@@ -73,6 +73,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.util.Try
+import scala.util.Using
 
 case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDatabaseResolver: DefaultDatabaseResolver,
                                          normalExecutionEngine: ExecutionEngine, securityAuthorizationHandler: SecurityAuthorizationHandler)
@@ -189,10 +190,12 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
         securityContext.allowsAdminAction(new AdminActionOnResource(PrivilegeAction.SET_DATABASE_ACCESS, AdminActionOnResource.DatabaseScope.ALL, Segment.ALL)).allowsAccess()
     val roles = securityContext.mode().roles()
 
-    val allDatabaseNode = transaction.findNode(Label.label("DatabaseAll"), "name", "*")
-    val allDatabaseAccess = if (allDatabaseNode != null) accessForDatabase(allDatabaseNode, roles) else None
-    val defaultDatabaseNode = transaction.findNode(Label.label("DatabaseDefault"), "name", "DEFAULT")
-    val defaultDatabaseAccess = if (defaultDatabaseNode != null) accessForDatabase(defaultDatabaseNode, roles) else None
+    def databaseAccess(label: String) =
+      Using(transaction.findNodes(Label.label(label))) {
+        defaultDatabaseNodes => defaultDatabaseNodes.asScala.flatMap(defaultDatabaseNode => accessForDatabase(defaultDatabaseNode, roles)).reduceOption(_ && _)
+      }.get
+    val allDatabaseAccess = databaseAccess("DatabaseAll")
+    val defaultDatabaseAccess = databaseAccess("DatabaseDefault")
     val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
 
     val accessibleDatabases = transaction.findNodes(Label.label("Database")).asScala.foldLeft[Seq[String]](Seq.empty) { (acc, dbNode) =>
