@@ -52,6 +52,9 @@ public class Location
         return databaseName;
     }
 
+    /**
+     * A Local location refers to a graph/database running on this instance of Neo4j.
+     */
     public static class Local extends Location
     {
         public Local( long id, UUID uuid, String databaseName )
@@ -89,6 +92,10 @@ public class Location
         }
     }
 
+    /**
+     * A Remote location refers to a graph/database running on another instance of Neo4j.
+     * This instance may or may not be part of the same DBMS.
+     */
     public abstract static class Remote extends Location
     {
         private final RemoteUri uri;
@@ -104,6 +111,10 @@ public class Location
             return uri;
         }
 
+        /**
+         * A Remote.Internal location refers to a graph/database running on another instance of Neo4j within
+         * the same DBMS.
+         */
         public static class Internal extends Remote
         {
 
@@ -143,6 +154,9 @@ public class Location
             }
         }
 
+        /**
+         * A Remote.External location refers to a graph/database running on another instance of Neo4j, in another DBMS.
+         */
         public static class External extends Remote
         {
 
