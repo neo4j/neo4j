@@ -679,7 +679,7 @@ public class Database extends LifecycleAdapter
      */
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker ) throws IOException
     {
-        createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate( false );
+        createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate();
     }
 
     private LegacyDatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
@@ -909,24 +909,6 @@ public class Database extends LifecycleAdapter
         {
             internalLogProvider.getLog( Database.class ).error( format( "Failed to delete '%s' files.", namedDatabaseId ), e );
             throw new UncheckedIOException( e );
-        }
-    }
-
-    public synchronized void upgrade( boolean startAfterUpgrade ) throws IOException
-    {
-        if ( started )
-        {
-            stop();
-        }
-
-        init();
-        LegacyDatabaseMigrator migrator = createDatabaseMigrator( databaseConfig, databasePageCache, otherDatabaseMemoryTracker );
-        migrator.migrate( true );
-        start(); // Start is required to bring the database to a "complete" state (ideally this should not be needed)
-
-        if ( !startAfterUpgrade )
-        {
-            stop();
         }
     }
 

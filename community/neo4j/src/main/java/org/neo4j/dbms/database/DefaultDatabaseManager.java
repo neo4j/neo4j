@@ -23,7 +23,6 @@ import org.neo4j.dbms.api.DatabaseExistsException;
 import org.neo4j.dbms.api.DatabaseManagementException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 import static java.util.Objects.requireNonNull;
@@ -79,26 +78,6 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public void dropDatabase( NamedDatabaseId ignore )
     {
         throw new DatabaseManagementException( "Default database manager does not support database drop." );
-    }
-
-    @Override
-    public synchronized void upgradeDatabase( NamedDatabaseId namedDatabaseId ) throws DatabaseNotFoundException
-    {
-        StandaloneDatabaseContext context = getDatabaseContext( namedDatabaseId )
-                .orElseThrow( () -> new DatabaseNotFoundException( "Database not found: " + namedDatabaseId ) );
-        Database database = context.database();
-        log.info( "Upgrading '%s'.", namedDatabaseId );
-        context.fail( null ); // Clear any failed state, e.g. due to format being too old on startup.
-        try
-        {
-            database.upgrade( true );
-        }
-        catch ( Throwable throwable )
-        {
-            String message = "Failed to upgrade " + namedDatabaseId;
-            context.fail( throwable );
-            throw new DatabaseManagementException( message, throwable );
-        }
     }
 
     @Override

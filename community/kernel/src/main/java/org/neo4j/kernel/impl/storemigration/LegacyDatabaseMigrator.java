@@ -24,7 +24,6 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Suppliers;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -87,10 +86,8 @@ public class LegacyDatabaseMigrator
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
-     *
-     * @param forceUpgrade Ignore the value of the {@link GraphDatabaseSettings#allow_upgrade} setting.
      */
-    public void migrate( boolean forceUpgrade ) throws IOException
+    public void migrate() throws IOException
     {
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( fs, databaseLayout, config, pageCache, logService, contextFactory );
         var logTailSupplier = Suppliers.lazySingleton( () -> loadLogTail( databaseLayout ) );
@@ -115,7 +112,7 @@ public class LegacyDatabaseMigrator
 
         try
         {
-            storeUpgrader.migrateIfNeeded( databaseLayout, forceUpgrade );
+            storeUpgrader.migrateIfNeeded( databaseLayout );
         }
         catch ( Exception e )
         {
