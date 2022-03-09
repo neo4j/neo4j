@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -47,8 +48,10 @@ public class CheckpointInfoFactory
     {
         if ( entry instanceof LogEntryDetachedCheckpointV4_2 checkpoint42 )
         {
+            var transactionInfo = readTransactionInfo( context, logFile, checkpoint42.getLogPosition() );
             return new CheckpointInfo( checkpoint42.getLogPosition(), checkpoint42.getStoreId(), checkpointEntryPosition, channelPositionAfterCheckpoint,
-                    checkpointFilePostReadPosition, checkpoint42.getVersion(), readTransactionId( context, logFile, checkpoint42.getLogPosition() ),
+                    // we need to use kernel version from transaction command since checkpoints were broken in old version and used incorrect kernel version
+                    checkpointFilePostReadPosition, transactionInfo.version(), transactionInfo.transactionId(),
                     checkpoint42.getReason() );
         }
         else if ( entry instanceof LogEntryDetachedCheckpointV5_0 checkpoint50 )
@@ -62,7 +65,7 @@ public class CheckpointInfoFactory
         }
     }
 
-    private static TransactionId readTransactionId( TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition )
+    private static TransactionInfo readTransactionInfo( TransactionLogFilesContext context, LogFile logFile, LogPosition transactionPosition )
     {
         try ( var channel = logFile.openForVersion( transactionPosition.getLogVersion() );
               var reader = new ReadAheadLogChannel( new UnclosableChannel( channel ), NO_MORE_CHANNELS, context.getMemoryTracker() );
@@ -75,14 +78,14 @@ public class CheckpointInfoFactory
                 checkedPosition = reader.getCurrentPosition();
                 if ( logEntry instanceof LogEntryCommit commit && checkedPosition.equals( transactionPosition ) )
                 {
-                    return new TransactionId( commit.getTxId(), commit.getChecksum(), commit.getTimeWritten() );
+                    return new TransactionInfo( new TransactionId( commit.getTxId(), commit.getChecksum(), commit.getTimeWritten() ), commit.getVersion() );
                 }
             }
             // We have a checkpoint on this point but there is no transaction found that match it and log files are corrupted.
             // Database should be restored from the last valid backup or dump in normal circumstances.
             if ( !context.getConfig().get( fail_on_corrupted_log_files ) )
             {
-                return TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+                return new TransactionInfo( TransactionIdStore.UNKNOWN_TRANSACTION_ID, KernelVersion.V4_4 );
             }
             throw new IllegalStateException(
                     "Checkpoint record pointed to " + transactionPosition + ", but log commit entry not found at that position. Last checked position: " +
@@ -92,5 +95,9 @@ public class CheckpointInfoFactory
         {
             throw new UncheckedIOException( "Unable to find last transaction in log files. Position: " + transactionPosition, e );
         }
+    }
+
+    private record TransactionInfo(TransactionId transactionId, KernelVersion version)
+    {
     }
 }
