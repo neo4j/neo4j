@@ -64,7 +64,6 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.function.ThrowingIntFunction;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -82,7 +81,9 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -100,6 +101,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -107,7 +109,6 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -1371,31 +1372,7 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private IndexPrototype ensureIndexPrototypeHasName(IndexPrototype prototype) throws KernelException {
-        if (prototype.getName().isEmpty()) {
-            SchemaDescriptor schema = prototype.schema();
-
-            int[] entityTokenIds = schema.getEntityTokenIds();
-            String[] entityTokenNames;
-            switch (schema.entityType()) {
-                case NODE:
-                    entityTokenNames = resolveTokenNames(token::nodeLabelName, entityTokenIds);
-                    break;
-                case RELATIONSHIP:
-                    entityTokenNames = resolveTokenNames(token::relationshipTypeName, entityTokenIds);
-                    break;
-                default:
-                    throw new UnspecifiedKernelException(
-                            Status.General.UnknownError,
-                            "Cannot create index for entity type %s in the schema %s.",
-                            schema.entityType(),
-                            schema);
-            }
-            int[] propertyIds = schema.getPropertyIds();
-            String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
-
-            prototype = prototype.withName(SchemaNameUtil.generateName(prototype, entityTokenNames, propertyNames));
-        }
-        return prototype;
+        return prototype.getName().isEmpty() ? prototype.withName(generateNameFrom(prototype)) : prototype;
     }
 
     private static <E extends Exception> String[] resolveTokenNames(
@@ -1408,18 +1385,16 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private IndexPrototype ensureIndexPrototypeHasIndexProvider(IndexPrototype prototype) {
-        if (prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED) {
-            var provider =
-                    switch (prototype.getIndexType()) {
-                        case FULLTEXT -> indexProviders.getFulltextProvider();
-                        case LOOKUP -> indexProviders.getTokenIndexProvider();
-                        case TEXT -> indexProviders.getTextIndexProvider();
-                        case POINT -> indexProviders.getPointIndexProvider();
-                        default -> indexProviders.getDefaultProvider();
-                    };
-            prototype = prototype.withIndexProvider(provider);
-        }
-        return prototype;
+        return prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED
+                ? prototype.withIndexProvider(
+                        switch (prototype.getIndexType()) {
+                            case LOOKUP -> indexProviders.getTokenIndexProvider();
+                            case FULLTEXT -> indexProviders.getFulltextProvider();
+                            case TEXT -> indexProviders.getTextIndexProvider();
+                            case RANGE -> indexProviders.getDefaultProvider();
+                            case POINT -> indexProviders.getPointIndexProvider();
+                        })
+                : prototype;
     }
 
     @Override
@@ -1430,11 +1405,9 @@ public class Operations implements Write, SchemaWrite {
         exclusiveSchemaLock(index.schema());
         exclusiveSchemaNameLock(index.getName());
         assertIndexExistsForDrop(index);
-        if (index.isUnique()) {
-            if (allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
-                IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException(index.schema());
-                throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
-            }
+        if (index.isUnique() && allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
+            IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException(index.schema());
+            throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
         }
         ktx.txState().indexDoDrop(index);
     }
@@ -1457,12 +1430,9 @@ public class Operations implements Write, SchemaWrite {
         }
         exclusiveSchemaLock(index.schema());
         assertIndexExistsForDrop(index);
-        if (index.isUnique()) {
-            if (allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
-                IndexBelongsToConstraintException cause =
-                        new IndexBelongsToConstraintException(indexName, index.schema());
-                throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
-            }
+        if (index.isUnique() && allStoreHolder.indexGetOwningUniquenessConstraintId(index) != null) {
+            IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException(indexName, index.schema());
+            throw new DropIndexFailureException("Unable to drop index: " + cause.getUserMessage(token), cause);
         }
         ktx.txState().indexDoDrop(index);
     }
@@ -1959,22 +1929,23 @@ public class Operations implements Write, SchemaWrite {
 
     @SuppressWarnings("unchecked")
     private <T extends ConstraintDescriptor> T ensureConstraintHasName(T constraint) throws KernelException {
-        if (constraint.getName() == null) {
-            SchemaDescriptor schema = constraint.schema();
+        return constraint.getName() == null ? (T) constraint.withName(generateNameFrom(constraint)) : constraint;
+    }
 
-            int[] entityTokenIds = schema.getEntityTokenIds();
-            String[] entityTokenNames =
-                    switch (schema.entityType()) {
-                        case NODE -> resolveTokenNames(token::nodeLabelName, entityTokenIds);
-                        case RELATIONSHIP -> resolveTokenNames(token::relationshipTypeName, entityTokenIds);
-                    };
-            int[] propertyIds = schema.getPropertyIds();
-            String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
+    private String generateNameFrom(SchemaDescriptorSupplier schemaDescriptorSupplier)
+            throws LabelNotFoundKernelException, RelationshipTypeIdNotFoundKernelException,
+                    PropertyKeyIdNotFoundKernelException {
+        SchemaDescriptor schema = schemaDescriptorSupplier.schema();
 
-            constraint =
-                    (T) constraint.withName(SchemaNameUtil.generateName(constraint, entityTokenNames, propertyNames));
-        }
+        int[] entityTokenIds = schema.getEntityTokenIds();
+        String[] entityTokenNames =
+                switch (schema.entityType()) {
+                    case NODE -> resolveTokenNames(token::nodeLabelName, entityTokenIds);
+                    case RELATIONSHIP -> resolveTokenNames(token::relationshipTypeName, entityTokenIds);
+                };
+        int[] propertyIds = schema.getPropertyIds();
+        String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
 
-        return constraint;
+        return SchemaNameUtil.generateName(schemaDescriptorSupplier, entityTokenNames, propertyNames);
     }
 }

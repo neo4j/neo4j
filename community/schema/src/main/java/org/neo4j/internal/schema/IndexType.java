@@ -56,37 +56,24 @@ public enum IndexType {
         if (type == null) {
             return null;
         }
-        switch (type) {
-            case FULLTEXT:
-                return FULLTEXT;
-            case LOOKUP:
-                return LOOKUP;
-            case TEXT:
-                return TEXT;
-            case RANGE:
-                return RANGE;
-            case POINT:
-                return POINT;
-            default:
-                throw new IllegalArgumentException("Unknown index type: " + type);
-        }
+
+        return switch (type) {
+            case FULLTEXT -> FULLTEXT;
+            case LOOKUP -> LOOKUP;
+            case TEXT -> TEXT;
+            case RANGE -> RANGE;
+            case POINT -> POINT;
+        };
     }
 
     public org.neo4j.graphdb.schema.IndexType toPublicApi() {
-        switch (this) {
-            case FULLTEXT:
-                return org.neo4j.graphdb.schema.IndexType.FULLTEXT;
-            case LOOKUP:
-                return org.neo4j.graphdb.schema.IndexType.LOOKUP;
-            case TEXT:
-                return org.neo4j.graphdb.schema.IndexType.TEXT;
-            case RANGE:
-                return org.neo4j.graphdb.schema.IndexType.RANGE;
-            case POINT:
-                return org.neo4j.graphdb.schema.IndexType.POINT;
-            default:
-                throw new IllegalStateException("Missing index type variant in IndexType.toPublicApi: " + this);
-        }
+        return switch (this) {
+            case FULLTEXT -> org.neo4j.graphdb.schema.IndexType.FULLTEXT;
+            case LOOKUP -> org.neo4j.graphdb.schema.IndexType.LOOKUP;
+            case TEXT -> org.neo4j.graphdb.schema.IndexType.TEXT;
+            case RANGE -> org.neo4j.graphdb.schema.IndexType.RANGE;
+            case POINT -> org.neo4j.graphdb.schema.IndexType.POINT;
+        };
     }
 
     public boolean isLookup() {
