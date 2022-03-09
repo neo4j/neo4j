@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.ConcurrentLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache
@@ -179,6 +180,7 @@ object QueryState {
   val inCacheMaxSize: Int = 16
 
   def createDefaultInCache(): InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = inCacheMaxSize)
+  def createConcurrentInCache(): InLRUCache[Any, InCheckContainer] = new ConcurrentLRUCache(maxSizePerThread = inCacheMaxSize)
 
   def apply(query: QueryContext,
             resources: ExternalCSVResource,
