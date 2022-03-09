@@ -29,11 +29,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
 import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore;
@@ -52,6 +54,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -177,6 +180,40 @@ class RecordStorageMigratorIT
                 new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
                         logService.getInternalLogProvider(), contextFactory, writable(), EMPTY_LOG_TAIL );
         storeFactory.openAllNeoStores().close();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "versions" )
+    void keepExternalIdAndDatabaseIdOnMigration( String version, LogPosition expectedLogPosition, Function<TransactionId,Boolean> txIdComparator )
+            throws IOException, KernelException
+    {
+        Path prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
+
+        LogService logService = NullLogService.getInstance();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+
+        StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
+                batchImporterFactory, INSTANCE );
+        String migrateTo = getVersionToMigrateTo( check );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
+                getStoreVersion( migrateTo ), EMPTY, loadLogTail( databaseLayout, CONFIG, storageEngine ) );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo );
+
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
+                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, CONFIG, storageEngine ) );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+            assertEquals( new UUID( 1, 2 ), metaDataStore.getDatabaseIdUuid( NULL_CONTEXT ).orElseThrow() );
+            assertEquals( new UUID( 3, 4 ), metaDataStore.getExternalStoreId().orElseThrow().getId() );
+        }
     }
 
     @ParameterizedTest

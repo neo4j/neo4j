@@ -253,6 +253,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     try ( PageCursor pageCursor = oldMetadataStore.openPageCursorForReading( 0, cursorContext ) )
                     {
                         MetaDataRecord record = new MetaDataRecord();
+
                         long creationTime = getValueOrDefault( oldMetadataStore, 0, record, pageCursor );
                         long random = getValueOrDefault( oldMetadataStore, 1, record, pageCursor );
                         long storeVersion = getValueOrDefault( oldMetadataStore, 4, record, pageCursor );
@@ -314,7 +315,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private long getValueOrDefault( MetaDataStore oldMetadataStore, int id, MetaDataRecord record, PageCursor pageCursor )
     {
-        MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor( id, record, RecordLoad.CHECK, pageCursor );
+        MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor( id, record, RecordLoad.FORCE, pageCursor );
         return recordByCursor.inUse() ? recordByCursor.getValue() : -1;
     }
 

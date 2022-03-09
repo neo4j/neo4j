@@ -89,7 +89,7 @@ public final class MigrationTestUtils
     {
         if ( StandardV4_3.STORE_VERSION.equals( version ) )
         {
-            return find34FormatStoreDirectory( targetDir );
+            return find43FormatStoreDirectory( targetDir );
         }
         else
         {
@@ -97,7 +97,7 @@ public final class MigrationTestUtils
         }
     }
 
-    private static Path find34FormatStoreDirectory( Path targetDir ) throws IOException
+    private static Path find43FormatStoreDirectory( Path targetDir ) throws IOException
     {
         return Unzip.unzip( Legacy43Store.class, "upgradeTest43Db.zip", targetDir );
     }

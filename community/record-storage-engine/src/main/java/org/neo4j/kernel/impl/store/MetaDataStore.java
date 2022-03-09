@@ -85,6 +85,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         STORE_VERSION( 4, "Store format version" ),
         TIME( 5, "Creation time" ),
         RANDOM_NUMBER( 6, "Random number for store id" );
+        public static final Position[] POSITIONS_VALUES = Position.values();
 
         private final int id;
         private final String description;
@@ -172,7 +173,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     @Override
     public long getHighId()
     {
-        Position[] values = Position.values();
+        Position[] values = Position.POSITIONS_VALUES;
         return values[values.length - 1].id + 1;
     }
 
@@ -498,7 +499,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public void logRecords( final DiagnosticsLogger logger )
     {
-        for ( Position position : Position.values() )
+        for ( Position position : Position.POSITIONS_VALUES )
         {
             var logRecord = switch ( position )
                     {
