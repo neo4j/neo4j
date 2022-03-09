@@ -8,7 +8,7 @@ URL: https://github.com/neo4j/neo4j
 Source0: https://github.com/neo4j/neo4j/archive/%{version}.tar.gz
 
 #Conflicts:
-Requires: which, jre-17-headless >= 17
+Requires: which, jre-17 >= 17
 BuildArch: noarch
 Prefix: /usr
 
