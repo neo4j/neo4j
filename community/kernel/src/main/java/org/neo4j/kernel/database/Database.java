@@ -418,7 +418,6 @@ public class Database extends LifecycleAdapter
 
             // Check the tail of transaction logs and validate version
             LogTailMetadata tailMetadata = getLogTail();
-            cursorContextFactory.init( () -> -1 );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( tailMetadata, cursorContextFactory, storageExists );
