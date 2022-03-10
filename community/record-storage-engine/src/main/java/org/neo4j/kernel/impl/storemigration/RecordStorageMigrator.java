@@ -121,6 +121,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
 import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -305,6 +306,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 }
             }
 
+            fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
+                           ExistingTargetStrategy.SKIP );
             MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
                     migrationLayout.getDatabaseName(), cursorContext );
         }
