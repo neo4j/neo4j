@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -127,9 +126,9 @@ public class LegacyDatabaseMigrator
         {
             return new LogTailExtractor( fs, pageCache, config, storageEngineFactory, databaseTracers ).getTailMetadata( layout, memoryTracker );
         }
-        catch ( IOException ioe )
+        catch ( Exception e )
         {
-            throw new UncheckedIOException( ioe );
+            throw new StoreUpgrader.UnableToUpgradeException( "Fail to load log tail during upgrade.", e );
         }
     }
 

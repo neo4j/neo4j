@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
@@ -40,9 +42,16 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 public class CheckpointInfoFactory
 {
+    // transaction id - long
+    // time written - long
+    // checksum - int
+    // 2 bytes for version code and entry code
+    private static final long COMMIT_ENTRY_OFFSET = 2 * Long.BYTES + Integer.BYTES + 2 * Byte.BYTES;
+
     public static CheckpointInfo ofLogEntry( LogEntry entry, LogPosition checkpointEntryPosition, LogPosition channelPositionAfterCheckpoint,
             LogPosition checkpointFilePostReadPosition, TransactionLogFilesContext context, LogFile logFile )
     {
@@ -81,6 +90,7 @@ public class CheckpointInfoFactory
                     return new TransactionInfo( new TransactionId( commit.getTxId(), commit.getChecksum(), commit.getTimeWritten() ), commit.getVersion() );
                 }
             }
+
             // We have a checkpoint on this point but there is no transaction found that match it and log files are corrupted.
             // Database should be restored from the last valid backup or dump in normal circumstances.
             if ( !context.getConfig().get( fail_on_corrupted_log_files ) )
@@ -91,9 +101,48 @@ public class CheckpointInfoFactory
                     "Checkpoint record pointed to " + transactionPosition + ", but log commit entry not found at that position. Last checked position: " +
                             checkedPosition );
         }
-        catch ( IOException e )
+        catch ( UnsupportedLogVersionException e )
         {
-            throw new UncheckedIOException( "Unable to find last transaction in log files. Position: " + transactionPosition, e );
+            Throwable cause = e;
+            // We were not able to read last transaction log file one of the reason can be inability to read full logs because of transactions
+            // in legacy formats that are present. Here we try to read pre-checkpoint last commit entry and extract our tx info
+            try ( var fallbackChannel = logFile.openForVersion( transactionPosition.getLogVersion() );
+                  var fallbackReader = new ReadAheadLogChannel( new UnclosableChannel( fallbackChannel ), NO_MORE_CHANNELS, context.getMemoryTracker() ) )
+            {
+                fallbackChannel.position( transactionPosition.getByteOffset() - COMMIT_ENTRY_OFFSET );
+                byte versionCode = fallbackReader.get();
+                if ( versionCode > KernelVersion.LATEST.version() )
+                {
+                    throw new IllegalStateException(
+                            "Detected unsupported version code: " + versionCode + ", latest supported is: " + KernelVersion.LATEST );
+                }
+                var kernelVersion = (versionCode < KernelVersion.EARLIEST.version()) ? KernelVersion.EARLIEST :
+                                                                                                   KernelVersion.getForVersion( versionCode );
+                byte entryCode = fallbackReader.get();
+                if ( entryCode == TX_COMMIT )
+                {
+                    long transactionId = fallbackReader.getLong();
+                    long timeWritten = fallbackReader.getLong();
+                    int checksum = fallbackReader.getInt();
+                    // we may not even have the earliest version, so we select the oldest available
+                    return new TransactionInfo( new TransactionId( transactionId, checksum, timeWritten ), kernelVersion );
+                }
+                else
+                {
+                    throw new IllegalStateException( "Detected unsupported entry code: " + entryCode );
+                }
+            }
+            catch ( Exception fe )
+            {
+                // fallback was not able to get last tx record
+                cause = Exceptions.chain( cause, fe );
+            }
+
+            throw new RuntimeException( "Unable to find last transaction in log files. Position: " + transactionPosition, cause );
+        }
+        catch ( IOException ioe )
+        {
+            throw new UncheckedIOException( "Unable to find last transaction in log files. Position: " + transactionPosition, ioe );
         }
     }
 
