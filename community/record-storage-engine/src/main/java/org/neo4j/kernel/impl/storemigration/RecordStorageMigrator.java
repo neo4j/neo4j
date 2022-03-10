@@ -113,6 +113,7 @@ import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
@@ -131,9 +132,6 @@ import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.create
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.ALIGNED_V5_0;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.HIGH_LIMIT_V5_0;
-import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V5_0;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
@@ -866,10 +864,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static boolean need50Migration( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return (STANDARD_V5_0.versionString().equals( newFormat.storeVersion() ) ||
-                ALIGNED_V5_0.versionString().equals( newFormat.storeVersion() ) ||
-                HIGH_LIMIT_V5_0.versionString().equals( newFormat.storeVersion() )) &&
-               !newFormat.storeVersion().equals( oldFormat.storeVersion() );
+        return oldFormat.hasCapability( Index44Compatibility.INSTANCE ) && !newFormat.hasCapability( Index44Compatibility.INSTANCE );
     }
 
     private static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
