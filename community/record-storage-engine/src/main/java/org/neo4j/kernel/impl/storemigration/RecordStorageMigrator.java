@@ -57,6 +57,7 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -82,6 +83,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -254,6 +256,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
                 StoreId storeId;
                 UUID externalId;
+                KernelVersion kernelVersion;
                 UUID databaseId;
                 try ( NeoStores srcStore = srcFactory.openNeoStores( false, StoreType.META_DATA ) )
                 {
@@ -270,11 +273,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         long externalMostBits = getValueOrDefault( oldMetadataStore, 16, record, pageCursor );
                         long externalLeastBits = getValueOrDefault( oldMetadataStore, 17, record, pageCursor );
 
+                        long kernelVersionBits = getValueOrDefault( oldMetadataStore, 19, record, pageCursor );
+
                         long databaseMostBits = getValueOrDefault( oldMetadataStore, 20, record, pageCursor );
                         long databaseLeastBits = getValueOrDefault( oldMetadataStore, 21, record, pageCursor );
 
                         storeId = new StoreId( creationTime, random, storeVersion );
                         externalId = new UUID( externalMostBits, externalLeastBits );
+                        kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( kernelVersionBits ) );
                         databaseId = new UUID( databaseMostBits, databaseLeastBits );
                     }
                 }
@@ -287,6 +293,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     MetaDataStore metaDataStore = dstStore.getMetaDataStore();
                     metaDataStore.regenerateMetadata( storeId, externalId, cursorContext );
                     metaDataStore.setDatabaseIdUuid( databaseId, cursorContext );
+                    metaDataStore.setKernelVersion( kernelVersion );
 
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
                     try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
