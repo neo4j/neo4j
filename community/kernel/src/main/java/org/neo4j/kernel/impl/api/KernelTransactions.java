@@ -246,17 +246,14 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     }
 
     /**
-     * Just like {@link #activeTransactions()}, but gives only a {@link LongSet} of the {@link KernelTransaction#getUserTransactionId() user transaction ID}
-     * for the active transactions.
-     *
-     * @see #activeTransactions()
+     * Gets transactions that are neither closed nor terminated.
      */
-    public LongSet activeUserTransactionIds()
+    private LongSet activeUnterminatedUserTransactionIds()
     {
         MutableLongSet userTransactionIds = LongSets.mutable.empty();
         for ( KernelTransactionImplementation transaction : allTransactions )
         {
-            if ( transaction.isOpen() )
+            if ( transaction.isOpen() && !transaction.isTerminated() )
             {
                 userTransactionIds.add( transaction.getUserTransactionId() );
             }
@@ -354,14 +351,15 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     @Override
     public IdController.TransactionSnapshot get()
     {
-        return new IdController.TransactionSnapshot( activeUserTransactionIds(), clock.millis(), transactionIdStore.getLastCommittedTransactionId() );
+        return new IdController.TransactionSnapshot( activeUnterminatedUserTransactionIds(), clock.millis(),
+                transactionIdStore.getLastCommittedTransactionId() );
     }
 
     @Override
     public boolean eligibleForFreeing( IdController.TransactionSnapshot snapshot )
     {
         return externalIdReuseCondition.eligibleForFreeing( snapshot ) &&
-                !snapshot.activeTransactions().containsAny( activeUserTransactionIds() );
+                !snapshot.activeTransactions().containsAny( activeUnterminatedUserTransactionIds() );
     }
 
     /**
