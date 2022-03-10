@@ -295,6 +295,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     metaDataStore.setDatabaseIdUuid( databaseId, cursorContext );
                     metaDataStore.setKernelVersion( kernelVersion );
 
+                    dstStore.start( cursorContext );
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
                     try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
                     {
