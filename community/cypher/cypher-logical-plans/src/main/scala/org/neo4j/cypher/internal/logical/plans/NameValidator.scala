@@ -58,6 +58,9 @@ object NameValidator {
       throw new InvalidArgumentException("The provided alias is empty.")
     if (name.length > 65534)
       throw new InvalidArgumentException("The provided alias is to long, maximum characters are 65534.")
+    if (name.startsWith("system")) {
+      throw new InvalidArgumentException("Alias name '" + name + "' is invalid, due to the prefix 'system'.")
+    }
     true
   }
 
