@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.logical
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.util.InputPosition
 
 object OrLeafPlanner {
@@ -165,11 +166,25 @@ object OrLeafPlanner {
       }
 
       // Predicates solved by only one plan each must be added inside an Ors
-      val disjunctivePredicates = solvedQgs.flatMap(_.selections.flatPredicates.filterNot(predicatesSolvedByAllPlans.contains))
-      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
+      val disjunctivePredicatesPerPlan = solvedQgs.map(_
+        .selections
+        .flatPredicates
+        .filterNot(predicatesSolvedByAllPlans.contains)
+      )
 
-      if (disjunctivePredicates.nonEmpty) {
-        qgWithPredicatesSolvedByAllPlans.addPredicates(Ors(disjunctivePredicates)(InputPosition.NONE))
+      // We assume:
+      // - disjunctivePredicatesPerPlan.flatten is a subset of disjunction.predicates
+      //   - Either we have a rel-type disjunction, then disjunctivePredicatesPerPlan.flatten is empty
+      //   - Or we have a where clause disjunction
+      // - Each plan solves exactly one predicate from the disjunction
+      // - If one of the plan solves a predicate in the disjunction that is anyway solved by all other plans, then we will not get a predicate from this plan here.
+      checkOnlyWhenAssertionsAreEnabled(disjunctivePredicatesPerPlan.forall(_.size <= 1))
+
+      val qgWithPredicatesSolvedByAllPlans = qg.addPredicates(predicatesSolvedByAllPlans: _*)
+      // If any of the plans does not provide a predicate to this, this amounts to providing `TRUE` which in turn makes the `Ors` to be created constant `TRUE`.
+      // Thus, we leave it out.
+      if (disjunctivePredicatesPerPlan.forall(_.nonEmpty)) {
+        qgWithPredicatesSolvedByAllPlans.addPredicates(Ors(disjunctivePredicatesPerPlan.flatten)(InputPosition.NONE))
       } else {
         qgWithPredicatesSolvedByAllPlans
       }
