@@ -460,6 +460,10 @@ org.neo4j.graphdb.spatial.Geometry::getGeometryType() java.lang.String public ab
 org.neo4j.graphdb.spatial.Point public abstract interface implements org.neo4j.graphdb.spatial.Geometry
 org.neo4j.graphdb.spatial.Point::getCoordinate() org.neo4j.graphdb.spatial.Coordinate public default
 org.neo4j.graphdb.spatial.Point::getGeometryType() java.lang.String public default
+org.neo4j.graphdb.traversal.BranchState<STATE extends java.lang.Object> public abstract interface
+org.neo4j.graphdb.traversal.BranchState<STATE>::NO_STATE org.neo4j.graphdb.traversal.BranchState public static final
+org.neo4j.graphdb.traversal.BranchState<STATE>::getState() #STATE public abstract
+org.neo4j.graphdb.traversal.BranchState<STATE>::setState(#STATE) void public abstract
 org.neo4j.graphdb.traversal.TraversalMetadata public abstract interface
 org.neo4j.graphdb.traversal.TraversalMetadata::getNumberOfPathsReturned() int public abstract
 org.neo4j.graphdb.traversal.TraversalMetadata::getNumberOfRelationshipsTraversed() int public abstract

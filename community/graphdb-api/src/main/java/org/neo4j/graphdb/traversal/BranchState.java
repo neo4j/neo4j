@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import org.neo4j.annotations.api.IgnoreApiCheck;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
  * Accessor for a state associated with a {@link TraversalBranch} during a
@@ -33,7 +33,7 @@ import org.neo4j.annotations.api.IgnoreApiCheck;
  *
  * @param <STATE> the type of object the state is.
  */
-@IgnoreApiCheck
+@PublicApi
 public interface BranchState<STATE>
 {
     /**

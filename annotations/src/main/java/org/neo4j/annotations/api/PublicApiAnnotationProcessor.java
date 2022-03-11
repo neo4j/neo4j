@@ -637,11 +637,6 @@ public class PublicApiAnnotationProcessor extends AbstractProcessor
 
     private void assertAnnotated( TypeElement element, TypeElement parent, String msg )
     {
-        if ( parent.getAnnotation( IgnoreApiCheck.class ) != null )
-        {
-            return; // Stop traversing here
-        }
-
         if ( parent.getAnnotation( PublicApi.class ) == null )
         {
             if ( inDeprecatedScope )
