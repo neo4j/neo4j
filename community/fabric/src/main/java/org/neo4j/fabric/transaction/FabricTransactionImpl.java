@@ -25,6 +25,7 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +39,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.executor.Exceptions;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
@@ -50,7 +52,6 @@ import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
@@ -65,6 +66,7 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private final Lock exclusiveLock = transactionLock.writeLock();
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
+    private final Catalog catalogSnapshot;
     private final ErrorReporter errorReporter;
     private final TransactionManager transactionManager;
     private final FabricConfig fabricConfig;
@@ -79,14 +81,15 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     private SingleDbTransaction writingTransaction;
 
     FabricTransactionImpl( FabricTransactionInfo transactionInfo, TransactionBookmarkManager bookmarkManager, FabricRemoteExecutor remoteExecutor,
-                           FabricLocalExecutor localExecutor, ErrorReporter errorReporter, TransactionManager transactionManager,
-                           FabricConfig fabricConfig )
+            FabricLocalExecutor localExecutor, ErrorReporter errorReporter, TransactionManager transactionManager,
+            FabricConfig fabricConfig, Catalog catalogSnapshot )
     {
         this.transactionInfo = transactionInfo;
         this.errorReporter = errorReporter;
         this.transactionManager = transactionManager;
         this.fabricConfig = fabricConfig;
         this.bookmarkManager = bookmarkManager;
+        this.catalogSnapshot = catalogSnapshot;
         this.id = ID_GENERATOR.incrementAndGet();
 
         try
@@ -159,6 +162,12 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     public DatabaseReference getSessionDatabaseReference()
     {
         return transactionInfo.getSessionDatabaseReference();
+    }
+
+    @Override
+    public Catalog getCatalogSnapshot()
+    {
+        return catalogSnapshot;
     }
 
     @Override

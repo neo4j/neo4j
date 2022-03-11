@@ -163,7 +163,7 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
     static Stream<Arguments> driverSettings()
     {
         var completeSettings = DriverSettings.builder()
-                                             .withSSlEnabled( true )
+                                             .withSSlEnforced( true )
                                              .withConnectionTimeout( duration( ofSeconds( 10 ) ) )
                                              .withConnectionPoolAcquisitionTimeout( duration( ofSeconds( 1 ) ) )
                                              .withConnectionMaxLifeTime( duration( ofSeconds( 300 ) ) )
@@ -173,7 +173,7 @@ public class CommunityTopologyGraphDbmsModelTest extends BaseTopologyGraphDbmsMo
                                              .build();
 
         var missingSettings = DriverSettings.builder()
-                                            .withSSlEnabled( false )
+                                            .withSSlEnforced( false )
                                             .withLoggingLevel( Level.DEBUG )
                                             .build();
 

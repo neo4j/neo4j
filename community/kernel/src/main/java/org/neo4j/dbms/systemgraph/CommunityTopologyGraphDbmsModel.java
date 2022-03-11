@@ -52,7 +52,7 @@ import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDL
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_MAX_SIZE;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
-import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENABLED;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENFORCED;
 
 public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
 {
@@ -279,8 +279,8 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     private static DriverSettings createDriverSettings( Node driverSettingsNode )
     {
         var builder = DriverSettings.builder();
-        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, SSL_ENABLED.toString(), Boolean.class )
-                .map( builder::withSSlEnabled );
+        getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, SSL_ENFORCED.toString(), Boolean.class )
+                .map( builder::withSSlEnforced );
         getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_TIMEOUT.toString(), DurationValue.class )
                 .map( builder::withConnectionTimeout );
         getOptionalPropertyOnNode( DRIVER_SETTINGS, driverSettingsNode, CONNECTION_MAX_LIFETIME.toString(), DurationValue.class )

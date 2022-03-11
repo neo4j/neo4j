@@ -66,7 +66,7 @@ public class BoltKernelGraphDatabaseServiceProvider implements BoltGraphDatabase
         this.queryExecutionEngine = resolveDependency( databaseAPI, QueryExecutionEngine.class );
         this.transactionIdTracker = transactionIdTracker;
         this.transactionalContextFactory = newTransactionalContextFactory( databaseAPI );
-        this.namedDatabaseId = resolveDependency( databaseAPI, Database.class ).getNamedDatabaseId();
+        this.namedDatabaseId = databaseAPI.databaseId();
         this.perBookmarkTimeout = perBookmarkTimeout;
         this.memoryTracker = memoryTracker.getScopedMemoryTracker();
     }

@@ -39,16 +39,14 @@ import org.neo4j.values.virtual.MapValue
 import scala.collection.JavaConverters.mapAsScalaMapConverter
 
 class UseEvaluation(
-  catalogManager: CatalogManager,
   proceduresSupplier: Supplier[GlobalProcedures],
   signatureResolver: ProcedureSignatureResolver,
 ) {
 
   private val evaluator = new StaticEvaluation.StaticEvaluator(proceduresSupplier)
 
-  def instance(query: String): UseEvaluation.Instance =
-    new UseEvaluation.Instance(query, catalogManager.currentCatalog(), evaluator, signatureResolver)
-
+  def instance(query: String, catalog: Catalog): UseEvaluation.Instance =
+    new UseEvaluation.Instance(query, catalog, evaluator, signatureResolver)
 }
 
 object UseEvaluation {

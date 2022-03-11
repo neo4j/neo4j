@@ -137,19 +137,19 @@ public abstract class FabricServicesBootstrap
         register( new TransactionMonitorScheduler( transactionMonitor, jobScheduler, transactionCheckInterval, null ), TransactionMonitorScheduler.class );
 
         var errorReporter = new ErrorReporter( logService );
-        register( new TransactionManager( remoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog, systemNanoClock, config,
-                availabilityGuard ), TransactionManager.class );
+        var catalogManager = register( createCatalogManager( databaseReferenceRepo ), CatalogManager.class );
+        register( new TransactionManager( remoteExecutor, localExecutor, catalogManager, fabricConfig, transactionMonitor, securityLog, systemNanoClock, config,
+                availabilityGuard, errorReporter ), TransactionManager.class );
 
         var cypherConfig = CypherConfiguration.fromConfig( config );
 
         Supplier<GlobalProcedures> proceduresSupplier = () -> resolve( GlobalProcedures.class );
-        var catalogManager = register( createCatalogManager( databaseReferenceRepo ), CatalogManager.class );
         var signatureResolver = new SignatureResolver( proceduresSupplier );
         var statementLifecycles = new FabricStatementLifecycles( databaseManager, monitors, config, systemNanoClock );
         var monitoredExecutor = jobScheduler.monitoredJobExecutor( CYPHER_CACHE );
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory( job -> monitoredExecutor.execute( systemJob( "Query plan cache maintenance" ), job ) );
         var planner = register( new FabricPlanner( fabricConfig, cypherConfig, monitors, cacheFactory, signatureResolver ), FabricPlanner.class );
-        var useEvaluation = register( new UseEvaluation( catalogManager, proceduresSupplier, signatureResolver ), UseEvaluation.class );
+        var useEvaluation = register( new UseEvaluation( proceduresSupplier, signatureResolver ), UseEvaluation.class );
 
         register( new FabricReactorHooksService( errorReporter ), FabricReactorHooksService.class );
 

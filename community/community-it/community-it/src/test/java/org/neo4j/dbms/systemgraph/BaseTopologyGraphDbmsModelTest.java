@@ -57,7 +57,7 @@ import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_IDL
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_POOL_MAX_SIZE;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.CONNECTION_TIMEOUT;
 import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.LOGGING_LEVEL;
-import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENABLED;
+import static org.neo4j.dbms.systemgraph.DriverSettings.Keys.SSL_ENFORCED;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.CONNECTS_WITH_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEEDER_PROPERTY;
@@ -416,8 +416,8 @@ public abstract class BaseTopologyGraphDbmsModelTest
     protected Node createDriverSettingsForExternalAlias( Transaction tx, Node externalRefNode, DriverSettings driverSettings )
     {
         var settingsNode = tx.createNode( DRIVER_SETTINGS_LABEL );
-        driverSettings.isSslEnabled()
-                      .ifPresent( enabled -> settingsNode.setProperty( SSL_ENABLED.toString(), enabled ) );
+        driverSettings.isSslEnforced()
+                      .ifPresent( enabled -> settingsNode.setProperty( SSL_ENFORCED.toString(), enabled ) );
         driverSettings.connectionTimeout()
                       .ifPresent( timeout -> settingsNode.setProperty( CONNECTION_TIMEOUT.toString(), timeout ) );
         driverSettings.connectionMaxLifetime()

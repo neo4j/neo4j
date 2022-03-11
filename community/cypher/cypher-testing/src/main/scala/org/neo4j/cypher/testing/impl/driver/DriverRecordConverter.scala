@@ -105,6 +105,6 @@ object DriverRecordConverter {
     }
   }
 
-  private case class DriverException(cause: Neo4jException, status: Status) extends RuntimeException(cause.getMessage, cause) with HasStatus
+  case class DriverException(cause: Neo4jException, status: Status) extends RuntimeException(cause.getMessage, cause) with HasStatus
 
 }

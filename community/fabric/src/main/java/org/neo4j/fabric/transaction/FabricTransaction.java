@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
+import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
@@ -31,7 +32,6 @@ import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface FabricTransaction
 {
@@ -67,5 +67,7 @@ public interface FabricTransaction
         void validateStatementType( StatementType type );
 
         DatabaseReference getSessionDatabaseReference();
+
+        Catalog getCatalogSnapshot();
     }
 }

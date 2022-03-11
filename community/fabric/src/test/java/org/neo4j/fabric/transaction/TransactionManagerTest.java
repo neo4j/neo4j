@@ -29,6 +29,7 @@ import org.neo4j.bolt.v41.messaging.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
+import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -70,11 +71,12 @@ class TransactionManagerTest
         var bookmarkManager = mock( TransactionBookmarkManager.class );
         var guard = mock( AvailabilityGuard.class );
         var securityLog = mock( AbstractSecurityLog.class );
+        var catalogManager = mock( CatalogManager.class );
         var config = Config.defaults( shutdown_transaction_end_timeout, Duration.ZERO );
         var fabricConfig = FabricConfig.from( config );
         var transactionManager =
-                new TransactionManager( fabricRemoteExecutor, localExecutor, errorReporter, fabricConfig, transactionMonitor, securityLog, Clocks.nanoClock(),
-                        config, guard );
+                new TransactionManager( fabricRemoteExecutor, localExecutor, catalogManager, fabricConfig, transactionMonitor, securityLog, Clocks.nanoClock(),
+                        config, guard, errorReporter );
 
         //local tx
         var tx1 = transactionManager.begin( createTransactionInfo(), bookmarkManager );

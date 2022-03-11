@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import org.neo4j.logging.Level;
 import org.neo4j.values.storable.DurationValue;
@@ -32,7 +31,7 @@ public final class DriverSettings
 {
     enum Keys
     {
-        SSL_ENABLED,
+        SSL_ENFORCED,
         CONNECTION_TIMEOUT,
         CONNECTION_MAX_LIFETIME,
         CONNECTION_POOL_ACQUISITION_TIMEOUT,
@@ -47,7 +46,7 @@ public final class DriverSettings
         }
     }
 
-    private final Boolean sslEnabled;
+    private final Boolean sslEnforced;
     private final Duration connectionTimeout;
     private final Duration connectionMaxLifetime;
     private final Duration connectionPoolAcquisitionTimeout;
@@ -55,10 +54,10 @@ public final class DriverSettings
     private final Integer connectionPoolMaxSize;
     private final Level loggingLevel;
 
-    private DriverSettings( Boolean sslEnabled, Duration connectionTimeout, Duration connectionMaxLifetime, Duration connectionPoolAcquisitionTimeout,
+    private DriverSettings( Boolean sslEnforced, Duration connectionTimeout, Duration connectionMaxLifetime, Duration connectionPoolAcquisitionTimeout,
             Duration connectionPoolIdleTest, Integer connectionPoolMaxSize, Level loggingLevel )
     {
-        this.sslEnabled = sslEnabled;
+        this.sslEnforced = sslEnforced;
         this.connectionTimeout = connectionTimeout;
         this.connectionMaxLifetime = connectionMaxLifetime;
         this.connectionPoolAcquisitionTimeout = connectionPoolAcquisitionTimeout;
@@ -72,9 +71,9 @@ public final class DriverSettings
         return new Builder();
     }
 
-    public Optional<Boolean> isSslEnabled()
+    public Optional<Boolean> isSslEnforced()
     {
-        return Optional.ofNullable( sslEnabled );
+        return Optional.ofNullable( sslEnforced );
     }
 
     public Optional<Duration> connectionTimeout()
@@ -119,7 +118,7 @@ public final class DriverSettings
             return false;
         }
         DriverSettings that = (DriverSettings) o;
-        return Objects.equals( sslEnabled, that.sslEnabled ) && Objects.equals( connectionTimeout, that.connectionTimeout ) &&
+        return Objects.equals( sslEnforced, that.sslEnforced ) && Objects.equals( connectionTimeout, that.connectionTimeout ) &&
                Objects.equals( connectionMaxLifetime, that.connectionMaxLifetime ) &&
                Objects.equals( connectionPoolAcquisitionTimeout, that.connectionPoolAcquisitionTimeout ) &&
                Objects.equals( connectionPoolIdleTest, that.connectionPoolIdleTest ) &&
@@ -129,7 +128,7 @@ public final class DriverSettings
     @Override
     public int hashCode()
     {
-        return Objects.hash( sslEnabled, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
+        return Objects.hash( sslEnforced, connectionTimeout, connectionMaxLifetime, connectionPoolAcquisitionTimeout, connectionPoolIdleTest,
                              connectionPoolMaxSize,
                              loggingLevel );
     }
@@ -148,9 +147,9 @@ public final class DriverSettings
         {
         }
 
-        Builder withSSlEnabled( boolean sslEnabled )
+        Builder withSSlEnforced( boolean sslEnforced )
         {
-            this.sslEnabled = sslEnabled;
+            this.sslEnabled = sslEnforced;
             return this;
         }
 

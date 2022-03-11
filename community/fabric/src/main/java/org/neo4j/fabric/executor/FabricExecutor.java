@@ -111,23 +111,22 @@ public class FabricExecutor
 
     public StatementResult run( FabricTransaction fabricTransaction, String statement, MapValue parameters )
     {
-        StatementLifecycle lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), statement, parameters );
+        var lifecycle = statementLifecycles.create( fabricTransaction.getTransactionInfo(), statement, parameters );
         lifecycle.startProcessing();
 
         fabricTransaction.setLastSubmittedStatement( lifecycle );
 
         try
         {
-            String defaultGraphName = fabricTransaction.getTransactionInfo().getSessionDatabaseReference().alias().name();
-            FabricPlanner.PlannerInstance plannerInstance = planner.instance( statement, parameters, defaultGraphName );
-            UseEvaluation.Instance useEvaluator = useEvaluation.instance( statement );
-            FabricPlan plan = plannerInstance.plan();
-            Fragment query = plan.query();
+            var defaultGraphName = fabricTransaction.getTransactionInfo().getSessionDatabaseReference().alias().name();
+            var plannerInstance = planner.instance( statement, parameters, defaultGraphName );
+            var plan = plannerInstance.plan();
+            var query = plan.query();
 
             lifecycle.doneFabricProcessing( plan );
 
-            AccessMode accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
-            RoutingContext routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
+            var accessMode = fabricTransaction.getTransactionInfo().getAccessMode();
+            var routingContext = fabricTransaction.getTransactionInfo().getRoutingContext();
 
             if ( plan.debugOptions().logPlan() )
             {
@@ -136,6 +135,7 @@ public class FabricExecutor
             var statementResult = fabricTransaction.execute(
                     ctx ->
                     {
+                        var useEvaluator = useEvaluation.instance( statement, ctx.getCatalogSnapshot() );
                         FabricStatementExecution execution;
                         if ( plan.debugOptions().logRecords() )
                         {

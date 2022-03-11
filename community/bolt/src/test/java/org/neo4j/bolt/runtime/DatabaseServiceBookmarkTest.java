@@ -167,6 +167,7 @@ class DatabaseServiceBookmarkTest
 
         var managementService = mock( DatabaseManagementService.class );
         when( managementService.database( DATABASE_ID.name() ) ).thenReturn( facade );
+        when( facade.databaseId() ).thenReturn( DATABASE_ID );
 
         var transactionIdTracker = new TransactionIdTracker( managementService, new Monitors(), clock );
         return new BoltKernelGraphDatabaseServiceProvider( facade, transactionIdTracker, txAwaitDuration, mock( MemoryTracker.class, RETURNS_MOCKS ) );

@@ -178,6 +178,7 @@ public class CommunityEditionModule extends StandaloneEditionModule
 
         var databaseReferenceRepo = new MapCachingDatabaseReferenceRepository(
                 new SystemGraphDatabaseReferenceRepository( databaseManager::getSystemDatabaseContext ) );
+        this.databaseReferenceRepo = databaseReferenceRepo;
 
         fabricServicesBootstrap = new FabricServicesBootstrap.Community( globalModule.getGlobalLife(),
                                                                          globalModule.getGlobalDependencies(),

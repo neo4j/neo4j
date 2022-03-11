@@ -172,7 +172,7 @@ public class Location
                 {
                     return true;
                 }
-                if ( o == null || getClass() != o.getClass() )
+                if ( !(o instanceof External) )
                 {
                     return false;
                 }
