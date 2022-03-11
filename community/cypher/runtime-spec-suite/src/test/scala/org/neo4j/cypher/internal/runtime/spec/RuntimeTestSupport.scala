@@ -210,28 +210,32 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     profileAssertion: Option[QueryProfile => Unit] = None
   ): IndexedSeq[Array[AnyValue]] = {
     val subscriber = new RecordingQuerySubscriber
-    runTransactionally(
-      logicalQuery,
-      runtime,
-      NoInput,
-      (_, result) => {
-        val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
-        val seq = recordingRuntimeResult.awaitAll()
-        profileAssertion.foreach(_(recordingRuntimeResult.runtimeResult.queryProfile()))
-        recordingRuntimeResult.runtimeResult.close()
-        seq
-      },
-      subscriber,
-      parameters,
-      profile = profileAssertion.isDefined
-    )
+    runTransactionally(logicalQuery, runtime, NoInput, (_, result) => {
+      val recordingRuntimeResult = RecordingRuntimeResult(result, subscriber)
+      val seq = recordingRuntimeResult.awaitAll()
+      profileAssertion.foreach(_(recordingRuntimeResult.runtimeResult.queryProfile()))
+      recordingRuntimeResult.runtimeResult.close()
+      seq
+    }, subscriber, parameters, profile = profileAssertion.isDefined)
   }
 
-  override def profile(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    inputDataStream: InputDataStream = NoInput
-  ): RecordingRuntimeResult = {
+  override def executeAndConsumeTransactionallyNonRecording(logicalQuery: LogicalQuery,
+                                                            runtime: CypherRuntime[CONTEXT],
+                                                            parameters: Map[String, Any] = Map.empty,
+                                                            profileAssertion: Option[QueryProfile => Unit] = None): Long = {
+    val subscriber = new NonRecordingQuerySubscriber
+    runTransactionallyAndRollback[Long](logicalQuery, runtime, NoInput, (_, result) => {
+      val nonRecordingRuntimeResult = NonRecordingRuntimeResult(result, subscriber)
+      val seq = nonRecordingRuntimeResult.awaitAll()
+      profileAssertion.foreach(_(nonRecordingRuntimeResult.runtimeResult.queryProfile()))
+      nonRecordingRuntimeResult.runtimeResult.close()
+      seq
+    }, subscriber, parameters, profile = profileAssertion.isDefined)
+  }
+
+  override def profile(logicalQuery: LogicalQuery,
+                       runtime: CypherRuntime[CONTEXT],
+                       inputDataStream: InputDataStream = NoInput): RecordingRuntimeResult = {
     val subscriber = new RecordingQuerySubscriber
     val result = runLogical(logicalQuery, runtime, inputDataStream, (_, result) => result, subscriber, profile = true)
     RecordingRuntimeResult(result, subscriber)
@@ -283,11 +287,18 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     (RecordingRuntimeResult(result, subscriber), context)
   }
 
-  override def executeAndExplain(
-    logicalQuery: LogicalQuery,
-    runtime: CypherRuntime[CONTEXT],
-    input: InputValues
-  ): (RecordingRuntimeResult, InternalPlanDescription) = {
+  override def executeAndContextNonRecording(logicalQuery: LogicalQuery,
+                                             runtime: CypherRuntime[CONTEXT],
+                                             input: InputValues
+                                            ): (NonRecordingRuntimeResult, CONTEXT) = {
+    val subscriber = new NonRecordingQuerySubscriber
+    val (result, context) = runLogical(logicalQuery, runtime, input.stream(), (context, result) => (result, context), subscriber, profile = false)
+    (NonRecordingRuntimeResult(result, subscriber), context)
+  }
+
+  override def executeAndExplain(logicalQuery: LogicalQuery,
+                                 runtime: CypherRuntime[CONTEXT],
+                                 input: InputValues): (RecordingRuntimeResult, InternalPlanDescription) = {
     val subscriber = new RecordingQuerySubscriber
     val executionPlan = buildPlan(logicalQuery, runtime)
     val result = run(
@@ -362,16 +373,34 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     }
   }
 
-  private def run[RESULT](
-    executableQuery: ExecutionPlan,
-    input: InputDataStream,
-    resultMapper: (CONTEXT, RuntimeResult) => RESULT,
-    subscriber: QuerySubscriber,
-    profile: Boolean,
-    readOnly: Boolean,
-    parameters: Map[String, Any] = Map.empty,
-    implicitTx: Boolean = false
-  ): RESULT = {
+  private def runTransactionallyAndRollback[RESULT](logicalQuery: LogicalQuery,
+                                         runtime: CypherRuntime[CONTEXT],
+                                         input: InputDataStream,
+                                         resultMapper: (CONTEXT, RuntimeResult) => RESULT,
+                                         subscriber: QuerySubscriber,
+                                         parameters: Map[String, Any],
+                                         profile: Boolean): RESULT = {
+    val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, LoginContext.AUTH_DISABLED)
+    val txContext = contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
+    val queryContext = newQueryContext(txContext, logicalQuery.readOnly)
+    try {
+      val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
+      runWithTx(executionPlan, input, resultMapper, subscriber, profile = profile, logicalQuery.readOnly, parameters, tx, txContext)
+    } finally {
+      tx.rollback()
+      txContext.close()
+      tx.close()
+    }
+  }
+
+  private def run[RESULT](executableQuery: ExecutionPlan,
+                          input: InputDataStream,
+                          resultMapper: (CONTEXT, RuntimeResult) => RESULT,
+                          subscriber: QuerySubscriber,
+                          profile: Boolean,
+                          readOnly: Boolean,
+                          parameters: Map[String, Any] = Map.empty,
+                          implicitTx: Boolean = false): RESULT = {
     if (implicitTx) {
       restartImplicitTx()
     }
@@ -398,11 +427,14 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val result =
       executableQuery.run(queryContext, executionMode, paramsMap, prePopulateResults = true, input, subscriber)
     val assertAllReleased =
-      if (!workloadMode) runtimeContextManager.assertAllReleased _ else () => ()
-    resultMapper(
-      runtimeContext,
-      new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased)
-    )
+      if (!workloadMode) {
+        () => {
+          runtimeContextManager.waitForWorkersToIdle(1000)
+          Thread.sleep(200) // TODO: We need to fix race condition with waitForWorkersToIdle
+          runtimeContextManager.assertAllReleased()
+        }
+      } else () => ()
+    resultMapper(runtimeContext, new ClosingRuntimeResult(result, tx, txContext, queryContext.resources, subscriber, assertAllReleased))
   }
 
   private def compileWithTx(
