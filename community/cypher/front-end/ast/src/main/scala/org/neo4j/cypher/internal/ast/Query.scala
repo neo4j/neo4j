@@ -144,16 +144,21 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   private def leadingGraphSelection: Option[GraphSelection] =
     clauses.headOption.collect { case s: GraphSelection => s }
 
-  def clausesExceptImportWith: Seq[Clause] =
-    clauses.filterNot(importWith.contains)
+  def clausesExceptLeadingImportWith: Seq[Clause] = {
+    // Find the first occurrence of the importWith clause and split the sequence by it
+    val (beforeImportWith, afterIncludingImportWith) = clauses.span(clause => !importWith.contains(clause))
+
+    // Remove the importWith clause and re-assemble the sequence
+    beforeImportWith ++ afterIncludingImportWith.drop(1)
+  }
+
 
   private def clausesExceptLeadingFrom: Seq[Clause] =
     clauses.filterNot(leadingGraphSelection.contains)
 
-  private def clausesExceptLeadingFromAndImportWith: Seq[Clause] =
-    clauses
-      .filterNot(importWith.contains)
-      .filterNot(leadingGraphSelection.contains)
+  private def clausesExceptLeadingFromAndImportWith: Seq[Clause] = {
+    clausesExceptLeadingImportWith.filterNot(leadingGraphSelection.contains)
+  }
 
   private def semanticCheckAbstract(clauses: Seq[Clause], clauseCheck: Seq[Clause] => SemanticCheck): SemanticCheck =
     checkStandaloneCall(clauses) chain

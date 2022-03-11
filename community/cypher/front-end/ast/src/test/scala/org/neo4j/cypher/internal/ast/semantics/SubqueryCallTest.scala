@@ -849,6 +849,33 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       .tap(_.errors(0).msg.should(include("Expression in CALL { RETURN ... } must be aliased (use AS)")))
   }
 
+  test("subquery should allow multiple import WITH clauses") {
+    // MATCH (x)
+    // CALL {
+    //   WITH x
+    //   CREATE ()
+    //   WITH x
+    //   MATCH (n)
+    //   RETURN n
+    // }
+    // RETURN n
+
+    val x = singleQuery(
+      match_(NodePattern(Some(varFor("x")), Seq.empty, None, None)(pos)),
+      subqueryCall(
+        with_(varFor("x").aliased),
+        create(NodePattern(None, Seq.empty, None, None)(pos)),
+        with_(varFor("x").aliased),
+        match_(NodePattern(Some(varFor("n")), Seq.empty, None, None)(pos)),
+        return_(varFor("n").aliased)
+      ),
+      return_(varFor("n").aliased)
+    )
+      .semanticCheck(clean)
+
+    x.tap(_.errors.size.shouldEqual(0))
+  }
+
   /** https://github.com/scala/scala/blob/v2.13.0/src/library/scala/util/ChainingOps.scala#L37 */
   implicit class AnyOps[A](a: A) {
     def tap[X](e: A => X): A = {
