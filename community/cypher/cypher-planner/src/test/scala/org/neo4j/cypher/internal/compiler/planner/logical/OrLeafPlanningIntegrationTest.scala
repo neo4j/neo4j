@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalacheck.Gen
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -42,7 +44,8 @@ class OrLeafPlanningIntegrationTest
   extends CypherFunSuite
   with LogicalPlanningIntegrationTestSupport
   with AstConstructionTestSupport
-  with LogicalPlanConstructionTestSupport {
+  with LogicalPlanConstructionTestSupport
+  with ScalaCheckPropertyChecks {
 
   private def plannerConfig(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     plannerBuilder()
@@ -1311,6 +1314,103 @@ class OrLeafPlanningIntegrationTest
         .nodeByIdSeek("n", Set(), 1)
         .build()
     ))
+  }
+
+  test("should be able to cope with disjunction of overlapping predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .setLabelCardinality("A", 0)
+      .enableMinimumGraphStatistics()
+      .addNodeIndex("A", Seq("prop2"), 0.1, 0.001)
+      .build()
+
+    // prop1 is present on both sides of the disjunction. Therefore, one could be tempted to
+    // simplify `(A & B & C) | (A & D & E)` to either `A` or `(A & B & C & D & E)`,
+    // of which neither is equivalent to the original expression.
+    val plan = planner.plan(
+      """MATCH (a:A)
+        |WHERE (
+        |  a.prop1 IS NOT NULL AND
+        |  a.prop2 IS NOT NULL AND
+        |  a.prop3 IS NOT NULL
+        |)
+        |OR a.prop1 IS NOT NULL
+        |RETURN a""".stripMargin)
+
+    plan should (equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .filter(
+          "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
+          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL")
+        .distinct("a AS a")
+        .union()
+        .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
+        .|.nodeByLabelScan("a", "A")
+        .filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
+        .nodeIndexOperator("a:A(prop2)")
+        .build()
+    ) or equal(
+      planner.planBuilder()
+        .produceResults("a")
+        .filter(
+          "a.prop2 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL",
+          "a.prop3 IS NOT NULL OR cacheNHasProperty[a.prop1] IS NOT NULL")
+        .distinct("a AS a")
+        .union()
+        .|.filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
+        .|.nodeIndexOperator("a:A(prop2)")
+        .filter("cacheNHasPropertyFromStore[a.prop1] IS NOT NULL")
+        .nodeByLabelScan("a", "A")
+        .build()
+    ))
+  }
+
+  def makeString(iterable: Iterable[String], prefix: String, infix: String, suffix: String): String = {
+    if (iterable.isEmpty) {
+      ""
+    } else {
+      iterable.mkString(prefix, infix, suffix)
+    }
+  }
+
+  test("should be able to cope with any combination of disjunction of predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(0)
+      .setLabelCardinality("A", 0)
+      .enableMinimumGraphStatistics()
+      .build()
+
+    forAll (
+      Gen.listOfN(3, Gen.listOf(Gen.choose(1, 3)))
+    ) { (disjunction: Seq[Seq[Int]]) =>
+      val selections = {
+        val conjunctions = disjunction.map { conjunction =>
+          val propertyPredicates = conjunction.map(_.abs).distinct.map(operand => s"a.prop$operand IS NOT NULL")
+          makeString(propertyPredicates, "(", " AND ", ")")
+        }.filter(_.nonEmpty)
+        makeString(conjunctions, "WHERE ", " OR ", "")
+      }
+      val query =
+        s"""MATCH (a:A)
+           |$selections
+           |RETURN a""".stripMargin
+      withClue(query) {
+        planner.plan(query)
+      }
+    }
+  }
+
+  test("x") {
+    val planner = plannerConfig()
+      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
+      .addNodeIndex("L", Seq("p2"), 0.5, 0.5)
+      .enablePrintCostComparisons()
+      .build()
+
+    val query = """MATCH (n) WHERE n:L AND n.p1 = 1 AND (n.p1 = 1 OR n.p2 = 1) RETURN n"""
+
+    planner.plan(query).printLogicalPlanBuilderString()
   }
 
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
