@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 
 case class Selector(pickBestFactory: CandidateSelectorFactory,
-                    candidateGenerators: SelectionCandidateGenerator*) extends PlanSelector {
+                    candidateGeneratorFactories: SelectionCandidateGeneratorFactory*) extends PlanSelector {
 
   /**
    * Given a plan, using SelectionCandidateGenerators, plan all selections currently possible in the order cheapest first and return the resulting plan.
@@ -41,6 +41,7 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
                      interestingOrderConfig: InterestingOrderConfig,
                      context: LogicalPlanningContext): LogicalPlan = {
     val pickBest = pickBestFactory(context)
+    val candidateGenerators = candidateGeneratorFactories.map(_.generator())
 
     val unsolvedPredicates = unsolvedPreds(context.planningAttributes.solveds, queryGraph.selections, input)
 
@@ -89,6 +90,10 @@ case class Selector(pickBestFactory: CandidateSelectorFactory,
         .filterNot(predicate => solveds.get(l.id).asSinglePlannerQuery.exists(_.queryGraph.selections.contains(predicate)))
         .toSet
 
+}
+
+trait SelectionCandidateGeneratorFactory {
+  def generator(): SelectionCandidateGenerator
 }
 
 trait SelectionCandidateGenerator extends {

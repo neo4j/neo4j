@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.patternExpressionRewriter
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates.planPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates.planPredicates
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.EveryPath
@@ -354,11 +354,11 @@ object PatternExpressionSolver {
               context: LogicalPlanningContext): (Seq[Expression], LogicalPlan) = {
       expressions.foldLeft((Seq.empty[Expression], source)) {
           case ((solvedExprs, plan), e: ExistsSubClause) =>
-            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
+            val subQueryPlan = SelectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
             val semiApplyPlan = context.logicalPlanProducer.planSemiApplyInHorizon(plan, subQueryPlan, e, context)
             (solvedExprs :+ e, semiApplyPlan)
           case ((solvedExprs, plan), not@Not(e: ExistsSubClause)) =>
-            val subQueryPlan = selectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
+            val subQueryPlan = SelectPatternPredicates.planInnerOfSubquery(plan, context, interestingOrderConfig, e)
             val antiSemiApplyPlan = context.logicalPlanProducer.planAntiSemiApplyInHorizon(plan, subQueryPlan, not, context)
             (solvedExprs :+ not, antiSemiApplyPlan)
           case ((solvedExprs, plan), ors@Ors(exprs)) =>

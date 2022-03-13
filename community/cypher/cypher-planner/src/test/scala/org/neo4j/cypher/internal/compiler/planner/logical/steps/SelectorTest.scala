@@ -201,7 +201,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
-    val selector = Selector(pickBestPlanUsingHintsAndCost, selectPatternPredicates)
+    val selector = Selector(pickBestPlanUsingHintsAndCost, SelectPatternPredicates)
     // When
     val result = selector(bPlan, qg, InterestingOrderConfig.empty, context)
 

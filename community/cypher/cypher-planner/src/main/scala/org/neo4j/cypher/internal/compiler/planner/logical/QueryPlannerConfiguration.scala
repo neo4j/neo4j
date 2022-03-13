@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CandidateSelectorFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicatesWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.pickBestPlanUsin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.relationshipTypeScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectCovered
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectHasLabelWithJoin
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.selectPatternPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.triadicSelectionFinder
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -100,12 +100,11 @@ object QueryPlannerConfiguration {
 
   val default: QueryPlannerConfiguration = {
     val predicateSelector = steps.Selector(pickBestPlanUsingHintsAndCost,
-      selectPatternPredicates,
+      SelectPatternPredicatesWithCaching,
       triadicSelectionFinder,
       selectCovered,
       selectHasLabelWithJoin
     )
-
 
     QueryPlannerConfiguration(
       pickBestCandidate = pickBestPlanUsingHintsAndCost,
