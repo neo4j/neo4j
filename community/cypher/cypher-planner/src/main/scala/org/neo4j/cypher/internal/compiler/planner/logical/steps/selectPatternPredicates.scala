@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.Expression
@@ -34,12 +35,14 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections.containsPatternPredicates
+import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.asQueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Ref
 
-case object selectPatternPredicates extends SelectionCandidateGenerator {
+trait SelectPatternPredicates extends SelectionCandidateGenerator {
 
   override def apply(lhs: LogicalPlan,
                      unsolvedPredicates: Set[Expression],
@@ -206,9 +209,12 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
       (context.logicalPlanProducer.planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet), context), ident)
   }
 
-  private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression, ctx: LogicalPlanningContext) = {
-    val context = ctx.withUpdatedLabelInfo(lhs)
-    context.strategy.planPatternExpression(lhs.availableSymbols, pattern, context)
+  protected def rhsPlanner: RhsPatternPlanner
+
+  protected def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression, context: LogicalPlanningContext): LogicalPlan = {
+    val arguments = lhs.availableSymbols.intersect(pattern.dependencies.map(_.name))
+    val labelInfo = context.planningAttributes.solveds.get(lhs.id).asSinglePlannerQuery.lastLabelInfo.view.filterKeys(arguments).toMap
+    rhsPlanner.plan(pattern, labelInfo, arguments, context)
   }
 
   private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
@@ -219,5 +225,42 @@ case object selectPatternPredicates extends SelectionCandidateGenerator {
   private def freshId(existsExpression: Expression, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
     val name = anonymousVariableNameGenerator.nextName
     (name, Variable(name)(existsExpression.position))
+  }
+}
+
+case object SelectPatternPredicates extends SelectPatternPredicates with SelectionCandidateGeneratorFactory {
+  override protected def rhsPlanner: RhsPatternPlanner = RhsPatternPlanner
+  override def generator(): SelectionCandidateGenerator = this
+}
+
+final case class SelectPatternPredicatesWithCaching() extends SelectPatternPredicates {
+  override protected val rhsPlanner: RhsPatternPlanner = RhsPatternPlannerWithCaching()
+}
+
+case object SelectPatternPredicatesWithCaching extends SelectionCandidateGeneratorFactory {
+  override def generator(): SelectionCandidateGenerator = SelectPatternPredicatesWithCaching()
+}
+
+trait RhsPatternPlanner {
+  def plan(pattern: PatternExpression, labelInfo: LabelInfo, arguments: Set[String], context: LogicalPlanningContext): LogicalPlan
+}
+
+case object RhsPatternPlanner extends RhsPatternPlanner {
+  override def plan(pattern: PatternExpression, labelInfo: LabelInfo, arguments: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+    val ctx = context.withFusedLabelInfo(labelInfo)
+    ctx.strategy.planPatternExpression(arguments, pattern, ctx)
+  }
+}
+
+final case class RhsPatternPlannerWithCaching() extends RhsPatternPlanner {
+
+  private[this] val cachedDoPlan = CachedFunction.apply(doPlan _)
+
+  override def plan(pattern: PatternExpression, labelInfo: LabelInfo, arguments: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+    cachedDoPlan(pattern, labelInfo, arguments, Ref(context))
+  }
+
+  private def doPlan(pattern: PatternExpression, labelInfo: LabelInfo, arguments: Set[String], context: Ref[LogicalPlanningContext]): LogicalPlan = {
+    RhsPatternPlanner.plan(pattern, labelInfo, arguments, context.value)
   }
 }
