@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.ast.factory;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public interface ASTExceptionFactory
 {
@@ -51,4 +54,34 @@ public interface ASTExceptionFactory
     }
 
     String periodicCommitNotSupported = "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.";
+
+    static String invalidHintIndexType( HintIndexType got )
+    {
+        final String HINT_TYPES = Arrays.stream( HintIndexType.values() )
+                                        .filter( hintIndexType -> !(hintIndexType == HintIndexType.BTREE || hintIndexType == HintIndexType.ANY) )
+                                        .map( Enum::name )
+                                        .collect( Collectors.collectingAndThen( Collectors.toList(),
+                                                                                joiningLastDelimiter( ", ", " or " ) ) );
+        if ( got == HintIndexType.BTREE )
+        {
+            return String.format( "Index type %s is no longer supported for USING index hint. Use %s instead.", got.name(), HINT_TYPES );
+        }
+        else
+        {
+            return String.format( "Index type %s is not defined for USING index hint. Use %s instead.", got.name(), HINT_TYPES );
+        }
+    }
+
+    //---------Helper functions
+    private static Function<List<String>,String> joiningLastDelimiter(
+            String delimiter, String lastDelimiter )
+    {
+        return list ->
+        {
+            int last = list.size() - 1;
+            return String.join( lastDelimiter,
+                                String.join( delimiter, list.subList( 0, last ) ),
+                                list.get( last ) );
+        };
+    }
 }

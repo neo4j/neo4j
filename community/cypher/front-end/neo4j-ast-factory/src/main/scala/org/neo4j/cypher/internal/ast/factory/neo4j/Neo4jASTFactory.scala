@@ -270,7 +270,6 @@ import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserOptions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.UsingHint
 import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -559,7 +558,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   private def usingIndexType(indexType: HintIndexType): UsingIndexHintType = indexType match {
     case HintIndexType.ANY   => UsingAnyIndexType
-    case HintIndexType.BTREE => UsingBtreeIndexType
+    case HintIndexType.BTREE => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidHintIndexType(indexType))
     case HintIndexType.TEXT  => UsingTextIndexType
     case HintIndexType.RANGE => UsingRangeIndexType
     case HintIndexType.POINT => UsingPointIndexType

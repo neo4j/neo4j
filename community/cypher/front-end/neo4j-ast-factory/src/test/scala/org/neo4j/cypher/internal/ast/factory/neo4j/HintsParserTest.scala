@@ -50,15 +50,11 @@ class HintsParserTest extends CypherFunSuite with TestName with AstConstructionT
   }
 
   test("MATCH (n) USING BTREE INDEX n:N(p)") {
-    parseAndFind[UsingIndexHint](testName) shouldBe Seq(
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOrScan, UsingBtreeIndexType)(pos)
-    )
+    assertThrows[Neo4jASTConstructionException](parseAndFind[UsingIndexHint](testName))
   }
 
   test("MATCH (n) USING BTREE INDEX SEEK n:N(p)") {
-    parseAndFind[UsingIndexHint](testName) shouldBe Seq(
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("N"), Seq(propName("p")), SeekOnly, UsingBtreeIndexType)(pos)
-    )
+    assertThrows[Neo4jASTConstructionException](parseAndFind[UsingIndexHint](testName))
   }
 
   test("MATCH (n) USING RANGE INDEX n:N(p)") {

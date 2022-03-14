@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
+import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -45,5 +46,9 @@ class Neo4jASTFactoryTest extends CypherFunSuite {
 
   test("invalidCreateIndexType") {
     ASTExceptionFactory.invalidCreateIndexType(CreateIndexTypes.INVALID) shouldBe "Index type INVALID is not defined for create index command."
+  }
+
+  test("invalidBTREEHintIndexType") {
+    ASTExceptionFactory.invalidHintIndexType(HintIndexType.BTREE) shouldBe "Index type BTREE is no longer supported for USING index hint. Use TEXT, RANGE or POINT instead."
   }
 }

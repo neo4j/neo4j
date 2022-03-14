@@ -154,12 +154,6 @@ object Deprecations {
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))
         )
-
-      case h@ast.UsingIndexHint(_, _, _, _, UsingBtreeIndexType) =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(h.position))
-        )
     }
 
     private def hasBtreeOptions(options: Options): Boolean = options match {
