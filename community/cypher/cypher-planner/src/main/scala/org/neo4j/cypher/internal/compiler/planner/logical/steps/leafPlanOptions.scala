@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanFinder
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -45,18 +46,8 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 
-object leafPlanOptions extends LeafPlanFinder {
-
-  private[this] def groupByOrdered[A, K](xs: collection.Seq[A])(f: A => K): collection.Seq[(K, collection.Seq[A])] = {
-    val m = mutable.LinkedHashMap.empty[K, collection.Seq[A]].withDefault(_ => new mutable.ArrayBuffer[A])
-    xs.foreach { x =>
-      val k = f(x)
-      m(k) = m(k) :+ x
-    }
-    m.toSeq
-  }
+object leafPlanOptions extends LeafPlanFinder with ListSupport {
 
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
@@ -69,18 +60,20 @@ object leafPlanOptions extends LeafPlanFinder {
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
     val bestPlansPerAvailableSymbols =
-      groupByOrdered(leafPlanCandidatesWithSelections.toSeq)(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
-      .map { case (_, bucket) =>
-        val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
+      leafPlanCandidatesWithSelections
+        .toSeq
+        .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
+        .map { case (_, bucket) =>
+          val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
-        if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
-          val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
-          val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
-          BestResults(bestPlan, bestSortedPlan)
-        } else {
-          BestResults(bestPlan, None)
+          if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
+            val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
+            val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
+            BestResults(bestPlan, bestSortedPlan)
+          } else {
+            BestResults(bestPlan, None)
+          }
         }
-      }
 
     bestPlansPerAvailableSymbols
   }
