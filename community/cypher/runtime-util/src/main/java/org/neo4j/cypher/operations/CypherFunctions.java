@@ -42,6 +42,8 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NumberValue;
@@ -1352,19 +1354,25 @@ public final class CypherFunctions
         }
     }
 
-    public static AnyValue toIntegerList( AnyValue in )
+    public static ListValue toIntegerList( AnyValue in )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( !(in instanceof ListValue) )
+        if ( in instanceof IntegralArray )
         {
-            throw new CypherTypeException( String.format("Invalid input for function 'toIntegerList()': Expected a List, got: %s",in) );
+            return VirtualValues.fromArray( (ArrayValue) in );
         }
-
-        ListValue lv = (ListValue) in;
-
-        return Arrays.stream( lv.asArray() )
-                     .map( entry -> entry == NO_VALUE ? NO_VALUE : toIntegerOrNull( entry ) )
-                     .collect( ListValueBuilder.collector() );
+        else if ( in instanceof FloatingPointArray )
+        {
+            return toIntegerList( (FloatingPointArray) in );
+        }
+        else if ( in instanceof SequenceValue )
+        {
+            return toIntegerList( (SequenceValue) in );
+        }
+        else
+        {
+            throw new CypherTypeException( String.format( "Invalid input for function 'toIntegerList()': Expected a List, got: %s", in ) );
+        }
     }
 
     public static TextValue toString( AnyValue in )
@@ -1824,5 +1832,25 @@ public final class CypherFunctions
         return new CypherTypeException(
                 format( "Expected a string value for `%s`, but got: %s.",
                         method, mode ) );
+    }
+
+    private static ListValue toIntegerList( FloatingPointArray array )
+    {
+        var converted = ListValueBuilder.newListBuilder( array.length() );
+        for ( int i = 0; i < array.length(); i++ )
+        {
+            converted.add( longValue( (long) array.doubleValue( i ) ) );
+        }
+        return converted.build();
+    }
+
+    private static ListValue toIntegerList( SequenceValue sequenceValue )
+    {
+        var converted = ListValueBuilder.newListBuilder();
+        for ( AnyValue value : sequenceValue )
+        {
+            converted.add( value != NO_VALUE ? toIntegerOrNull( value ) : NO_VALUE );
+        }
+        return converted.build();
     }
 }
