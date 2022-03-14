@@ -89,12 +89,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTByteArray;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.procedure.impl.ProcedureCompilation.compileAggregation;
 import static org.neo4j.procedure.impl.ProcedureCompilation.compileFunction;
 import static org.neo4j.procedure.impl.ProcedureCompilation.compileProcedure;
+import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.PI;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -543,6 +546,26 @@ public class ProcedureCompilationTest
         assertEquals( longValue( 3 ), aggregator.result() );
     }
 
+    @Test
+    void shouldCallResultOnAggregationOnlyOnceOnMapResults() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                        .in( "in", NTInteger )
+                        .out( NTMap ).build();
+
+        // When
+        CallableUserAggregationFunction once =
+                compileAggregation( signature, emptyList(), method( "createOnce" ),
+                        method( Once.class, "update", long.class ), method( Once.class, "result" ) );
+
+        // Then
+        UserAggregator aggregator = once.create( ctx );
+        aggregator.update( new AnyValue[]{longValue( 42L )} );
+
+        assertEquals( asMapValue( Map.of( "result", longValue( 42 ) ) ), aggregator.result() );
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field,
             ThrowingFunction<Context,T,ProcedureException> provider ) throws NoSuchFieldException
     {
@@ -930,6 +953,11 @@ public class ProcedureCompilationTest
         return new First();
     }
 
+    public Once createOnce()
+    {
+        return new Once();
+    }
+
     public static class Adder
     {
         private long sum;
@@ -973,6 +1001,24 @@ public class ProcedureCompilationTest
         public Object result()
         {
             return first;
+        }
+    }
+
+    public static class Once
+    {
+        private boolean consumed;
+        private long result;
+
+        public void update( long in )
+        {
+            result = in;
+        }
+
+        public Map<String, Object> result()
+        {
+            checkState( !consumed, "Cannot call result twice" );
+            consumed = true;
+            return Map.of( "result", result );
         }
     }
 }
