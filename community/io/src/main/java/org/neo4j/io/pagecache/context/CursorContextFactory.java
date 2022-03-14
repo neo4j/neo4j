@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 public class CursorContextFactory
 {
+    public static final CursorContextFactory NULL_CONTEXT_FACTORY = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
     private final PageCacheTracer cacheTracer;
     private final VersionContextSupplier versionContextSupplier;
 
@@ -37,12 +38,17 @@ public class CursorContextFactory
 
     public CursorContext create( String tag )
     {
-        return new CursorContext( cacheTracer.createPageCursorTracer( tag ), versionContextSupplier.createVersionContext() );
+        return new CursorContext( this, cacheTracer.createPageCursorTracer( tag ), versionContextSupplier.createVersionContext() );
+    }
+
+    public CursorContext create( String tag, VersionContext versionContext )
+    {
+        return new CursorContext( this, cacheTracer.createPageCursorTracer( tag ), versionContext );
     }
 
     public CursorContext create( PageCursorTracer cursorTracer )
     {
-        return new CursorContext( cursorTracer, versionContextSupplier.createVersionContext() );
+        return new CursorContext( this, cursorTracer, versionContextSupplier.createVersionContext() );
     }
 
     public void init( LongSupplier lastClosedTransactionIdSupplier )

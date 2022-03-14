@@ -38,8 +38,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -52,6 +50,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.database.DatabaseTracers.EMPTY;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -151,7 +150,7 @@ public class StoreInfoCommand extends AbstractCommand
             Config config, boolean structured, boolean failSilently )
     {
         var memoryTracker = EmptyMemoryTracker.INSTANCE;
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = NULL_CONTEXT_FACTORY;
         try ( var ignored = LockChecker.checkDatabaseLock( databaseLayout );
                 var cursorContext = contextFactory.create( "printInfo" ) )
         {

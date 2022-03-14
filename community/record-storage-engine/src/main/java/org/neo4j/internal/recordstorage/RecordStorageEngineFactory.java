@@ -75,7 +75,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -144,6 +143,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
@@ -561,7 +561,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public long optimalAvailableConsistencyCheckerMemory( FileSystemAbstraction fs, DatabaseLayout layout, Config config, PageCache pageCache )
     {
         RecordDatabaseLayout databaseLayout = convert( layout );
-        CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        CursorContextFactory contextFactory = NULL_CONTEXT_FACTORY;
         RecordFormats recordFormats = selectForStore( databaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
         var idGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
         try ( NeoStores neoStores = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, NullLogProvider.getInstance(),

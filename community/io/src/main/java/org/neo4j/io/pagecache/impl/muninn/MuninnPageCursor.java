@@ -87,7 +87,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private int filePageSize;
     private int filePayloadSize;
     protected final VersionContext versionContext;
-    private final CursorContext cursorContext;
+    protected final CursorContext cursorContext;
     private int offset;
     private int mark;
     private boolean markOutOfBounds;

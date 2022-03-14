@@ -31,9 +31,6 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DoubleArray;
@@ -45,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMaxSettingForCrs;
 import static org.neo4j.graphdb.schema.IndexSettingUtil.spatialMinSettingForCrs;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 class PointIndexProviderConfigTest
 {
@@ -52,8 +50,7 @@ class PointIndexProviderConfigTest
     void mustCompleteIndexDescriptorConfigurationsWithSpatialConfig()
     {
         // Given
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, contextFactory, DEFAULT_DATABASE_NAME ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, NULL_CONTEXT_FACTORY, DEFAULT_DATABASE_NAME ).build();
         PointIndexProvider provider = new PointIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         LabelSchemaDescriptor incompleteSchema = SchemaDescriptors.forLabel( 1, 1 );
         IndexDescriptor incompleteDescriptor = IndexPrototype.forSchema( incompleteSchema, IndexProviderDescriptor.UNDECIDED )
@@ -77,8 +74,7 @@ class PointIndexProviderConfigTest
     void completeConfigurationMustNotOverrideExistingSettings()
     {
         // Given
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
-        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, contextFactory, DEFAULT_DATABASE_NAME ).build();
+        DatabaseIndexContext context = DatabaseIndexContext.builder( null, null, NULL_CONTEXT_FACTORY, DEFAULT_DATABASE_NAME ).build();
         PointIndexProvider provider = new PointIndexProvider( context, IndexDirectoryStructure.NONE, null, Config.defaults() );
         Map<String,Value> existingSettings = new HashMap<>();
         CoordinateReferenceSystem existingCrs = CoordinateReferenceSystem.CARTESIAN;

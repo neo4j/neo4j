@@ -26,8 +26,6 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.time.SystemNanoClock;
 
@@ -54,7 +52,6 @@ class PreFetcher implements Runnable, CancelListener
     private static final String TRACER_PRE_FETCHER_TAG = "Pre-fetcher";
     private final MuninnPageCursor observedCursor;
     private final CursorFactory cursorFactory;
-    private final PageCacheTracer tracer;
     private final SystemNanoClock clock;
     private volatile boolean cancelled;
     private long startTime;
@@ -62,11 +59,10 @@ class PreFetcher implements Runnable, CancelListener
     private long tripCount;
     private long pauseNanos = TimeUnit.MILLISECONDS.toNanos( 10 );
 
-    PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, PageCacheTracer tracer, SystemNanoClock clock )
+    PreFetcher( MuninnPageCursor observedCursor, CursorFactory cursorFactory, SystemNanoClock clock )
     {
         this.observedCursor = observedCursor;
         this.cursorFactory = cursorFactory;
-        this.tracer = tracer;
         this.clock = clock;
     }
 
@@ -123,9 +119,8 @@ class PreFetcher implements Runnable, CancelListener
         // The initial value don't matter so much. Just same as offset, so we initially fetch one page.
         long jump = offset;
 
-        try ( var tracer = this.tracer.createPageCursorTracer( TRACER_PRE_FETCHER_TAG );
-                //:TODO where and how to report this?
-                PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, CursorContext.NULL_CONTEXT ) )
+        try ( var context = observedCursor.cursorContext.createRelatedContext( TRACER_PRE_FETCHER_TAG );
+               PageCursor prefetchCursor = cursorFactory.takeReadCursor( 0, PF_SHARED_READ_LOCK, context ) )
         {
             currentPageId = getCurrentObservedPageId();
             while ( currentPageId != UNBOUND_PAGE_ID )

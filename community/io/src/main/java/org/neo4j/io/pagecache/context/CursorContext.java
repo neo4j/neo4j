@@ -22,18 +22,21 @@ package org.neo4j.io.pagecache.context;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 public class CursorContext implements AutoCloseable
 {
-    public static final CursorContext NULL_CONTEXT = new CursorContext( PageCursorTracer.NULL, EmptyVersionContext.EMPTY );
+    public static final CursorContext NULL_CONTEXT = new CursorContext( NULL_CONTEXT_FACTORY, PageCursorTracer.NULL, EmptyVersionContext.EMPTY );
 
     private final PageCursorTracer cursorTracer;
     private final VersionContext versionContext;
+    private final CursorContextFactory contextFactory;
 
-    CursorContext( PageCursorTracer cursorTracer, VersionContext versionContext )
+    CursorContext( CursorContextFactory contextFactory, PageCursorTracer cursorTracer, VersionContext versionContext )
     {
         this.cursorTracer = requireNonNull( cursorTracer );
         this.versionContext = requireNonNull( versionContext );
+        this.contextFactory = contextFactory;
     }
 
     public PageCursorTracer getCursorTracer()
@@ -55,5 +58,10 @@ public class CursorContext implements AutoCloseable
     public void merge( CursorContext cursorContext )
     {
         cursorTracer.merge( cursorContext.cursorTracer );
+    }
+
+    public CursorContext createRelatedContext( String tag )
+    {
+        return contextFactory.create( tag, versionContext );
     }
 }

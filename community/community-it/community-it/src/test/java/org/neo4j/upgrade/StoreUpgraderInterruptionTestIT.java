@@ -47,7 +47,6 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
@@ -85,6 +84,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasFormatVersion;
@@ -141,7 +141,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout, prepareDirectory );
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = NULL_CONTEXT_FACTORY;
         RecordStoreVersionCheck versionCheck =
                 new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(), Config.defaults(), contextFactory );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
@@ -196,7 +196,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout, prepareDirectory );
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = NULL_CONTEXT_FACTORY;
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), contextFactory );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
@@ -229,7 +229,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         init( version );
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout, prepareDirectory );
-        var contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EmptyVersionContextSupplier.EMPTY );
+        var contextFactory = NULL_CONTEXT_FACTORY;
         RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
                 Config.defaults(), contextFactory );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;

@@ -1209,7 +1209,7 @@ public class MuninnPageCache implements PageCache
 
     void startPreFetching( MuninnPageCursor cursor, CursorFactory cursorFactory )
     {
-        PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, pageCacheTracer, clock );
+        PreFetcher preFetcher = new PreFetcher( cursor, cursorFactory, clock );
         var pagedFile = cursor.pagedFile;
         var fileName = pagedFile.swapper.path().getFileName();
         var monitoringParams = systemJob( pagedFile.databaseName, "Pre-fetching of file '" + fileName + "'" );
