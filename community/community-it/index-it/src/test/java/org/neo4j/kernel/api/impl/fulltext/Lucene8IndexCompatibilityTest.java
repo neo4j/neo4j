@@ -22,10 +22,13 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import picocli.CommandLine;
 
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.commandline.dbms.MigrateStoreCommand;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,6 +37,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.Unzip;
@@ -43,7 +47,8 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unordered;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.fulltextSearch;
 
@@ -81,11 +86,12 @@ class Lucene8IndexCompatibilityTest
     private GraphDatabaseService db;
 
     @BeforeEach
-    void beforeEach() throws IOException
+    void beforeEach() throws Exception
     {
         Unzip.unzip( getClass(), ARCHIVE_NAME, testDirectory.homePath() );
+
+        runStoreMigrationCommandFromSameJvm();
         dbms = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() )
-                .setConfig( allow_upgrade, true )
                 .build();
         db = dbms.database( "neo4j" );
     }
@@ -102,7 +108,6 @@ class Lucene8IndexCompatibilityTest
     @Test
     void testExistingIndexesWork() throws KernelException
     {
-        awaitIndexes();
         assertTextIndexContainsExactlyValues(
                 "Text 0 written by 4.4",
                 "Text 1 written by 4.4",
@@ -149,14 +154,6 @@ class Lucene8IndexCompatibilityTest
                 "Text 4 written by 4.4",
                 "New text 1",
                 "New text 2" );
-    }
-
-    private void awaitIndexes()
-    {
-        try ( var transaction = db.beginTx() )
-        {
-            transaction.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
-        }
     }
 
     private void assertTextIndexContainsExactlyValues( String... values ) throws KernelException
@@ -224,6 +221,19 @@ class Lucene8IndexCompatibilityTest
                     assertTrue( cursor.next() );
                 }
             }
+        }
+    }
+
+    private void runStoreMigrationCommandFromSameJvm() throws Exception
+    {
+        var homeDir = testDirectory.homePath().toAbsolutePath();
+        var configDir = homeDir.resolve( Config.DEFAULT_CONFIG_DIR_NAME );
+
+        var ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, new DefaultFileSystemAbstraction() );
+        for ( var database : List.of( DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME ) )
+        {
+            var command = CommandLine.populateCommand( new MigrateStoreCommand( ctx ), "--database", database );
+            command.call();
         }
     }
 }

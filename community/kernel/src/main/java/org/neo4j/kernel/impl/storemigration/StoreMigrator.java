@@ -210,7 +210,7 @@ public class StoreMigrator
                                     versionToMigrateTo )
                     );
                 };
-        userLog.info( "'" + versionToMigrateTo + "' has been identified as the current version of the store" );
+        userLog.info( "'" + versionToMigrateFrom + "' has been identified as the current version of the store" );
         return versionToMigrateFrom;
     }
 

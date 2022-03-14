@@ -93,32 +93,6 @@ class RecordFormatMigrationIT
     }
 
     @Test
-    void failToDowngradeFormatWheUpgradeAllowed()
-    {
-        DatabaseManagementService managementService = startManagementService( StandardV5_0.NAME );
-        GraphDatabaseAPI database = getDefaultDatabase( managementService );
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = transaction.createNode();
-            node.setProperty( "a", "b" );
-            transaction.commit();
-        }
-        managementService.shutdown();
-
-        managementService = startDatabaseServiceWithUpgrade( databaseDirectory, StandardV4_3.NAME );
-        database = getDefaultDatabase( managementService );
-        try
-        {
-            Throwable throwable = assertDefaultDatabaseFailed( database );
-            assertSame( StoreUpgrader.AttemptedDowngradeException.class, getRootCause( throwable ).getClass() );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
     void skipMigrationIfFormatSpecifiedInConfig()
     {
         DatabaseManagementService managementService = startManagementService( StandardV4_3.NAME );
@@ -212,15 +186,6 @@ class RecordFormatMigrationIT
         return new TestDatabaseManagementServiceBuilder( databaseDirectory )
                 .setConfig( record_format, name )
                 .setConfig( storage_engine, RecordStorageEngineFactory.NAME )
-                .build();
-    }
-
-    private static DatabaseManagementService startDatabaseServiceWithUpgrade( Path storeDir, String formatName )
-    {
-        return new TestDatabaseManagementServiceBuilder( storeDir )
-                .setConfig( storage_engine, RecordStorageEngineFactory.NAME )
-                .setConfig( record_format, formatName )
-                .setConfig( allow_upgrade, true )
                 .build();
     }
 }

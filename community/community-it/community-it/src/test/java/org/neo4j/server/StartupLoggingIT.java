@@ -85,7 +85,6 @@ class StartupLoggingIT extends ExclusiveWebContainerTestBase
 
         properties.put( GraphDatabaseSettings.data_directory.name(), testDirectory.homePath().toString() );
         properties.put( GraphDatabaseSettings.logs_directory.name(), testDirectory.homePath().toString() );
-        properties.put( GraphDatabaseSettings.allow_upgrade.name(), TRUE );
 
         properties.put( HttpConnector.listen_address.name(), "localhost:0" );
         properties.put( HttpConnector.enabled.name(), TRUE );

@@ -44,7 +44,6 @@ import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -67,7 +66,6 @@ public class FullCheckFulltextIndexEmptyDocs
     void shouldNotReportEmptyDocsInFulltextIndexAsInconsistencies() throws Throwable
     {
         Config config = Config.newBuilder()
-                .set( allow_upgrade, true )
                 .set( neo4j_home, testDirectory.homePath() ).build();
 
         DatabaseManagementService managementService = startUpOldDb( config );
@@ -106,7 +104,7 @@ public class FullCheckFulltextIndexEmptyDocs
 
     private DatabaseManagementService startUpOldDb( Config config ) throws IOException
     {
-        Unzip.unzip( getClass(), "SF4.3.0_fulltextWithEmptyDocs.zip", testDirectory.homePath() );
+        Unzip.unzip( getClass(), "SF5.0.0_fulltextWithEmptyDocs.zip", testDirectory.homePath() );
 
         return new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).setConfig( config ).build();
     }

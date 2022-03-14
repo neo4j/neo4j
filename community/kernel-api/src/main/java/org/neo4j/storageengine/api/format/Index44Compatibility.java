@@ -35,7 +35,7 @@ public class Index44Compatibility implements Capability
     @Override
     public boolean isType( CapabilityType type )
     {
-        return CapabilityType.INDEX == type;
+        return false;
     }
 
     @Override

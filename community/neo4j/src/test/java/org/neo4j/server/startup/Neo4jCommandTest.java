@@ -213,7 +213,7 @@ class Neo4jCommandTest
             assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).isEmpty();
 
-            addConf( GraphDatabaseSettings.allow_upgrade, "foo" ); //This setting is not used by the bootloader, so ignored.
+            addConf( GraphDatabaseSettings.record_format_created_db, "foo" ); //This setting is not used by the bootloader, so ignored.
             assertThat( execute( "status" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );
             assertThat( err.toString() ).isEmpty();
