@@ -255,6 +255,31 @@ class KernelTransactionsTest
     }
 
     @Test
+    void shouldTellWhenTransactionsFromSnapshotHaveBeenTerminated() throws Throwable
+    {
+        // GIVEN
+        KernelTransactions transactions = newKernelTransactions();
+        KernelTransaction a = getKernelTransaction( transactions );
+        KernelTransaction b = getKernelTransaction( transactions );
+        KernelTransaction c = getKernelTransaction( transactions );
+        IdController.IdFreeCondition snapshot = transactions.get();
+        assertFalse( snapshot.eligibleForFreeing() );
+
+        // WHEN a gets closed
+        a.markForTermination( Status.Transaction.Terminated );
+        assertFalse( snapshot.eligibleForFreeing() );
+
+        // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
+        c.markForTermination( Status.Transaction.Terminated );
+        KernelTransaction d = getKernelTransaction( transactions );
+        assertFalse( snapshot.eligibleForFreeing() );
+
+        // WHEN b finally gets closed
+        b.markForTermination( Status.Transaction.Terminated );
+        assertTrue( snapshot.eligibleForFreeing() );
+    }
+
+    @Test
     void shouldBeAbleToSnapshotDuringHeavyLoad() throws Throwable
     {
         // GIVEN

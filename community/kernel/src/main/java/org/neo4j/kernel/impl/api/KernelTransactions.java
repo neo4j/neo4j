@@ -242,17 +242,17 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     }
 
     /**
-     * Give an approximate set of all transactions stamps currently running.
+     * Give an approximate set of all transactions stamps that are currently running and hasn't been terminated.
      * This is not guaranteed to be exact, as transactions may stop and start while this set is gathered.
      *
-     * @return the (approximate) set of open transactions stamps.
+     * @return the (approximate) set of open, non-terminated transactions stamps.
      */
-    public Set<KernelTransactionStamp> activeTransactionsStamps()
+    private Set<KernelTransactionStamp> activeAndNotTerminatedTransactionsStamps()
     {
         return allTransactions
                 .stream()
                 .map( KernelTransactionStamp::new )
-                .filter( KernelTransactionStamp::isOpen )
+                .filter( kernelTransactionStamp -> kernelTransactionStamp.isOpen() && !kernelTransactionStamp.isTerminated() )
                 .collect( toSet() );
     }
 
@@ -331,7 +331,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     @Override
     public IdController.IdFreeCondition get()
     {
-        return externalIdReuseConditionProvider.get( new KernelTransactionsSnapshot( activeTransactionsStamps() ), transactionIdStore, clock );
+        return externalIdReuseConditionProvider.get( new KernelTransactionsSnapshot( activeAndNotTerminatedTransactionsStamps() ), transactionIdStore, clock );
     }
 
     /**

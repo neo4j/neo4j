@@ -87,7 +87,7 @@ public class KernelTransactionsSnapshot implements IdController.IdFreeCondition
 
         boolean haveClosed()
         {
-            return !txStamp.isOpen();
+            return !txStamp.isOpen() || txStamp.isTerminated();
         }
     }
 }
