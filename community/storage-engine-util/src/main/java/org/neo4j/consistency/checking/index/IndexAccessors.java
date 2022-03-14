@@ -94,28 +94,26 @@ public class IndexAccessors implements Closeable {
                         if (indexDescriptor.isUnique()
                                 && indexDescriptor.getOwningConstraintId().isEmpty()) {
                             notOnlineIndexRules.add(indexDescriptor);
-                        } else {
-                            if (InternalIndexState.ONLINE
-                                    == indexProvider.getInitialState(indexDescriptor, cursorContext, openOptions)) {
-                                long indexId = indexDescriptor.getId();
-                                try {
-                                    final IndexAccessor accessor = accessorLookup.apply(indexDescriptor);
-                                    if (indexDescriptor.isTokenIndex()) {
-                                        if (indexDescriptor.schema().entityType() == EntityType.NODE) {
-                                            nodeLabelIndex = accessor;
-                                        } else {
-                                            relationshipTypeIndex = accessor;
-                                        }
+                        } else if (InternalIndexState.ONLINE
+                                == indexProvider.getInitialState(indexDescriptor, cursorContext, openOptions)) {
+                            long indexId = indexDescriptor.getId();
+                            try {
+                                final IndexAccessor accessor = accessorLookup.apply(indexDescriptor);
+                                if (indexDescriptor.isTokenIndex()) {
+                                    if (indexDescriptor.schema().entityType() == EntityType.NODE) {
+                                        nodeLabelIndex = accessor;
                                     } else {
-                                        propertyIndexAccessors.put(indexId, accessor);
-                                        onlineIndexRules.add(indexDescriptor);
+                                        relationshipTypeIndex = accessor;
                                     }
-                                } catch (RuntimeException e) {
-                                    inconsistentRules.add(indexDescriptor);
+                                } else {
+                                    propertyIndexAccessors.put(indexId, accessor);
+                                    onlineIndexRules.add(indexDescriptor);
                                 }
-                            } else {
-                                notOnlineIndexRules.add(indexDescriptor);
+                            } catch (RuntimeException e) {
+                                inconsistentRules.add(indexDescriptor);
                             }
+                        } else {
+                            notOnlineIndexRules.add(indexDescriptor);
                         }
                     } catch (Exception e) {
                         // ignore; inconsistencies of the schema store are specifically handled elsewhere.
