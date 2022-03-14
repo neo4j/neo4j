@@ -637,6 +637,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
@@ -662,6 +664,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing start node including start node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }

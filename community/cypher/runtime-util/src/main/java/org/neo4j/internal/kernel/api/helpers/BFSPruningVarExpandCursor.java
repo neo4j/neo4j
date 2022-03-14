@@ -252,30 +252,6 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
     }
 
-//    public final boolean next()
-//    {
-//        while ( selectionCursor.next() && relFilter.test( selectionCursor ) )
-//        {
-//            long other = selectionCursor.otherNodeReference();
-//            if ( seen.add( other ) && nodeFilter.test( other ) )
-//            {
-//                if ( currentDepth < maxDepth )
-//                {
-//                    queue.offer( new NodeState( other, currentDepth ) );
-//                }
-//                return true;
-//            }
-//        }
-//
-//        var next = queue.poll();
-//        if ( next != null && expand( next ) )
-//        {
-//            return next();
-//        }
-//
-//        return false;
-//    }
-
     private boolean expand( NodeState next )
     {
         read.singleNode( next.nodeId(), nodeCursor );
