@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -46,10 +47,13 @@ case object countStorePlanner {
   def apply(query: SinglePlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, selections)
-        if groupingKeys.isEmpty && query.queryInput.isEmpty && aggregatingExpressions.size == 1 && selections.isEmpty =>
+        if groupingKeys.isEmpty && query.queryInput.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
-        countStorePlan.map(p => projection(p, groupingKeys, Some(groupingKeys), context))
+        countStorePlan.map { plan =>
+          val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), context)
+          context.logicalPlanProducer.planHorizonSelection(projectionPlan, selections.flatPredicates, InterestingOrderConfig.empty, context)
+        }
 
       case _ => None
     }

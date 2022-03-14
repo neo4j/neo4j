@@ -254,12 +254,12 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
-  test("should not plan a count store operator when there is a selection on the aggregation") {
+  test("should plan a count store operator when there is a selection on the aggregation") {
     val queryText = "MATCH (n) WITH count(n) AS nodeCount WHERE nodeCount > 0 RETURN nodeCount"
     val (plannerQuery, _) = producePlannerQueryForPattern(queryText, appendReturn = false)
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
   private def producePlannerQuery(query: String, variable: String) = {
