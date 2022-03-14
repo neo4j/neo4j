@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.Literal
@@ -37,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.expressions.functions.IsEmpty
 import org.neo4j.cypher.internal.expressions.functions.Last
-import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.PercentileCont
@@ -50,13 +48,11 @@ import org.neo4j.cypher.internal.expressions.functions.ToBoolean
 import org.neo4j.cypher.internal.expressions.functions.ToString
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.expressions.functions.WithinBBox
-import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
-import org.neo4j.cypher.internal.util.symbols.CTPath
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
@@ -127,19 +123,6 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           expectType(CTList(CTAny).covariant, invocation.arguments.head) chain
             specifyType(possibleTypes(invocation.arguments.head), invocation)
         }
-
-      case Length =>
-        def checkForInvalidUsage(ctx: SemanticContext, invocation: FunctionInvocation) = (originalState: SemanticState) => {
-          val newState = invocation.args.foldLeft(originalState) {
-            case (state, expr) if state.expressionType(expr).actual != CTPath.invariant =>
-              state.addNotification(LengthOnNonPathNotification(expr.position))
-            case (state, expr) =>
-              state
-          }
-
-          SemanticCheckResult(newState, Seq.empty)
-        }
-        checkTypeSignatures(ctx, Length, invocation) chain checkForInvalidUsage(ctx, invocation)
 
       case Max =>
         checkTypeSignatures(ctx, Max, invocation) ifOkChain {

@@ -21,11 +21,7 @@ package org.neo4j.cypher.internal.util
  */
 trait InternalNotification
 
-case class DeprecatedStartNotification(position: InputPosition, alternativeQuery: String) extends InternalNotification
-
 case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String]) extends InternalNotification
-
-case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
 
 case class UnboundedShortestPathNotification(position: InputPosition) extends InternalNotification
 
@@ -50,8 +46,6 @@ case class DeprecatedPeriodicCommit(position: InputPosition) extends InternalNot
 case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends InternalNotification
 
 case class DeprecatedSelfReferenceToVariableInCreatePattern(position: InputPosition) extends InternalNotification
-
-case class DeprecatedPointsComparison(position: InputPosition) extends InternalNotification
 
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 

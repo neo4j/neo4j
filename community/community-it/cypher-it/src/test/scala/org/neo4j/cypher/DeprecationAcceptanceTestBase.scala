@@ -27,7 +27,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PERIODIC_COMMIT
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_POINTS_COMPARE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
@@ -284,17 +283,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   test("deprecated periodic commit hint") {
     val query = "USING PERIODIC COMMIT LOAD CSV FROM 'file:///artists.csv' AS line CREATE (:Artist {name: line[1], year: toInteger(line[2])})"
     assertNotificationInSupportedVersions(query, DEPRECATED_PERIODIC_COMMIT)
-  }
-
-  test("comparing points is deprecated") {
-    val deprecated = Seq(
-      "MATCH (n) WHERE n.prop < point({x:0, y:0}) RETURN n",
-      "MATCH (n) WHERE n.prop <= point({x:0, y:0}) RETURN n",
-      "MATCH (n) WHERE n.prop > point({x:0, y:0}) RETURN n",
-      "MATCH (n) WHERE n.prop >= point({x:0, y:0}) RETURN n",
-      "RETURN point({x:0, y:0}) < point({x:0, y:0}) <= point({x:0, y:0})"
-    )
-    assertNotificationInSupportedVersions(deprecated, DEPRECATED_POINTS_COMPARE)
   }
 
   test("btree index hint") {

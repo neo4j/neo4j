@@ -57,11 +57,6 @@ public enum NotificationCode
         "The hinted join was not planned. This could happen because no generated plan contained the join key, " +
                 "please try using a different join key or restructure your query."
     ),
-    LENGTH_ON_NON_PATH(
-        SeverityLevel.WARNING,
-        Status.Statement.FeatureDeprecationWarning,
-        "Using 'length' on anything that is not a path is deprecated, please use 'size' instead"
-    ),
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
         SeverityLevel.WARNING,
         Status.Statement.DynamicPropertyWarning,
@@ -103,16 +98,6 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The property existence syntax `... exists(variable.property)` is deprecated, please use `variable.property IS NOT NULL` instead"
     ),
-    DEPRECATED_DEFAULT_DATABASE_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The `ON DEFAULT DATABASE` syntax is deprecated, use `ON HOME DATABASE` instead"
-    ),
-    DEPRECATED_DEFAULT_GRAPH_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The `ON DEFAULT GRAPH` syntax is deprecated, use `ON HOME GRAPH` instead"
-    ),
     DEPRECATED_PERIODIC_COMMIT(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
@@ -139,12 +124,6 @@ public enum NotificationCode
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
             "Coercion of list to boolean is deprecated. Please consider using `NOT isEmpty(...)` instead."
-    ),
-    DEPRECATED_POINTS_COMPARE(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The behavior when comparing spatial points with '<', '<=', '>', and '>=` will change. Please use the 'point.withinBBox' or 'point.distance'" +
-            " for seeking spatial points within a specific range."
     ),
     DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION(
             SeverityLevel.WARNING,
