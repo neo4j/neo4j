@@ -83,6 +83,7 @@ import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,6 +103,7 @@ import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 @PageCacheExtension
 @Neo4jLayoutExtension
 @ExtendWith( RandomExtension.class )
+@MultiVersionedTag
 class RecordStorageMigratorIT
 {
     private static final String MIGRATION_DIRECTORY = "upgrade";

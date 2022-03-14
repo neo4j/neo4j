@@ -34,7 +34,6 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -62,7 +61,6 @@ import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -412,22 +410,4 @@ class InProcessServerBuilderIT
     {
         return Neo4jBuilders.newInProcessBuilder( workDir );
     }
-
-    private static class TestExtension extends LifecycleAdapter
-    {
-
-        static final AtomicLong startCounter = new AtomicLong();
-
-        @Override
-        public void start()
-        {
-            startCounter.incrementAndGet();
-        }
-
-        static long getStartCounter()
-        {
-            return startCounter.get();
-        }
-    }
-
 }

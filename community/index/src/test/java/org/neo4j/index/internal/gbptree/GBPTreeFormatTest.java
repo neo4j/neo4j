@@ -34,11 +34,12 @@ import java.util.stream.Stream;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.FormatCompatibilityVerifier;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.PageCacheConfig;
-import org.neo4j.test.RandomSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,6 +102,7 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
 
     @ParameterizedTest
     @MethodSource( "data" )
+    @MultiVersionedTag
     public void shouldDetectFormatChange( TestLayout<KEY,VALUE> layout, String zipName, int pageSize ) throws Throwable
     {
         init( layout, zipName, pageSize );

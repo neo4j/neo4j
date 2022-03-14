@@ -42,6 +42,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -113,6 +114,7 @@ class GBPTreeBootstrapperTest
 
     @ParameterizedTest
     @MethodSource( "testSetupStream" )
+    @MultiVersionedTag
     void shouldBootstrapTreeOfDifferentPageSizes( TestSetup testSetup ) throws Exception
     {
         setupTest( testSetup );

@@ -43,6 +43,7 @@ import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,6 +79,7 @@ class RecordStoreVersionTest
     }
 
     @Nested
+    @MultiVersionedTag
     class SupportedVersions
     {
         @BeforeEach

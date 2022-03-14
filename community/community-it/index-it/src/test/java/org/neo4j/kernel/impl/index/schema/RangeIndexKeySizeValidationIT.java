@@ -53,6 +53,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -136,7 +137,8 @@ public class RangeIndexKeySizeValidationIT
      * is documented and if it changes, documentation also needs to change.
      */
     @ParameterizedTest
-    @MethodSource( "pageSizes" )
+    @MethodSource( "payloadSize" )
+    @MultiVersionedTag
     void shouldEnforceSizeCapSingleValueSingleType( int pageSize )
     {
         startDb( pageSize );
@@ -257,7 +259,7 @@ public class RangeIndexKeySizeValidationIT
      * (1/2)^3995. As a reference (1/2)^100 = 7.8886091e-31.
      */
     @ParameterizedTest
-    @MethodSource( "pageSizes" )
+    @MethodSource( "payloadSize" )
     void shouldEnforceSizeCapMixedTypes( int pageSize )
     {
         startDb( pageSize );
@@ -266,7 +268,7 @@ public class RangeIndexKeySizeValidationIT
             String[] propKeys = generatePropertyKeys( numberOfSlots );
 
             createIndex( propKeys );
-            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageSize );
+            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize( pageSize - PageCache.RESERVED_BYTES );
             int keySizeLimitPerSlot = keySizeLimit / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
             int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
             SuccessAndFail successAndFail = new SuccessAndFail();
@@ -297,7 +299,7 @@ public class RangeIndexKeySizeValidationIT
         }
     }
 
-    private static Stream<Integer> pageSizes()
+    private static Stream<Integer> payloadSize()
     {
         return Stream.of( PAGE_SIZE_8K, PAGE_SIZE_16K );
     }

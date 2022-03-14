@@ -30,6 +30,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -99,7 +101,7 @@ public final class ProcessUtil
     /**
      * Start java process with java that is defined in {@code java.home}, with classpath that is defined by {@code java.class.path} and
      * with additional module options defined by {@code jdk.custom.options} system property and with provided additional arguments.
-     * By default new process started with inherited io option.
+     * By default, new process started with inherited io option.
      * @param arguments additional arguments that should be passed to new process
      * @return newly started java process
      */
@@ -111,7 +113,7 @@ public final class ProcessUtil
     /**
      * Start java process with java that is defined in {@code java.home}, with classpath that is defined by {@code java.class.path} and
      * with additional module options defined by {@code jdk.custom.options} system property and with provided additional arguments
-     * @param
+     * @param configurator process builder additional configurator
      * @param arguments additional arguments that should be passed to new process
      * @return newly started java process
      */
@@ -128,12 +130,38 @@ public final class ProcessUtil
         // Classpath can get very long and that can upset Windows, so write it to a file
         Path p = Files.createTempFile( "jvm", ".args" );
         p.toFile().deleteOnExit();
-        Files.writeString( p, "-cp " + getClassPath(), StandardCharsets.UTF_8 );
+        Files.writeString( p, systemProperties() + " -cp " + getClassPath(), StandardCharsets.UTF_8 );
 
         args.add( "@" + p.normalize() );
         args.addAll( Arrays.asList( arguments ) );
         ProcessBuilder processBuilder = new ProcessBuilder( args );
         configurator.accept( processBuilder );
         return processBuilder.start();
+    }
+
+    private static String systemProperties()
+    {
+        StringBuilder builder = new StringBuilder();
+        Properties properties = System.getProperties();
+        for ( Map.Entry<Object,Object> entry : properties.entrySet() )
+        {
+            String name = entry.getKey().toString();
+            if ( !isJdkProperty( name ) )
+            {
+                builder.append( systemProperty( name, entry.getValue().toString() ) );
+                builder.append( " " );
+            }
+        }
+        return builder.toString();
+    }
+
+    private static boolean isJdkProperty( String name )
+    {
+        return name.startsWith( "java" ) || name.startsWith( "os" ) || name.startsWith( "sun" ) || name.startsWith( "user" ) || name.startsWith( "line" );
+    }
+
+    private static String systemProperty( String key, String value )
+    {
+        return "-D" + key + "=" + value;
     }
 }

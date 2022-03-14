@@ -53,8 +53,6 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.Boolean.FALSE;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 
 /**
  * Test factory for graph databases.
@@ -163,10 +161,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
                      .setDefault( GraphDatabaseInternalSettings.netty_server_shutdown_timeout, Duration.ofSeconds( 3 ) )
                      .setDefault( GraphDatabaseInternalSettings.additional_lock_verification, true )
                      .setDefault( GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true );
-        if ( config.get( multi_version_store ) )
-        {
-            builder.set( reserved_page_header_bytes, Long.BYTES * 3 );
-        }
         return builder.build();
     }
 

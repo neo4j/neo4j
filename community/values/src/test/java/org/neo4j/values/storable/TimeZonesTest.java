@@ -115,6 +115,7 @@ class TimeZonesTest
 
     @Disabled( "Too restrictive as-is: Zone IDs aren't stable across JDKs, 'Pacific/Kanton' isn't currently supported by x86-ubuntu-oraclejdk-17" )
     @Test
+    @Disabled
     void allTimeZonesAreValidZoneIDs()
     {
         TimeZones.supportedTimeZones().forEach( timeZone ->

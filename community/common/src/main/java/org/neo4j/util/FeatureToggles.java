@@ -186,27 +186,6 @@ public final class FeatureToggles
         System.clearProperty( name( location, name ) );
     }
 
-    /**
-     * Helps creating a JVM parameter for setting a feature toggle of an arbitrary type.
-     * Given value will be converted to string using {@link Objects#toString(Object)} method.
-     *
-     * @param location the class that owns the flag.
-     * @param name the local name of the flag.
-     * @param value the value to assign to the feature toggle.
-     * @return the parameter to pass to the command line of the forked JVM.
-     */
-    public static String toggle( Class<?> location, String name, Object value )
-    {
-        return toggle( name( location, name ), Objects.toString( value ) );
-    }
-
-    // <implementation>
-
-    private static String toggle( String key, String value )
-    {
-        return "-D" + key + "=" + value;
-    }
-
     private FeatureToggles()
     {
     }

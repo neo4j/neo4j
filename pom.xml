@@ -83,6 +83,7 @@
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
+      -Dunsupported.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
@@ -105,7 +106,9 @@
     </test.runner.jvm.settings>
     <default.jupiter.test.timeout>20m</default.jupiter.test.timeout>
     <default.jupiter.test.mode>same_thread</default.jupiter.test.mode>
+    <excludedTestGroups/>
     <forkCounts>1</forkCounts>
+    <multiversion.store>false</multiversion.store>
     <parallel.tests>false</parallel.tests>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
     <cursor.counters.check>true</cursor.counters.check>
@@ -300,6 +303,7 @@
               <exclude>**/*$*.class</exclude>
               <exclude>**/*IntegrationTest.class</exclude>
             </excludes>
+            <excludedGroups>${excludedTestGroups}</excludedGroups>
           </configuration>
           <dependencies>
             <dependency>
@@ -335,6 +339,7 @@
               <include>**/*ITCase.class</include>
               <include>**/*IntegrationTest.class</include>
             </includes>
+            <excludedGroups>${excludedTestGroups}</excludedGroups>
             <systemPropertyVariables>
               <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
               <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
@@ -929,6 +934,19 @@
       <properties>
         <forkCounts>1C</forkCounts>
         <parallel.tests>true</parallel.tests>
+      </properties>
+    </profile>
+    <profile>
+      <id>multiVersionPrototype</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>unsupported.dbms.multiversioned.store.override</name>
+        </property>
+      </activation>
+      <properties>
+        <excludedTestGroups>multiVersioned</excludedTestGroups>
+        <multiversion.store>true</multiversion.store>
       </properties>
     </profile>
     <profile>
