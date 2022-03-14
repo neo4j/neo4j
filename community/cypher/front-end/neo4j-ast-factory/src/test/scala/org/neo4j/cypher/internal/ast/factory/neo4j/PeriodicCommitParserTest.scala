@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
 
-class PeriodicCommitParserTest extends JavaccParserAstTestBase[Statement] with VerifyAstPositionTestSupport {
+class PeriodicCommitParserTest extends JavaccParserAstTestBase[Statement] {
 
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statement
 

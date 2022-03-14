@@ -143,8 +143,6 @@ class FabricPlannerTest
         )
     }
 
-    // TODO: Test CALL IN TX?
-
     "single admin command" in {
       val remote = asRemote(
         """CREATE ROLE myRole

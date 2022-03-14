@@ -418,7 +418,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     )(pos))(pos))(Set.empty, "", "")
 
   def query(part: QueryPart): Query =
-    Query( part)(pos)
+    Query(part)(pos)
 
   def query(cs: Clause*): Query =
     Query(SingleQuery(cs)(defaultPos))(defaultPos)
