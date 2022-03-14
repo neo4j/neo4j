@@ -87,7 +87,7 @@ public class KernelTransactionsSnapshot implements IdController.ConditionSnapsho
 
         boolean haveClosed()
         {
-            return !txStamp.isOpen();
+            return !txStamp.isOpen() || txStamp.isTerminated();
         }
     }
 }
