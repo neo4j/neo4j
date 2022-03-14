@@ -492,7 +492,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case Query(SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _),returns@Return(_,_,_,_,_,_)))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case Query(None, SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _)))) if signature.systemProcedure =>
+      case Query(SingleQuery(Seq(resolved@plans.ResolvedCall(signature, _, _, _, _, _)))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 
       // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES YIELD ...
