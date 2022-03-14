@@ -107,8 +107,7 @@ public class TokenIndexProvider extends IndexProvider {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
-            throws IOException {
+            ImmutableSet<OpenOption> openOptions) {
         return new TokenIndexAccessor(
                 databaseIndexContext, indexFiles(descriptor), descriptor, recoveryCleanupWorkCollector, openOptions);
     }
