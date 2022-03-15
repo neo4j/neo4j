@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static java.lang.Math.toIntExact;
@@ -179,17 +180,19 @@ public class Loaders
 
     public static RecordLoader<NodeRecord,Void> nodeLoader( final RecordStore<NodeRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( NODE_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( NODE_CURSOR ), NodeRecord.SHALLOW_SIZE )
         {
             @Override
-            public NodeRecord newUnused( long key, Void additionalData )
+            public NodeRecord newUnused( long key, Void additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( NodeRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new NodeRecord( key ) );
             }
 
             @Override
-            public NodeRecord copy( NodeRecord nodeRecord )
+            public NodeRecord copy( NodeRecord nodeRecord, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( NodeRecord.SHALLOW_SIZE );
                 return new NodeRecord( nodeRecord );
             }
         };
@@ -197,11 +200,12 @@ public class Loaders
 
     public static RecordLoader<PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( PROPERTY_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( PROPERTY_CURSOR ), PropertyRecord.INITIAL_SIZE )
         {
             @Override
-            public PropertyRecord newUnused( long key, PrimitiveRecord additionalData )
+            public PropertyRecord newUnused( long key, PrimitiveRecord additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( PropertyRecord.INITIAL_SIZE );
                 PropertyRecord record = new PropertyRecord( key );
                 setOwner( record, additionalData );
                 return andMarkAsCreated( record );
@@ -216,16 +220,18 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load )
+            public PropertyRecord load( long key, PrimitiveRecord additionalData, RecordLoad load, MemoryTracker memoryTracker )
             {
-                PropertyRecord record = super.load( key, additionalData, load );
+                memoryTracker.allocateHeap( PropertyRecord.INITIAL_SIZE );
+                PropertyRecord record = super.load( key, additionalData, load, memoryTracker );
                 setOwner( record, additionalData );
                 return record;
             }
 
             @Override
-            public PropertyRecord copy( PropertyRecord propertyRecord )
+            public PropertyRecord copy( PropertyRecord propertyRecord, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( PropertyRecord.INITIAL_SIZE );
                 return new PropertyRecord( propertyRecord );
             }
         };
@@ -233,17 +239,19 @@ public class Loaders
 
     public static RecordLoader<RelationshipRecord,Void> relationshipLoader( final RecordStore<RelationshipRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( RELATIONSHIP_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( RELATIONSHIP_CURSOR ), RelationshipRecord.SHALLOW_SIZE )
         {
             @Override
-            public RelationshipRecord newUnused( long key, Void additionalData )
+            public RelationshipRecord newUnused( long key, Void additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new RelationshipRecord( key ) );
             }
 
             @Override
-            public RelationshipRecord copy( RelationshipRecord relationshipRecord )
+            public RelationshipRecord copy( RelationshipRecord relationshipRecord, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipRecord.SHALLOW_SIZE );
                 return new RelationshipRecord( relationshipRecord );
             }
         };
@@ -252,19 +260,21 @@ public class Loaders
     public static RecordLoader<RelationshipGroupRecord,Integer> relationshipGroupLoader( final RecordStore<RelationshipGroupRecord> store,
             StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( GROUP_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( GROUP_CURSOR ), RelationshipGroupRecord.SHALLOW_SIZE )
         {
             @Override
-            public RelationshipGroupRecord newUnused( long key, Integer type )
+            public RelationshipGroupRecord newUnused( long key, Integer type, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipGroupRecord.SHALLOW_SIZE );
                 RelationshipGroupRecord record = new RelationshipGroupRecord( key );
                 record.setType( type );
                 return andMarkAsCreated( record );
             }
 
             @Override
-            public RelationshipGroupRecord copy( RelationshipGroupRecord record )
+            public RelationshipGroupRecord copy( RelationshipGroupRecord record, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipGroupRecord.SHALLOW_SIZE );
                 return new RelationshipGroupRecord( record );
             }
         };
@@ -272,17 +282,19 @@ public class Loaders
 
     private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( SCHEMA_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( SCHEMA_CURSOR ), SchemaRecord.SHALLOW_SIZE )
         {
             @Override
-            public SchemaRecord newUnused( long key, SchemaRule additionalData )
+            public SchemaRecord newUnused( long key, SchemaRule additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( SchemaRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new SchemaRecord( key ) );
             }
 
             @Override
-            public SchemaRecord copy( SchemaRecord record )
+            public SchemaRecord copy( SchemaRecord record, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( SchemaRecord.SHALLOW_SIZE );
                 return new SchemaRecord( record );
             }
         };
@@ -290,17 +302,19 @@ public class Loaders
 
     public static RecordLoader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader( final RecordStore<PropertyKeyTokenRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( PROPERTY_KEY_TOKEN_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( PROPERTY_KEY_TOKEN_CURSOR ), PropertyKeyTokenRecord.SHALLOW_SIZE )
         {
             @Override
-            public PropertyKeyTokenRecord newUnused( long key, Void additionalData )
+            public PropertyKeyTokenRecord newUnused( long key, Void additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( PropertyKeyTokenRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new PropertyKeyTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public PropertyKeyTokenRecord copy( PropertyKeyTokenRecord record )
+            public PropertyKeyTokenRecord copy( PropertyKeyTokenRecord record, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( PropertyKeyTokenRecord.SHALLOW_SIZE );
                 return new PropertyKeyTokenRecord( record );
             }
         };
@@ -308,17 +322,19 @@ public class Loaders
 
     public static RecordLoader<LabelTokenRecord,Void> labelTokenLoader( final RecordStore<LabelTokenRecord> store, StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( LABEL_TOKEN_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( LABEL_TOKEN_CURSOR ), LabelTokenRecord.SHALLOW_SIZE )
         {
             @Override
-            public LabelTokenRecord newUnused( long key, Void additionalData )
+            public LabelTokenRecord newUnused( long key, Void additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( LabelTokenRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new LabelTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public LabelTokenRecord copy( LabelTokenRecord record )
+            public LabelTokenRecord copy( LabelTokenRecord record, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( LabelTokenRecord.SHALLOW_SIZE );
                 return new LabelTokenRecord( record );
             }
         };
@@ -327,17 +343,19 @@ public class Loaders
     public static RecordLoader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader( final RecordStore<RelationshipTypeTokenRecord> store,
             StoreCursors storeCursors )
     {
-        return new RecordLoader<>( store, storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR ) )
+        return new RecordLoader<>( store, storeCursors.readCursor( REL_TYPE_TOKEN_CURSOR ), RelationshipTypeTokenRecord.SHALLOW_SIZE )
         {
             @Override
-            public RelationshipTypeTokenRecord newUnused( long key, Void additionalData )
+            public RelationshipTypeTokenRecord newUnused( long key, Void additionalData, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipTypeTokenRecord.SHALLOW_SIZE );
                 return andMarkAsCreated( new RelationshipTypeTokenRecord( toIntExact( key ) ) );
             }
 
             @Override
-            public RelationshipTypeTokenRecord copy( RelationshipTypeTokenRecord record )
+            public RelationshipTypeTokenRecord copy( RelationshipTypeTokenRecord record, MemoryTracker memoryTracker )
             {
+                memoryTracker.allocateHeap( RelationshipTypeTokenRecord.SHALLOW_SIZE );
                 return new RelationshipTypeTokenRecord( record );
             }
         };
@@ -353,11 +371,13 @@ public class Loaders
     {
         private final RecordStore<R> store;
         private final PageCursor pageCursor;
+        private final long recordHeapSize;
 
-        RecordLoader( RecordStore<R> store, PageCursor pageCursor )
+        RecordLoader( RecordStore<R> store, PageCursor pageCursor, long recordHeapSize )
         {
             this.store = store;
             this.pageCursor = pageCursor;
+            this.recordHeapSize = recordHeapSize;
         }
 
         @Override
@@ -367,8 +387,9 @@ public class Loaders
         }
 
         @Override
-        public R load( long key, A additionalData, RecordLoad load )
+        public R load( long key, A additionalData, RecordLoad load, MemoryTracker memoryTracker )
         {
+            memoryTracker.allocateHeap( recordHeapSize );
             R record = store.newRecord();
             store.getRecordByCursor( key, record, load, pageCursor );
             return record;

@@ -36,6 +36,8 @@ import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever transaction is committed.
  */
@@ -69,7 +71,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         {
             return loaded;
         }
-        return proxy( key, loader.load( key, additionalData, load ), additionalData, false, cursorContext );
+        return proxy( key, loader.load( key, additionalData, load, INSTANCE ), additionalData, false, cursorContext );
     }
 
     private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
@@ -82,7 +84,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
     @Override
     public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData, CursorContext cursorContext )
     {
-        return proxy( key, loader.newUnused( key, additionalData ), additionalData, true, cursorContext );
+        return proxy( key, loader.newUnused( key, additionalData, INSTANCE ), additionalData, true, cursorContext );
     }
 
     @Override
@@ -122,6 +124,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         private final CursorContext cursorContext;
         private boolean changed;
         private final boolean created;
+        private RECORD before;
 
         DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created, CursorContext cursorContext )
         {
@@ -189,7 +192,16 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         @Override
         public RECORD getBefore()
         {
-            return loader.load( key, additionalData, RecordLoad.NORMAL );
+            ensureHasBeforeRecordImage();
+            return before;
+        }
+
+        private void ensureHasBeforeRecordImage()
+        {
+            if ( before == null )
+            {
+                before = loader.load( key, additionalData, RecordLoad.NORMAL, INSTANCE );
+            }
         }
 
         @Override

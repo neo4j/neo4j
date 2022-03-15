@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -96,13 +97,13 @@ public interface RecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
      */
     interface Loader<RECORD extends AbstractBaseRecord,ADDITIONAL>
     {
-        RECORD newUnused( long key, ADDITIONAL additionalData );
+        RECORD newUnused( long key, ADDITIONAL additionalData, MemoryTracker memoryTracker );
 
-        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load );
+        RECORD load( long key, ADDITIONAL additionalData, RecordLoad load, MemoryTracker memoryTracker );
 
         void ensureHeavy( RECORD record, StoreCursors storeCursors );
 
-        RECORD copy( RECORD record );
+        RECORD copy( RECORD record, MemoryTracker memoryTracker );
     }
 
     interface LoadMonitor

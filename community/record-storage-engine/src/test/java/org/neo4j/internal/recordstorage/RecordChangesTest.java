@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,13 +35,13 @@ class RecordChangesTest
     private final RecordAccess.Loader<NodeRecord, Object> loader = new RecordAccess.Loader<>()
     {
         @Override
-        public NodeRecord newUnused( long id, Object additionalData )
+        public NodeRecord newUnused( long id, Object additionalData, MemoryTracker memoryTracker )
         {
             return new NodeRecord( id );
         }
 
         @Override
-        public NodeRecord load( long id, Object additional, RecordLoad load )
+        public NodeRecord load( long id, Object additional, RecordLoad load, MemoryTracker memoryTracker )
         {
             return new NodeRecord( id );
         }
@@ -52,7 +53,7 @@ class RecordChangesTest
         }
 
         @Override
-        public NodeRecord copy( NodeRecord o )
+        public NodeRecord copy( NodeRecord o, MemoryTracker memoryTracker )
         {
             return o;
         }
@@ -62,8 +63,7 @@ class RecordChangesTest
     void shouldCountChanges()
     {
         // Given
-        RecordChanges<NodeRecord,Object> change =
-                new RecordChanges<>( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
+        var change = RecordChanges.create( loader, new MutableInt(), INSTANCE, RecordAccess.LoadMonitor.NULL_MONITOR, StoreCursors.NULL );
 
         // When
         change.getOrLoad( 1, null ).forChangingData();

@@ -75,14 +75,14 @@ public class RecordChangeSet implements RecordAccessSet
             RecordAccess.LoadMonitor monitor,
             StoreCursors storeCursors )
     {
-        this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.relRecords = new RecordChanges<>( relationshipLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.relGroupRecords = new RecordChanges<>( relationshipGroupLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.schemaRuleChanges = new RecordChanges<>( schemaRuleLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.propertyKeyTokenChanges = new RecordChanges<>( propertyKeyTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.labelTokenChanges = new RecordChanges<>( labelTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
-        this.relationshipTypeTokenChanges = new RecordChanges<>( relationshipTypeTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.nodeRecords = RecordChanges.create( nodeLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.propertyRecords = RecordChanges.create( propertyLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relRecords = RecordChanges.create( relationshipLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relGroupRecords = RecordChanges.create( relationshipGroupLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.schemaRuleChanges = RecordChanges.create( schemaRuleLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.propertyKeyTokenChanges = RecordChanges.create( propertyKeyTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.labelTokenChanges = RecordChanges.create( labelTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
+        this.relationshipTypeTokenChanges = RecordChanges.create( relationshipTypeTokenLoader, changeCounter, memoryTracker, monitor, storeCursors );
     }
 
     @Override

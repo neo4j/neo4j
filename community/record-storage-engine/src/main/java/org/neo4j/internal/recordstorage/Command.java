@@ -203,8 +203,7 @@ public abstract class Command implements StorageCommand
 
     public static class NodeCommand extends BaseCommand<NodeRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( NodeCommand.class );
-        static final long HEAP_SIZE = NodeCommand.SHALLOW_SIZE + 2 * NodeRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( NodeCommand.class );
 
         public NodeCommand( NodeRecord before, NodeRecord after )
         {
@@ -241,8 +240,7 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipCommand extends BaseCommand<RelationshipRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipCommand.class );
-        static final long HEAP_SIZE = RelationshipCommand.SHALLOW_SIZE + 2 * RelationshipRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( RelationshipCommand.class );
 
         public RelationshipCommand( RelationshipRecord before, RelationshipRecord after )
         {
@@ -275,8 +273,7 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipGroupCommand extends BaseCommand<RelationshipGroupRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipGroupCommand.class );
-        static final long HEAP_SIZE = RelationshipGroupCommand.SHALLOW_SIZE + 2 * RelationshipGroupRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( RelationshipGroupCommand.class );
 
         public RelationshipGroupCommand( RelationshipGroupRecord before, RelationshipGroupRecord after )
         {
@@ -367,8 +364,7 @@ public abstract class Command implements StorageCommand
 
     public static class PropertyCommand extends BaseCommand<PropertyRecord> implements PropertyRecordChange
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyCommand.class );
-        static final long HEAP_SIZE = PropertyCommand.SHALLOW_SIZE + 2 * PropertyRecord.INITIAL_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( PropertyCommand.class );
 
         public PropertyCommand( PropertyRecord before, PropertyRecord after )
         {
@@ -477,8 +473,7 @@ public abstract class Command implements StorageCommand
 
     public static class PropertyKeyTokenCommand extends TokenCommand<PropertyKeyTokenRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( PropertyKeyTokenCommand.class );
-        static final long HEAP_SIZE = PropertyKeyTokenCommand.SHALLOW_SIZE + 2 * PropertyKeyTokenRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( PropertyKeyTokenCommand.class );
 
         public PropertyKeyTokenCommand( PropertyKeyTokenRecord before, PropertyKeyTokenRecord after )
         {
@@ -505,8 +500,7 @@ public abstract class Command implements StorageCommand
 
     public static class RelationshipTypeTokenCommand extends TokenCommand<RelationshipTypeTokenRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( RelationshipTypeTokenCommand.class );
-        static final long HEAP_SIZE = RelationshipTypeTokenCommand.SHALLOW_SIZE + 2 * RelationshipTypeTokenRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( RelationshipTypeTokenCommand.class );
 
         public RelationshipTypeTokenCommand( RelationshipTypeTokenRecord before, RelationshipTypeTokenRecord after )
         {
@@ -533,8 +527,7 @@ public abstract class Command implements StorageCommand
 
     public static class LabelTokenCommand extends TokenCommand<LabelTokenRecord>
     {
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( LabelTokenCommand.class );
-        static final long HEAP_SIZE = LabelTokenCommand.SHALLOW_SIZE + 2 * LabelTokenRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( LabelTokenCommand.class );
 
         public LabelTokenCommand( LabelTokenRecord before, LabelTokenRecord after )
         {
@@ -563,8 +556,7 @@ public abstract class Command implements StorageCommand
     {
         private final SchemaRule schemaRule;
 
-        static final long SHALLOW_SIZE = shallowSizeOfInstance( SchemaRuleCommand.class );
-        static final long HEAP_SIZE = SchemaRuleCommand.SHALLOW_SIZE + 2 * SchemaRecord.SHALLOW_SIZE;
+        static final long HEAP_SIZE = shallowSizeOfInstance( SchemaRuleCommand.class );
 
         public SchemaRuleCommand( SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule )
         {
