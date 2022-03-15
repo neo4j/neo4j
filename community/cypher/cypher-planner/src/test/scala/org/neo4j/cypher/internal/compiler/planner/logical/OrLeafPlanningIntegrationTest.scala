@@ -1366,14 +1366,6 @@ class OrLeafPlanningIntegrationTest
     ))
   }
 
-  def makeString(iterable: Iterable[String], prefix: String, infix: String, suffix: String): String = {
-    if (iterable.isEmpty) {
-      ""
-    } else {
-      iterable.mkString(prefix, infix, suffix)
-    }
-  }
-
   test("should be able to cope with any combination of disjunction of predicates") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(0)
@@ -1381,16 +1373,14 @@ class OrLeafPlanningIntegrationTest
       .enableMinimumGraphStatistics()
       .build()
 
-    forAll (
-      Gen.listOfN(3, Gen.listOf(Gen.choose(1, 3)))
-    ) { (disjunction: Seq[Seq[Int]]) =>
-      val selections = {
-        val conjunctions = disjunction.map { conjunction =>
-          val propertyPredicates = conjunction.map(_.abs).distinct.map(operand => s"a.prop$operand IS NOT NULL")
-          makeString(propertyPredicates, "(", " AND ", ")")
-        }.filter(_.nonEmpty)
-        makeString(conjunctions, "WHERE ", " OR ", "")
-      }
+    forAll (for {
+      size <- Gen.choose(2, 3)
+      disjunctions <- Gen.sequence[Seq[Set[Int]], Set[Int]](Seq.fill(size)(Gen.nonEmptyBuildableOf[Set[Int], Int](Gen.choose(1,3))))
+    } yield disjunctions) { (disjunctions: Seq[Set[Int]]) =>
+      val selections =
+        disjunctions.map(
+          _.map(operand => s"a.prop$operand IS NOT NULL").mkString("(", " AND ", ")")
+        ).mkString("WHERE ", " OR ", "")
       val query =
         s"""MATCH (a:A)
            |$selections
@@ -1399,18 +1389,6 @@ class OrLeafPlanningIntegrationTest
         planner.plan(query)
       }
     }
-  }
-
-  test("x") {
-    val planner = plannerConfig()
-      .addNodeIndex("L", Seq("p1"), 0.5, 0.5)
-      .addNodeIndex("L", Seq("p2"), 0.5, 0.5)
-      .enablePrintCostComparisons()
-      .build()
-
-    val query = """MATCH (n) WHERE n:L AND n.p1 = 1 AND (n.p1 = 1 OR n.p2 = 1) RETURN n"""
-
-    planner.plan(query).printLogicalPlanBuilderString()
   }
 
   private def runWithTimeout[T](timeout: Long)(f: => T): T = {
