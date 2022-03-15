@@ -30,7 +30,6 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.internal.recordstorage.RecordChanges.RecordChange;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -124,17 +123,17 @@ class WriteTransactionCommandOrderingTest
 
         List<RecordProxy<NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
-        RecordChange<NodeRecord,Void> deletedNode = mock( RecordChange.class );
+        var deletedNode = mock( RecordProxy.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
         when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
         nodeChanges.add( deletedNode );
 
-        RecordChange<NodeRecord,Void> createdNode = mock( RecordChange.class );
+        var createdNode = mock( RecordProxy.class );
         when( createdNode.getBefore() ).thenReturn( missingNode() );
         when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
         nodeChanges.add( createdNode );
 
-        RecordChange<NodeRecord,Void> updatedNode = mock( RecordChange.class );
+        var updatedNode = mock( RecordProxy.class );
         when( updatedNode.getBefore() ).thenReturn( inUseNode() );
         when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
         nodeChanges.add( updatedNode );

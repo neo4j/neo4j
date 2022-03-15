@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 class MapRecordStore implements LockVerificationMonitor.StoreLoader
@@ -153,7 +154,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
         return new RecordAccess.Loader<T,R>()
         {
             @Override
-            public T newUnused( long key, R additionalData )
+            public T newUnused( long key, R additionalData, MemoryTracker memoryTracker )
             {
                 T record = factory.apply( key, additionalData );
                 record.setCreated();
@@ -161,7 +162,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
             }
 
             @Override
-            public T load( long key, R additionalData, RecordLoad load )
+            public T load( long key, R additionalData, RecordLoad load, MemoryTracker memoryTracker )
             {
                 return loadRecord( key, store, monitor );
             }
@@ -173,7 +174,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader
             }
 
             @Override
-            public T copy( T record )
+            public T copy( T record, MemoryTracker memoryTracker )
             {
                 return (T) record.copy();
             }

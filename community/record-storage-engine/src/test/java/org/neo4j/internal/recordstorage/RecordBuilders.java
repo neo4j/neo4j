@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -243,13 +244,13 @@ public class RecordBuilders
         }
 
         @Override
-        public T newUnused( long key, E additionalData )
+        public T newUnused( long key, E additionalData, MemoryTracker memoryTracker )
         {
             return newRecord.apply( key, additionalData );
         }
 
         @Override
-        public T load( long key, E additionalData, RecordLoad load )
+        public T load( long key, E additionalData, RecordLoad load, MemoryTracker memoryTracker )
         {
             return records.stream().filter( r -> r.getId() == key ).findFirst().get();
         }
@@ -262,7 +263,7 @@ public class RecordBuilders
 
         @SuppressWarnings( "unchecked" )
         @Override
-        public T copy( T record )
+        public T copy( T record, MemoryTracker memoryTracker )
         {
             return (T)record.copy();
         }

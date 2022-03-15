@@ -32,29 +32,42 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.util.LocalIntCounter;
 
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
- * Manages changes to records in a transaction. Before/after state is supported as well as
- * deciding when to make a record heavy and when to consider it changed for inclusion in the
- * transaction as a command.
+ * Manages changes to records in a transaction. Before/after state is supported as well as deciding when to make a record heavy and when to consider it changed
+ * for inclusion in the transaction as a command.
  *
- * @param <RECORD> type of record
+ * @param <RECORD>     type of record
  * @param <ADDITIONAL> additional payload
  */
-public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
+public class RecordChanges<RECORD extends AbstractBaseRecord, ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> recordChanges;
+    public static final long SHALLOW_SIZE = shallowSizeOfInstance( RecordChanges.class ) + shallowSizeOfInstance( LocalIntCounter.class );
+
+    private final MutableLongObjectMap<RecordProxy<RECORD,ADDITIONAL>> recordChanges;
     private final Loader<RECORD,ADDITIONAL> loader;
     private final MutableInt changeCounter;
+    private final MemoryTracker memoryTracker;
     private final LoadMonitor loadMonitor;
     private final StoreCursors storeCursors;
 
-    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker, LoadMonitor loadMonitor,
-            StoreCursors storeCursors )
+    public static <RECORD extends AbstractBaseRecord, ADDITIONAL> RecordChanges<RECORD,ADDITIONAL> create( Loader<RECORD,ADDITIONAL> loader,
+                                                                                                           MutableInt globalCounter,
+                                                                                                           MemoryTracker memoryTracker, LoadMonitor loadMonitor,
+                                                                                                           StoreCursors storeCursors )
+    {
+        memoryTracker.allocateHeap( SHALLOW_SIZE );
+        return new RecordChanges<>( loader, globalCounter, memoryTracker, loadMonitor, storeCursors );
+    }
+
+    private RecordChanges( Loader<RECORD,ADDITIONAL> loader, MutableInt globalCounter, MemoryTracker memoryTracker, LoadMonitor loadMonitor,
+                          StoreCursors storeCursors )
     {
         this.loader = loader;
         this.recordChanges = newLongObjectMap( memoryTracker );
         this.changeCounter = new LocalIntCounter( globalCounter );
+        this.memoryTracker = memoryTracker;
         this.loadMonitor = loadMonitor;
         this.storeCursors = storeCursors;
     }
@@ -79,8 +92,9 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         RecordProxy<RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
-            RECORD record = loader.load( key, additionalData, load );
-            result = new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, storeCursors );
+            RECORD record = loader.load( key, additionalData, load, memoryTracker );
+            memoryTracker.allocateHeap( RecordChange.SHALLOW_SIZE );
+            result = new RecordChange( key, record, false, additionalData );
         }
         return result;
     }
@@ -88,8 +102,8 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
     @Override
     public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData, CursorContext cursorContext )
     {
-        RecordChange<RECORD, ADDITIONAL> recordChange =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData, loadMonitor, storeCursors );
+        memoryTracker.allocateHeap( RecordChange.SHALLOW_SIZE );
+        var recordChange = new RecordChange( key, record, false, additionalData );
         recordChanges.put( key, recordChange );
         return recordChange;
     }
@@ -108,9 +122,9 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             throw new IllegalStateException( key + " already exists" );
         }
 
-        RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<RECORD,ADDITIONAL> change =
-                new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData, loadMonitor, storeCursors );
+        RECORD record = loader.newUnused( key, additionalData, memoryTracker );
+        memoryTracker.allocateHeap( RecordChange.SHALLOW_SIZE );
+        var change = new RecordChange( key, record, true, additionalData );
         recordChanges.put( key, change );
         return change;
     }
@@ -121,15 +135,11 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         return recordChanges.values();
     }
 
-    public static class RecordChange<RECORD extends AbstractBaseRecord,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
+    private class RecordChange implements RecordProxy<RECORD,ADDITIONAL>
     {
-        private final MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges;
-        private final MutableInt changeCounter;
-        private final Loader<RECORD,ADDITIONAL> loader;
+        public static final long SHALLOW_SIZE = shallowSizeOfInstance( RecordChanges.RecordChange.class );
 
         private final ADDITIONAL additionalData;
-        private final LoadMonitor loadMonitor;
-        private final StoreCursors storeCursors;
         private final RECORD record;
         private final boolean created;
         private final long key;
@@ -137,19 +147,12 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( MutableLongObjectMap<RecordProxy<RECORD, ADDITIONAL>> allChanges, MutableInt changeCounter,
-                long key, RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData, LoadMonitor loadMonitor,
-                StoreCursors storeCursors )
+        private RecordChange( long key, RECORD record, boolean created, ADDITIONAL additionalData )
         {
-            this.allChanges = allChanges;
-            this.changeCounter = changeCounter;
             this.key = key;
             this.record = record;
-            this.loader = loader;
             this.created = created;
             this.additionalData = additionalData;
-            this.loadMonitor = loadMonitor;
-            this.storeCursors = storeCursors;
         }
 
         @Override
@@ -182,7 +185,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                RecordProxy<RECORD,ADDITIONAL> previous = this.allChanges.put( key, this );
+                RecordProxy<RECORD,ADDITIONAL> previous = recordChanges.put( key, this );
 
                 if ( previous == null || !previous.isChanged() )
                 {
@@ -237,7 +240,7 @@ public class RecordChanges<RECORD extends AbstractBaseRecord,ADDITIONAL> impleme
         {
             if ( before == null )
             {
-                this.before = loader.copy( record );
+                this.before = loader.copy( record, memoryTracker );
             }
         }
 
