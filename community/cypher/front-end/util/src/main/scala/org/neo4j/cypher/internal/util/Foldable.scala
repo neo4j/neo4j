@@ -290,7 +290,7 @@ object Foldable {
       val that = remaining.pop()
       that match {
         case x: A => x
-        case _ => findAcc(remaining.pushAll(that.reverseTreeChildren, cancellation))
+        case _ => findAcc(remaining.pushAll(that.reverseTreeChildren), cancellation)
       }
     }
   }
