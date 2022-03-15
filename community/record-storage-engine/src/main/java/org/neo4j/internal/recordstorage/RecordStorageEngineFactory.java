@@ -47,7 +47,6 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.Configuration;
-import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ReadBehaviour;
@@ -135,8 +134,6 @@ import org.neo4j.token.api.TokensLoader;
 
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -493,33 +490,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         }
 
         return StorageFilesState.recoveredState();
-    }
-
-    @Override
-    public IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
-            CursorContextFactory contextFactory )
-    {
-        try ( var context = contextFactory.create( "matchingBatchImportIndexConfiguration" );
-              NeoStores neoStores = new StoreFactory( databaseLayout, Config.defaults(), new ScanOnOpenReadOnlyIdGeneratorFactory(), pageCache, fs,
-              NullLogProvider.getInstance(), contextFactory, DatabaseReadOnlyChecker.readOnly(), EMPTY_LOG_TAIL ).openAllNeoStores();
-              CachedStoreCursors storeCursors = new CachedStoreCursors( neoStores, context ) )
-        {
-            IndexConfig config = IndexConfig.create();
-            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(),
-                    loadReadOnlyTokens( neoStores, true, contextFactory ), neoStores.getMetaDataStore() );
-            schemaRuleAccess.tokenIndexes( storeCursors ).forEachRemaining( index ->
-            {
-                if ( index.schema().entityType() == NODE )
-                {
-                    config.withLabelIndex( index.getName() );
-                }
-                if ( index.schema().entityType() == RELATIONSHIP )
-                {
-                    config.withRelationshipTypeIndex( index.getName() );
-                }
-            } );
-            return config;
-        }
     }
 
     @Override

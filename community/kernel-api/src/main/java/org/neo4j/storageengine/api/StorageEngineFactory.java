@@ -41,7 +41,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
-import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ReadBehaviour;
@@ -231,9 +230,6 @@ public interface StorageEngineFactory
      * @return the layout representing the database
      */
     DatabaseLayout databaseLayout( Neo4jLayout neo4jLayout, String databaseName );
-
-    IndexConfig matchingBatchImportIndexConfiguration( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
-            CursorContextFactory contextFactory );
 
     BatchImporter batchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem,
             PageCacheTracer pageCacheTracer, org.neo4j.internal.batchimport.Configuration config, LogService logService,
