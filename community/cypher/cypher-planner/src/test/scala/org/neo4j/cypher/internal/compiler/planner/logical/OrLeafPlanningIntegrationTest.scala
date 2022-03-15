@@ -1324,17 +1324,24 @@ class OrLeafPlanningIntegrationTest
       .addNodeIndex("A", Seq("prop2"), 0.1, 0.001)
       .build()
 
-    // prop1 is present on both sides of the disjunction. Therefore, one could be tempted to
-    // simplify `(A & B & C) | (A & D & E)` to either `A` or `(A & B & C & D & E)`,
-    // of which neither is equivalent to the original expression.
+    // Note that prop1 is present on all parts of the conjunction.
+    // After the OrLeafPlanner has distributed the disjunction on prop1 and prop2, it calculates what the union of the two resulting plans solves.
+    // When doing this, the predicates solved are separated in those predicates which are solved by all (two) plans and those which are solved by just one plan.
+    // In this case, `a.prop1 != NULL` and `a.prop1 != NULL OR a.prop3 != NULL` are solved by both plans, whereas the plan given `a.prop2 != NULL` will also solve that.
+    // The OrLeafPlanner then tries to create a disjunction over the predicates that only one plan solves.
+    // This might go wrong because the prop1-plan will not contribute any predicate and therefore saying that the overall plan solves
+    // the disjunction of all individual plan's predicates (= Ors(`a.prop2 != NULL`)) is wrong.
     val plan = planner.plan(
       """MATCH (a:A)
         |WHERE (
-        |  a.prop1 IS NOT NULL AND
-        |  a.prop2 IS NOT NULL AND
+        |  a.prop1 IS NOT NULL OR
+        |  a.prop2 IS NOT NULL
+        |)
+        |AND (
+        |  a.prop1 IS NOT NULL OR
         |  a.prop3 IS NOT NULL
         |)
-        |OR a.prop1 IS NOT NULL
+        |AND a.prop1 IS NOT NULL
         |RETURN a""".stripMargin)
 
     plan should (equal(
