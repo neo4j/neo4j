@@ -263,22 +263,6 @@ class RewritableTest extends CypherFunSuite {
     assert(e.getMessage === cancellation.message)
   }
 
-  test(s"topDownWithParent should support cancellation") {
-    val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
-
-    val cancellation = new TestCancellationChecker
-
-    val rewriter = RewriterWithParent.lift({
-      case (Val(2), _) =>
-        cancellation.cancelNext = true
-        Val(99)
-    })
-
-    val e = the[RuntimeException].thrownBy(ast.rewrite(topDownWithParent(rewriter, cancellation = cancellation)))
-
-    assert(e.getMessage === cancellation.message)
-  }
-
   test(s"bottomUp should support cancellation") {
     val ast = Sum(Seq(Val(1), Val(1), Val(2), Val(1), Val(1)))
 

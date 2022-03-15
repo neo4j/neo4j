@@ -130,7 +130,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         .build()
 
       withClue("Used relationship index even when not enabled:") {
-        planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r").treeExists {
+        planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r").folder.treeExists {
           case _: UndirectedRelationshipIndexSeek => true
           case _: DirectedRelationshipIndexSeek => true
         } should be(false)
@@ -142,7 +142,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       withClue("Used relationship index when not expected:") {
         planner.plan(
           s"""MATCH (a) WITH a SKIP 0
-             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
+             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).folder.treeExists {
           case _: UndirectedRelationshipIndexSeek => true
           case _: DirectedRelationshipIndexSeek => true
         } should be(false)
@@ -154,7 +154,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       withClue("Used relationship index when not expected:") {
         planner.plan(
           s"""MATCH (b) WITH b SKIP 0
-             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).treeExists {
+             |MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r""".stripMargin).folder.treeExists {
           case _: UndirectedRelationshipIndexSeek => true
           case _: DirectedRelationshipIndexSeek => true
         } should be(false)
@@ -279,7 +279,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
   test("should not plan relationship index seek for self-loops") {
     val planner = plannerBuilder().build()
 
-    planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r").treeExists {
+    planner.plan(s"MATCH (a)-[r:REL {prop: 1}]-(a) RETURN r").folder.treeExists {
       case _: UndirectedRelationshipIndexSeek => true
       case _: DirectedRelationshipIndexSeek => true
     } should be(false)

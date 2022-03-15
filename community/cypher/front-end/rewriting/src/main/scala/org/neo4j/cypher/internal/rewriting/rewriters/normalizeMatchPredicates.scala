@@ -56,7 +56,7 @@ case class normalizeMatchPredicates(normalizer: MatchPredicateNormalizer) extend
 
   private val rewriter = Rewriter.lift {
     case m@Match(_, pattern, _, where) =>
-      val predicates = pattern.fold(Vector.empty[Expression]) {
+      val predicates = pattern.folder.fold(Vector.empty[Expression]) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       }

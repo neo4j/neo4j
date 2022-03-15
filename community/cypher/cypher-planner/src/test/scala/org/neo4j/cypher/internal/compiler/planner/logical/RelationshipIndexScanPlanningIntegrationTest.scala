@@ -272,7 +272,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       .build()
 
     withClue("Used relationship index even when not enabled:") {
-      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r").treeExists {
+      planner.plan("MATCH (a)-[r:REL]-(b) WHERE r.prop IS NOT NULL RETURN r").folder.treeExists {
         case _: UndirectedRelationshipIndexScan => true
         case _: DirectedRelationshipIndexScan => true
       } should be(false)
@@ -328,7 +328,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         |MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).treeExists {
+      planner.plan(query).folder.treeExists {
         case _: UndirectedRelationshipIndexContainsScan => true
       } should be(false)
     }
@@ -342,7 +342,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         |MATCH (a)-[r:REL]-(b) WHERE r.prop CONTAINS 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).treeExists {
+      planner.plan(query).folder.treeExists {
         case _: UndirectedRelationshipIndexContainsScan => true
       } should be(false)
     }
@@ -370,7 +370,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         |MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).treeExists {
+      planner.plan(query).folder.treeExists {
         case _: UndirectedRelationshipIndexEndsWithScan => true
       } should be(false)
     }
@@ -384,7 +384,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         |MATCH (a)-[r:REL]-(b) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).treeExists {
+      planner.plan(query).folder.treeExists {
         case _: UndirectedRelationshipIndexEndsWithScan => true
       } should be(false)
     }
@@ -398,7 +398,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
           |MATCH (a2)-[r:REL]-(b2) WHERE r.prop ENDS WITH 'foo' RETURN r""".stripMargin
 
     withClue("Used relationship index when not expected:") {
-      planner.plan(query).leaves.treeExists {
+      planner.plan(query).leaves.folder.treeExists {
         case _: UndirectedRelationshipIndexEndsWithScan => true
       } should be(false)
     }
@@ -507,7 +507,7 @@ test("scan on inexact predicate if argument ids not provided") {
   test("should not plan relationship index scan for self-loops") {
     val planner = plannerBuilder().build()
 
-    planner.plan(s"MATCH (a)-[r:REL]-(a) WHERE r.prop IS NOT NULL RETURN r").treeExists {
+    planner.plan(s"MATCH (a)-[r:REL]-(a) WHERE r.prop IS NOT NULL RETURN r").folder.treeExists {
       case _: UndirectedRelationshipIndexScan => true
       case _: DirectedRelationshipIndexScan => true
     } should be(false)

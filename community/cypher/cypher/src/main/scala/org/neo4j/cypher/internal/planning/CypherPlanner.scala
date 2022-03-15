@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.planner.spi.DPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planning.CypherPlanner.createQueryGraphSolver
+import org.neo4j.cypher.internal.runtime.interpreted.CallSupport
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.ExceptionTranslatingPlanContext
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
@@ -343,6 +344,7 @@ case class CypherPlanner(config: CypherPlannerConfiguration,
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
     transactionalContextWrapper.kernelTransactionalContext.executingQuery.onObfuscatorReady(obfuscator)
 
+    CallSupport.equals("")
     checkForSchemaChanges(transactionalContextWrapper)
 
     // If the query is not cached we want to do the full planning

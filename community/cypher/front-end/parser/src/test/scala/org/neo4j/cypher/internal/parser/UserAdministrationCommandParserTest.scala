@@ -323,7 +323,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("CREATE command finds password literal at correct offset") {
     parsing("CREATE USER foo SET PASSWORD 'password'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
       passwords.foreach { case (pw, offset) =>
         withClue("Expecting password = password, offset = 29") {
           util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
@@ -335,7 +335,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("CREATE command finds password parameter at correct offset") {
     parsing("CREATE USER foo SET PASSWORD $param").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
       passwords should equal(Seq("param" -> 29))
     }
   }
@@ -752,7 +752,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER user command finds password literal at correct offset") {
     parsing("ALTER USER foo SET PASSWORD 'password'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveStringLiteral].map(l => (l.value, l.position.offset))
       passwords.foreach { case (pw, offset) =>
         withClue("Expecting password = password, offset = 28") {
           util.Arrays.equals(toUtf8Bytes("password"), pw) shouldBe true
@@ -764,7 +764,7 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER user command finds password parameter at correct offset") {
     parsing("ALTER USER foo SET PASSWORD $param").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
       passwords should equal(Seq("param" -> 28))
     }
   }
@@ -917,14 +917,14 @@ class UserAdministrationCommandParserTest extends AdministrationCommandParserTes
 
   test("ALTER CURRENT USER command finds password literal at correct offset") {
     parsing("ALTER CURRENT USER SET PASSWORD FROM 'current' TO 'new'").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveStringLiteral].map(l => (new String(l.value, "utf-8"), l.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveStringLiteral].map(l => (new String(l.value, "utf-8"), l.position.offset))
       passwords.toSet should equal(Set("current" -> 37, "new" -> 50))
     }
   }
 
   test("ALTER CURRENT USER command finds password parameter at correct offset") {
     parsing("ALTER CURRENT USER SET PASSWORD FROM $current TO $new").shouldVerify { statement =>
-      val passwords = statement.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
+      val passwords = statement.folder.findByAllClass[SensitiveParameter].map(p => (p.name, p.position.offset))
       passwords.toSet should equal(Set("current" -> 37, "new" -> 49))
     }
   }

@@ -354,7 +354,7 @@ class FoldableTest extends CypherFunSuite {
 
     val cancellation = new TestCountdownCancellationChecker(2)
     val ex = the[Exception].thrownBy(
-      ast.folder(cancellation).findAllByClass[Val]
+      ast.folder(cancellation).findByAllClass[Val]
     )
 
     ex.getMessage.shouldEqual(cancellation.message)

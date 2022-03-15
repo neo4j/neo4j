@@ -231,7 +231,7 @@ object Foldable {
             case (newAcc, Some(contAccFunc)) =>
               continuation.push((remaining, contAccFunc))
               val children = if (reverse) that.treeChildren else that.reverseTreeChildren
-              treeFoldAcc(mutable.ArrayStack() ++= children, newAcc, f, continuation, reverse, cancellation)
+              treeFoldAcc(mutable.ArrayStack[Any]() ++= children, newAcc, f, continuation, reverse, cancellation)
             case (newAcc, None) =>
               treeFoldAcc(remaining, newAcc, f, continuation, reverse, cancellation)
           }
