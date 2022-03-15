@@ -549,24 +549,31 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
             boolean lookingForChild = true;
             do
             {
-                // Where we are
-                if ( !readHeader() )
+                try
                 {
-                    continue;
-                }
+                    // Where we are
+                    if ( !readHeader() )
+                    {
+                        continue;
+                    }
 
-                searchResult = searchKey( fromInclusive, isInternal ? INTERNAL : LEAF );
-                if ( !KeySearch.isSuccess( searchResult ) )
-                {
-                    continue;
-                }
-                lookingForChild = isInternal && currentReadLevel < searchLevel;
-                pos = positionOf( searchResult, lookingForChild );
+                    searchResult = searchKey( fromInclusive, isInternal ? INTERNAL : LEAF );
+                    if ( !KeySearch.isSuccess( searchResult ) )
+                    {
+                        continue;
+                    }
+                    lookingForChild = isInternal && currentReadLevel < searchLevel;
+                    pos = positionOf( searchResult, lookingForChild );
 
-                if ( lookingForChild )
+                    if ( lookingForChild )
+                    {
+                        pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration, generationKeeper );
+                        pointerGeneration = generationKeeper.generation;
+                    }
+                }
+                catch ( Exception e )
                 {
-                    pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration, generationKeeper );
-                    pointerGeneration = generationKeeper.generation;
+                    cursor.setCursorException( e.getMessage() );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -716,82 +723,89 @@ class SeekCursor<KEY,VALUE> implements Seeker<KEY,VALUE>
     {
         do
         {
-            cachedIndex = 0;
-            cachedLength = 0;
-            resultOnTrack = false;
-
-            // Where we are
-            if ( concurrentWriteHappened || forceReadHeader || !seekForward )
+            try
             {
-                if ( !readHeader() || (isInternal && searchLevel == LEAF_LEVEL) )
-                {
-                    continue;
-                }
-            }
+                cachedIndex = 0;
+                cachedLength = 0;
+                resultOnTrack = false;
 
-            if ( verifyExpectedFirstAfterGoToNext )
-            {
-                pos = seekForward ? 0 : keyCount - 1;
-                bTreeNode.keyAt( cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorContext );
-            }
-
-            if ( concurrentWriteHappened )
-            {
-                // Keys could have been moved so we need to make sure we are not missing any keys by
-                // moving position back until we find previously returned key
-                searchResult = searchKey( first ? fromInclusive : prevKey, isInternal ? INTERNAL : LEAF );
-                if ( !KeySearch.isSuccess( searchResult ) )
+                // Where we are
+                if ( concurrentWriteHappened || forceReadHeader || !seekForward )
                 {
-                    continue;
-                }
-                pos = positionOf( searchResult, false );
-
-                if ( !seekForward && pos >= keyCount )
-                {
-                    // We may need to go to previous sibling to find correct place to start seeking from
-                    prevSiblingId = readPrevSibling();
-                    prevSiblingGeneration = generationKeeper.generation;
-                }
-            }
-
-            // Next result
-            if ( (seekForward && pos >= keyCount) || (!seekForward && pos <= 0) )
-            {
-                // Read right sibling
-                pointerId = readNextSibling();
-                pointerGeneration = generationKeeper.generation;
-            }
-            for ( int readPos = pos; cachedLength < mutableKeys.length && 0 <= readPos && readPos < keyCount; readPos += stride )
-            {
-                // Read the next value in this leaf
-                if ( mutableKeys[cachedLength] == null )
-                {
-                    // Lazy instantiation of key/value
-                    mutableKeys[cachedLength] = layout.newKey();
-                    mutableValues[cachedLength] = layout.newValue();
-                }
-                if ( !isInternal )
-                {
-                    bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorContext );
-                }
-                else
-                {
-                    bTreeNode.keyAt( cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorContext );
-                }
-
-                if ( insideEndRange( exactMatch, cachedLength ) )
-                {
-                    // This seems to be a result that should be part of our result set
-                    if ( cachedLength > 0 /*no need to check "inside prev" for consecutive keys*/ || insidePrevKey( cachedLength ) )
+                    if ( !readHeader() || (isInternal && searchLevel == LEAF_LEVEL) )
                     {
-                        cachedLength++;
+                        continue;
                     }
                 }
-                else
+
+                if ( verifyExpectedFirstAfterGoToNext )
                 {
-                    // OK so we read too far, abort this ahead-reading
-                    break;
+                    pos = seekForward ? 0 : keyCount - 1;
+                    bTreeNode.keyAt( cursor, firstKeyInNode, pos, isInternal ? INTERNAL : LEAF, cursorContext );
                 }
+
+                if ( concurrentWriteHappened )
+                {
+                    // Keys could have been moved so we need to make sure we are not missing any keys by
+                    // moving position back until we find previously returned key
+                    searchResult = searchKey( first ? fromInclusive : prevKey, isInternal ? INTERNAL : LEAF );
+                    if ( !KeySearch.isSuccess( searchResult ) )
+                    {
+                        continue;
+                    }
+                    pos = positionOf( searchResult, false );
+
+                    if ( !seekForward && pos >= keyCount )
+                    {
+                        // We may need to go to previous sibling to find correct place to start seeking from
+                        prevSiblingId = readPrevSibling();
+                        prevSiblingGeneration = generationKeeper.generation;
+                    }
+                }
+
+                // Next result
+                if ( (seekForward && pos >= keyCount) || (!seekForward && pos <= 0) )
+                {
+                    // Read right sibling
+                    pointerId = readNextSibling();
+                    pointerGeneration = generationKeeper.generation;
+                }
+                for ( int readPos = pos; cachedLength < mutableKeys.length && 0 <= readPos && readPos < keyCount; readPos += stride )
+                {
+                    // Read the next value in this leaf
+                    if ( mutableKeys[cachedLength] == null )
+                    {
+                        // Lazy instantiation of key/value
+                        mutableKeys[cachedLength] = layout.newKey();
+                        mutableValues[cachedLength] = layout.newValue();
+                    }
+                    if ( !isInternal )
+                    {
+                        bTreeNode.keyValueAt( cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorContext );
+                    }
+                    else
+                    {
+                        bTreeNode.keyAt( cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorContext );
+                    }
+
+                    if ( insideEndRange( exactMatch, cachedLength ) )
+                    {
+                        // This seems to be a result that should be part of our result set
+                        if ( cachedLength > 0 /*no need to check "inside prev" for consecutive keys*/ || insidePrevKey( cachedLength ) )
+                        {
+                            cachedLength++;
+                        }
+                    }
+                    else
+                    {
+                        // OK so we read too far, abort this ahead-reading
+                        break;
+                    }
+                }
+            }
+            catch ( Exception e )
+            {
+                cursor.setCursorException( e.getMessage() );
             }
         }
         while ( concurrentWriteHappened = cursor.shouldRetry() );
