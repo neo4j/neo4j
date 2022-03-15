@@ -29,7 +29,7 @@ case class SyntaxDeprecationWarnings(deprecations: Deprecations) extends Visitor
   }
 
   private def findDeprecations(statement: Statement): Set[InternalNotification] =
-    statement.fold(Set.empty[InternalNotification])(
+    statement.folder.fold(Set.empty[InternalNotification])(
       deprecations.find.andThen(deprecation => acc => acc ++ deprecation.generateNotification())
     )
 

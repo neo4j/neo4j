@@ -115,7 +115,7 @@ object Additions {
   // This is functionality that has been added in 4.2 and should not work when using CYPHER 3.5 and CYPHER 4.1
   case object addedFeaturesIn4_2 extends Additions {
 
-    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.treeExists {
+    override def check(statement: Statement, cypherExceptionFactory: CypherExceptionFactory): Unit = statement.folder.treeExists {
 
       case s@ShowPrivilegeCommands(_, _, _, _) =>
         throw cypherExceptionFactory.syntaxException("SHOW PRIVILEGES AS COMMANDS command is not supported in this Cypher version.", s.position)

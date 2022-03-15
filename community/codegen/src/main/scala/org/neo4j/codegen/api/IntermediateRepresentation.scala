@@ -24,7 +24,6 @@ import java.util
 
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
-import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.FloatingPointValue
 import org.neo4j.values.storable.Value

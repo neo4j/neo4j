@@ -44,6 +44,8 @@ case class TransactionalContextWrapper(tc: TransactionalContext, threadSafeCurso
 
   def kernelTransaction: KernelTransaction = tc.kernelTransaction()
 
+  def kernelTransactionalContext: TransactionalContext = tc
+
   def graph: GraphDatabaseQueryService = tc.graph()
 
   override def transaction: KernelTransaction = tc.kernelTransaction

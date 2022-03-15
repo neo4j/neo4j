@@ -41,7 +41,7 @@ object parameterValueTypeReplacement {
   }
 
   private def rewriteParameterValueTypes(term: ASTNode, paramTypes: Map[String, CypherType]) = {
-    val replaceableParameters = term.treeFold(IdentityMap.empty: ParameterValueTypeReplacements){
+    val replaceableParameters = term.folder.treeFold(IdentityMap.empty: ParameterValueTypeReplacements){
       case p@ExplicitParameter(_, CTAny) =>
         acc =>
           if (acc.contains(p)) SkipChildren(acc) else {

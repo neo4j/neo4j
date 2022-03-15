@@ -90,7 +90,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
   override def semanticCheck: SemanticCheck = initialState => {
 
     def checkForExistsSubquery(where: Where): SemanticCheck = state => {
-      val invalid: Option[Expression] = where.expression.treeFind[Expression] { case _: ExistsSubClause => true }
+      val invalid: Option[Expression] = where.expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
       invalid.map(exp => error("The EXISTS clause is not valid on SHOW commands.", exp.position)(state))
         .getOrElse(SemanticCheckResult.success(state))
     }

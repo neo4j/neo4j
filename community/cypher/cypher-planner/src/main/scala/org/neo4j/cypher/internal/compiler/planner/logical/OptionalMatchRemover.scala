@@ -63,7 +63,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(ignored: PlannerContext): Rewriter = topDown(
+  override def instance(context: PlannerContext): Rewriter = topDown(
     rewriter = Rewriter.lift {
       case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _), tail, queryInput)
         if validAggregations(aggregations) =>

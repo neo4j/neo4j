@@ -77,7 +77,7 @@ case object inlineProjections extends Rewriter {
 
 
   private def findAllDependencies(variable: LogicalVariable, context: InliningContext): Set[LogicalVariable] = {
-    val (dependencies, _) = fixedPoint[(Set[LogicalVariable], List[LogicalVariable])]({
+    def cases(vars: (Set[LogicalVariable], List[LogicalVariable])) = vars match {
       case (deps, Nil) =>
         (deps, Nil)
       case (deps, queue) =>
@@ -89,7 +89,9 @@ case object inlineProjections extends Rewriter {
           case None =>
             (deps + id, queue)
         }
-    })((Set(variable), List(variable)))
+
+    }
+    val (dependencies, _) = fixedPoint[(Set[LogicalVariable], List[LogicalVariable])](cases _)((Set(variable), List(variable)))
     dependencies
   }
 

@@ -396,7 +396,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
 
-    val directedRelationshipByIdSeek = resultPlans.head.findByClass[DirectedRelationshipByIdSeek]
+    val directedRelationshipByIdSeek = resultPlans.head.folder.treeFindByClass[DirectedRelationshipByIdSeek].get
     val newTo = directedRelationshipByIdSeek.endNode
 
 
@@ -435,7 +435,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
 
-    val directedRelationshipByIdSeek = resultPlans.head.findByClass[DirectedRelationshipByIdSeek]
+    val directedRelationshipByIdSeek = resultPlans.head.folder.treeFindByClass[DirectedRelationshipByIdSeek].get
     val newTo = directedRelationshipByIdSeek.endNode
 
     // then
