@@ -295,6 +295,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 Eclipse Public License v2.0
+  JUnit Jupiter API
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Vintage Engine

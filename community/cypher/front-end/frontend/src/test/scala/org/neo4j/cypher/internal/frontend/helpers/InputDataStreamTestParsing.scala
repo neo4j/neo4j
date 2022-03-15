@@ -74,7 +74,7 @@ case class InputDataStreamTestInitialState(idsQueryText: String,
   override def withStatement(s: ast.Statement): InputDataStreamTestInitialState = {
     // the unmodified parser is part of the pipeline and it will try to set the result of parsing 'RETURN 1'
     // we simply ignore statements that do not contain InputDataStream AST node
-    if (s.findAllByClass[ast.InputDataStream].isEmpty) {
+    if (s.folder.findAllByClass[ast.InputDataStream].isEmpty) {
       copy()
     } else {
       copy(maybeStatement = Some(s))

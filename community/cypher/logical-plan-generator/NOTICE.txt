@@ -43,6 +43,8 @@ Apache Software License, Version 2.0
   Lucene QueryParsers
   magnolia
   mercator
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
   Scala Compiler
@@ -61,6 +63,10 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+Eclipse Public License v2.0
+  JUnit Jupiter API
+  JUnit Platform Commons
 
 Dependencies with multiple licenses
 -----------------------------------

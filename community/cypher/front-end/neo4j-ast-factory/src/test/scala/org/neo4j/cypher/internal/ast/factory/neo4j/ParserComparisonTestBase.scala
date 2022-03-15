@@ -144,11 +144,11 @@ abstract class ParserComparisonTestBase() extends Assertions with Matchers {
 
     def astWithPosition(astNode: ASTNode) = {
       {
-        lazy val containsReadAdministratorCommand = astNode.treeExists {
+        lazy val containsReadAdministratorCommand = astNode.folder.treeExists {
           case _: ReadAdministrationCommand => true
         }
 
-        astNode.treeFold(Seq.empty[(ASTNode, InputPosition)]) {
+        astNode.folder.treeFold(Seq.empty[(ASTNode, InputPosition)]) {
           case _: Property |
                _: SetPropertyItem |
                _: RemovePropertyItem |

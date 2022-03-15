@@ -82,6 +82,7 @@ import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.Ref
@@ -433,10 +434,10 @@ object Deprecations {
     private def hasSelfReferenceToVariableInPattern(pattern: Pattern, semanticTable: SemanticTable): Boolean = {
       val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
-      def findAllVariables(e: Any): Set[LogicalVariable] = e.findAllByClass[LogicalVariable].toSet
+      def findAllVariables(e: Any): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
       def isDefinition(variable: LogicalVariable): Boolean = allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
-      val (declaredVariables, referencedVariables) = pattern.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+      val (declaredVariables, referencedVariables) = pattern.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
         case NodePattern(maybeVariable, _, maybeProperties, _)               => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc => SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
         case NamedPatternPart(variable, _)                                   => acc => TraverseChildren((acc._1 + variable, acc._2))

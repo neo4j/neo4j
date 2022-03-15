@@ -104,23 +104,23 @@ class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
 
 
   test("MATCH (n) WHERE exists { (n) --> () }") {
-    val exists = javaccAST(testName).findByClass[ExistsSubClause]
+    val exists = javaccAST(testName).folder.treeFindByClass[ExistsSubClause].get
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(25, 1, 26)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(25, 1, 26)
   }
 
   test("MATCH (n) WHERE exists { MATCH (n)-[r]->(m) }") {
-    val exists = javaccAST(testName).findByClass[ExistsSubClause]
+    val exists = javaccAST(testName).folder.treeFindByClass[ExistsSubClause].get
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
   }
 
   test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
-    val exists :: existsNested :: Nil = javaccAST(testName).findAllByClass[ExistsSubClause].toList
+    val exists :: existsNested :: Nil = javaccAST(testName).folder.findAllByClass[ExistsSubClause].toList
     exists.position shouldBe InputPosition(16, 1, 17)
-    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+    exists.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(31, 1, 32)
     existsNested.position shouldBe InputPosition(41, 1, 42)
-    existsNested.findByClass[Pattern].position shouldBe InputPosition(50, 1, 51)
+    existsNested.folder.treeFindByClass[Pattern].get.position shouldBe InputPosition(50, 1, 51)
   }
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
@@ -164,7 +164,7 @@ class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
   }
 
   private def validatePosition(query: String, astToVerify: (ASTNode) => Boolean, pos: InputPosition): Unit = {
-    val propAst = javaccAST(query).treeFind[ASTNode] {
+    val propAst = javaccAST(query).folder.treeFind[ASTNode] {
       case ast if astToVerify(ast) => true
     }
 
