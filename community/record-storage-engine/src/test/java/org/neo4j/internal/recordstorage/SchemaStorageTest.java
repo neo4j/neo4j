@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -200,10 +201,7 @@ class SchemaStorageTest
 
         // Then
         assertThat( tracker.usedIdsPerType ).isNotEmpty();
-        assertThat( tracker.usedIdsPerType ).containsKey( RecordIdType.PROPERTY )
-                                            .containsKey( RecordIdType.ARRAY_BLOCK )
-                                            .containsKey( RecordIdType.STRING_BLOCK )
-                                            .containsKey( SchemaIdType.SCHEMA );
+        assertThat( tracker.usedIdsPerType ).containsKeys( expectedUsedIdTypes( schemaRule ) );
         assertThat( tracker.unusedIdsPerType ).isEmpty();
 
         // When
@@ -264,6 +262,22 @@ class SchemaStorageTest
                     case "STRING_BLOCK" -> neoStores.getPropertyStore().getStringStore();
                     default -> throw new IllegalArgumentException( "Did not recognize idType " + idType.name() );
                 };
+    }
+
+    private static IdType[] expectedUsedIdTypes( SchemaRule schemaRule )
+    {
+        var expectedIdTypes = new ArrayList<IdType>();
+        expectedIdTypes.add( RecordIdType.PROPERTY );
+        expectedIdTypes.add( SchemaIdType.SCHEMA );
+        if ( schemaRule.getName().length() > 36 )
+        {
+            expectedIdTypes.add( RecordIdType.STRING_BLOCK );
+        }
+        if ( schemaRule.schema().getPropertyIds().length > 8 )
+        {
+            expectedIdTypes.add( RecordIdType.ARRAY_BLOCK );
+        }
+        return expectedIdTypes.toArray( IdType[]::new );
     }
 
     private static TokenNameLookup getDefaultTokenNameLookup()
