@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -254,12 +255,19 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
-  test("should plan a count store operator when there is a selection on the aggregation") {
+  test("should plan a count store operator also when there is a selection on the aggregation") {
     val queryText = "MATCH (n) WITH count(n) AS nodeCount WHERE nodeCount > 0 RETURN nodeCount"
     val (plannerQuery, _) = producePlannerQueryForPattern(queryText, appendReturn = false)
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
-    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
+    val maybePlan = countStorePlanner(plannerQuery, context)
+
+    maybePlan should equal(Some(
+      new LogicalPlanBuilder(wholePlan = false)
+        .filter("nodeCount > 0")
+        .nodeCountFromCountStore("nodeCount", Seq(None))
+        .build()
+    ))
   }
 
   private def producePlannerQuery(query: String, variable: String) = {
