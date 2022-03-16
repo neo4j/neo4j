@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.ScopedMemoryPool;
 import org.neo4j.resources.CpuClock;
@@ -109,6 +110,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final TokenHolders tokenHolders;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final ExternalIdReuseConditionProvider externalIdReuseConditionProvider;
+    private final LogProvider internalLogProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -159,7 +161,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                                IndexingService indexingService,
                                IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, DatabaseTracers tracers, LeaseService leaseService,
                                GlobalMemoryGroupTracker transactionsMemoryPool, DatabaseReadOnlyChecker readOnlyDatabaseChecker,
-                               TransactionExecutionMonitor transactionExecutionMonitor, ExternalIdReuseConditionProvider externalIdReuseConditionProvider )
+                               TransactionExecutionMonitor transactionExecutionMonitor, ExternalIdReuseConditionProvider externalIdReuseConditionProvider,
+                               LogProvider internalLogProvider )
     {
         this.config = config;
         this.locks = locks;
@@ -179,6 +182,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.tokenHolders = tokenHolders;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.externalIdReuseConditionProvider = externalIdReuseConditionProvider;
+        this.internalLogProvider = internalLogProvider;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup( tokenHolders, globalProcedures );
         this.namedDatabaseId = namedDatabaseId;
         this.indexingService = indexingService;
@@ -427,7 +431,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, indexStatisticsStore,
                             databaseDependendies, namedDatabaseId, leaseService, transactionMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                            securityLog, kernelVersionRepository, dbmsRuntimeRepository );
+                            securityLog, kernelVersionRepository, dbmsRuntimeRepository, internalLogProvider );
             this.transactions.add( tx );
             return tx;
         }

@@ -106,6 +106,8 @@ import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.TransactionListenersState;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LimitedMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
@@ -232,13 +234,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             NamedDatabaseId namedDatabaseId, LeaseService leaseService, ScopedMemoryPool transactionMemoryPool,
             DatabaseReadOnlyChecker readOnlyDatabaseChecker, TransactionExecutionMonitor transactionExecutionMonitor,
-            AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository )
+            AbstractSecurityLog securityLog, KernelVersionRepository kernelVersionRepository, DbmsRuntimeRepository dbmsRuntimeRepository,
+            LogProvider internalLogProvider )
     {
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         long heapGrabSize = config.get( GraphDatabaseInternalSettings.initial_transaction_heap_grab_size );
         this.memoryTracker = config.get( memory_tracking ) ? new LocalMemoryTracker( transactionMemoryPool, 0, heapGrabSize,
-                                     memory_transaction_max_size.name() ) : EmptyMemoryTracker.INSTANCE;
+                            memory_transaction_max_size.name(), memoryLeakLogger( internalLogProvider.getLog( getClass() ) ) )
+                     : EmptyMemoryTracker.INSTANCE;
         this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
@@ -1345,6 +1349,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         config.addListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
         config.addListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
         config.addListener( memory_transaction_max_size, ( before, after ) -> transactionHeapBytesLimit = after );
+    }
+
+    private static LocalMemoryTracker.Monitor memoryLeakLogger( Log log )
+    {
+        return leakedNativeMemoryBytes -> log.warn(
+                "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has " + leakedNativeMemoryBytes );
     }
 
     /**
