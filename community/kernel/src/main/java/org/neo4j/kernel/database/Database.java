@@ -806,7 +806,7 @@ public class Database extends LifecycleAdapter
                                         constraintSemantics, databaseSchemaState, tokenHolders, getNamedDatabaseId(), indexingService,
                                         indexStatisticsStore, databaseDependencies,
                                         tracers, leaseService, transactionsMemoryPool, readOnlyDatabaseChecker, transactionExecutionMonitor,
-                                        externalIdReuseConditionProvider ) );
+                                        externalIdReuseConditionProvider, internalLogProvider ) );
 
         buildTransactionMonitor( kernelTransactions, databaseConfig );
 

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -105,7 +106,8 @@ public final class KernelTransactionFactory
                                                      mock( IndexStatisticsStore.class ), dependencies, from( DEFAULT_DATABASE_NAME, UUID.randomUUID() ),
                                                      LeaseService.NO_LEASES, MemoryPools.NO_TRACKING, DatabaseReadOnlyChecker.writable(),
                                                      TransactionExecutionMonitor.NO_OP, CommunitySecurityLog.NULL_LOG, () -> KernelVersion.LATEST,
-                                                     mock( DbmsRuntimeRepository.class ), new NoOpClient(), mock( KernelTransactions.class ) );
+                                                     mock( DbmsRuntimeRepository.class ), new NoOpClient(), mock( KernelTransactions.class ),
+                                                     NullLogProvider.getInstance() );
 
         transaction.initialize( 0, 0, KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize( LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG ), 0L, 1L, EMBEDDED_CONNECTION );
