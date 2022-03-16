@@ -173,6 +173,29 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     }
   }
 
+  test("should plan index usage if distance predicate depends on property read of variable from the horizon (case-insensitive") {
+
+    val plan =
+      new given {
+        indexOn("Place", "location")
+      } getLogicalPlanFor
+        s"""WITH {maxDistance: 10} AS x
+           |MATCH (p:Place)
+           |WHERE DistaNcE(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
+           |RETURN p.location as point
+        """.stripMargin
+
+    plan._2 should beLike {
+      case Projection(
+            Selection(_,
+              Apply(
+                Projection(_: Argument, _),
+                _:NodeIndexSeek, _
+              )
+            ), _) => ()
+    }
+  }
+
   test("should allow one join and one index hint on the same variable") {
     val (_, plan, _, _) =
       new given {
