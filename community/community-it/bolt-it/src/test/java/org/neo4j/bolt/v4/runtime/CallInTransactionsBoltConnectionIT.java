@@ -24,10 +24,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.bolt.runtime.SessionExtension;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
-import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,8 +40,7 @@ import static org.neo4j.internal.helpers.Strings.joinAsLines;
 class CallInTransactionsBoltConnectionIT
 {
     @RegisterExtension
-    static final SessionExtension env = new SessionExtension(
-            () -> new TestDatabaseManagementServiceBuilder().setConfig( GraphDatabaseSettings.memory_tracking, false ) );
+    static final SessionExtension env = new SessionExtension();
 
     @Test
     void shouldSupportUsingCallInTransactionsInSession() throws Exception
