@@ -29,11 +29,18 @@ case object countStorePlanner {
 
   def apply(query: PlannerQuery, context: LogicalPlanningContext): Option[LogicalPlan] = {
     query.horizon match {
-      case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, _)
+      case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _, selections)
         if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
         val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
-        countStorePlan.map(p => projection(p, groupingKeys, groupingKeys, query.interestingOrder, context))
+        countStorePlan.map { plan =>
+          val projectionPlan = projection(plan, groupingKeys, groupingKeys, query.interestingOrder, context)
+          if (selections.nonEmpty) {
+            context.logicalPlanProducer.planHorizonSelection(projectionPlan, selections.flatPredicates, selections.flatPredicates, context)
+          } else {
+            projectionPlan
+          }
+        }
 
       case _ => None
     }

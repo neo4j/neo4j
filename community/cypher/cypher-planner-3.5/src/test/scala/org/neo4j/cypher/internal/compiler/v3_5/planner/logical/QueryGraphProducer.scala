@@ -45,8 +45,9 @@ trait QueryGraphProducer extends MockitoSugar {
 
   import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.StatementConverters._
 
-  def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
-    val q = query + " RETURN 1 AS Result"
+  def producePlannerQueryForPattern(query: String, appendReturn: Boolean = true): (PlannerQuery, SemanticTable) = {
+    val appendix = if (appendReturn) " RETURN 1 AS Result" else ""
+    val q = query + appendix
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(mkException)))

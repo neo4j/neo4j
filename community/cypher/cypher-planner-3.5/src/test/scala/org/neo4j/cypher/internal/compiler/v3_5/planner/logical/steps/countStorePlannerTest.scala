@@ -19,15 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphProducer}
-import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphProducer
+import org.neo4j.cypher.internal.ir.v3_5.AggregatingQueryProjection
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, Variable}
+import org.neo4j.cypher.internal.v3_5.expressions.Ands
+import org.neo4j.cypher.internal.v3_5.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.v3_5.expressions.FunctionName
+import org.neo4j.cypher.internal.v3_5.expressions.GreaterThan
+import org.neo4j.cypher.internal.v3_5.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_5.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.v3_5.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.v3_5.logical.plans.Selection
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
+
+import scala.collection.Set
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
 
@@ -169,6 +182,21 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = producePlannerQuery("MATCH (:Label1)<-[r:X]-(:Label2)", "r")
 
     countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should plan a count store operator also when there is a selection on the aggregation") {
+    val queryText = "MATCH (n) WITH count(n) AS nodeCount WHERE nodeCount > 0 RETURN nodeCount"
+    val (plannerQuery, _) = producePlannerQueryForPattern(queryText, appendReturn = false)
+
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val maybePlan = countStorePlanner(plannerQuery, context)
+
+    maybePlan shouldBe defined
+    maybePlan.get should beLike {
+      case Selection(Ands(predicates),
+        NodeCountFromCountStore("nodeCount", Seq(None), _)
+      ) if predicates == Set(greaterThan(varFor("nodeCount"), literalInt(0))) => ()
+    }
   }
 
   private def producePlannerQuery(query: String, variable: String) = {

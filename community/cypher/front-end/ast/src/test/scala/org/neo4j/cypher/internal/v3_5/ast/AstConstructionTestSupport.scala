@@ -44,6 +44,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def equals(lhs: Expression, rhs: Expression): Equals = Equals(lhs, rhs)(pos)
 
+  def notEquals(lhs: Expression, rhs: Expression): NotEquals = NotEquals(lhs, rhs)(pos)
+
+  def lessThan(lhs: Expression, rhs: Expression): LessThan = LessThan(lhs, rhs)(pos)
+
+  def lessThanOrEqual(lhs: Expression, rhs: Expression): LessThanOrEqual = LessThanOrEqual(lhs, rhs)(pos)
+
+  def greaterThan(lhs: Expression, rhs: Expression): GreaterThan = GreaterThan(lhs, rhs)(pos)
+
+  def greaterThanOrEqual(lhs: Expression, rhs: Expression): GreaterThanOrEqual = GreaterThanOrEqual(lhs, rhs)(pos)
+
   def in(lhs: Expression, rhs: Expression): In = In(lhs, rhs)(pos)
 
   def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
