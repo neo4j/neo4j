@@ -111,6 +111,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case _: GreaterThan | _: GreaterThanOrEqual | _: LessThan | _: LessThanOrEqual =>
       GraphStatistics.DEFAULT_RANGE_SELECTIVITY
 
+    case _: AssertIsNode =>
+      Selectivity.ONE
+
     case _ =>
       GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY
   }

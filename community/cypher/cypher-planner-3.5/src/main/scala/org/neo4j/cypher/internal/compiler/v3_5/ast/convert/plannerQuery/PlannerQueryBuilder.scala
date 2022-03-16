@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
 import org.neo4j.cypher.internal.v3_5.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.v3_5.expressions.{AssertIsNode, SemanticDirection, Variable}
 
 import scala.collection.mutable
 
@@ -152,10 +152,24 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
       .updateTail(groupInequalities)
     }
 
+    def fixStandaloneArgumentPatternNodes(part: PlannerQuery): PlannerQuery = {
+
+      def addPredicates(qg: QueryGraph): QueryGraph = {
+        val preds = qg.standaloneArgumentPatternNodes.map { n => AssertIsNode(Variable(n)(InputPosition.NONE))(InputPosition.NONE) }
+        qg.addPredicates(preds.toSeq: _*)
+      }
+
+      val newOptionalMatches = part.queryGraph.optionalMatches.map(addPredicates)
+      part
+        .amendQueryGraph(qg => addPredicates(qg).withOptionalMatches(newOptionalMatches))
+        .updateTail(fixStandaloneArgumentPatternNodes)
+    }
+
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
     val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
     val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
-    fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
+    val withFixedQueriesWithOnlyRelationshipIndex = fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
+    fixStandaloneArgumentPatternNodes(withFixedQueriesWithOnlyRelationshipIndex)
   }
 }
 

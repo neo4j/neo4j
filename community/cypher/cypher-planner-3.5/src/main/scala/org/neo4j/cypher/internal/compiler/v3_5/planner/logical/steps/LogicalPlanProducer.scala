@@ -339,11 +339,31 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates), solved, providedOrders.get(left.id), context)
   }
 
-  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext, optionalQG: QueryGraph): LogicalPlan = {
+    val patternNodes =
+      optionalQG
+        .patternNodes
+        .intersect(ids)
+        .toSeq
+
+    val patternRelationships =
+      optionalQG
+        .patternRelationships
+        .filter(rel => ids(rel.name))
+        .toSeq
+
+    val optionalMatchQG =
+      solveds
+        .get(inputPlan.id)
+        .queryGraph
+        .addPatternNodes(patternNodes: _*)
+        .addPatternRelationships(patternRelationships)
+
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
-      .withAddedOptionalMatch(solveds.get(inputPlan.id).queryGraph)
+      .withAddedOptionalMatch(optionalMatchQG)
       .withArgumentIds(ids)
     )
+
     annotate(Optional(inputPlan, ids), solved, providedOrders.get(inputPlan.id), context)
   }
 
@@ -778,6 +798,18 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     cardinalities.copy(inner.id, produceResult.id)
     providedOrders.copy(inner.id, produceResult.id)
     produceResult
+  }
+
+  def addMissingStandaloneArgumentPatternNodes(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(plan.id)
+    val missingNodes = query.queryGraph.standaloneArgumentPatternNodes diff solved.queryGraph.patternNodes
+    if (missingNodes.isEmpty) {
+      plan
+    } else {
+      val newSolved = solved.amendQueryGraph(_.addPatternNodes(missingNodes.toSeq: _*))
+      val providedOrder = providedOrders.get(plan.id)
+      annotate(plan.copyPlanWithIdGen(idGen), newSolved, providedOrder, context)
+    }
   }
 
   /**

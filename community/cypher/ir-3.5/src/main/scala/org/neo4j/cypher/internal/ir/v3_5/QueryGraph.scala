@@ -373,6 +373,13 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
     copy(mutatingPatterns = copyPatterns)
   }
 
+  def standaloneArgumentPatternNodes: Set[String] = {
+    patternNodes
+      .intersect(argumentIds)
+      .diff(patternRelationships.flatMap(_.coveredIds))
+      .diff(shortestPathPatterns.flatMap(_.rel.coveredIds))
+  }
+
   override def toString: String = {
     var added = false
     val builder = new StringBuilder("QueryGraph {")

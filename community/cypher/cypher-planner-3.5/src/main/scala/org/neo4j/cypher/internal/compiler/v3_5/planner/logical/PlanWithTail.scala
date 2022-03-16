@@ -41,7 +41,11 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
 
         val partPlan = planPart(plannerQuery, lhsContext)
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+        val (planWithUpdates, newContext) =  {
+          val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
+          (newContext.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(planWithUpdates, plannerQuery, newContext),
+            newContext)
+        }
 
         // Mark properties from indexes to be fetched, if the properties are used later in the query
         val alignedPlan = alignGetValueFromIndexBehavior(plannerQuery, planWithUpdates, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)

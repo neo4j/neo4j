@@ -87,4 +87,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def function(name: String, deprecated: Boolean, args: Expression*): FunctionInvocation =  FunctionInvocation(FunctionName(name)(pos),
                                                                                           distinct = false, args.toIndexedSeq, deprecated)(pos)
+
+  def assertIsNode(v: String): AssertIsNode = AssertIsNode(varFor(v))(pos)
 }

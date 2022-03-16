@@ -256,7 +256,7 @@ case object PlanUpdates extends UpdatesPlanner {
       if (context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph != matchGraph)
         throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${context.planningAttributes.solveds.get(mergeReadPart.id).queryGraph}\n not equal to \n$matchGraph")
       val activeReadPart = producer.planActiveRead(mergeReadPart, ctx)
-      producer.planOptional(activeReadPart, matchGraph.argumentIds, ctx)
+      producer.planOptional(activeReadPart, matchGraph.argumentIds, ctx, QueryGraph.empty)
     }
 
     //        apply

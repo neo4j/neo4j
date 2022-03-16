@@ -1052,5 +1052,21 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     optionalMatch.argumentIds should equal(Set("a", "p"))
   }
 
+  test("should insert an extra predicate when matching on the same standalone node") {
+    val query = buildPlannerQuery(
+      """
+        |MATCH (a)-[r1]->(b)
+        |WITH *, 1 AS ignore
+        |MATCH (a), (b)-[r2]->(c)
+        |RETURN a, b, c
+        |""".stripMargin
+    )
+
+    query.allPlannerQueries.map(q => q.queryGraph.patternNodes -> q.queryGraph.selections) shouldBe Seq(
+      Set("a", "b") -> Selections(),
+      Set("a", "b", "c") ->  Selections.from(assertIsNode("a"))
+    )
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

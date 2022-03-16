@@ -51,7 +51,9 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 
           // Mark properties from indexes to be fetched, if the properties are used later in the query
           val alignedPlan = alignGetValueFromIndexBehavior(in, projectedPlan, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
-          (alignedPlan, projectedContext)
+
+          (projectedContext.logicalPlanProducer.addMissingStandaloneArgumentPatternNodes(alignedPlan, in, projectedContext),
+            projectedContext)
       }
 
     val (finalPlan, finalContext) = planWithTail(completePlan, in.tail, ctx, idGen)
