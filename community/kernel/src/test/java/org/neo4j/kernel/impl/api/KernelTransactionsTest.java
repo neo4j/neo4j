@@ -82,6 +82,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -759,7 +760,8 @@ class KernelTransactionsTest
                 mockedTokenHolders(), DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                 mock( IndexStatisticsStore.class ), createDependencies(), tracers, LeaseService.NO_LEASES,
                 memoryGroupTracker, writable(),
-                TransactionExecutionMonitor.NO_OP, snapshot -> true
+                TransactionExecutionMonitor.NO_OP, snapshot -> true,
+                NullLogProvider.getInstance()
         );
     }
 
@@ -830,7 +832,7 @@ class KernelTransactionsTest
                    DEFAULT_DATABASE_ID, mock( IndexingService.class ),
                    mock( IndexStatisticsStore.class ), databaseDependencies, tracers, LeaseService.NO_LEASES,
                    new MemoryPools().pool( MemoryGroup.TRANSACTION, 0, null ), writable(),
-                   TransactionExecutionMonitor.NO_OP, snapshot -> true );
+                   TransactionExecutionMonitor.NO_OP, snapshot -> true, NullLogProvider.getInstance() );
         }
 
         @Override

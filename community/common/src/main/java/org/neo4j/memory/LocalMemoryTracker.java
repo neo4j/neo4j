@@ -25,7 +25,6 @@ import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.api.exceptions.Status.General.TransactionOutOfMemoryError;
 import static org.neo4j.memory.MemoryPools.NO_TRACKING;
-import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 import static org.neo4j.util.Preconditions.requirePositive;
 
@@ -39,6 +38,9 @@ import static org.neo4j.util.Preconditions.requirePositive;
  */
 public class LocalMemoryTracker implements LimitedMemoryTracker
 {
+    public static Monitor NO_MONITOR = allocatedBytesNative ->
+    {
+    };
     public static final long NO_LIMIT = 0;
     private static final long INFINITY = Long.MAX_VALUE;
     private static final long DEFAULT_GRAB_SIZE = 1024;
@@ -57,6 +59,7 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
      * Name of the setting that imposes the limit.
      */
     private final String limitSettingName;
+    private final Monitor monitor;
 
     /**
      * Check if current memory tracker is open and any operations are allowed
@@ -90,26 +93,27 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
 
     public LocalMemoryTracker()
     {
-        this( NO_TRACKING, INFINITY, DEFAULT_GRAB_SIZE, null, () -> true );
+        this( NO_TRACKING );
     }
 
     public LocalMemoryTracker( MemoryPool memoryPool )
     {
-        this( memoryPool, INFINITY, DEFAULT_GRAB_SIZE, null, () -> true );
+        this( memoryPool, INFINITY, DEFAULT_GRAB_SIZE, null );
     }
 
     public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName )
     {
-        this( memoryPool, localBytesLimit, grabSize, limitSettingName, () -> true );
+        this( memoryPool, localBytesLimit, grabSize, limitSettingName, () -> true, NO_MONITOR );
     }
 
-    public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName, BooleanSupplier openCheck )
+    public LocalMemoryTracker( MemoryPool memoryPool, long localBytesLimit, long grabSize, String limitSettingName, BooleanSupplier openCheck, Monitor monitor )
     {
         this.memoryPool = requireNonNull( memoryPool );
         this.localBytesLimit = validateLimit( localBytesLimit );
         this.grabSize = requireNonNegative( grabSize );
         this.limitSettingName = limitSettingName;
         this.openCheck = openCheck;
+        this.monitor = monitor;
     }
 
     @Override
@@ -232,7 +236,12 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     {
         try
         {
-            checkState( allocatedBytesNative == 0, "Potential direct memory leak" );
+            if ( allocatedBytesNative != 0 )
+            {
+                monitor.potentialNativeMemoryLeak( allocatedBytesNative );
+            }
+            assert allocatedBytesNative == 0 :
+                    "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has " + allocatedBytesNative;
         }
         finally
         {
@@ -271,5 +280,10 @@ public class LocalMemoryTracker implements LimitedMemoryTracker
     private static long validateLimit( long localBytesLimit )
     {
         return localBytesLimit == NO_LIMIT ? INFINITY : requireNonNegative( localBytesLimit );
+    }
+
+    public interface Monitor
+    {
+        void potentialNativeMemoryLeak( long leakedNativeMemoryBytes );
     }
 }

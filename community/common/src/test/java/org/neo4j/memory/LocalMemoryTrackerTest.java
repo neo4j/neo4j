@@ -19,6 +19,7 @@
  */
 package org.neo4j.memory;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -128,12 +129,35 @@ class LocalMemoryTrackerTest
         var tracker = new LocalMemoryTracker( NO_TRACKING, 10, 0, "localSetting" );
         tracker.allocateNative( 10 );
         assertThatThrownBy( tracker::reset )
-                .isInstanceOf( IllegalStateException.class )
+                .isInstanceOf( AssertionError.class )
                 .hasMessageContaining( "Potential direct memory leak" );
 
         // can be reused after reset
         tracker.allocateNative( 10 );
         tracker.releaseNative( 10 );
         tracker.reset();
+    }
+
+    @Test
+    void shouldTellMonitorOnNativeMemoryLeak()
+    {
+        // given
+        var leakedMemory = new MutableLong( -1 );
+        var tracker = new LocalMemoryTracker( NO_TRACKING, Long.MAX_VALUE, 100, "setting", () -> true, leakedNativeMemoryBytes ->
+        {
+            assertThat( leakedMemory.longValue() ).isEqualTo( -1 );
+            leakedMemory.setValue( leakedNativeMemoryBytes );
+        } );
+
+        // when
+        var leakedAmount = 123;
+        tracker.allocateNative( leakedAmount );
+        tracker.allocateNative( 5 );
+        tracker.releaseNative( 5 );
+        // There's still an assertion on memory leak in reset(), so when testing this an exception will be thrown.
+        assertThatThrownBy( tracker::reset ).isInstanceOf( AssertionError.class );
+
+        // then
+        assertThat( leakedMemory.longValue() ).isEqualTo( leakedAmount );
     }
 }
