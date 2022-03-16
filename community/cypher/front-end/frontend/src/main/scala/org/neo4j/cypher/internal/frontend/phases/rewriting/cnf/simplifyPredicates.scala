@@ -17,10 +17,12 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.Not
@@ -75,6 +77,13 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
         simplifyToInnerExpression(p, nonFalse.head)
       else
         Ors(nonFalse)(p.position)
+
+    // technically, this is not simplification but it helps addressing the separate predicates in the conjunction
+    case all@AllIterablePredicate(fs@FilterScope(variable, Some(Ands(preds))), expression) =>
+      val predicates = preds.map { predicate =>
+        AllIterablePredicate(FilterScope(variable, Some(predicate))(fs.position), expression)(all.position)
+      }
+      Ands(predicates)(all.position)
     case expression => expression
   }
 
