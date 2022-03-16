@@ -44,102 +44,102 @@ class ExpressionCanonicalStringValTest extends CypherFunSuite {
 
   test("has degree greater than should render nicely") {
     HasDegreeGreaterThan(varFor("node"), None, BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)--()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)--()) > 10")
 
     HasDegreeGreaterThan(varFor("node"), None, INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<--()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)<--()) > 10")
 
     HasDegreeGreaterThan(varFor("node"), None, OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-->()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)-->()) > 10")
 
     HasDegreeGreaterThan(varFor("node"), Some(RelTypeName("Rel")(pos)), BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]-()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]-()) > 10")
 
     HasDegreeGreaterThan(varFor("node"), Some(RelTypeName("Rel")(pos)), INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<-[:Rel]-()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)<-[:Rel]-()) > 10")
 
     HasDegreeGreaterThan(varFor("node"), Some(RelTypeName("Rel")(pos)), OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]->()) > 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]->()) > 10")
   }
 
   test("HasDegreeLessThan should render nicely") {
     HasDegreeLessThan(varFor("node"), None, BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)--()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)--()) < 10")
 
     HasDegreeLessThan(varFor("node"), None, INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<--()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)<--()) < 10")
 
     HasDegreeLessThan(varFor("node"), None, OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-->()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)-->()) < 10")
 
     HasDegreeLessThan(varFor("node"), Some(RelTypeName("Rel")(pos)), BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]-()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]-()) < 10")
 
     HasDegreeLessThan(varFor("node"), Some(RelTypeName("Rel")(pos)), INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<-[:Rel]-()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)<-[:Rel]-()) < 10")
 
     HasDegreeLessThan(varFor("node"), Some(RelTypeName("Rel")(pos)), OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]->()) < 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]->()) < 10")
   }
 
   test("HasDegreeLessThanOrEqual should render nicely") {
     HasDegreeLessThanOrEqual(varFor("node"), None, BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)--()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)--()) <= 10")
 
     HasDegreeLessThanOrEqual(varFor("node"), None, INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<--()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)<--()) <= 10")
 
     HasDegreeLessThanOrEqual(varFor("node"), None, OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-->()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-->()) <= 10")
 
     HasDegreeLessThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]-()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]-()) <= 10")
 
     HasDegreeLessThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<-[:Rel]-()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)<-[:Rel]-()) <= 10")
 
     HasDegreeLessThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]->()) <= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]->()) <= 10")
   }
 
   test("HasDegreeGreaterThanOrEqual should render nicely") {
     HasDegreeGreaterThanOrEqual(varFor("node"), None, BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)--()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)--()) >= 10")
 
     HasDegreeGreaterThanOrEqual(varFor("node"), None, INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<--()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)<--()) >= 10")
 
     HasDegreeGreaterThanOrEqual(varFor("node"), None, OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-->()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-->()) >= 10")
 
     HasDegreeGreaterThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]-()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]-()) >= 10")
 
     HasDegreeGreaterThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<-[:Rel]-()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)<-[:Rel]-()) >= 10")
 
     HasDegreeGreaterThanOrEqual(varFor("node"), Some(RelTypeName("Rel")(pos)), OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]->()) >= 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]->()) >= 10")
   }
 
   test("HasDegree should render nicely") {
     HasDegree(varFor("node"), None, BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)--()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)--()) = 10")
 
     HasDegree(varFor("node"), None, INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<--()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)<--()) = 10")
 
     HasDegree(varFor("node"), None, OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-->()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)-->()) = 10")
 
     HasDegree(varFor("node"), Some(RelTypeName("Rel")(pos)), BOTH, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]-()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]-()) = 10")
 
     HasDegree(varFor("node"), Some(RelTypeName("Rel")(pos)), INCOMING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)<-[:Rel]-()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)<-[:Rel]-()) = 10")
 
     HasDegree(varFor("node"), Some(RelTypeName("Rel")(pos)), OUTGOING, literalInt(10L))(pos)
-      .asCanonicalStringVal should equal("size((node)-[:Rel]->()) = 10")
+      .asCanonicalStringVal should equal("getDegree((node)-[:Rel]->()) = 10")
   }
 
 

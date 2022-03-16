@@ -253,7 +253,7 @@ case class HasDegreeLessThan(node: Expression,
                             )(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)}) < ${degree.asCanonicalStringVal}"
+    s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) < ${degree.asCanonicalStringVal}"
 }
 
 case class HasDegreeLessThanOrEqual(node: Expression,
@@ -263,7 +263,7 @@ case class HasDegreeLessThanOrEqual(node: Expression,
                                    )(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)}) <= ${degree.asCanonicalStringVal}"
+    s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) <= ${degree.asCanonicalStringVal}"
 }
 
 case class HasDegreeGreaterThan(node: Expression,
@@ -273,7 +273,7 @@ case class HasDegreeGreaterThan(node: Expression,
                                )(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)}) > ${degree.asCanonicalStringVal}"
+    s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) > ${degree.asCanonicalStringVal}"
 }
 
 case class HasDegreeGreaterThanOrEqual(node: Expression,
@@ -283,7 +283,7 @@ case class HasDegreeGreaterThanOrEqual(node: Expression,
                                       )(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)}) >= ${degree.asCanonicalStringVal}"
+    s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) >= ${degree.asCanonicalStringVal}"
 }
 
 case class HasDegree(node: Expression,
@@ -293,5 +293,5 @@ case class HasDegree(node: Expression,
                     )(val position: InputPosition) extends BooleanExpression {
 
   override def asCanonicalStringVal: String =
-    s"size(${nodeRelationCanonicalString(node, relType, dir)}) = ${degree.asCanonicalStringVal}"
+    s"getDegree(${nodeRelationCanonicalString(node, relType, dir)}) = ${degree.asCanonicalStringVal}"
 }
