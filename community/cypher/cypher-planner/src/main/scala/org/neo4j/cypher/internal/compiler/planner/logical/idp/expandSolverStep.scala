@@ -109,7 +109,9 @@ object expandSolverStep {
             originalRelationshipName = patternRel.name,
             tempRelationship = tempRelationship,
             tempNode = tempNode,
-            originalNodeName = nodeId)
+            originalNodeName = nodeId,
+            targetNodeName = otherSide,
+          )
 
         context.logicalPlanProducer.planVarExpand(
           source = sourcePlan,

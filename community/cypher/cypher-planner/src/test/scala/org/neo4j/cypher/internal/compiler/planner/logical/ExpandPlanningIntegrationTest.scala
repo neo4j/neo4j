@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
@@ -149,5 +150,24 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .build()
 
     plan shouldEqual expectedPlan
+  }
+
+  test("should consider dependency to target node when extracting predicates for var length expand") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .build()
+
+    val plan = planner.plan("MATCH (a:A)-[r* {aProp: a.prop, bProp: b.prop}]->(b) RETURN a, b")
+
+    plan shouldBe planner.planBuilder()
+      .produceResults("a", "b")
+      // this filter should go on top as we do not know the node b before finishing the expand.
+      .filter("all(anon_0 IN r WHERE anon_0.bProp = b.prop)")
+      .expand("(a)-[r*1..]->(b)", relationshipPredicate = Predicate("r_RELS", "r_RELS.aProp = a.prop"))
+      .nodeByLabelScan("a", "A")
+      .build()
   }
 }

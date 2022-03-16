@@ -47,7 +47,8 @@ object extractPredicates {
             originalRelationshipName: String,
             tempRelationship: String,
             tempNode: String,
-            originalNodeName: String)
+            originalNodeName: String,
+            targetNodeName: String)
     : (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
@@ -75,9 +76,9 @@ object extractPredicates {
     availablePredicates.foldLeft(seed) {
 
       //MATCH ()-[r* {prop:1337}]->()
-      case (
-          (n, e, s),
-          p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate)) =>
+      case ((n, e, s),
+            p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
+            if !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
         (n, e :+ rewrittenPredicate, s :+ p)
 

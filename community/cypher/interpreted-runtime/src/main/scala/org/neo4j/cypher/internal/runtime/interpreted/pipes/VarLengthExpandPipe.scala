@@ -75,12 +75,12 @@ case class VarLengthExpandPipe(source: Pipe,
           while (relationships.hasNext) {
             val rel = VirtualValues.relationship(relationships.next(), relationships.startNodeId(), relationships.endNodeId(), relationships.typeId())
             if (filteringStep.filterRelationship(row, state)(rel)) {
-            val otherNode = VirtualValues.node(relationships.otherNodeId(node.id()))
-            if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
-              stack.push((otherNode, rels.append(rel)))
+              val otherNode = VirtualValues.node(relationships.otherNodeId(node.id()))
+              if (!rels.contains(rel) && filteringStep.filterNode(row, state)(otherNode)) {
+                stack.push((otherNode, rels.append(rel)))
+              }
             }
           }
-        }
         }
         val projectedRels =
           if (projectBackwards(dir, projectedDir)) {
