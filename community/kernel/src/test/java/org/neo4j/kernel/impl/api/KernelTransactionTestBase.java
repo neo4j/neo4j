@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
@@ -182,7 +183,7 @@ class KernelTransactionTestBase
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), mock( RelationshipTypeScanStore.class ), mock( IndexStatisticsStore.class ),
-                dependencies, new TestDatabaseIdRepository().defaultDatabase(), leaseService, memoryPool );
+                dependencies, new TestDatabaseIdRepository().defaultDatabase(), leaseService, memoryPool, NullLogProvider.getInstance() );
     }
 
     public static class CapturingCommitProcess implements TransactionCommitProcess
