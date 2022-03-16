@@ -867,7 +867,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static boolean need50Migration( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return oldFormat.hasCapability( Index44Compatibility.INSTANCE ) && !newFormat.hasCapability( Index44Compatibility.INSTANCE );
+        return oldFormat.hasCapability( Index44Compatibility.INSTANCE );
     }
 
     private static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
