@@ -162,6 +162,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
       case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
+      case ast.AssertIsNode(expr) => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
       case _ => null
     }
 

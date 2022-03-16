@@ -57,12 +57,13 @@ object PredicateHelper {
   //i) we do late ast rewrite after semantic analysis, so all semantic table will be missing some expression
   //ii) For WHERE a.prop semantic analysis will say that a.prop has boolean type since it belongs to a WHERE.
   //    That makes it not usable here since we would need to coerce in that case.
-  def isPredicate(expression: Expression) = {
+  def isPredicate(expression: Expression): Boolean = {
     expression match {
       case o: OperatorExpression => o.signatures.forall(_.outputType == symbols.CTBoolean)
       case f: FunctionInvocation => BOOLEAN_FUNCTIONS.contains(f.function)
       case f: ResolvedFunctionInvocation => f.fcnSignature.forall(_.outputType == symbols.CTBoolean)
       case  _:Ands | _: Ors | _: In | _:BooleanLiteral | _:HasLabels | _:AndedPropertyInequalities |  _:IterablePredicateExpression => true
+      case _: AssertIsNode => true
       case _ => false
     }
   }

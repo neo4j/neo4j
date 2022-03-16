@@ -134,6 +134,9 @@ case class ExpressionStringifier(extender: Expression => String = e => throw new
       case _: ExtractScope | _: FilterScope | _: ReduceScope =>
         // These are not really expressions, they are part of expressions
         ""
+      case AssertIsNode(argument) =>
+        s"assertIsNode(${apply(argument)})"
+
       case _ =>
         extender(ast)
     }

@@ -1177,6 +1177,18 @@ public final class CypherFunctions
        return asTextValue( value ).stringValue();
     }
 
+    public static BooleanValue assertIsNode( AnyValue item )
+    {
+        if ( item instanceof VirtualNodeValue )
+        {
+            return TRUE;
+        }
+        else
+        {
+            throw new CypherTypeException( "Expected a Node, got: " + item, null );
+        }
+    }
+
     private static NumberValue asNumberValue( AnyValue value )
     {
         if ( !(value instanceof NumberValue) )

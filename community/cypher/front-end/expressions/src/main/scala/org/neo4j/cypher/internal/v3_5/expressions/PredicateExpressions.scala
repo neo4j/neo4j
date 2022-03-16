@@ -218,3 +218,5 @@ final case class GreaterThanOrEqual(lhs: Expression, rhs: Expression)(val positi
   override def negated: InequalityExpression = LessThan(lhs, rhs)(position)
   override def swapped: InequalityExpression = LessThanOrEqual(rhs, lhs)(position)
 }
+
+case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends Expression
