@@ -197,14 +197,14 @@ class StatementDeserializerTest
                                 "found [START_OBJECT, FIELD_NAME, VALUE_STRING]." );
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
-                "Could not map the incoming JSON", "Cannot deserialize instance of" +
-                                " `java.lang.String` out of START_ARRAY token\n at [Source: (ByteArrayInputStream); line: 1, " +
+                "Could not map the incoming JSON", "Cannot deserialize value of type" +
+                                " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: (ByteArrayInputStream); line: 1, " +
                                 "column: 36]" );
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
-                         "Could not map the incoming JSON", "Cannot deserialize instance of" +
-                                " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` out of START_ARRAY token\n " +
-                        "at [Source: (ByteArrayInputStream); line: 1, column: 60]" );
+                         "Could not map the incoming JSON", "Cannot deserialize value of type" +
+                                " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` from Array value (token `JsonToken.START_ARRAY`)\n " +
+                        "at [Source: (ByteArrayInputStream); line: 1, column: 59]" );
     }
 
     private void assertYieldsErrors( String json, String... expectedErrorMessages )
