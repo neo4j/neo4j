@@ -535,7 +535,8 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
     val query =
       """MATCH (n0), (n1)
-        |OPTIONAL MATCH (n0)--(:L0 {prop: 42}), (n1)
+        |OPTIONAL MATCH (n0)--(n2:L0 {prop: 42}), (n1)
+        |  USING INDEX n2:L0(prop)
         |RETURN n0
         |LIMIT 0""".stripMargin
 
@@ -546,9 +547,9 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.expandInto("(n0)-[anon_0]-(n2)")
       .|.filterExpression(assertIsNode("n1"))
-      .|.nodeIndexOperator("anon_1:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.nodeIndexOperator("n2:L0(prop = 42)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
@@ -561,8 +562,8 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .apply()
       .|.optional("n0", "n1")
       .|.expandInto("(n0)-[anon_0]-(anon_1)")
-      .|.filterExpression(propEquality("anon_1", "prop", 42), assertIsNode("n1"))
-      .|.nodeIndexOperator("anon_1:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
+      .|.filterExpression(propEquality("n2", "prop", 42), assertIsNode("n1"))
+      .|.nodeIndexOperator("n2:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
       .|.allNodeScan("n1")
       .allNodeScan("n0")
