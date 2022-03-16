@@ -1561,12 +1561,31 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
+  test("should plan relationship point index usage for point.distance (case insensitive)") {
+    val cfg = plannerConfigForRelPointIndex
+    val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE pOinT.dIsTaNcE(r.prop, point({x:1, y:2})) < 1.0 RETURN r, r.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("cacheR[r.prop] AS `r.prop`")
+      .filter("pOinT.dIsTaNcE(cacheRFromStore[r.prop], point({x:1, y:2})) < 1.0")
+      .pointDistanceRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", 1.0, indexType = IndexType.POINT)
+      .build()
+  }
+
   test("should plan relationship point index usage for point.withinBBox") {
     val cfg = plannerConfigForRelPointIndex
     val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE point.withinBBox(r.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN r, r.prop").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection("r.prop AS `r.prop`")
       .pointBoundingBoxRelationshipIndexSeek("r", "a", "b", "REL", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
+      .build()
+  }
+
+  test("should plan node point index usage for point.withinBBox (case insensitive)") {
+    val cfg = plannerConfigForNodePointIndex
+    val plan = cfg.plan(s"MATCH (a:A) WHERE PoInT.wItHinBbOx(a.prop, point({x:1, y:2}), point({x:3, y:4})) RETURN a, a.prop").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .pointBoundingBoxNodeIndexSeek("a", "A", "prop", "{x:1, y:2}", "{x:3, y:4}", indexType = IndexType.POINT)
       .build()
   }
 

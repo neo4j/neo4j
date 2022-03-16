@@ -446,7 +446,8 @@ case class Match(
         acc => SkipChildren(acc :+ name)
       case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
         acc => SkipChildren(acc :+ name)
-      case FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _, _)) if id == variable =>
+      case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, Seq(Property(Variable(id), PropertyKeyName(name)), _, _))
+        if id == variable && namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinBBox") =>
         acc => SkipChildren(acc :+ name)
       case expr: InequalityExpression =>
         acc =>
@@ -454,7 +455,8 @@ case class Match(
             expr match {
               case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
                 acc :+ name
-              case FunctionInvocation(Namespace(List(point)), FunctionName("distance"), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable && point.equalsIgnoreCase("point") =>
+              case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, Seq(Property(Variable(id), PropertyKeyName(name)), _))
+                if id == variable && namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") =>
                 acc :+ name
               case _ =>
                 acc
