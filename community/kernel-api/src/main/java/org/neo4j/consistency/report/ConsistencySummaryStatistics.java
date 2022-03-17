@@ -35,22 +35,25 @@ public class ConsistencySummaryStatistics {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder(getClass().getSimpleName()).append('{');
-        result.append("\n\tNumber of errors: ").append(errorCount);
-        result.append("\n\tNumber of warnings: ").append(warningCount);
-        for (Map.Entry<String, AtomicInteger> entry : inconsistenciesPerType.entrySet()) {
+        final var result = new StringBuilder(getClass().getSimpleName())
+                .append(" {")
+                .append("%n\tNumber of errors: ")
+                .append(errorCount)
+                .append("%n\tNumber of warnings: ")
+                .append(warningCount);
+        for (final var entry : inconsistenciesPerType.entrySet()) {
             if (entry.getValue().get() != 0) {
-                result.append("\n\tNumber of inconsistent ")
+                result.append("%n\tNumber of inconsistent ")
                         .append(entry.getKey())
                         .append(" records: ")
                         .append(entry.getValue());
             }
         }
         if (!genericErrors.isEmpty()) {
-            result.append("\n\tGeneric errors: ");
-            genericErrors.forEach(message -> result.append("\n\t\t").append(message));
+            result.append("%n\tGeneric errors: ");
+            genericErrors.forEach(message -> result.append("%n\t\t").append(message));
         }
-        return result.append("\n}").toString();
+        return result.append("%n}").toString().formatted();
     }
 
     public boolean isConsistent() {
@@ -58,7 +61,7 @@ public class ConsistencySummaryStatistics {
     }
 
     public int getInconsistencyCountForRecordType(String type) {
-        AtomicInteger count = inconsistenciesPerType.get(type);
+        final var count = inconsistenciesPerType.get(type);
         return count != null ? count.get() : 0;
     }
 
@@ -87,7 +90,7 @@ public class ConsistencySummaryStatistics {
     }
 
     public void genericError(String message) {
-        errorCount.addAndGet(1);
+        errorCount.incrementAndGet();
         genericErrors.add(message);
     }
 }
