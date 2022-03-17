@@ -196,7 +196,7 @@ class CsvImporter implements Importer
                     jobScheduler,
                     badCollector,
                     TransactionLogInitializer.getLogFilesInitializer(),
-                    new IndexImporterFactoryImpl( databaseConfig ),
+                    new IndexImporterFactoryImpl(),
                     memoryTracker,
                     contextFactory );
 

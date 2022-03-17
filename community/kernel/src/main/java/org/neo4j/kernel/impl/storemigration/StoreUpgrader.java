@@ -296,7 +296,7 @@ public class StoreUpgrader
             for ( Map.Entry<String, StoreMigrationParticipant> participantEntry : participants.entrySet() )
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participantEntry.getKey() );
-                IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
+                IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl();
                 participantEntry.getValue().migrate(
                         directoryLayout, migrationLayout, progressReporter, fromVersion, toVersion, indexImporterFactory, logTailSupplier.get() );
                 progressReporter.completed();

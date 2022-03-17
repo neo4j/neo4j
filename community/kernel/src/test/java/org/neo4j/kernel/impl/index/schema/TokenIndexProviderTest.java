@@ -40,7 +40,7 @@ public class TokenIndexProviderTest extends IndexProviderTests
                 DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory,
                                 databaseLayout.getDatabaseName() ).withMonitors( monitors )
                         .withReadOnlyChecker( readOnlyChecker ).build();
-                return new TokenIndexProvider( context, dir, collector, Config.defaults(), databaseLayout );
+                return new TokenIndexProvider( context, dir, collector, databaseLayout );
             };
 
     TokenIndexProviderTest()

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,11 +46,10 @@ public class TokenIndexImporter implements IndexImporter
     private final TokenIndexAccessor accessor;
     private final CursorContext cursorContext;
 
-    TokenIndexImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache, CursorContextFactory contextFactory,
-            Config config )
+    TokenIndexImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache cache, CursorContextFactory contextFactory )
     {
         this.index = index;
-        this.accessor = tokenIndexAccessor( layout, fs, cache, contextFactory, config );
+        this.accessor = tokenIndexAccessor( layout, fs, cache, contextFactory );
         this.cursorContext = contextFactory.create( INDEX_TOKEN_IMPORTER_TAG );
         this.updater = accessor.newUpdater( ONLINE, cursorContext, false );
     }
@@ -76,12 +74,12 @@ public class TokenIndexImporter implements IndexImporter
     }
 
     private TokenIndexAccessor tokenIndexAccessor( DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-            CursorContextFactory contextFactory, Config config )
+            CursorContextFactory contextFactory )
     {
         var context = DatabaseIndexContext.builder( pageCache, fs, contextFactory, layout.getDatabaseName() ).build();
         IndexDirectoryStructure indexDirectoryStructure = IndexDirectoryStructure.directoriesByProvider( layout.databaseDirectory() )
                                                                                  .forProvider( TokenIndexProvider.DESCRIPTOR );
-        IndexFiles indexFiles = TokenIndexProvider.indexFiles( index, config, fs, indexDirectoryStructure, layout );
+        IndexFiles indexFiles = TokenIndexProvider.indexFiles( index, fs, indexDirectoryStructure );
         return new TokenIndexAccessor( context, indexFiles, index, immediate() );
     }
 }

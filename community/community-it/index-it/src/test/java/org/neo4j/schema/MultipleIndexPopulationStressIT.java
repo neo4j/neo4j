@@ -397,7 +397,7 @@ class MultipleIndexPopulationStressIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             RecordDatabaseLayout layout = RecordDatabaseLayout.of( config );
-            IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl( config );
+            IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl();
             BatchImporter importer = new ParallelBatchImporter(
                     layout, fileSystemAbstraction, PageCacheTracer.NULL, DEFAULT, NullLogService.getInstance(),
                     ExecutionMonitor.INVISIBLE, EMPTY, EMPTY_LOG_TAIL, config, NO_MONITOR, jobScheduler, Collector.EMPTY,

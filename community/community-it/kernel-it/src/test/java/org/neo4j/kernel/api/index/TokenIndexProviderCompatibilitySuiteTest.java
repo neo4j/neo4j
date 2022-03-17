@@ -71,7 +71,7 @@ class TokenIndexProviderCompatibilitySuiteTest extends SpecialisedIndexProviderC
         Mockito.when( databaseIdRepository.getByName( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( defaultDatabaseId ) );
         var readOnlyDatabases = new ReadOnlyDatabases( new ConfigBasedLookupFactory( config, databaseIdRepository ) );
         var readOnlyChecker = readOnlyDatabases.forDatabase( defaultDatabaseId );
-        return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+        return TokenIndexProviderFactory.create( pageCache, graphDbDir, fs, monitors, monitorTag, readOnlyChecker, recoveryCleanupWorkCollector,
                 databaseLayout, NULL_CONTEXT_FACTORY );
     }
 }

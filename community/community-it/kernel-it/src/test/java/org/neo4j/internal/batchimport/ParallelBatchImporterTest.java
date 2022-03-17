@@ -188,7 +188,7 @@ public class ParallelBatchImporterTest
         // This will have statistically half the nodes be considered dense
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, RELATIONSHIPS_PER_NODE * 2 );
         augmentConfig( dbConfig );
-        IndexImporterFactoryImpl indexImporterFactory = new IndexImporterFactoryImpl( dbConfig );
+        IndexImporterFactoryImpl indexImporterFactory = new IndexImporterFactoryImpl();
         final BatchImporter inserter = new ParallelBatchImporter(
                 databaseLayout, fs, pageCacheTracer, config, NullLogService.getInstance(), monitor, EMPTY, EMPTY_LOG_TAIL, dbConfig,
                 Monitor.NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(), indexImporterFactory, INSTANCE,

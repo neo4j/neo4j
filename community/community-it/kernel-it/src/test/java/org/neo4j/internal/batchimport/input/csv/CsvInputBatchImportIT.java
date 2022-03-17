@@ -150,7 +150,7 @@ class CsvInputBatchImportIT
             BatchImporter importer = new ParallelBatchImporter(
                     databaseLayout, fileSystem, PageCacheTracer.NULL, smallBatchSizeConfig(), NullLogService.getInstance(), ExecutionMonitor.INVISIBLE,
                     EMPTY, EMPTY_LOG_TAIL, dbConfig, Monitor.NO_MONITOR, scheduler, Collector.EMPTY, TransactionLogInitializer.getLogFilesInitializer(),
-                    new IndexImporterFactoryImpl( dbConfig ), INSTANCE, NULL_CONTEXT_FACTORY );
+                    new IndexImporterFactoryImpl(), INSTANCE, NULL_CONTEXT_FACTORY );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 

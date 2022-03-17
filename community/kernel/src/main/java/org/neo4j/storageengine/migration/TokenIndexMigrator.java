@@ -53,11 +53,10 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
     private final Function<SchemaRule,Path> storeFileProvider;
     private boolean deleteRelationshipTokenIndex;
     private boolean moveFiles;
-    private final boolean migrateLegacyFiles;
     private final CursorContextFactory contextFactory;
 
     public TokenIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, StorageEngineFactory storageEngineFactory,
-            DatabaseLayout layout, Function<SchemaRule,Path> storeFileProvider, boolean migrateLegacyFiles, CursorContextFactory contextFactory )
+            DatabaseLayout layout, Function<SchemaRule,Path> storeFileProvider, CursorContextFactory contextFactory )
     {
         super( name );
         this.fileSystem = fileSystem;
@@ -65,7 +64,6 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
         this.storageEngineFactory = storageEngineFactory;
         this.layout = layout;
         this.storeFileProvider = storeFileProvider;
-        this.migrateLegacyFiles = migrateLegacyFiles;
         this.contextFactory = contextFactory;
     }
 
@@ -76,8 +74,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant
         deleteRelationshipTokenIndex = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
         // Token indexes were stored at a different location before 5.0
         // This migrator will take them to the 5.0+ location
-        moveFiles = migrateLegacyFiles
-                && (scanStoreExists( directoryLayout, LEGACY_LABEL_INDEX_STORE ) || scanStoreExists( directoryLayout, LEGACY_RELATIONSHIP_TYPE_INDEX_STORE ) );
+        moveFiles = scanStoreExists( directoryLayout, LEGACY_LABEL_INDEX_STORE ) || scanStoreExists( directoryLayout, LEGACY_RELATIONSHIP_TYPE_INDEX_STORE );
     }
 
     private boolean scanStoreExists( DatabaseLayout directoryLayout, String fileName )

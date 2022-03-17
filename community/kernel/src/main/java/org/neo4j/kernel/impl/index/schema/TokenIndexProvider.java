@@ -24,9 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -60,9 +58,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.use_old_token_index_location;
-import static org.neo4j.storageengine.migration.TokenIndexMigrator.LEGACY_LABEL_INDEX_STORE;
-import static org.neo4j.storageengine.migration.TokenIndexMigrator.LEGACY_RELATIONSHIP_TYPE_INDEX_STORE;
 
 public class TokenIndexProvider extends IndexProvider
 {
@@ -72,18 +67,15 @@ public class TokenIndexProvider extends IndexProvider
     private final DatabaseIndexContext databaseIndexContext;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final Monitor monitor;
-    private final Config config;
     private final DatabaseLayout databaseLayout;
 
     protected TokenIndexProvider( DatabaseIndexContext databaseIndexContext, IndexDirectoryStructure.Factory directoryStructureFactory,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            Config config, DatabaseLayout databaseLayout )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, DatabaseLayout databaseLayout )
     {
         super( DESCRIPTOR, directoryStructureFactory );
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.monitor = databaseIndexContext.monitors.newMonitor( IndexProvider.Monitor.class, databaseIndexContext.monitorTag );
-        this.config = config;
         this.databaseLayout = databaseLayout;
     }
 
@@ -144,9 +136,7 @@ public class TokenIndexProvider extends IndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory )
     {
-        boolean migrateLegacyFiles = !config.get( use_old_token_index_location );
-        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, migrateLegacyFiles,
-                contextFactory );
+        return new TokenIndexMigrator( "Token indexes", fs, pageCache, storageEngineFactory, databaseLayout, this::storeFile, contextFactory );
     }
 
     @Override
@@ -200,20 +190,12 @@ public class TokenIndexProvider extends IndexProvider
 
     private IndexFiles indexFiles( SchemaRule schemaRule )
     {
-        return indexFiles( schemaRule, config, databaseIndexContext.fileSystem, directoryStructure(), databaseLayout );
+        return indexFiles( schemaRule, databaseIndexContext.fileSystem, directoryStructure() );
     }
 
-    public static IndexFiles indexFiles( SchemaRule schemaRule, Config config, FileSystemAbstraction fileSystem,
-            IndexDirectoryStructure indexDirectoryStructure, DatabaseLayout databaseLayout )
+    public static IndexFiles indexFiles( SchemaRule schemaRule, FileSystemAbstraction fileSystem,
+            IndexDirectoryStructure indexDirectoryStructure )
     {
-        EntityType entityType = schemaRule.schema().entityType();
-        boolean labelIndex = entityType == EntityType.NODE;
-        if ( config.get( use_old_token_index_location ) )
-        {
-            Path filePath = labelIndex ? databaseLayout.file( LEGACY_LABEL_INDEX_STORE ) : databaseLayout.file( LEGACY_RELATIONSHIP_TYPE_INDEX_STORE );
-            return new IndexFiles.SingleFile( fileSystem, filePath );
-        }
-
         return new IndexFiles.Directory( fileSystem, indexDirectoryStructure, schemaRule.getId() );
     }
 

@@ -59,19 +59,19 @@ public class TokenIndexProviderFactory extends AbstractIndexProviderFactory<Toke
                                                  DatabaseLayout databaseLayout, InternalLog log,
                                                  TokenHolders tokenHolders, JobScheduler scheduler, CursorContextFactory contextFactory )
     {
-        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, config, readOnlyChecker, recoveryCleanupWorkCollector,
+        return create( pageCache, databaseLayout.databaseDirectory(), fs, monitors, monitorTag, readOnlyChecker, recoveryCleanupWorkCollector,
                        databaseLayout, contextFactory );
     }
 
     @VisibleForTesting
     public static TokenIndexProvider create( PageCache pageCache, Path storeDir, FileSystemAbstraction fs, Monitors monitors,
-            String monitorTag, Config config, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            String monitorTag, DatabaseReadOnlyChecker readOnlyChecker, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout, CursorContextFactory contextFactory )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         DatabaseIndexContext databaseIndexContext =
                 DatabaseIndexContext.builder( pageCache, fs, contextFactory, databaseLayout.getDatabaseName() ).withMonitors( monitors ).withTag( monitorTag )
                         .withReadOnlyChecker( readOnlyChecker ).build();
-        return new TokenIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, config, databaseLayout );
+        return new TokenIndexProvider( databaseIndexContext, directoryStructure, recoveryCleanupWorkCollector, databaseLayout );
     }
 }

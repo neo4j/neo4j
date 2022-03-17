@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -30,17 +29,11 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 public class IndexImporterFactoryImpl implements IndexImporterFactory
 {
-    private final Config config;
-
-    public IndexImporterFactoryImpl( Config config )
-    {
-        this.config = config;
-    }
 
     @Override
     public IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
             CursorContextFactory contextFactory )
     {
-        return new TokenIndexImporter( index, layout, fs, pageCache, contextFactory, config );
+        return new TokenIndexImporter( index, layout, fs, pageCache, contextFactory );
     }
 }

@@ -225,7 +225,7 @@ public class QuickImport implements Callable<Void>
                                                             : StorageEngineFactory.defaultStorageEngine();
                 consumer = storageEngineFactory.batchImporter( DatabaseLayout.ofFlat( dir ), fileSystem, PageCacheTracer.NULL, importConfig,
                         new SimpleLogService( logging, logging ), System.out, verbose, EMPTY, dbConfig, NO_MONITOR, jobScheduler, Collector.EMPTY,
-                        TransactionLogInitializer.getLogFilesInitializer(), new IndexImporterFactoryImpl( dbConfig ), INSTANCE, NULL_CONTEXT_FACTORY );
+                        TransactionLogInitializer.getLogFilesInitializer(), new IndexImporterFactoryImpl(), INSTANCE, NULL_CONTEXT_FACTORY );
             }
             consumer.doImport( input );
         }
