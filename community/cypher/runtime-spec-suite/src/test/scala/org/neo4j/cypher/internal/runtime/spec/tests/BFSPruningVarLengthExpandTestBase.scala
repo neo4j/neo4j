@@ -532,6 +532,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   // EXPANSION FILTERING, NODE AND RELATIONSHIP PREDICATE
 
   test("should filter on node predicate") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
@@ -554,6 +556,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
@@ -572,6 +576,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node predicate on first node from reference") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
@@ -614,6 +620,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should filter on node and relationship predicate") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
@@ -691,6 +699,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
@@ -717,6 +727,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing reference in context and including start node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
@@ -743,6 +755,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
@@ -769,6 +783,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle predicate accessing node in context and including start node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val n = closestMultipleOf(10, 4)
     val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
@@ -819,6 +835,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("var-length-expand should only find start node once with node filtering") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val nodes = given {
       val (nodes, _) = circleGraph(10)
@@ -843,6 +861,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
@@ -867,6 +887,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on the RHS of an apply including start node") {
+    assume(!(isParallel && runOnlySafeScenarios))
+
     // given
     val g = given { sineGraph() }
 
