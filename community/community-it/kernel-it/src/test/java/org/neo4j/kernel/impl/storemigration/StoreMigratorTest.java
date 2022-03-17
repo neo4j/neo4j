@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.internal.NullLogService;
@@ -135,9 +135,9 @@ class StoreMigratorTest
         fileSystem.write( migrationLayout.metadataStore() ).close();
 
         var storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        migrator.migrate( dbLayout, migrationLayout, progressReporter, storageEngineFactory.versionInformation( StandardV4_3.STORE_VERSION ),
-                storageEngineFactory.versionInformation( StandardV4_3.STORE_VERSION ), IndexImporterFactory.EMPTY,
-                LogTailMetadata.EMPTY_LOG_TAIL );
+        migrator.migrate( dbLayout, migrationLayout, progressReporter, storageEngineFactory.versionInformation( Standard.LATEST_STORE_VERSION ),
+                          storageEngineFactory.versionInformation( Standard.LATEST_STORE_VERSION ), IndexImporterFactory.EMPTY,
+                          LogTailMetadata.EMPTY_LOG_TAIL );
 
         // Should not have started any migration
         assertFalse( progressReporter.started );
