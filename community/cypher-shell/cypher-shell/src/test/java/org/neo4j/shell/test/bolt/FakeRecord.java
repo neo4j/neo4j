@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.test.bolt;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -165,13 +166,19 @@ class FakeRecord implements Record
     @Override
     public List<String> keys()
     {
-        return valueMap.keySet().stream().collect( Collectors.toList() );
+        return new ArrayList<>( valueMap.keySet() );
     }
 
     @Override
     public List<Value> values()
     {
-        return valueMap.values().stream().collect( Collectors.toList() );
+        return new ArrayList<>( valueMap.values() );
+    }
+
+    @Override
+    public <T> Iterable<T> values( Function<Value,T> function )
+    {
+        return () -> valueMap.values().stream().map( function::apply ).iterator();
     }
 
     @Override
