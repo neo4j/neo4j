@@ -448,6 +448,23 @@ public class ProcedureCompilationTest
     }
 
     @Test
+    void shouldHandleResultClassWithMultipleFields() throws ProcedureException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature( "test", "foo" )
+                .out( List.of( inputField( "name", NTString ), inputField( "value", NTInteger ) ) ).build();
+        // When
+        CallableProcedure stringStream =
+                compileProcedure( signature, emptyList(), method( MultiFieldClass.class, "inner" ) );
+
+        // Then
+        RawIterator<AnyValue[],ProcedureException> iterator =
+                stringStream.apply( ctx, EMPTY, RESOURCE_TRACKER );
+        assertArrayEquals( new AnyValue[]{stringValue( "hello" ), longValue( 42L )}, iterator.next() );
+        assertFalse( iterator.hasNext() );
+    }
+
+    @Test
     void shouldCallAggregationFunction() throws ProcedureException
     {
         // Given
@@ -659,6 +676,20 @@ public class ProcedureCompilationTest
             {
                 return aggregator.toString();
             }
+        }
+    }
+
+    public static class MultiFieldClass
+    {
+        public Stream<Inner> inner()
+        {
+            return Stream.of( new Inner() );
+        }
+
+        public class Inner
+        {
+            public String name = "hello";
+            public long value = 42;
         }
     }
 

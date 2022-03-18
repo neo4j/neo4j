@@ -675,16 +675,13 @@ public final class ProcedureCompilation
             {
 
                 block.tryCatch(
-                        onSuccess -> {
-                            block.assign(
-                                result.getReturnType(),
+                        onSuccess -> onSuccess.returns(toAnyValue(
+                                block,
                                 "result",
-                                invoke(get(onSuccess.self(), aggregator), methodReference(result))
-                            );
-                            onSuccess.returns(toAnyValue(
-                                block.load( "result" ), result.getReturnType(),
-                                get(onSuccess.self(), context)));
-                        },
+                                invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ),
+                                result.getReturnType(),
+                                get( onSuccess.self(), context )
+                        )),
                         onError ->
                                 onError( onError, format( "function `%s`", signature.name() ) ),
                         param( Throwable.class, "T" ) );
@@ -868,6 +865,27 @@ public final class ProcedureCompilation
     /**
      * Takes an expression evaluating to one of the supported java values and turns
      * it into the corresponding AnyValue
+     *
+     * The expression is evaluated once and stored in a local variable
+     *
+     * @param block the surrounding code block in which the expression will be evaluated
+     * @param expressionVariableName the name of the local variable in which the evaluated expression will be stored.
+     * @param expression the expression to evaluate
+     * @param userType the type of the expression to map
+     * @return an expression properly mapped to AnyValue
+     */
+    private static Expression toAnyValue( CodeBlock block, String expressionVariableName, Expression expression, Class<?> userType, Expression context )
+    {
+        block.assign( userType, expressionVariableName, expression );
+        return toAnyValue( block.load(expressionVariableName), userType, context );
+    }
+
+    /**
+     * Takes an expression evaluating to one of the supported java values and turns
+     * it into the corresponding AnyValue
+     *
+     * The expression may be evaluated twice, depending on the userType.
+     * If the expression needs to be evaluated only once, use {@link #toAnyValue(CodeBlock, String, Expression, Class, Expression)}.
      *
      * @param expression the expression to evaluate
      * @param userType the type of the expression to map
