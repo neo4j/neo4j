@@ -35,6 +35,8 @@ public class Index44Compatibility implements Capability
     @Override
     public boolean isType( CapabilityType type )
     {
+        // This capability has no type - to not trigger any format compatibility checks and do extra unnecessary migration
+        // It is just used as a marker to know if format has 4.4 indexing and should treat schema store special
         return false;
     }
 
