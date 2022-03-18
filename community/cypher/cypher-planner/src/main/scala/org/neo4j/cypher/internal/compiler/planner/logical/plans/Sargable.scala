@@ -211,14 +211,14 @@ object AsDistanceSeekable {
 
 object DistanceFunction {
   def unapply(v: Expression): Option[(Expression, Expression)] = v match {
-    case FunctionInvocation(Namespace(List(namespace)), FunctionName("distance"), _, args) if namespace.toLowerCase == "point" => Some((args.head, args(1)))
+    case FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, args) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") => Some((args.head, args(1)))
     case _ => None
   }
 }
 
 object AsBoundingBoxSeekable {
   def unapply(v: Any): Option[PointBoundingBoxSeekable] = v match {
-    case f@FunctionInvocation(Namespace(List("point")), FunctionName("withinBBox"), _, Seq(prop@Property(ident: LogicalVariable, PropertyKeyName(name)), lowerLeft, upperRight)) =>
+    case f@FunctionInvocation(Namespace(List(namespace)), FunctionName(functionName), _, Seq(prop@Property(ident: LogicalVariable, PropertyKeyName(_)), lowerLeft, upperRight)) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinbbox") =>
       Some(PointBoundingBoxSeekable(ident, prop, f, PointBoundingBoxRange(lowerLeft, upperRight)))
     case _ =>
       None

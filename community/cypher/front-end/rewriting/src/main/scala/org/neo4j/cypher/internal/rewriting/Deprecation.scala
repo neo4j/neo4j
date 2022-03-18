@@ -352,7 +352,8 @@ object Deprecations {
         )
 
       // distance -> point.distance
-      case f@FunctionInvocation(namespace, FunctionName("distance"), _, _) if namespace.parts.isEmpty =>
+      case f@FunctionInvocation(namespace, FunctionName(functionName), _, _)
+      if namespace.parts.isEmpty && functionName.equalsIgnoreCase("distance") =>
         Deprecation(
           Some(Ref(f) -> renameFunctionTo(Namespace(List("point"))(f.position), "distance")(f)),
           Some(DeprecatedFunctionNotification(f.position, "distance", "point.distance"))
