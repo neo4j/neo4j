@@ -305,6 +305,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     dstStore.flush( cursorContext );
                 }
             }
+            fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
+                    ExistingTargetStrategy.SKIP );
 
             fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
                            ExistingTargetStrategy.SKIP );
