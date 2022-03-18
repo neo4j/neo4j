@@ -76,6 +76,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -129,6 +130,12 @@ public class MigrateStoreCommand extends AbstractCommand
         {
             DatabaseLayout databaseLayout = Neo4jLayout.of( config ).databaseLayout( database.name() );
             checkDatabaseExistence( databaseLayout );
+
+            if ( SYSTEM_DATABASE_NAME.equals( database.name() ) )
+            {
+                formatFamily = GraphDatabaseSettings.DatabaseRecordFormat.aligned.name();
+            }
+
             try ( Closeable ignored = LockChecker.checkDatabaseLock( databaseLayout ) )
             {
                 SimpleLogService logService = new SimpleLogService( logProvider );
