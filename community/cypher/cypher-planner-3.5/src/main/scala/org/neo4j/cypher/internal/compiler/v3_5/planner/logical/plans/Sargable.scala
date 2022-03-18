@@ -121,23 +121,31 @@ object AsValueRangeSeekable {
 // and the like
 object AsDistanceSeekable {
   def unapply(v: Any): Option[PointDistanceSeekable] = v match {
-    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_), distanceExpr) =>
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_), distanceExpr)
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThan(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_), distanceExpr) =>
+    case LessThan(FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_), distanceExpr)
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_), distanceExpr) =>
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_), distanceExpr)
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey), _),_), distanceExpr) =>
+    case LessThanOrEqual(FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(otherPoint, Property(variable: Variable, propertyKey), _),_), distanceExpr)
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
 
-    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_)) =>
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_))
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_)) =>
+    case GreaterThan(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_))
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = false)))
-    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_)) =>
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(Property(variable: Variable, propertyKey), otherPoint),_))
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
-    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName("distance"), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_)) =>
+    case GreaterThanOrEqual(distanceExpr, FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(otherPoint, Property(variable: Variable, propertyKey)),_))
+    if functionName.equalsIgnoreCase("distance") =>
       Some(PointDistanceSeekable(variable, propertyKey, PointDistanceRange(otherPoint, distanceExpr, inclusive = true)))
 
     case AndedPropertyInequalities(_, _, inequalities) if inequalities.size == 1 =>
