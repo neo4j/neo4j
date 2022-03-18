@@ -26,6 +26,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -33,10 +35,13 @@ import java.util.stream.Stream;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.SimpleTokenCreator;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -49,6 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -390,18 +396,131 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void filterOutBtreeIndexesShouldIgnoreSystemDb() throws KernelException
+    void filterOutBtreeIndexesOnSystemShouldReplaceNonUniqueBtreeIndex() throws KernelException
     {
         // Given
+        var index = index( BTREE, labels[0], props[0], NAME_ONE );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
         var access = mock( SchemaRuleMigrationAccess.class );
+        when( access.nextId() ).then( answerNextId() );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( index ) );
 
         // When
         filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
 
         // Then
-        verifyNoInteractions( access );
+        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).nextId();
+        verify( access ).deleteSchemaRule( index.id() );
+        verify( access ).writeSchemaRule( argument.capture() );
+        verifyRangeIndex( index, argument.getValue() );
+        verifyNoMoreInteractions( access );
+        verifyNoMoreInteractions( reader );
+    }
+
+    @Test
+    void filterOutBtreeIndexesOnSystemShouldNotReplaceNonUniqueBtreeIndexThatHasReplacement() throws KernelException
+    {
+        // Given
+        var btreeIndex = index( BTREE, labels[0], props[0], NAME_ONE );
+        var rangeIndex = index( RANGE, labels[0], props[0], NAME_TWO );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( access.nextId() ).then( answerNextId() );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btreeIndex, rangeIndex ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+
+        // Then
+        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).deleteSchemaRule( btreeIndex.id() );
+        verifyNoMoreInteractions( access );
+        verifyNoMoreInteractions( reader );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
+    void filterOutBtreeIndexesOnSystemShouldReplaceBtreeConstraint( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    {
+        // Given
+        var btreeUnique = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( access.nextId() ).then( answerNextId() );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( btreeUnique.index(), btreeUnique.constraint() ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+
+        // Then
+        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access, times( 2 ) ).nextId();
+        verify( access ).deleteSchemaRule( btreeUnique.index.id() );
+        verify( access ).deleteSchemaRule( btreeUnique.constraint.id() );
+        verify( access, times( 2 ) ).writeSchemaRule( argument.capture() );
+        NewConstraintPair rangeUnique = captureNewConstraint( argument );
+        verifyConstraintAndIndex( btreeUnique.index, btreeUnique.constraint, rangeUnique.index, rangeUnique.constraint );
+        verifyNoMoreInteractions( access );
+        verifyNoMoreInteractions( reader );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
+    void filterOutBtreeIndexesOnSystemShouldNotReplaceBtreeConstraintThatAlreadyHasReplacement( SchemaRule44.ConstraintRuleType constraintType )
+            throws KernelException
+    {
+        // Given
+        var btreeUnique = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
+        var rangeUnique = constraint( constraintType, RANGE, labels[0], props[0], NAME_TWO );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( access.nextId() ).then( answerNextId() );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index, rangeUnique.constraint ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+
+        // Then
+        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).deleteSchemaRule( btreeUnique.index.id() );
+        verify( access ).deleteSchemaRule( btreeUnique.constraint.id() );
+        verifyNoMoreInteractions( access );
+        verifyNoMoreInteractions( reader );
+    }
+
+    @ParameterizedTest
+    @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
+    void filterOutBtreeIndexesOnSystemShouldNotTouchRangeSchemas( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    {
+        // Given
+        var rangeIndex = index( RANGE, labels[0], props[0], NAME_ONE );
+        var rangeUnique = constraint( constraintType, RANGE, labels[1], props[1], NAME_TWO );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( access.nextId() ).then( answerNextId() );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
+                List.of( rangeIndex, rangeUnique.index(), rangeUnique.constraint() ) );
+
+        // When
+        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+
+        // Then
+        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verifyNoMoreInteractions( access );
+        verifyNoMoreInteractions( reader );
     }
 
     @Test
@@ -467,6 +586,55 @@ class RecordStorageMigratorTest
         verifyNoInteractions( access );
     }
 
+    private static void verifyRangeIndex( SchemaRule44.Index index, SchemaRule newSchemaRule )
+    {
+        assertThat( newSchemaRule ).isInstanceOf( IndexDescriptor.class );
+        var rangeIndex = (IndexDescriptor) newSchemaRule;
+        assertThat( rangeIndex.getId() ).isNotEqualTo( index.id() );
+        assertThat( rangeIndex.getName() ).isEqualTo( index.name() );
+        assertThat( rangeIndex.schema() ).isEqualTo( index.schema() );
+        assertThat( rangeIndex.getIndexType() ).isEqualTo( IndexType.RANGE );
+        assertThat( rangeIndex.isUnique() ).isEqualTo( index.unique() );
+        assertThat( rangeIndex.getIndexProvider() ).isEqualTo( new IndexProviderDescriptor( "range", "1.0" ) );
+        if ( index.owningConstraintId() == null )
+        {
+            assertThat( rangeIndex.getOwningConstraintId() ).isEmpty();
+        }
+        else
+        {
+            assertThat( rangeIndex.getOwningConstraintId().isPresent() ).isTrue();
+            assertThat( rangeIndex.getOwningConstraintId().getAsLong() ).isNotEqualTo( index.owningConstraintId() );
+        }
+    }
+
+    private static void verifyConstraintAndIndex( SchemaRule44.Index index, SchemaRule44.Constraint constraint, IndexDescriptor newIndex,
+                                                  ConstraintDescriptor newConstraint )
+    {
+        verifyRangeIndex( index, newIndex );
+        verifyConstraint( constraint, newConstraint );
+        verifyConnected( newIndex, newConstraint );
+    }
+
+    private static void verifyConnected( IndexDescriptor newIndex, ConstraintDescriptor newConstraint )
+    {
+        if ( newConstraint.isIndexBackedConstraint() )
+        {
+            var newConstraintIndexBacked = newConstraint.asIndexBackedConstraint();
+            assertThat( newConstraintIndexBacked.ownedIndexId() ).isEqualTo( newIndex.getId() );
+            assertThat( newIndex.getOwningConstraintId().isPresent() ).isTrue();
+            assertThat( newIndex.getOwningConstraintId().getAsLong() ).isEqualTo( newConstraint.getId() );
+        }
+    }
+
+    private static void verifyConstraint( SchemaRule44.Constraint constraint, ConstraintDescriptor newConstraint )
+    {
+        assertThat( newConstraint.schema() ).isEqualTo( constraint.schema() );
+        assertThat( newConstraint.type() ).isEqualTo( constraint.constraintRuleType().asConstraintType() );
+        assertThat( newConstraint.getId() ).isNotEqualTo( constraint.id() );
+        assertThat( newConstraint.getName() ).isEqualTo( constraint.name() );
+        assertThat( newConstraint.isIndexBackedConstraint() ).isEqualTo( constraint.constraintRuleType().isIndexBacked() );
+    }
+
     private SchemaRule44.Index index( SchemaRule44.IndexType indexType, int label, int property, String name )
     {
         var labelSchemaDescriptor = SchemaDescriptors.forLabel( label, property );
@@ -496,6 +664,29 @@ class RecordStorageMigratorTest
         return new SchemaRule44.Constraint( schemaId.getAndIncrement(), schema, name, SchemaRule44.ConstraintRuleType.EXISTS, null, null );
     }
 
+    private NewConstraintPair captureNewConstraint( ArgumentCaptor<SchemaRule> argument )
+    {
+        IndexDescriptor newIndex = null;
+        ConstraintDescriptor newConstraint = null;
+        for ( SchemaRule newSchemaRule : argument.getAllValues() )
+        {
+            if ( newSchemaRule instanceof IndexDescriptor index )
+            {
+                newIndex = index;
+            }
+            if ( newSchemaRule instanceof ConstraintDescriptor constraint )
+            {
+                newConstraint = constraint;
+            }
+        }
+        return new NewConstraintPair( newIndex, newConstraint );
+    }
+
+    private Answer<Object> answerNextId()
+    {
+        return invocationOnMock -> (long) schemaId.getAndIncrement();
+    }
+
     private static Stream<Arguments> nonReplacingConstraintCombinations()
     {
         return Stream.of(
@@ -505,6 +696,10 @@ class RecordStorageMigratorTest
     }
 
     private record ConstraintPair(SchemaRule44.Index index, SchemaRule44.Constraint constraint)
+    {
+    }
+
+    private record NewConstraintPair( IndexDescriptor index, ConstraintDescriptor constraint )
     {
     }
 }

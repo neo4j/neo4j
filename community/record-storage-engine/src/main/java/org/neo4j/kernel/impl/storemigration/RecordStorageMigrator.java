@@ -59,6 +59,7 @@ import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
@@ -68,9 +69,14 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseFile;
@@ -382,13 +388,9 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     static void filterOutBtreeIndexes( SchemaStore44Reader schemaStore44Reader, StoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess,
                                        TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
     {
-        if ( systemDb )
-        {
-            // Forcefully replace all
-            return;
-        }
-
         var all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
+        var toDelete = new ArrayList<SchemaRule44>();
+        var toCreate = new ArrayList<SchemaRule>();
 
         // Organize indexes by SchemaDescriptor
 
@@ -420,7 +422,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
 
         // Figure out which btree indexes that has replacement and can be deleted and which don't
-        var indexesToDelete = new ArrayList<SchemaRule44.Index>();
         var nonReplacedIndexes = new ArrayList<SchemaRule44.Index>();
         for ( var schema : indexesBySchema.keySet() )
         {
@@ -435,15 +436,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     }
                     else
                     {
-                        indexesToDelete.add( index );
+                        toDelete.add( index );
                     }
                 }
             }
         }
 
         // Figure out which constraints, backed by btree indexes, that has replacement and can be deleted and which don't
-        var constraintsToDelete = new ArrayList<SchemaRule44.Constraint>();
-        var nonReplacedConstraints = new ArrayList<SchemaRule44.Constraint>();
+        var nonReplacedConstraints = new ArrayList<Pair<SchemaRule44.Constraint,SchemaRule44.Index>>();
         constraintBySchemaAndType.values()
                                  .stream().flatMap( enumMap -> enumMap.values().stream() )
                                  .forEach( constraintsGroupedBySchemaAndType ->
@@ -455,12 +455,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                                    {
                                                        if ( constraintsGroupedBySchemaAndType.size() == 1 )
                                                        {
-                                                           nonReplacedConstraints.add( constraint );
+                                                           nonReplacedConstraints.add( Pair.of( constraint, backingIndex ) );
                                                        }
                                                        else
                                                        {
-                                                           constraintsToDelete.add( constraint );
-                                                           indexesToDelete.add( backingIndex );
+                                                           toDelete.add( constraint );
+                                                           toDelete.add( backingIndex );
                                                        }
                                                    }
                                                }
@@ -477,34 +477,90 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
         }
 
-        // Throw if non-replaced index exists
         if ( !nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty() )
         {
-            var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
-            var nonReplacedConstraintsString = new StringJoiner( ", ", "[", "]" );
-            nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
-            nonReplacedConstraints.forEach( constraint -> nonReplacedConstraintsString.add( constraint.userDescription( dstTokensHolders ) ) );
-            throw new IllegalStateException(
-                    "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
-                    "To guard from unintentionally removing indexes or constraints, " +
-                    "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or " +
-                    "need to have a valid replacement. " +
-                    "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. " +
-                    "Please drop your indexes and constraints or create replacements and retry the migration. " +
-                    "The indexes and constraints without replacement are: " + nonReplacedIndexString + " and " + nonReplacedConstraintsString
-            );
+            if ( systemDb )
+            {
+                // Forcefully replace non-replaced indexes and constraints
+                for ( SchemaRule44.Index index : nonReplacedIndexes )
+                {
+                    IndexDescriptor rangeIndex = asRangeIndex( index, dstAccess );
+                    toCreate.add( rangeIndex );
+                    toDelete.add( index );
+                }
+                for ( Pair<SchemaRule44.Constraint,SchemaRule44.Index> constraintPair : nonReplacedConstraints )
+                {
+                    var oldConstraint = constraintPair.first();
+                    var oldIndex = constraintPair.other();
+                    var rangeIndex = asRangeIndex( oldIndex, dstAccess );
+                    var rangeBackedConstraint = asRangeBackedConstraint( oldConstraint, rangeIndex, dstAccess, dstTokensHolders );
+                    rangeIndex = rangeIndex.withOwningConstraintId( rangeBackedConstraint.getId() );
+                    toCreate.add( rangeIndex );
+                    toCreate.add( rangeBackedConstraint );
+                    toDelete.add( oldIndex );
+                    toDelete.add( oldConstraint );
+                }
+            }
+            else
+            {
+                // Throw if non-replaced index exists
+                var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
+                var nonReplacedConstraintsString = new StringJoiner( ", ", "[", "]" );
+                nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
+                nonReplacedConstraints.forEach( pair -> nonReplacedConstraintsString.add( pair.first().userDescription( dstTokensHolders ) ) );
+                throw new IllegalStateException(
+                        "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
+                        "To guard from unintentionally removing indexes or constraints, " +
+                        "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or " +
+                        "need to have a valid replacement. " +
+                        "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. " +
+                        "Please drop your indexes and constraints or create replacements and retry the migration. " +
+                        "The indexes and constraints without replacement are: " + nonReplacedIndexString + " and " + nonReplacedConstraintsString
+                );
+            }
         }
 
-        // Delete all btree indexes
-        for ( SchemaRule44.Index indexToDelete : indexesToDelete )
+        for ( SchemaRule44 rule : toDelete )
         {
-            dstAccess.deleteSchemaRule( indexToDelete.id() );
+            dstAccess.deleteSchemaRule( rule.id() );
         }
-        // Delete all btree backed constraints
-        for ( SchemaRule44.Constraint constraintToDelete : constraintsToDelete )
+        for ( SchemaRule rule : toCreate )
         {
-            dstAccess.deleteSchemaRule( constraintToDelete.id() );
+            dstAccess.writeSchemaRule( rule );
         }
+    }
+
+    private static ConstraintDescriptor asRangeBackedConstraint( SchemaRule44.Constraint constraint, IndexDescriptor rangeIndex,
+                                                                 SchemaRuleMigrationAccess dstAccess, TokenHolders dstTokensHolders )
+    {
+        ConstraintDescriptor newConstraint;
+        if ( constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE )
+        {
+            newConstraint = ConstraintDescriptorFactory.uniqueForSchema( constraint.schema(), rangeIndex.getIndexType() );
+        }
+        else if ( constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS )
+        {
+            newConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( constraint.schema(), rangeIndex.getIndexType() );
+        }
+        else
+        {
+            throw new IllegalStateException(
+                    "We should never see non-index-backed constraint here, but got: " + constraint.userDescription( dstTokensHolders ) );
+        }
+        return newConstraint.withOwnedIndexId( rangeIndex.getId() )
+                            .withName( constraint.name() )
+                            .withId( dstAccess.nextId() );
+    }
+
+    private static IndexDescriptor asRangeIndex( SchemaRule44.Index btreeIndex, SchemaRuleMigrationAccess dstAccess )
+    {
+        var prototype = btreeIndex.unique() ? IndexPrototype.uniqueForSchema( btreeIndex.schema() )
+                                            : IndexPrototype.forSchema( btreeIndex.schema() );
+        return prototype
+                .withName( btreeIndex.name() )
+                .withIndexType( IndexType.RANGE )
+                .withIndexProvider( new IndexProviderDescriptor( "range", "1.0" ) )
+                .materialise( dstAccess.nextId() );
     }
 
     void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException
@@ -841,12 +897,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private static void deleteBtreeIndexFiles( FileSystemAbstraction fs, RecordDatabaseLayout directoryLayout ) throws IOException
     {
-        if ( directoryLayout.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) )
-        {
-            // Don't deal with system db right now
-            return;
-        }
-
         fs.deleteRecursively( IndexDirectoryStructure.directoriesByProvider( directoryLayout.databaseDirectory() )
                                                      .forProvider( SchemaRule44.NATIVE_BTREE_10 )
                                                      .rootDirectory() );

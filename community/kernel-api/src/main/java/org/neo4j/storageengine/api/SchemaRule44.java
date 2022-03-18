@@ -28,6 +28,10 @@ import org.neo4j.internal.schema.SchemaUserDescription;
 
 public interface SchemaRule44
 {
+    long id();
+
+    String userDescription( TokenNameLookup tokenNameLookup );
+
     record Index(
             long id,
             SchemaDescriptor schema,
@@ -39,6 +43,7 @@ public interface SchemaRule44
             Long owningConstraintId
     ) implements SchemaRule44
     {
+        @Override
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
             return SchemaUserDescription.forIndex( tokenNameLookup, id, name, unique, indexType.name(), schema, providerDescriptor, owningConstraintId );
@@ -54,6 +59,7 @@ public interface SchemaRule44
             IndexType indexType
     ) implements SchemaRule44
     {
+        @Override
         public String userDescription( TokenNameLookup tokenNameLookup )
         {
             return SchemaUserDescription.forConstraint( tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex );
@@ -90,7 +96,7 @@ public interface SchemaRule44
             return isIndexBacked;
         }
 
-        ConstraintType asConstraintType()
+        public ConstraintType asConstraintType()
         {
             return constraintType;
         }
