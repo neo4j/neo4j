@@ -544,7 +544,8 @@ case class Match(
               expr match {
                 case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
                   acc :+ name
-                case FunctionInvocation(Namespace(List()), FunctionName(Distance.name), _, Seq(Property(Variable(id), PropertyKeyName(name)), _)) if id == variable =>
+                case FunctionInvocation(Namespace(List()), FunctionName(functionName), _, Seq(Property(Variable(id), PropertyKeyName(name)), _))
+                  if functionName.equalsIgnoreCase(Distance.name) && id == variable =>
                   acc :+ name
                 case _ =>
                   acc
