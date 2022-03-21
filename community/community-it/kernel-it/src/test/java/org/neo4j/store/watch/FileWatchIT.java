@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -65,15 +66,15 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.io.layout.CommonDatabaseFile.LABEL_SCAN_STORE;
-import static org.neo4j.io.layout.CommonDatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE;
+import static org.neo4j.io.layout.DatabaseFile.LABEL_SCAN_STORE;
+import static org.neo4j.io.layout.DatabaseFile.RELATIONSHIP_TYPE_SCAN_STORE;
 import static org.neo4j.logging.AssertableLogProvider.Level.ERROR;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 @Neo4jLayoutExtension
 @EnabledOnOs( OS.LINUX )
-class FileWatchIT
+public class FileWatchIT
 {
     @Inject
     private TestDirectory testDirectory;
@@ -88,7 +89,7 @@ class FileWatchIT
     void setUp()
     {
         logProvider = new AssertableLogProvider();
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).setInternalLogProvider( logProvider ).build();
+        managementService = createDatabaseManagementService( databaseLayout, logProvider );
         database = managementService.database( DEFAULT_DATABASE_NAME );
     }
 
@@ -96,6 +97,11 @@ class FileWatchIT
     void tearDown()
     {
         shutdownDatabaseSilently( managementService );
+    }
+
+    protected DatabaseManagementService createDatabaseManagementService( DatabaseLayout databaseLayout, LogProvider logProvider )
+    {
+        return new TestDatabaseManagementServiceBuilder( databaseLayout ).setInternalLogProvider( logProvider ).build();
     }
 
     @Test
