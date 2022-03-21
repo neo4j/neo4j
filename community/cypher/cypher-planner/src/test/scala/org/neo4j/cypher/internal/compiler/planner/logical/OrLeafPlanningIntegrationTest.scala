@@ -509,7 +509,7 @@ class OrLeafPlanningIntegrationTest
 
     val plan = cfg.plan(
       """MATCH (n)
-        |WHERE (n:L OR n:P) AND (n.p1 = 1)
+        |WHERE (n:L OR n:P) AND (n.p1 < 1)
         |RETURN n""".stripMargin
     )
 
@@ -518,16 +518,16 @@ class OrLeafPlanningIntegrationTest
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.filter("n.p1 = 1")
+        .|.filter("n.p1 < 1")
         .|.nodeByLabelScan("n", "P", IndexOrderAscending)
-        .nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .nodeIndexOperator("n:L(p1 < 1)", indexType = IndexType.RANGE)
         .build()
     ) or equal(
       cfg.planBuilder()
         .produceResults("n")
         .distinct("n AS n")
         .union()
-        .|.nodeIndexOperator("n:L(p1 = 1)", indexType = IndexType.RANGE)
+        .|.nodeIndexOperator("n:L(p1 < 1)", indexType = IndexType.RANGE)
         .filter("n.p1 = 1")
         .nodeByLabelScan("n", "P", IndexOrderAscending)
         .build()

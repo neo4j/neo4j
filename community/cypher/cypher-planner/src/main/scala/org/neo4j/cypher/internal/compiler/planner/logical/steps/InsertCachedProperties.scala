@@ -270,7 +270,10 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean) extends Phase[
                     case Some(value) => value.equals(entry._2)
                   }
               )
-              Acc(lhsAcc.properties.fuse(rhsAcc.properties)(_ ++ _), mergedNames)
+              val mergedProperties = lhsAcc.properties.fuse(rhsAcc.properties) {
+                (lhs, rhs) => (lhs ++ rhs).copy(usages = math.max(lhs.usages, rhs.usages))
+              }
+              Acc(mergedProperties, mergedNames)
 
             case plan =>
               val combinedChildAcc = lhsAcc ++ rhsAcc

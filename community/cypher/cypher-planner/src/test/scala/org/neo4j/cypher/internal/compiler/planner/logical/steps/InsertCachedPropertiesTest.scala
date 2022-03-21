@@ -51,7 +51,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexSeek
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
-import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -531,10 +530,10 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .apply()
       .|.union()
       .|.|.projection("n as m")
-      .|.|.filter("cacheFromStore[n.prop] = 2")
+      .|.|.filter("cacheN[n.prop] = 2")
       .|.|.argument("n")
       .|.projection("n as m")
-      .|.filter("cache[n.prop] = 3")
+      .|.filter("cacheFromStore[n.prop] = 3")
       .|.argument("n")
       .allNodeScan("n")
       .build()
@@ -1019,6 +1018,26 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val (newPlan, newTable) = replace(initialPlan, initialTable)
     newPlan shouldBe initialPlan
     newTable shouldBe initialTable
+  }
+
+  test("should get values from index on LHS of a Union when the same property is also used on RHS") {
+    val builder = new LogicalPlanBuilder()
+      .produceResults("a")
+      .union()
+      .|.filter("a.prop < 321")
+      .|.nodeIndexOperator("a:A(otherProp)", getValue = _ => CanGetValue)
+      .filter("a.prop < 123")
+      .nodeIndexOperator("a:A(prop)", getValue = _ => CanGetValue)
+
+    val (newPlan, _) = replace(builder.build(), builder.getSemanticTable)
+    newPlan shouldBe new LogicalPlanBuilder()
+      .produceResults("a")
+      .union()
+      .|.filter("cacheNFromStore[a.prop] < 321")
+      .|.nodeIndexOperator("a:A(otherProp)", getValue = _ => DoNotGetValue)
+      .filter("cacheN[a.prop] < 123")
+      .nodeIndexOperator("a:A(prop)", getValue = _ => GetValue)
+      .build()
   }
 
   private def replace(plan: LogicalPlan,
