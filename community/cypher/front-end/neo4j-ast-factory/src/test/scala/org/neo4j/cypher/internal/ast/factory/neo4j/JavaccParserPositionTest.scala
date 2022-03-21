@@ -32,8 +32,10 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.ExistsSubClause
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -98,6 +100,27 @@ class JavaccParserPositionTest extends ParserComparisonTestBase with FunSuiteLik
   test("MATCH (a) WHERE NOT (a:A)") {
     assertSameAST(testName)
     validatePosition(testName, _.isInstanceOf[HasLabelsOrTypes], InputPosition(21, 1, 22))
+  }
+
+
+  test("MATCH (n) WHERE exists { (n) --> () }") {
+    val exists = javaccAST(testName).findByClass[ExistsSubClause]
+    exists.position shouldBe InputPosition(16, 1, 17)
+    exists.findByClass[Pattern].position shouldBe InputPosition(25, 1, 26)
+  }
+
+  test("MATCH (n) WHERE exists { MATCH (n)-[r]->(m) }") {
+    val exists = javaccAST(testName).findByClass[ExistsSubClause]
+    exists.position shouldBe InputPosition(16, 1, 17)
+    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+  }
+
+  test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
+    val exists :: existsNested :: Nil = javaccAST(testName).findAllByClass[ExistsSubClause].toList
+    exists.position shouldBe InputPosition(16, 1, 17)
+    exists.findByClass[Pattern].position shouldBe InputPosition(31, 1, 32)
+    existsNested.position shouldBe InputPosition(41, 1, 42)
+    existsNested.findByClass[Pattern].position shouldBe InputPosition(50, 1, 51)
   }
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
