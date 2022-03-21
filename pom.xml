@@ -1052,7 +1052,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2020.0.15</version>
+        <version>2020.0.16</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1368,7 +1368,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.73.Final</version>
+        <version>4.1.75.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
