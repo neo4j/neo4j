@@ -22,22 +22,22 @@ package org.neo4j.internal.id;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,6 +46,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.ByteUnit;
@@ -94,8 +95,7 @@ class BufferingIdGeneratorFactoryTest
     private IdGenerator idGenerator;
     private ScopedMemoryPool dbMemoryPool;
 
-    @BeforeEach
-    void setup() throws IOException
+    private void setup( boolean offHeap ) throws IOException
     {
         actual = new MockedIdGeneratorFactory();
         boundaries = new ControllableSnapshotSupplier();
@@ -103,16 +103,19 @@ class BufferingIdGeneratorFactoryTest
                 new GlobalMemoryGroupTracker( new MemoryPools(), MemoryGroup.OTHER, ByteUnit.mebiBytes( 1 ), true, true, null );
         dbMemoryPool = globalMemoryGroupTracker.newDatabasePool( "test", ByteUnit.mebiBytes( 1 ), null );
         bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual );
-        Config config = Config.defaults();
+        Config config = Config.defaults( GraphDatabaseInternalSettings.buffered_ids_offload, offHeap );
         bufferingIdGeneratorFactory.initialize( fs, directory.file( "tmp-ids" ), config, boundaries, boundaries, dbMemoryPool.getPoolMemoryTracker() );
         idGenerator = bufferingIdGeneratorFactory.open( pageCache, Path.of( "doesnt-matter" ), TestIdType.TEST, () -> 0L, Integer.MAX_VALUE, writable(),
                 config, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), immutable.empty(), SINGLE_IDS );
         life.add( bufferingIdGeneratorFactory );
     }
 
-    @Test
-    void shouldDelayFreeingOfDeletedIds()
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldDelayFreeingOfDeletedIds( boolean offHeap ) throws IOException
     {
+        setup( offHeap );
+
         // WHEN
         try ( Marker marker = idGenerator.marker( NULL_CONTEXT ) )
         {
@@ -134,10 +137,12 @@ class BufferingIdGeneratorFactoryTest
         actual.markers.get( TestIdType.TEST ).verifyFreed( 7, 2 );
     }
 
-    @Test
-    void shouldHandleDeletingAndFreeingConcurrently()
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldHandleDeletingAndFreeingConcurrently( boolean offHeap ) throws IOException
     {
         // given
+        setup( offHeap );
         AtomicLong nextId = new AtomicLong();
         AtomicInteger numMaintenanceCalls = new AtomicInteger();
         Race race = new Race().withEndCondition( () -> numMaintenanceCalls.get() >= 10 || nextId.get() >= 1_000 );
@@ -152,7 +157,7 @@ class BufferingIdGeneratorFactoryTest
                 }
             }
         } );
-        List<IdController.TransactionSnapshot> conditions = new ArrayList<>();
+        Deque<IdController.TransactionSnapshot> conditions = new ConcurrentLinkedDeque<>();
         race.addContestant( throwing( () ->
         {
             bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
@@ -201,10 +206,12 @@ class BufferingIdGeneratorFactoryTest
         }
     }
 
-    @Test
-    void shouldMemoryTrackBufferedIDs()
+    @ValueSource( booleans = {true, false} )
+    @ParameterizedTest
+    void shouldMemoryTrackBufferedIDs( boolean offHeap ) throws IOException
     {
         // given
+        setup( offHeap );
         long heapSizeBeforeDeleting = dbMemoryPool.usedHeap();
 
         // when deleting some IDs
@@ -218,7 +225,14 @@ class BufferingIdGeneratorFactoryTest
         assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
         // maintenance where transactions are still open. Here the buffered IDs should have been written to the page cache and the heap usage freed
         bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
-        assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
+        if ( offHeap )
+        {
+            assertThat( dbMemoryPool.usedHeap() ).isEqualTo( heapSizeBeforeDeleting );
+        }
+        else
+        {
+            assertThat( dbMemoryPool.usedHeap() ).isGreaterThan( heapSizeBeforeDeleting );
+        }
         // maintenance where transactions are closed and i.e. the buffered IDs gets released
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
         bufferingIdGeneratorFactory.maintenance( NULL_CONTEXT );
@@ -236,7 +250,12 @@ class BufferingIdGeneratorFactoryTest
         @Override
         public IdController.TransactionSnapshot get()
         {
-            return mostRecentlyReturned = new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 );
+            mostRecentlyReturned = new IdController.TransactionSnapshot( LongSets.immutable.empty(), 0, 0 );
+            if ( automaticallyEnableConditions )
+            {
+                enabledSnapshots.add( mostRecentlyReturned );
+            }
+            return mostRecentlyReturned;
         }
 
         @Override

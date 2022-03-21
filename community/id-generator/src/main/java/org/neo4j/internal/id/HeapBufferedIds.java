@@ -42,7 +42,7 @@ class HeapBufferedIds implements BufferedIds
     public void read( BufferedIds.BufferedIdVisitor visitor ) throws IOException
     {
         Entry entry;
-        while ( (entry = queue.poll()) != null )
+        while ( (entry = queue.peek()) != null )
         {
             if ( !visitor.startChunk( entry.snapshot ) )
             {
@@ -50,6 +50,7 @@ class HeapBufferedIds implements BufferedIds
                 break;
             }
 
+            queue.remove();
             for ( var idBuffer : entry.idBuffers )
             {
                 visitor.startType( idBuffer.idTypeOrdinal() );
