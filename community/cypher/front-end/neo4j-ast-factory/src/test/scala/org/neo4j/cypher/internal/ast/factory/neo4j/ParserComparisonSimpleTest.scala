@@ -384,4 +384,16 @@ class ParserComparisonSimpleTest extends ParserComparisonTestBase with FunSuiteL
   test("RETURN 0-0.1") {
     assertSameAST(testName)
   }
+
+  test("MATCH (n) WHERE exists { (n) --> () }") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n) WHERE exists { MATCH (n)-[r]->(m) }") {
+    assertSameAST(testName)
+  }
+
+  test("MATCH (n) WHERE exists { MATCH (m) WHERE exists { (n)-[]->(m) } }") {
+    assertSameAST(testName)
+  }
 }

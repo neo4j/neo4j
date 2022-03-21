@@ -804,8 +804,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def existsSubQuery(p: InputPosition,
                               patterns: util.List[PatternPart],
-                              where: Expression): Expression =
-    ExistsSubClause(Pattern(patterns.asScala.toList)(p), Option(where))(p, Set.empty)
+                              where: Expression): Expression = {
+    val patternParts = patterns.asScala.toList
+    val patternPos = patternParts.head.position
+    ExistsSubClause(Pattern(patternParts)(patternPos), Option(where))(p, Set.empty)
+  }
 
   override def mapProjection(p: InputPosition,
                              v: Variable,
