@@ -34,7 +34,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
     val error = SemanticError("dummy error", DummyPosition(10))
 
     val reduceExpression = CustomExpression((ctx, self) =>
-      s => {
+      (s: SemanticState) => {
         s.symbolTypes("x") should equal(CTString.invariant)
         s.symbolTypes("y") should equal(CTInteger.invariant)
         (specifyType(CTString, self) chain error)(s)
@@ -60,10 +60,10 @@ class ReduceExpressionTest extends SemanticFunSuite {
     val listType = CTList(CTInteger)
 
     val reduceExpression = CustomExpression((ctx, self) =>
-      s => {
+      (s: SemanticState) => {
         s.symbolTypes("x") should equal(CTString | CTFloat)
         s.symbolTypes("y") should equal(listType.innerType.invariant)
-        (specifyType(CTFloat, self) chain SemanticCheckResult.success)(s)
+        (specifyType(CTFloat, self) chain SemanticCheck.success)(s)
       }
     )
 
@@ -85,10 +85,10 @@ class ReduceExpressionTest extends SemanticFunSuite {
     val listType = CTList(CTInteger)
 
     val reduceExpression = CustomExpression((ctx, self) =>
-      s => {
+      (s: SemanticState) => {
         s.symbolTypes("x") should equal(accumulatorType)
         s.symbolTypes("y") should equal(listType.innerType.invariant)
-        (specifyType(CTNode, self) chain SemanticCheckResult.success)(s)
+        (specifyType(CTNode, self) chain SemanticCheck.success)(s)
       }
     )
 

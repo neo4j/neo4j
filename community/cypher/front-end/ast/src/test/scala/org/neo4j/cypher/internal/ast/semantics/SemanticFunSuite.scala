@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
+trait SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with AstConstructionTestSupport {
 
   override protected def initTest(): Unit = {
     SemanticExpressionCheck.semanticCheckFallback =
@@ -40,7 +40,7 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling with 
             specifyType(x.possibleTypes, x)
 
           case x: ErrorExpression =>
-            s => SemanticCheckResult.error(s, x.error)
+            (s: SemanticState) => SemanticCheckResult.error(s, x.error)
 
           case x: CustomExpression =>
             x.semanticCheck(ctx, x)

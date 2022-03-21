@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
@@ -196,7 +197,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       case UnresolvedFunction =>
         // We cannot do a full semantic check until we have resolved the function call.
-        SemanticCheckResult.success
+        SemanticCheck.success
 
       case x: TypeSignatures =>
         checkTypeSignatures(ctx, x, invocation)
@@ -235,9 +236,9 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
   def checkPercentileRange(expression: Expression): SemanticCheck = {
     expression match {
       case d: DoubleLiteral if d.value >= 0.0 && d.value <= 1.0 =>
-        SemanticCheckResult.success
+        SemanticCheck.success
       case i: IntegerLiteral if i.value == 0L || i.value == 1L =>
-        SemanticCheckResult.success
+        SemanticCheck.success
       case d: DoubleLiteral =>
         error(
           s"Invalid input '${d.value}' is not a valid argument, must be a number in the range 0.0 to 1.0",
@@ -251,7 +252,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         )
 
       // for other types we'll have to wait until runtime to fail
-      case _ => SemanticCheckResult.success
+      case _ => SemanticCheck.success
 
     }
   }
@@ -264,11 +265,11 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       // Cartesian point
       case map: MapExpression if map.items.exists(withKey("x")) && map.items.exists(withKey("y")) =>
-        SemanticCheckResult.success
+        SemanticCheck.success
 
       // Geographic point
       case map: MapExpression if map.items.exists(withKey("longitude")) && map.items.exists(withKey("latitude")) =>
-        SemanticCheckResult.success
+        SemanticCheck.success
 
       case map: MapExpression => error(
           s"A map with keys ${map.items.map(a => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
@@ -278,7 +279,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         )
 
       // if using variable or parameter we can't introspect the map here
-      case _ => SemanticCheckResult.success
+      case _ => SemanticCheck.success
     }
 
   private def withKey(key: String)(kv: (PropertyKeyName, Expression)) = kv._1.name == key

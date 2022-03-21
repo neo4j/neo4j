@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -32,5 +31,5 @@ case class ProcedureResult(items: IndexedSeq[ProcedureResultItem], where: Option
 ) extends ASTNode {
 
   def semanticCheck: SemanticCheck =
-    items.foldSemanticCheck(_.semanticCheck) chain where.map(_.semanticCheck).getOrElse(success)
+    items.foldSemanticCheck(_.semanticCheck) chain where.foldSemanticCheck(_.semanticCheck)
 }

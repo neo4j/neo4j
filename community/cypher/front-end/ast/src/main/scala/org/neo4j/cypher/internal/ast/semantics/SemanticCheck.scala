@@ -16,10 +16,60 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 
+sealed trait SemanticCheck {
+
+  def apply(state: SemanticState): SemanticCheckResult = {
+    SemanticCheckInterpreter.runCheck(this, state)
+  }
+
+  def chain(next: SemanticCheck): SemanticCheck = {
+    for {
+      a <- this
+      b <- next
+    } yield SemanticCheckResult(b.state, a.errors ++ b.errors)
+  }
+
+  def ifOkChain(next: => SemanticCheck): SemanticCheck = {
+    for {
+      a <- this
+      b <- when(a.errors.isEmpty)(next)
+    } yield SemanticCheckResult(b.state, a.errors ++ b.errors)
+  }
+
+  def map(f: SemanticCheckResult => SemanticCheckResult): SemanticCheck = SemanticCheck.Map(this, f)
+  def flatMap(f: SemanticCheckResult => SemanticCheck): SemanticCheck = SemanticCheck.FlatMap(this, f)
+}
+
+object SemanticCheck {
+
+  val success: SemanticCheck = fromFunction(SemanticCheckResult.success)
+  def error(error: SemanticErrorDef): SemanticCheck = fromFunction(SemanticCheckResult.error(_, error))
+
+  def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
+
+  def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = {
+    if (condition)
+      check
+    else
+      SemanticCheck.success
+  }
+
+  final private[semantics] case class Leaf(f: SemanticState => SemanticCheckResult) extends SemanticCheck
+
+  final private[semantics] case class Map(check: SemanticCheck, f: SemanticCheckResult => SemanticCheckResult)
+      extends SemanticCheck
+
+  final private[semantics] case class FlatMap(check: SemanticCheck, f: SemanticCheckResult => SemanticCheck)
+      extends SemanticCheck
+}
+
+final case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
+
 object SemanticCheckResult {
-  val success: SemanticCheck = SemanticCheckResult(_, Vector())
+  def success(s: SemanticState): SemanticCheckResult = SemanticCheckResult(s, Vector.empty)
 
   def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult =
     SemanticCheckResult(state, Vector(error))
@@ -28,38 +78,18 @@ object SemanticCheckResult {
     SemanticCheckResult(state, error.toVector)
 }
 
-case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
-
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
 
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
-    option.fold(SemanticCheckResult.success)(check)
+    option.fold(SemanticCheck.success)(check)
 }
 
 class TraversableOnceSemanticChecking[A](val traversable: IterableOnce[A]) extends AnyVal {
 
-  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state =>
-    traversable.foldLeft(SemanticCheckResult.success(state)) {
-      (r1, o) =>
-        val r2 = check(o)(r1.state)
-        SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
+  def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = {
+    traversable.foldLeft(SemanticCheck.success) {
+      (prevCheck, o) => prevCheck chain check(o)
     }
-}
-
-class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
-
-  def chain(next: SemanticCheck): SemanticCheck = state => {
-    val r1 = check(state)
-    val r2 = next(r1.state)
-    SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
-  }
-
-  def ifOkChain(next: => SemanticCheck): SemanticCheck = state => {
-    val r1 = check(state)
-    if (r1.errors.nonEmpty)
-      r1
-    else
-      next(r1.state)
   }
 }
 
@@ -72,7 +102,7 @@ trait SemanticCheckableExpression {
 }
 
 class SemanticCheckableOption[A <: SemanticCheckable](val option: Option[A]) extends AnyVal {
-  def semanticCheck: SemanticCheck = option.fold(SemanticCheckResult.success) { _.semanticCheck }
+  def semanticCheck: SemanticCheck = option.fold(SemanticCheck.success) { _.semanticCheck }
 }
 
 class SemanticCheckableTraversableOnce[A <: SemanticCheckable](val traversable: IterableOnce[A]) extends AnyVal {

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
@@ -32,5 +31,5 @@ case class NestedPipeCollectExpression(
   availableExpressionVariables: Seq[ExpressionVariable]
 )(val position: InputPosition) extends Expression {
 
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 }

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ASTSlicingPhrase.checkExpressionIsStaticInt
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.Expression
@@ -67,7 +67,7 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
     if (deps.nonEmpty) {
       val id = deps.toSeq.minBy(_.position)
       error(s"It is not allowed to refer to variables in $name", id.position)
-    } else SemanticCheckResult.success
+    } else SemanticCheck.success
   }
 
   private def doesNotTouchTheGraph(expression: Expression, name: String): SemanticCheck = {
@@ -89,21 +89,21 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
   ): SemanticCheck = {
     try {
       expression match {
-        case _: UnsignedDecimalIntegerLiteral                              => SemanticCheckResult.success
-        case i: SignedDecimalIntegerLiteral if i.value > 0                 => SemanticCheckResult.success
-        case i: SignedDecimalIntegerLiteral if i.value == 0 && acceptsZero => SemanticCheckResult.success
+        case _: UnsignedDecimalIntegerLiteral                              => SemanticCheck.success
+        case i: SignedDecimalIntegerLiteral if i.value > 0                 => SemanticCheck.success
+        case i: SignedDecimalIntegerLiteral if i.value == 0 && acceptsZero => SemanticCheck.success
         case lit: Literal =>
           val accepted = if (acceptsZero) "non-negative" else "positive"
           error(
             s"Invalid input. '${lit.asCanonicalStringVal}' is not a valid value. Must be a $accepted integer.",
             lit.position
           )
-        case _ => SemanticCheckResult.success
+        case _ => SemanticCheck.success
       }
     } catch {
       case _: NumberFormatException =>
         // We rely on getting a SemanticError from SemanticExpressionCheck.simple(expression)
-        SemanticCheckResult.success
+        SemanticCheck.success
     }
   }
 }

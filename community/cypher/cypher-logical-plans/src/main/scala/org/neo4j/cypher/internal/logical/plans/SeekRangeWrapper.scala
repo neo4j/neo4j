@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
@@ -29,23 +28,23 @@ import org.neo4j.cypher.internal.util.InputPosition
 case class PrefixSeekRangeWrapper(
   range: PrefixRange[Expression]
 )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 }
 
 case class InequalitySeekRangeWrapper(
   range: InequalitySeekRange[Expression]
 )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 }
 
 case class PointDistanceSeekRangeWrapper(
   range: PointDistanceRange[Expression]
 )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 }
 
 case class PointBoundingBoxSeekRangeWrapper(
   range: PointBoundingBoxRange[Expression]
 )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 }

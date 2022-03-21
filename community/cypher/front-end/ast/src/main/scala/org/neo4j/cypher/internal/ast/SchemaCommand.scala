@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -55,7 +55,7 @@ sealed trait SchemaCommand extends StatementWithGraph with SemanticAnalysisTooli
         s"Failed to create $schemaString: Invalid option provided, valid options are `indexProvider` and `indexConfig`.",
         position
       )
-    case _ => SemanticCheckResult.success
+    case _ => SemanticCheck.success
   }
 
   protected def checkSingleProperty(schemaString: String, properties: List[Property]): SemanticCheck =

@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.semantics
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
@@ -52,7 +53,6 @@ import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -207,7 +207,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             }
 
         def checkRelVariablesUnknown: SemanticCheck =
-          state => {
+          (state: SemanticState) => {
             x.element match {
               case RelationshipChain(_, rel, _) =>
                 rel.variable.flatMap(id => state.symbol(id.name)) match {
@@ -265,7 +265,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         case SemanticContext.Create if x.direction == SemanticDirection.BOTH =>
           error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
         case _ =>
-          SemanticCheckResult.success
+          SemanticCheck.success
       }
     }
 
@@ -295,7 +295,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         case _                                                         => None
       }
       val maybeOffendingLabelExpression = maybeLabelExpression.flatMap(_.folder.treeFindByClass[ColonDisjunction])
-      maybeOffendingLabelExpression.fold(SemanticCheckResult.success) { illegalColonDisjunction =>
+      maybeOffendingLabelExpression.foldSemanticCheck { illegalColonDisjunction =>
         val sanitizedLabelExpression = stringifier.stringifyLabelExpression(maybeLabelExpression.get
           .replaceColonSyntax)
         error(
@@ -313,7 +313,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             """Variable length relationships must not use relationship type expressions.""".stripMargin,
             labelExpression.position
           )
-        case _ => SemanticCheckResult.success
+        case _ => SemanticCheck.success
       }
     }
 

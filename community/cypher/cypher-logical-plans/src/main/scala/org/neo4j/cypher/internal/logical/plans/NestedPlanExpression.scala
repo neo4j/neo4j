@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
@@ -52,7 +51,7 @@ abstract class NestedPlanExpression extends Expression with SemanticCheckableExp
    */
   def solvedExpressionAsString: String
 
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheck.success
 
   override def asCanonicalStringVal: String = solvedExpressionAsString
 }

@@ -256,7 +256,7 @@ object SemanticState {
   }
 
   def recordCurrentScope(node: ASTNode): SemanticCheck =
-    s => SemanticCheckResult.success(s.recordCurrentScope(node))
+    (s: SemanticState) => SemanticCheckResult.success(s.recordCurrentScope(node))
 }
 
 case class SemanticState(

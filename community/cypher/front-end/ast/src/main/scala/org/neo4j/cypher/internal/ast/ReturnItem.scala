@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
@@ -68,7 +69,7 @@ final case class ReturnItems(
 
   def declareVariables(previousScope: Scope): SemanticCheck =
     when(includeExisting) {
-      s => success(s.importValuesFromScope(previousScope))
+      s: SemanticState => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item =>
       item.alias match {
         case Some(variable) if item.expression == variable =>
@@ -81,14 +82,11 @@ final case class ReturnItems(
     )
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
-    items.groupBy(_.name).foldLeft(success) {
-      case (acc, (_, groupedItems)) if groupedItems.size > 1 =>
-        acc chain SemanticError(
-          "Multiple result columns with the same name are not supported",
-          groupedItems.head.position
-        )
-      case (acc, _) =>
-        acc
+    items.groupBy(_.name).foldSemanticCheck {
+      case (_, groupedItems) if groupedItems.size > 1 =>
+        SemanticError("Multiple result columns with the same name are not supported", groupedItems.head.position)
+       case _ =>
+        SemanticCheck.success
     }
   }
 

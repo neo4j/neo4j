@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.ast
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -30,7 +29,7 @@ import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression {
-  override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
+  override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheck.success
 
   override def position: InputPosition = InputPosition.NONE
 
