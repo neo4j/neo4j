@@ -63,15 +63,15 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
-    semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
-      semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
+    semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
+      semanticCheckFold(pattern.patternParts)(checkElementPredicates(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       ensureNoSelfReferenceToVariableInPattern(ctx, pattern) chain
       ensureNoDuplicateRelationships(pattern, error = true)
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
-    checkElementPredicates(ctx, pattern.element) chain
-      declareVariables(ctx, pattern.element) chain
+    declareVariables(ctx, pattern.element) chain
+      checkElementPredicates(ctx, pattern.element) chain
       check(ctx, pattern.element) chain
       ensureNoDuplicateRelationships(pattern, error = false)
 
@@ -90,7 +90,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           when (ctx != SemanticContext.Match) {
             error(s"Node pattern predicates are not allowed in ${ctx.name}, but only in MATCH clause or inside a pattern comprehension", predicate.position)
           } chain withScopedState {
-            declareVariables(ctx, x) chain
               Where.checkExpression(predicate)
           }
         }
@@ -105,7 +104,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       } chain pattern.length.foldSemanticCheck{ _ =>
         error("Relationship pattern predicates are not allowed when a path length is specified", predicate.position)
       } ifOkChain withScopedState {
-        declareVariables(ctx, pattern) chain
           Where.checkExpression(predicate)
       }
     }

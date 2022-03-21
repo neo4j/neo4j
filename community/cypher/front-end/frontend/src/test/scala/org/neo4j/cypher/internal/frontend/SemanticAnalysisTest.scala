@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext
-import org.neo4j.cypher.internal.frontend.helpers.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.helpers.NoPlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -320,11 +319,9 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query)
   }
 
-  test("should not allow node pattern predicates in MATCH to refer to other nodes") {
+  test("should allow node pattern predicates in MATCH to refer to other nodes") {
     val query = "MATCH (start)-->(end:Label WHERE start.prop = 42) RETURN start AS result"
-    expectErrorMessagesFrom(query, Set(
-      "Variable `start` not defined"
-    ))
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow node pattern predicates in CREATE") {
@@ -360,11 +357,9 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query)
   }
 
-  test("should not allow node pattern predicates in pattern comprehension to refer to other nodes") {
+  test("should allow node pattern predicates in pattern comprehension to refer to other nodes") {
     val query = "RETURN [(start)-->(end:Label WHERE start.prop = 42) | start] AS result"
-    expectErrorMessagesFrom(query, Set(
-      "Variable `start` not defined"
-    ))
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow node pattern predicates in pattern expression") {
@@ -386,14 +381,12 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query)
   }
 
-  test("should not allow node pattern predicates in MATCH with shortestPath to refer to other nodes") {
+  test("should allow node pattern predicates in MATCH with shortestPath to refer to other nodes") {
     val query =
       """
         |MATCH p = shortestPath((start)-[:REL*]->(end:Label WHERE start.prop = 42))
         |RETURN start AS result""".stripMargin
-    expectErrorMessagesFrom(query, Set(
-      "Variable `start` not defined"
-    ))
+    expectNoErrorsFrom(query)
   }
 
   test("should not allow node pattern predicates in shortestPath expression") {
@@ -426,11 +419,9 @@ class SemanticAnalysisTest extends CypherFunSuite {
     ), pipelineWithRelationshipPatternPredicates)
   }
 
-  test("should not allow relationship pattern predicates in MATCH to refer to nodes") {
+  test("should allow relationship pattern predicates in MATCH to refer to nodes") {
     val query = "MATCH (n)-[r:Relationship WHERE n.prop = 42]->(m:Label) RETURN r AS result"
-    expectErrorMessagesFrom(query, Set(
-      "Variable `n` not defined"
-    ), pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
   }
 
   test("should not allow relationship pattern predicates in CREATE") {
@@ -452,11 +443,9 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
   }
 
-  test("should not allow relationship pattern predicates in pattern comprehension to refer to nodes") {
+  test("should allow relationship pattern predicates in pattern comprehension to refer to nodes") {
     val query = "RETURN [(n)-[r:Relationship WHERE n.prop = 42]->(m:Label) | r] AS result"
-    expectErrorMessagesFrom(query, Set(
-      "Variable `n` not defined"
-    ), pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
   }
 
   test("should not allow relationship pattern predicates in pattern expression") {
@@ -478,14 +467,12 @@ class SemanticAnalysisTest extends CypherFunSuite {
     expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
   }
 
-  test("should not allow relationship pattern predicates in MATCH with shortestPath to refer to nodes") {
+  test("should allow relationship pattern predicates in MATCH with shortestPath to refer to nodes") {
     val query =
       """
         |MATCH p = shortestPath((n)-[r:Relationship WHERE n.prop > 42]->(m))
         |RETURN n AS result""".stripMargin
-    expectErrorMessagesFrom(query, Set(
-      "Variable `n` not defined"
-    ), pipelineWithRelationshipPatternPredicates)
+    expectNoErrorsFrom(query, pipelineWithRelationshipPatternPredicates)
   }
 
   test("CALL IN TRANSACTIONS with batchSize 1") {

@@ -85,7 +85,7 @@ Feature: NodePatternPredicates
       | 3        | 4   |
     And no side effects
 
-  Scenario: Should allow reference to other elements of the pattern
+  Scenario: Should allow reference to later elements of the pattern
     Given an empty graph
     And having executed:
       """
@@ -96,12 +96,50 @@ Feature: NodePatternPredicates
     Given any graph
     When executing query:
       """
-      MATCH (a:A WHERE b.prop > 100)-[r]-(b)
+      MATCH (a WHERE b.prop > 100)-[r]-(b)
       RETURN b.prop AS result
       """
     Then the result should be, in any order:
-      | b.prop |
+      | result |
       | 200    |
+    And no side effects
+
+  Scenario: Should allow reference to earlier elements of the pattern
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({prop: 100})-[:R]->(b)
+      CREATE ({prop: 200})-[:R]->(b)
+      """
+
+    Given any graph
+    When executing query:
+      """
+      MATCH (a)-[r]-(b WHERE a.prop > 100)
+      RETURN a.prop AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | 200    |
+    And no side effects
+
+  Scenario: Should allow reference to self and earlier and later elements of the pattern
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ({prop: 100})-[:R]->({prop: 100})
+      CREATE ({prop: 200})-[:R]->({prop: 250})
+      """
+
+    Given any graph
+    When executing query:
+      """
+      MATCH (a)-[r]-(b WHERE b.prop > a.prop)
+      RETURN b.prop AS result
+      """
+    Then the result should be, in any order:
+      | result |
+      | 250    |
     And no side effects
 
   Scenario: Pattern comprehension with predicate on a single node
@@ -152,6 +190,22 @@ Feature: NodePatternPredicates
     When executing query:
       """
       RETURN [(a:A WHERE b.prop > 100)-[r]-(b:B) | [a.prop, b.prop]] AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | [[2, 200]] |
+    And no side effects
+
+  Scenario: Should allow references other elements of the pattern in a pattern comprehension
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: 100})-[:R]->(:B {prop: 1})
+      CREATE (:A {prop: 200})-[:R]->(:B {prop: 2})
+      """
+    When executing query:
+      """
+      RETURN [(a:A)-[r]-(b:B WHERE a.prop > 100) | [b.prop, a.prop]] AS result
       """
     Then the result should be, in any order:
       | result     |
