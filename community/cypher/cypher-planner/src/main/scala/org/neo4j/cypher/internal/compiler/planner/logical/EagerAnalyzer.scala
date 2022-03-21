@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
+import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
@@ -152,19 +153,32 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
 
   @tailrec
   private def headConflicts(head: SinglePlannerQuery, tail: SinglePlannerQuery, headQgWithLeafInfo: QgWithLeafInfo): Seq[EagernessReason.Reason] = {
-    val allHeadQgs = Set(headQgWithLeafInfo) ++ headQgWithLeafInfo.queryGraph.allQGsWithLeafInfo.toSet.filterNot(_.queryGraph == headQgWithLeafInfo.queryGraph)
-    def overlapsHead(writeQg: QueryGraph): Seq[EagernessReason.Reason] = allHeadQgs.flatMap(readQg => writeQg.overlaps(readQg)).toSeq
+    // _.allQGsWithLeafInfo will remove the stable identifiers. As we want to keep the identifiers, we therefore need to treat headQgWithLeafInfo separately
+    val allHeadQgsIncludingStableIterators =
+      headQgWithLeafInfo +:
+        headQgWithLeafInfo.queryGraph.allQGsWithLeafInfo
+          .filterNot(_.queryGraph == headQgWithLeafInfo.queryGraph)
+    val allHeadQgsIgnoringStableIterators = head.queryGraph.allQGsWithLeafInfo
 
-    val conflictWithQqInHorizon = tail.horizon.allQueryGraphs.flatMap(qg => overlapsHead(qg.queryGraph))
+    def overlapsHead(readQgs: Seq[QgWithLeafInfo])(writeQg: QueryGraph) =
+      readQgs.flatMap(readQg => writeQg.overlaps(readQg))
+
+    val conflictsWithQqInHorizon: Seq[EagernessReason.Reason] = tail.horizon match {
+      // if we are running CALL { ... } IN TRANSACTIONS, we cannot rely on stable iterators
+      case CallSubqueryHorizon(_, _, _, Some(_)) =>
+        tail.horizon.allQueryGraphs.map(_.queryGraph).flatMap(overlapsHead(allHeadQgsIgnoringStableIterators))
+      case _ =>
+        tail.horizon.allQueryGraphs.map(_.queryGraph).flatMap(overlapsHead(allHeadQgsIncludingStableIterators))
+    }
     val mergeReadWrite = head == tail && head.queryGraph.containsMergeRecursive
 
     val conflicts: Seq[EagernessReason.Reason] = {
-      if (conflictWithQqInHorizon.nonEmpty)
-        conflictWithQqInHorizon
+      if (conflictsWithQqInHorizon.nonEmpty)
+        conflictsWithQqInHorizon
       else if (tail.queryGraph.readOnly || mergeReadWrite)
         Seq.empty
       else
-        tail.queryGraph.allQGsWithLeafInfo.flatMap(qg => overlapsHead(qg.queryGraph))
+        tail.queryGraph.allQGsWithLeafInfo.flatMap(qg => overlapsHead(allHeadQgsIncludingStableIterators)(qg.queryGraph))
     }
 
     if (conflicts.nonEmpty)
