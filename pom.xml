@@ -640,13 +640,10 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.9.0</version>
+          <version>3.10.1</version>
           <configuration>
             <showDeprecation>true</showDeprecation>
             <showWarnings>true</showWarnings>
-            <compilerArgs>
-              <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->
-            </compilerArgs>
           </configuration>
         </plugin>
         <plugin>
@@ -874,7 +871,6 @@
                   -Xep:NarrowingCompoundAssignment:OFF -Xep:JavaLocalDateTimeGetNano:OFF -Xep:JavaLocalTimeGetNano:OFF \
                   -Xep:SelfComparison:WARN -Xep:BadAnnotationImplementation:WARN -Xep:ModifyingCollectionWithItself:WARN \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
-                <arg>-Xpkginfo:always</arg><!-- Prevents recompilation due to missing package-info.class, see MCOMPILER-368,-205 -->
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
