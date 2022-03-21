@@ -429,8 +429,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val assertAllReleased =
       if (!workloadMode) {
         () => {
-          runtimeContextManager.waitForWorkersToIdle(1000)
-          Thread.sleep(200) // TODO: We need to fix race condition with waitForWorkersToIdle
+          runtimeContextManager.waitForWorkersToIdle(5000)
           runtimeContextManager.assertAllReleased()
         }
       } else () => ()
