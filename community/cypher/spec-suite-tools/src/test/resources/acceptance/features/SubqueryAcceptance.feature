@@ -805,3 +805,120 @@ Feature: SubqueryAcceptance
       | -properties | 3 |
       | +properties | 3 |
 
+  Scenario: Return items in uncorrelated single subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      CALL {
+        RETURN 5
+      }
+      RETURN `5` AS five
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Return items in uncorrelated union subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      CALL {
+        RETURN 5 UNION RETURN 5
+      }
+      RETURN `5` AS five
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Return items in correlated single subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        RETURN 5 + 5
+      }
+      RETURN `5 + 5` AS plus
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Return items in correlated union subquery must be aliased
+    Given any graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        RETURN 5 + 5
+        UNION
+        WITH n
+        RETURN 5 + 5
+      }
+      RETURN `5 + 5` AS plus
+      """
+    Then a SyntaxError should be raised at compile time: NoExpressionAlias
+
+  Scenario: Map projections in uncorrelated single subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      CALL {
+        MATCH (n)
+        RETURN n {.prop, .foo}
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n |
+    And no side effects
+
+  Scenario: Map projections in uncorrelated union subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      CALL {
+        MATCH (n)
+        RETURN n {.prop, .foo}
+        UNION
+        MATCH (n)
+        RETURN n {.prop, .foo}
+      }
+      RETURN n
+      """
+    Then the result should be, in any order:
+      | n |
+    And no side effects
+
+  Scenario: Map projections in correlated single subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+      }
+      RETURN m
+      """
+    Then the result should be, in any order:
+      | m |
+    And no side effects
+
+  Scenario: Map projections in correlated union subquery are OK
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (n)
+      CALL {
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+        UNION
+        WITH n
+        MATCH (n)--(m)
+        RETURN m {.prop, .foo}
+      }
+      RETURN m
+      """
+    Then the result should be, in any order:
+      | m |
+    And no side effects
