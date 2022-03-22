@@ -19,26 +19,30 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
-import static org.neo4j.kernel.impl.newapi.Cursors.emptyTraversalCursor;
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
+
 import org.neo4j.collection.trackable.HeapTrackingArrayDeque;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet;
+import org.neo4j.collection.trackable.HeapTrackingLongLongHashMap;
+import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.PropertySelection;
-import org.neo4j.storageengine.api.Reference;
+
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.impl.newapi.Cursors.emptyTraversalCursor;
 
 /**
  * Cursor that performs breadth-first search without ever revisiting the same node multiple times.
@@ -63,23 +67,20 @@ import org.neo4j.storageengine.api.Reference;
  *                                                              tracker );
  *     while( cursor.next() )
  *     {
- *         System.out.println( cursor.otherNodeReference() );
+ *         System.out.println( cursor.endNode() );
  *     }
  * }
  * </pre>
  */
-public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable implements RelationshipTraversalCursor {
-    private final int[] types;
-    private final int maxDepth;
-    private final Read read;
-    private final NodeCursor nodeCursor;
-    private final RelationshipTraversalCursor relCursor;
-    private RelationshipTraversalCursor selectionCursor;
-    private int currentDepth;
-    private final HeapTrackingArrayDeque<NodeState> queue;
-    private final HeapTrackingLongHashSet seen;
-    private final LongPredicate nodeFilter;
-    private final Predicate<RelationshipTraversalCursor> relFilter;
+public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable implements Cursor {
+    final int[] types;
+    final Read read;
+    final int maxDepth;
+    final NodeCursor nodeCursor;
+    final RelationshipTraversalCursor relCursor;
+    RelationshipTraversalCursor selectionCursor;
+    final LongPredicate nodeFilter;
+    final Predicate<RelationshipTraversalCursor> relFilter;
 
     public static BFSPruningVarExpandCursor outgoingExpander(
             long startNode,
@@ -213,13 +214,77 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
     }
 
+    public static BFSPruningVarExpandCursor allExpander(
+            long startNode,
+            int maxDepth,
+            Read read,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor cursor,
+            MemoryTracker memoryTracker) {
+        return allExpander(
+                startNode,
+                null,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                LongPredicates.alwaysTrue(),
+                alwaysTrue(),
+                memoryTracker);
+    }
+
+    public static BFSPruningVarExpandCursor allExpander(
+            long startNode,
+            int maxDepth,
+            Read read,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor cursor,
+            LongPredicate nodeFilter,
+            Predicate<RelationshipTraversalCursor> relFilter,
+            MemoryTracker memoryTracker) {
+        return allExpander(startNode, null, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+    }
+
+    public static BFSPruningVarExpandCursor allExpander(
+            long startNode,
+            int[] types,
+            int maxDepth,
+            Read read,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor cursor,
+            MemoryTracker memoryTracker) {
+        return allExpander(
+                startNode,
+                types,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                LongPredicates.alwaysTrue(),
+                alwaysTrue(),
+                memoryTracker);
+    }
+
+    public static BFSPruningVarExpandCursor allExpander(
+            long startNode,
+            int[] types,
+            int maxDepth,
+            Read read,
+            NodeCursor nodeCursor,
+            RelationshipTraversalCursor cursor,
+            LongPredicate nodeFilter,
+            Predicate<RelationshipTraversalCursor> relFilter,
+            MemoryTracker memoryTracker) {
+        return new AllBFSPruningVarExpandCursor(
+                startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+    }
+
     /**
      * Construct a BFSPruningVarExpandCursor.
      * <p>
      * Note that the lifecycle of the provided cursors should be maintained outside this class. They will never be closed form within this class.
      * This is useful if when cursors are pooled and reused.
      *
-     * @param startNode     the node to start from
      * @param types         the types of the relationships to follow
      * @param maxDepth      the maximum depth of the search
      * @param read          a read instance
@@ -227,18 +292,15 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
      * @param relCursor     a relCursor, will NOT be maintained and closed by this class
      * @param nodeFilter    must be true for all nodes along the path, NOTE not checked on startNode
      * @param relFilter     must be true for all relationships along the path
-     * @param memoryTracker the memory tracker to use
      */
     private BFSPruningVarExpandCursor(
-            long startNode,
             int[] types,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter,
-            MemoryTracker memoryTracker) {
+            Predicate<RelationshipTraversalCursor> relFilter) {
         this.types = types;
         this.maxDepth = maxDepth;
         this.read = read;
@@ -249,47 +311,11 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         // start with empty cursor and will expand from the start node
         // that is added at the top of the queue
         this.selectionCursor = emptyTraversalCursor(read);
-        queue = HeapTrackingCollections.newArrayDeque(memoryTracker);
-        seen = HeapTrackingCollections.newLongSet(memoryTracker);
-        if (currentDepth < maxDepth) {
-            queue.offer(new NodeState(startNode, currentDepth));
-        }
     }
 
-    protected abstract RelationshipTraversalCursor selectionCursor(
-            RelationshipTraversalCursor relCursor, NodeCursor nodeCursor, int[] types);
+    public abstract long endNode();
 
-    public final boolean next() {
-        while (true) {
-            while (selectionCursor.next()) {
-                if (relFilter.test(selectionCursor)) {
-                    long other = selectionCursor.otherNodeReference();
-                    if (seen.add(other) && nodeFilter.test(other)) {
-                        if (currentDepth < maxDepth) {
-                            queue.offer(new NodeState(other, currentDepth));
-                        }
-                        return true;
-                    }
-                }
-            }
-
-            var next = queue.poll();
-            if (next == null || !expand(next)) {
-                return false;
-            }
-        }
-    }
-
-    private boolean expand(NodeState next) {
-        read.singleNode(next.nodeId(), nodeCursor);
-        if (nodeCursor.next()) {
-            selectionCursor = selectionCursor(relCursor, nodeCursor, types);
-            currentDepth = next.depth() + 1;
-            return true;
-        } else {
-            return false;
-        }
-    }
+    protected abstract void closeMore();
 
     @Override
     public void setTracer(KernelReadTracer tracer) {
@@ -309,8 +335,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             if (selectionCursor != relCursor) {
                 selectionCursor.close();
             }
-            seen.close();
-            queue.close();
+            closeMore();
             selectionCursor = null;
         }
     }
@@ -320,64 +345,79 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return selectionCursor == null;
     }
 
-    @Override
-    public void properties(PropertyCursor cursor, PropertySelection selection) {
-        selectionCursor.properties(cursor, selection);
-    }
-
-    @Override
-    public Reference propertiesReference() {
-        return selectionCursor.propertiesReference();
-    }
-
-    @Override
-    public long relationshipReference() {
-        return selectionCursor.relationshipReference();
-    }
-
-    @Override
-    public int type() {
-        return selectionCursor.type();
-    }
-
-    @Override
-    public void source(NodeCursor cursor) {
-        selectionCursor.source(cursor);
-    }
-
-    @Override
-    public void target(NodeCursor cursor) {
-        selectionCursor.target(cursor);
-    }
-
-    @Override
-    public long sourceNodeReference() {
-        return selectionCursor.sourceNodeReference();
-    }
-
-    @Override
-    public long targetNodeReference() {
-        return selectionCursor.targetNodeReference();
-    }
-
-    @Override
-    public void otherNode(NodeCursor cursor) {
-        selectionCursor.otherNode(cursor);
-    }
-
-    @Override
-    public long otherNodeReference() {
-        return selectionCursor.otherNodeReference();
-    }
-
-    @Override
-    public long originNodeReference() {
-        return selectionCursor.originNodeReference();
-    }
-
     private record NodeState(long nodeId, int depth) {}
 
-    private static class OutgoingBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
+    private abstract static class DirectedBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
+        private int currentDepth;
+        private final HeapTrackingLongHashSet seen;
+        private final HeapTrackingArrayDeque<NodeState> queue;
+
+        private DirectedBFSPruningVarExpandCursor(
+                long startNode,
+                int[] types,
+                int maxDepth,
+                Read read,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor relCursor,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter,
+                MemoryTracker memoryTracker) {
+            super(types, maxDepth, read, nodeCursor, relCursor, nodeFilter, relFilter);
+            queue = HeapTrackingCollections.newArrayDeque(memoryTracker);
+            seen = HeapTrackingCollections.newLongSet(memoryTracker);
+            if (currentDepth < maxDepth) {
+                queue.offer(new NodeState(startNode, currentDepth));
+            }
+        }
+
+        public final boolean next() {
+            while (true) {
+                while (selectionCursor.next()) {
+                    if (relFilter.test(selectionCursor)) {
+                        long other = selectionCursor.otherNodeReference();
+                        if (seen.add(other) && nodeFilter.test(other)) {
+                            if (currentDepth < maxDepth) {
+                                queue.offer(new NodeState(other, currentDepth));
+                            }
+                            return true;
+                        }
+                    }
+                }
+
+                var next = queue.poll();
+                if (next == null || !expand(next)) {
+                    return false;
+                }
+            }
+        }
+
+        @Override
+        public long endNode() {
+            return selectionCursor.otherNodeReference();
+        }
+
+        @Override
+        protected void closeMore() {
+            seen.close();
+            queue.close();
+        }
+
+        protected abstract RelationshipTraversalCursor selectionCursor(
+                RelationshipTraversalCursor relCursor, NodeCursor nodeCursor, int[] types);
+
+        private boolean expand(NodeState next) {
+            read.singleNode(next.nodeId(), nodeCursor);
+            if (nodeCursor.next()) {
+                selectionCursor = selectionCursor(relCursor, nodeCursor, types);
+                currentDepth = next.depth() + 1;
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private static class OutgoingBFSPruningVarExpandCursor extends DirectedBFSPruningVarExpandCursor {
         private OutgoingBFSPruningVarExpandCursor(
                 long startNode,
                 int[] types,
@@ -398,7 +438,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
     }
 
-    private static class IncomingBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
+    private static class IncomingBFSPruningVarExpandCursor extends DirectedBFSPruningVarExpandCursor {
         private IncomingBFSPruningVarExpandCursor(
                 long startNode,
                 int[] types,
@@ -416,6 +456,176 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         protected RelationshipTraversalCursor selectionCursor(
                 RelationshipTraversalCursor relCursor, NodeCursor nodeCursor, int[] types) {
             return incomingCursor(relCursor, nodeCursor, types);
+        }
+    }
+
+    private static class AllBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
+        private static final int START_NODE_EMITTED = -1;
+        private static final int EMIT_START_NODE = -2;
+        private static final int NO_LOOP = -3;
+
+        private int loopCounter = NO_LOOP;
+        private int currentDepth;
+        private HeapTrackingLongHashSet prevFrontier;
+        private HeapTrackingLongHashSet currFrontier;
+        private final HeapTrackingLongLongHashMap seenNodesWithParent;
+        private final HeapTrackingLongHashSet checkUniqueEndNodes;
+
+        private LongIterator currentExpand;
+        private final long startNode;
+
+        private AllBFSPruningVarExpandCursor(
+                long startNode,
+                int[] types,
+                int maxDepth,
+                Read read,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor cursor,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter,
+                MemoryTracker memoryTracker) {
+            super(types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter);
+            this.startNode = startNode;
+            this.prevFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
+            this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
+            this.seenNodesWithParent = HeapTrackingCollections.newLongLongMap(memoryTracker);
+            this.checkUniqueEndNodes = HeapTrackingCollections.newLongSet(memoryTracker);
+            expand(startNode);
+        }
+
+        @Override
+        public final boolean next() {
+            while (currentDepth < maxDepth) {
+                clearLoopCount();
+                while (nextRelationship()) {
+                    if (relFilter.test(selectionCursor)) {
+                        long origin = selectionCursor.originNodeReference();
+                        long other = selectionCursor.otherNodeReference();
+                        // in this loop we consider startNode as seen
+                        // and only retrace later if a loop has been detected
+                        if (other == startNode) {
+                            // special case, self-loop for start node
+                            if (origin == other && currentDepth == 0) {
+                                loopCounter = 0;
+                            }
+                            continue;
+                        }
+
+                        long parentOfOther = seenNodesWithParent.getIfAbsent(other, NO_SUCH_NODE);
+
+                        if (parentOfOther == NO_SUCH_NODE && nodeFilter.test(other)) {
+                            seenNodesWithParent.put(other, origin);
+                            currFrontier.add(other);
+                            return true;
+                        } else if (parentOfOther != NO_SUCH_NODE
+                                && // make sure nodeFilter passed
+                                origin != other
+                                && // ignore self loops
+                                shouldCheckForLoops()) // if we already found a shorter loop, don't bother
+                        {
+                            long parentOfOrigin = seenNodesWithParent.getIfAbsent(origin, NO_SUCH_NODE);
+                            if (parentOfOrigin == NO_SUCH_NODE && currentDepth == 0) {
+                                // we are in the very fist layer and have a loop to the start node
+                                loopCounter = 1;
+                            } else if (parentOfOrigin != other && parentOfOrigin != NO_SUCH_NODE) {
+                                // By already checking, shouldCheckForLoop we now that we either have no loop
+                                // or we have found a loop into a different BFS layer (not in prevFrontier)
+                                // so overwriting value is always safe and we don't need a Math.min(old, new)
+                                loopCounter = prevFrontier.contains(other) ? currentDepth : currentDepth + 1;
+                            }
+                        }
+                    }
+                }
+
+                if (currentExpand != null && currentExpand.hasNext()) {
+                    if (!expand(currentExpand.next())) {
+                        return false;
+                    }
+                } else {
+                    if (checkAndDecreaseLoopCount()) {
+                        return true;
+                    }
+
+                    swapFrontiers();
+                    currentDepth++;
+                }
+            }
+
+            return false;
+        }
+
+        @Override
+        public long endNode() {
+            return loopCounter == EMIT_START_NODE ? startNode : selectionCursor.otherNodeReference();
+        }
+
+        /*
+         *We only need to check for loops if we haven't found one yet
+         * or if there is still a possibility to find a shorter one
+         */
+        private boolean shouldCheckForLoops() {
+            return !loopDetected() || loopCounter > currentDepth;
+        }
+
+        private void swapFrontiers() {
+            var tmp = prevFrontier;
+            prevFrontier = currFrontier;
+            currentExpand = prevFrontier.longIterator();
+            currFrontier = tmp;
+            currFrontier.clear();
+        }
+
+        private boolean checkAndDecreaseLoopCount() {
+            if (loopCounter == 0) {
+                loopCounter = EMIT_START_NODE;
+                return nodeFilter.test(startNode);
+            } else if (loopCounter > 0) {
+                loopCounter--;
+            }
+            return false;
+        }
+
+        private void clearLoopCount() {
+            if (loopCounter == EMIT_START_NODE) {
+                loopCounter = START_NODE_EMITTED;
+            }
+        }
+
+        private boolean loopDetected() {
+            return loopCounter >= START_NODE_EMITTED;
+        }
+
+        /**
+         * NOTE: we are eliminating duplicated end nodes except from the first layer here in order to simplify the loop detection later
+         */
+        private boolean nextRelationship() {
+            while (selectionCursor.next()) {
+                if (currentDepth == 0) {
+                    return true;
+                } else if (checkUniqueEndNodes.add(selectionCursor.otherNodeReference())) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private boolean expand(long nodeId) {
+            checkUniqueEndNodes.clear();
+            read.singleNode(nodeId, nodeCursor);
+            if (nodeCursor.next()) {
+                selectionCursor = allCursor(relCursor, nodeCursor, types);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        protected void closeMore() {
+            seenNodesWithParent.close();
+            prevFrontier.close();
+            currFrontier.close();
+            checkUniqueEndNodes.close();
         }
     }
 }

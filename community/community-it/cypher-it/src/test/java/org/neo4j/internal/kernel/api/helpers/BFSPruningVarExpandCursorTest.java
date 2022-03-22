@@ -19,21 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander;
-import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
-import org.junit.jupiter.api.Test;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -44,8 +39,18 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
+
 @ImpermanentDbmsExtension
 class BFSPruningVarExpandCursorTest {
+    private static final EmptyMemoryTracker NO_TRACKING = EmptyMemoryTracker.INSTANCE;
+
     @Inject
     private Kernel kernel;
 
@@ -80,22 +85,68 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, rel, a1);
             write.relationshipCreate(start, rel, a2);
             write.relationshipCreate(start, rel, a3);
-            var filterThis = write.relationshipCreate(start, rel, a4);
+            write.relationshipCreate(start, rel, a4);
             write.relationshipCreate(start, rel, a5);
             // layer 2
             write.relationshipCreate(a1, rel, b1);
-            var andFilterThat = write.relationshipCreate(a2, rel, b2);
+            write.relationshipCreate(a2, rel, b2);
             write.relationshipCreate(a3, rel, b3);
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
             // when
-            var expander =
-                    outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+        }
+    }
+
+    @Test
+    void shouldDoBreadthFirstSearchUndirected() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //          (a1) → (b1)
+            //        ↗ (a2) → (b2)
+            // (start) → (a3) → (b3)
+            //        ↘ (a4) → (b4)
+            //          (a5) → (b5)
+            long start = write.nodeCreate();
+            // layer 1
+            long a1 = write.nodeCreate();
+            long a2 = write.nodeCreate();
+            long a3 = write.nodeCreate();
+            long a4 = write.nodeCreate();
+            long a5 = write.nodeCreate();
+            // layer 2
+            long b1 = write.nodeCreate();
+            long b2 = write.nodeCreate();
+            long b3 = write.nodeCreate();
+            long b4 = write.nodeCreate();
+            long b5 = write.nodeCreate();
+
+            // layer 1
+            write.relationshipCreate(start, rel, a1);
+            write.relationshipCreate(start, rel, a2);
+            write.relationshipCreate(start, rel, a3);
+            write.relationshipCreate(start, rel, a4);
+            write.relationshipCreate(start, rel, a5);
+            // layer 2
+            write.relationshipCreate(a1, rel, b1);
+            write.relationshipCreate(a2, rel, b2);
+            write.relationshipCreate(a3, rel, b3);
+            write.relationshipCreate(a4, rel, b4);
+            write.relationshipCreate(a5, rel, b5);
+
+            // when
+            var expander = allExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+
+            // then
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
         }
     }
 
@@ -130,11 +181,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, rel, a1);
             write.relationshipCreate(start, rel, a2);
             write.relationshipCreate(start, rel, a3);
-            var filterThis = write.relationshipCreate(start, rel, a4);
+            write.relationshipCreate(start, rel, a4);
             write.relationshipCreate(start, rel, a5);
             // layer 2
             write.relationshipCreate(a1, rel, b1);
-            var andFilterThat = write.relationshipCreate(a2, rel, b2);
+            write.relationshipCreate(a2, rel, b2);
             write.relationshipCreate(a3, rel, b3);
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
@@ -148,11 +199,66 @@ class BFSPruningVarExpandCursorTest {
                     relCursor,
                     n -> n != a3,
                     Predicates.alwaysTrue(),
-                    EmptyMemoryTracker.INSTANCE);
+                    NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+        }
+    }
+
+    @Test
+    void shouldDoBreadthFirstSearchWithNodePredicateUndirected() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //          (a1) → (b1)
+            //        ↗ (a2) → (b2)
+            // (start) → (X) → (b3)
+            //        ↘ (a4) → (b4)
+            //          (a5) → (b5)
+            long start = write.nodeCreate();
+            // layer 1
+            long a1 = write.nodeCreate();
+            long a2 = write.nodeCreate();
+            long a3 = write.nodeCreate();
+            long a4 = write.nodeCreate();
+            long a5 = write.nodeCreate();
+            // layer 2
+            long b1 = write.nodeCreate();
+            long b2 = write.nodeCreate();
+            long b3 = write.nodeCreate();
+            long b4 = write.nodeCreate();
+            long b5 = write.nodeCreate();
+
+            // layer 1
+            write.relationshipCreate(start, rel, a1);
+            write.relationshipCreate(start, rel, a2);
+            write.relationshipCreate(start, rel, a3);
+            write.relationshipCreate(start, rel, a4);
+            write.relationshipCreate(start, rel, a5);
+            // layer 2
+            write.relationshipCreate(a1, rel, b1);
+            write.relationshipCreate(a2, rel, b2);
+            write.relationshipCreate(a3, rel, b3);
+            write.relationshipCreate(a4, rel, b4);
+            write.relationshipCreate(a5, rel, b5);
+
+            // when
+            var expander = allExpander(
+                    start,
+                    26,
+                    tx.dataRead(),
+                    nodeCursor,
+                    relCursor,
+                    n -> n != a3,
+                    Predicates.alwaysTrue(),
+                    NO_TRACKING);
+
+            // then
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
         }
     }
 
@@ -206,16 +312,72 @@ class BFSPruningVarExpandCursorTest {
                     LongPredicates.alwaysTrue(),
                     cursor -> cursor.relationshipReference() != filterThis
                             && cursor.relationshipReference() != andFilterThat,
-                    EmptyMemoryTracker.INSTANCE);
+                    NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
     @Test
-    void shouldOnlyTakeShorestPathBetweenNodes() throws KernelException {
+    void shouldDoBreadthFirstSearchWithRelationshipPredicateUndirected() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //          (a1) → (b1)
+            //        ↗ (a2) → (b2)
+            // (start) → (a3) → (b3)
+            //        ↘ (a4) → (b4)
+            //          (a5) → (b5)
+            long start = write.nodeCreate();
+            // layer 1
+            long a1 = write.nodeCreate();
+            long a2 = write.nodeCreate();
+            long a3 = write.nodeCreate();
+            long a4 = write.nodeCreate();
+            long a5 = write.nodeCreate();
+            // layer 2
+            long b1 = write.nodeCreate();
+            long b2 = write.nodeCreate();
+            long b3 = write.nodeCreate();
+            long b4 = write.nodeCreate();
+            long b5 = write.nodeCreate();
+
+            // layer 1
+            write.relationshipCreate(start, rel, a1);
+            write.relationshipCreate(start, rel, a2);
+            write.relationshipCreate(start, rel, a3);
+            var filterThis = write.relationshipCreate(start, rel, a4);
+            write.relationshipCreate(start, rel, a5);
+            // layer 2
+            write.relationshipCreate(a1, rel, b1);
+            var andFilterThat = write.relationshipCreate(a2, rel, b2);
+            write.relationshipCreate(a3, rel, b3);
+            write.relationshipCreate(a4, rel, b4);
+            write.relationshipCreate(a5, rel, b5);
+
+            // when
+            var expander = allExpander(
+                    start,
+                    26,
+                    tx.dataRead(),
+                    nodeCursor,
+                    relCursor,
+                    LongPredicates.alwaysTrue(),
+                    cursor -> cursor.relationshipReference() != filterThis
+                            && cursor.relationshipReference() != andFilterThat,
+                    NO_TRACKING);
+
+            // then
+            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+        }
+    }
+
+    @Test
+    void shouldOnlyTakeShortestPathBetweenNodes() throws KernelException {
         // given
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
@@ -241,18 +403,10 @@ class BFSPruningVarExpandCursorTest {
             long shouldNotCross = write.relationshipCreate(b3, rel, end);
 
             // when
-            var expander =
-                    outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            var builder = new GraphBuilder();
-            foreach(expander, cursor -> {
-                builder.addNode(cursor.otherNodeReference());
-                builder.addRelationship(cursor.relationshipReference());
-            });
-            var traversed = builder.build();
-            assertThat(traversed.nodes).isEqualTo(List.of(a1, b1, a2, b2, end, b3));
-            assertThat(traversed.relationships).doesNotContain(shouldNotCross);
+            assertThat(asList(expander)).isEqualTo(List.of(a1, b1, a2, b2, end, b3));
         }
     }
 
@@ -264,12 +418,10 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = outgoingExpander(
-                    graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships.subList(0, 3));
+            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 4));
         }
     }
 
@@ -281,12 +433,28 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = incomingExpander(
-                    graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = incomingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships.subList(7, 10));
+            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(7, 10));
+        }
+    }
+
+    @Test
+    void shouldExpandAll() throws KernelException {
+        // given
+        var graph = circleGraph(10);
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            // when
+            var expander = allExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+
+            // then
+            assertThat(asList(expander))
+                    .hasSameElementsAs(
+                            Stream.concat(graph.nodes.subList(7, 10).stream(), graph.nodes.subList(1, 4).stream())
+                                    .collect(Collectors.toList()));
         }
     }
 
@@ -307,12 +475,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, type2, write.nodeCreate());
 
             // when
-            var expander = outgoingExpander(
-                    start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander =
+                    outgoingExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .isEqualTo(List.of(end));
+            assertThat(asList(expander)).isEqualTo(List.of(end));
         }
     }
 
@@ -333,12 +500,35 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(write.nodeCreate(), type2, start);
 
             // when
-            var expander = incomingExpander(
-                    start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander =
+                    incomingExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .isEqualTo(List.of(end));
+            assertThat(asList(expander)).isEqualTo(List.of(end));
+        }
+    }
+
+    @Test
+    void shouldRespectTypesAll() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            // given
+            Write write = tx.dataWrite();
+            TokenWrite tokenWrite = tx.tokenWrite();
+            int type1 = tokenWrite.relationshipTypeGetOrCreateForName("R1");
+            int type2 = tokenWrite.relationshipTypeGetOrCreateForName("R2");
+            long start = write.nodeCreate();
+            long end = write.nodeCreate();
+            write.relationshipCreate(start, type1, end);
+            write.relationshipCreate(start, type2, write.nodeCreate());
+
+            // when
+            var expander = allExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+
+            // then
+            assertThat(asList(expander)).isEqualTo(List.of(end));
         }
     }
 
@@ -350,12 +540,10 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = outgoingExpander(
-                    graph.startNode(), 0, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(graph.startNode(), 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .isEmpty();
+            assertThat(asList(expander)).isEmpty();
         }
     }
 
@@ -377,12 +565,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(middleNode, type, end);
 
             // when
-            var expander = outgoingExpander(
-                    start, new int[] {type}, 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander =
+                    outgoingExpander(start, new int[] {type}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .hasSameElementsAs(List.of(middleNode, end));
+            assertThat(asList(expander)).hasSameElementsAs(List.of(middleNode, end));
         }
     }
 
@@ -394,12 +581,10 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = outgoingExpander(
-                    graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships);
+            assertThat(asList(expander)).hasSameElementsAs(graph.dropStartNode());
         }
     }
 
@@ -411,12 +596,10 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = outgoingExpander(
-                    graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships.subList(0, 14));
+            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 15));
         }
     }
 
@@ -436,11 +619,10 @@ class BFSPruningVarExpandCursorTest {
                     relCursor,
                     value -> value <= graph.nodes.get(5),
                     Predicates.alwaysTrue(),
-                    EmptyMemoryTracker.INSTANCE);
+                    NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships.subList(0, 5));
+            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 6));
         }
     }
 
@@ -460,11 +642,10 @@ class BFSPruningVarExpandCursorTest {
                     relCursor,
                     LongPredicates.alwaysTrue(),
                     cursor -> cursor.relationshipReference() < graph.relationships.get(9),
-                    EmptyMemoryTracker.INSTANCE);
+                    NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::relationshipReference))
-                    .hasSameElementsAs(graph.relationships.subList(0, 9));
+            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 10));
         }
     }
 
@@ -482,12 +663,712 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node2, rel, node1);
 
             // when
-            var expander =
-                    outgoingExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE);
+            var expander = outgoingExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander, BFSPruningVarExpandCursor::otherNodeReference))
-                    .hasSameElementsAs(List.of(node2, node1));
+            assertThat(asList(expander)).hasSameElementsAs(List.of(node2, node1));
+        }
+    }
+
+    // tests targeting undirected searches
+    @Test
+    void shouldNotRetraceSteps() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            long node1 = write.nodeCreate();
+            long node2 = write.nodeCreate();
+            write.relationshipCreate(node1, rel, node2);
+
+            // then
+            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node2));
+            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node2));
+        }
+    }
+
+    @Test
+    void shouldHandleSingleSelfLoop() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            long node1 = write.nodeCreate();
+            write.relationshipCreate(node1, rel, node1);
+
+            // then
+            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1));
+            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1));
+        }
+    }
+
+    @Test
+    void shouldHandleSimpleLoop() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            long node1 = write.nodeCreate();
+            long node2 = write.nodeCreate();
+            write.relationshipCreate(node1, rel, node2);
+            write.relationshipCreate(node2, rel, node1);
+
+            // then
+            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node2));
+            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node2, node1));
+        }
+    }
+
+    @Test
+    void shouldHandleSimpleLooWithPredicate() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            long node1 = write.nodeCreate();
+            long node2 = write.nodeCreate();
+            write.relationshipCreate(node1, rel, node2);
+            long dontUse = write.relationshipCreate(node2, rel, node1);
+
+            // then
+            assertThat(asList(allExpander(
+                            node1,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != dontUse,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(node2));
+        }
+    }
+
+    @Test
+    void shouldHandleSimpleTriangularPattern() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    /
+            // (a)
+            //    \
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+        }
+    }
+
+    @Test
+    void shouldHandleSimpleTriangularPatternWithBackTrace() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    //
+            // (a)
+            //    \
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, a));
+        }
+    }
+
+    @Test
+    void shouldHandleSimpleTriangularPatternWithBackTrace2() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    /
+            // (a)
+            //   \\
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(c, rel, a);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(c, b));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(c, b, a));
+        }
+    }
+
+    @Test
+    void shouldHandleTriangularLoop() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    / |
+            // (a)  |
+            //    \ |
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, c);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, a));
+        }
+    }
+
+    @Test
+    void shouldHandleTriangularLoopWithStartNodeFilteredOut() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    / |
+            // (a)  |
+            //    \ |
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, c);
+
+            // then
+            assertThat(asList(allExpander(
+                            a,
+                            3,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            n -> n != a,
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+        }
+    }
+
+    @Test
+    void shouldHandleTriangularLoop2() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //            (b)
+            //           / |
+            // (start)-(a)  |
+            //           \ |
+            //            (c)
+            long start = write.nodeCreate();
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, c);
+
+            // then
+            assertThat(asList(allExpander(start, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(start, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a));
+            assertThat(asList(allExpander(start, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(start, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(start, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(start, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, start));
+        }
+    }
+
+    @Test
+    void shouldHandleLoopBetweenDifferentBFSLayers() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)--(d)
+            //    /     /
+            // (a)     /
+            //    \   /
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(d, rel, c);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, a));
+        }
+    }
+
+    @Test
+    void shouldHandleLoopConnectingSameBFSLayer() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)--(d)
+            //    /      |
+            // (a)       |
+            //    \      |
+            //     (c)--(e)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            long e = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, e);
+            write.relationshipCreate(e, rel, d);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e, a));
+        }
+    }
+
+    @Test
+    void shouldHandleLoopConnectingSameAndDifferentBFSLayer() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b1)-(c1)
+            //    /    \
+            // (a)-(b2)-(c2)
+            //    \ |
+            //     (b3)-(c3)
+            long a = write.nodeCreate();
+            long b1 = write.nodeCreate();
+            long b2 = write.nodeCreate();
+            long b3 = write.nodeCreate();
+            long c1 = write.nodeCreate();
+            long c2 = write.nodeCreate();
+            long c3 = write.nodeCreate();
+            write.relationshipCreate(a, rel, b1);
+            write.relationshipCreate(a, rel, b2);
+            write.relationshipCreate(a, rel, b3);
+            write.relationshipCreate(b1, rel, c1);
+            write.relationshipCreate(b1, rel, c2);
+            write.relationshipCreate(b2, rel, c2);
+            write.relationshipCreate(b2, rel, b3);
+            write.relationshipCreate(b3, rel, c3);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, a));
+        }
+    }
+
+    @Test
+    void shouldHandleLoopWithContinuation() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)
+            //    /   \
+            // (a)     (d) - (e) - (f)
+            //    \   /
+            //     (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            long e = write.nodeCreate();
+            long f = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(d, rel, c);
+            write.relationshipCreate(d, rel, e);
+            write.relationshipCreate(e, rel, f);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, e, f, a));
+        }
+    }
+
+    @Test
+    void shouldHandleParallelLayers() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     (b)--(d)--(f)
+            //    /
+            // (a)
+            //    \
+            //     (c)--(e)--(g)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            long e = write.nodeCreate();
+            long f = write.nodeCreate();
+            long g = write.nodeCreate();
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, e);
+            write.relationshipCreate(d, rel, f);
+            write.relationshipCreate(e, rel, g);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e, f, g));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e, f, g));
+            assertThat(asList(allExpander(a, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, e, f, g));
+        }
+    }
+
+    @Test
+    void shouldNotRetraceWhenALoopIsDetectedThatHasNoPathLeftToOrigin() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            // (a) -> (b) <=> (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(b, rel, c);
+            write.relationshipCreate(c, rel, b);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+        }
+    }
+
+    @Test
+    void shouldNotRetraceWhenALoopIsDetectedThatHasNoPathLeftToOrigin2() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            // (a) -> (b) <=> (b)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(b, rel, b);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+        }
+    }
+
+    @Test
+    void shouldRetraceWhenALoopIsDetectedThatHasPathToOrigin() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            // (a) <=> (b) <=> (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(b, rel, a);
+            write.relationshipCreate(b, rel, c);
+            write.relationshipCreate(c, rel, b);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, a));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, a));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, a));
+        }
+    }
+
+    @Test
+    void shouldHandleDoublyConnectedFanOutGraph() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //            (c1)
+            //           //
+            //       (b1) = (c2)
+            //       /   \\
+            //      /      (c3)
+            //     /
+            //    /        (c4)
+            //   /       //
+            // (a)---(b2) = (c5)
+            //    \      \\
+            //     \       (c6)
+            //      \
+            //       \     (c7)
+            //        \  //
+            //       (b3) = (c8)
+            //           \\
+            //             (c9)
+            long a = write.nodeCreate();
+            long b1 = write.nodeCreate();
+            long b2 = write.nodeCreate();
+            long b3 = write.nodeCreate();
+            long c1 = write.nodeCreate();
+            long c2 = write.nodeCreate();
+            long c3 = write.nodeCreate();
+            long c4 = write.nodeCreate();
+            long c5 = write.nodeCreate();
+            long c6 = write.nodeCreate();
+            long c7 = write.nodeCreate();
+            long c8 = write.nodeCreate();
+            long c9 = write.nodeCreate();
+
+            // from a
+            write.relationshipCreate(a, rel, b1);
+            write.relationshipCreate(a, rel, b2);
+            write.relationshipCreate(a, rel, b3);
+
+            // from b1
+            write.relationshipCreate(b1, rel, c1);
+            write.relationshipCreate(b1, rel, c1);
+            write.relationshipCreate(b1, rel, c2);
+            write.relationshipCreate(b1, rel, c2);
+            write.relationshipCreate(b1, rel, c3);
+            write.relationshipCreate(b1, rel, c3);
+            // from b2
+            write.relationshipCreate(b2, rel, c4);
+            write.relationshipCreate(b2, rel, c4);
+            write.relationshipCreate(b2, rel, c5);
+            write.relationshipCreate(b2, rel, c5);
+            write.relationshipCreate(b2, rel, c6);
+            write.relationshipCreate(b2, rel, c6);
+            // from b3
+            write.relationshipCreate(b3, rel, c7);
+            write.relationshipCreate(b3, rel, c7);
+            write.relationshipCreate(b3, rel, c8);
+            write.relationshipCreate(b3, rel, c8);
+            write.relationshipCreate(b3, rel, c9);
+            write.relationshipCreate(b3, rel, c9);
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+        }
+    }
+
+    @Test
+    void shouldHandleComplicatedGraph() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            //     _ (b)
+            //    /  /|\
+            //   /  / | \
+            // (e)-(a)-|-(c)
+            //       \|/
+            //       (d)
+            //
+            long a = write.nodeCreate(); // 0
+            long b = write.nodeCreate(); // 1
+            long c = write.nodeCreate(); // 2
+            long d = write.nodeCreate(); // 3
+            long e = write.nodeCreate(); // 4
+            write.relationshipCreate(a, rel, b); // 0
+            write.relationshipCreate(c, rel, a); // 1
+            write.relationshipCreate(d, rel, a); // 2
+            write.relationshipCreate(e, rel, a); // 3
+
+            write.relationshipCreate(b, rel, c); // 4
+            write.relationshipCreate(b, rel, d); // 5
+            write.relationshipCreate(e, rel, b); // 6
+
+            write.relationshipCreate(c, rel, d); // 7
+
+            // then
+            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, e));
+            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(List.of(b, c, d, e, a));
         }
     }
 
@@ -555,36 +1436,17 @@ class BFSPruningVarExpandCursorTest {
         public long startNode() {
             return nodes.get(0);
         }
-    }
 
-    private static class GraphBuilder {
-        private final ArrayList<Long> nodes = new ArrayList<>();
-        private final ArrayList<Long> relationships = new ArrayList<>();
-
-        void addNode(long node) {
-            nodes.add(node);
-        }
-
-        void addRelationship(long relationship) {
-            relationships.add(relationship);
-        }
-
-        Graph build() {
-            return new Graph(nodes, relationships);
+        public List<Long> dropStartNode() {
+            return nodes.subList(1, nodes.size());
         }
     }
 
-    <T> List<T> asList(BFSPruningVarExpandCursor expander, Function<BFSPruningVarExpandCursor, T> map) {
-        ArrayList<T> found = new ArrayList<>();
+    private List<Long> asList(BFSPruningVarExpandCursor expander) {
+        ArrayList<Long> found = new ArrayList<>();
         while (expander.next()) {
-            found.add(map.apply(expander));
+            found.add(expander.endNode());
         }
         return found;
-    }
-
-    void foreach(BFSPruningVarExpandCursor expander, Consumer<BFSPruningVarExpandCursor> consumer) {
-        while (expander.next()) {
-            consumer.accept(expander);
-        }
     }
 }
