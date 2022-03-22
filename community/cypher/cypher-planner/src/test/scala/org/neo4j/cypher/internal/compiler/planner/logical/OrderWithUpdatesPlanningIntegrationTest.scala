@@ -200,14 +200,14 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
 
   test("Subquery (uncorrelated) with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
-      "CALL {MATCH (x) SET x.prop = 1 RETURN 'foo'}",
+      "CALL {MATCH (x) SET x.prop = 1 RETURN 'foo' AS foo}",
       {case _:Apply  => true}
     )
   }
 
   test("Subquery (correlated) with update should eliminate provided order and cause planning Sort") {
     shouldEliminateProvidedSortOrder(
-      "CALL {WITH n, r MATCH (x) SET x.prop = 1 RETURN 'foo'}",
+      "CALL {WITH n, r MATCH (x) SET x.prop = 1 RETURN 'foo' AS foo}",
       {case _:Apply  => true}
     )
   }

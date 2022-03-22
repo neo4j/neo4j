@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
-import org.neo4j.cypher.internal.ast.LoadCSV
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -707,7 +706,7 @@ class FabricPlannerTest
             |UNWIND [0, 1] AS gid
             |CALL {
             | USE graph(gid)
-            | RETURN 1
+            | RETURN 1 AS one
             |}
             |RETURN 1 AS x
             |""".stripMargin

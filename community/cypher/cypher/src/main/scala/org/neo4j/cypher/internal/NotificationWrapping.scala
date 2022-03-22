@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpressio
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.graphdb
@@ -150,8 +149,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN.notification(pos.withOffset(offset).asInputPosition)
     case SubqueryVariableShadowing(pos, varName)             =>
       NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.shadowingVariable(varName))
-    case MissingAliasNotification(pos) =>
-      NotificationCode.MISSING_ALIAS.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedAmbiguousGroupingNotification(pos, maybeHint) =>
       maybeHint match {
         case Some(hint) => NotificationCode.DEPRECATED_AMBIGUOUS_GROUPING_NOTIFICATION

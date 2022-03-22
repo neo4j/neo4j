@@ -210,13 +210,6 @@ public enum NotificationCode
             Status.Statement.SubqueryVariableShadowingWarning,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. " +
             "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause."
-    ),
-    MISSING_ALIAS(
-            SeverityLevel.WARNING,
-            Status.Statement.MissingAlias,
-            "There is no alias for one or more complex returned items in a RETURN clause in a CALL subquery. " +
-            "All returned items except variables, e.g. 'RETURN n', and map projections, e.g. 'RETURN n { .prop, .prop2 }' " +
-            "should be aliased explicitly using 'AS'. The support for such unaliased returned items will be removed in a future version."
     );
 
     private final Status status;

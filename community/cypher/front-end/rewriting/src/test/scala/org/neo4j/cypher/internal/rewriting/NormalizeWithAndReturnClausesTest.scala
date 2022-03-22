@@ -20,9 +20,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
-import org.neo4j.cypher.internal.util.MissingAliasNotification
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -112,21 +110,6 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |}
         |RETURN n AS n, m AS m, p AS p
       """.stripMargin)
-  }
-
-  test("expression in subquery return should be aliased") {
-    assertRewriteAndWarnings(
-      """CALL {
-        |  RETURN 5 + 5
-        |}
-        |RETURN `5 + 5` AS `5 + 5`
-      """.stripMargin,
-        """CALL {
-          |  RETURN 5 + 5 AS `5 + 5`
-          |}
-          |RETURN `5 + 5` AS `5 + 5`
-      """.stripMargin,
-      Set(MissingAliasNotification(InputPosition(16, 2, 10))))
   }
 
   test("ensure variables are aliased for SHOW PRIVILEGES") {
@@ -486,6 +469,34 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
         |WITH n.prop ORDER BY n.prop
         |RETURN prop AS prop
       """.stripMargin, "Expression in WITH must be aliased (use AS) (line 2, column 6 (offset: 15))")
+  }
+
+  test("should not introduce aliases in subquery return") {
+    assertNotRewrittenAndSemanticErrors(
+      "CALL { RETURN 1 } RETURN 1 AS one",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 15 (offset: 14))")
+  }
+
+  test("should not introduce aliases in union subquery return") {
+    assertNotRewrittenAndSemanticErrors(
+      "CALL { RETURN 1 UNION RETURN 1 } RETURN 1 AS one",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 15 (offset: 14))",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 30 (offset: 29))",
+    )
+  }
+
+  test("should not introduce aliases in correlated subquery return") {
+    assertNotRewrittenAndSemanticErrors(
+      "MATCH (n) CALL { WITH n AS n RETURN 1 } RETURN 1 AS one",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 37 (offset: 36))")
+  }
+
+  test("should not introduce aliases in correlated union subquery return") {
+    assertNotRewrittenAndSemanticErrors(
+      "MATCH (n) CALL { WITH n AS n RETURN 1 UNION WITH n AS n RETURN 1 } RETURN 1 AS one",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 37 (offset: 36))",
+      "Expression in CALL { RETURN ... } must be aliased (use AS) (line 1, column 64 (offset: 63))",
+    )
   }
 
   test("RETURN: attaches ORDER BY expressions to unaliased items") {
