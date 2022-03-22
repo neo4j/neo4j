@@ -148,7 +148,7 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
         }
 
         @Override
-        public void merge( PageCursorTracer cursorTracer )
+        public void merge( CursorStatisticSnapshot statisticSnapshot )
         {
         }
     };
@@ -193,7 +193,7 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable
 
     /**
      * Merge values collected by another tracer into current.
-     * @param cursorTracer tracer with externally collected data
+     * @param statisticSnapshot externally collected statistic data
      */
-    void merge( PageCursorTracer cursorTracer );
+    void merge( CursorStatisticSnapshot statisticSnapshot );
 }

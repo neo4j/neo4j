@@ -25,6 +25,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +41,8 @@ import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.Futures;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
@@ -71,7 +74,7 @@ public class ExecutionContextIT
         long[] nodeIds = new long[numberOfNodes];
         try ( var transaction = databaseAPI.beginTx() )
         {
-            for ( int i = 0; i < 1024; i++ )
+            for ( int i = 0; i < numberOfNodes; i++ )
             {
                 Node node = transaction.createNode();
                 nodeIds[i] = node.getId();
@@ -109,7 +112,7 @@ public class ExecutionContextIT
         long[] relIds = new long[numberOfRelationships];
         try ( var transaction = databaseAPI.beginTx() )
         {
-            for ( int i = 0; i < 1024; i++ )
+            for ( int i = 0; i < numberOfRelationships; i++ )
             {
                 Node start = transaction.createNode();
                 Node end = transaction.createNode();
@@ -139,6 +142,64 @@ public class ExecutionContextIT
             }
             Futures.getAll( futures );
             closeAllUnchecked( contexts );
+        }
+    }
+
+    @RepeatedTest( 10 )
+    void contextPeriodicReport() throws ExecutionException
+    {
+        int numberOfNodes = 8192;
+        long[] nodeIds = new long[numberOfNodes];
+        try ( var transaction = databaseAPI.beginTx() )
+        {
+            for ( int i = 0; i < numberOfNodes; i++ )
+            {
+                Node node = transaction.createNode();
+                nodeIds[i] = node.getId();
+            }
+            transaction.commit();
+        }
+
+        try ( Transaction transaction = databaseAPI.beginTx() )
+        {
+            var ktx = ((InternalTransaction) transaction).kernelTransaction();
+            var futures = new ArrayList<Future<?>>( NUMBER_OF_WORKERS );
+            var contexts = new ArrayList<ExecutionContext>( NUMBER_OF_WORKERS );
+            var set = ConcurrentHashMap.newKeySet();
+            for ( int i = 0; i < NUMBER_OF_WORKERS; i++ )
+            {
+                var executionContext = ktx.createExecutionContext();
+                futures.add( executors.submit( () ->
+                {
+                    for ( long nodeId : nodeIds )
+                    {
+                        assertTrue( executionContext.dataRead().nodeExists( nodeId ) );
+                        if ( nodeId % 100 == 0 )
+                        {
+                            executionContext.report();
+                        }
+                    }
+                    executionContext.complete();
+                } ) );
+                // external observer
+                futures.add( executors.submit( () ->
+                {
+                    for ( int j = 0; j < numberOfNodes; j++ )
+                    {
+                        set.add( ktx.cursorContext().getCursorTracer().pins() );
+                    }
+                } ) );
+                contexts.add( executionContext );
+            }
+            Futures.getAll( futures );
+            closeAllUnchecked( contexts );
+
+            var tracer = ktx.cursorContext().getCursorTracer();
+            assertEquals( 320, tracer.pins() );
+            assertEquals( 320, tracer.unpins() );
+            assertEquals( 320, tracer.hits() );
+
+            assertThat( set ).describedAs( "Observed number of pins should be different and change during the execution" ).hasSizeGreaterThan( 1 );
         }
     }
 

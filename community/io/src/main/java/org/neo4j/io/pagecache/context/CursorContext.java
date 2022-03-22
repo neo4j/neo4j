@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.context;
 
+import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 import static java.util.Objects.requireNonNull;
@@ -55,9 +56,9 @@ public class CursorContext implements AutoCloseable
         cursorTracer.close();
     }
 
-    public void merge( CursorContext cursorContext )
+    public void merge( CursorStatisticSnapshot statisticSnapshot )
     {
-        cursorTracer.merge( cursorContext.cursorTracer );
+        cursorTracer.merge( statisticSnapshot );
     }
 
     public CursorContext createRelatedContext( String tag )

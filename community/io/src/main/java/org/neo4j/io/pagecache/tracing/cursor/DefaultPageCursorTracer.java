@@ -98,20 +98,20 @@ public class DefaultPageCursorTracer implements PageCursorTracer
     }
 
     @Override
-    public void merge( PageCursorTracer cursorTracer )
+    public void merge( CursorStatisticSnapshot statisticSnapshot )
     {
-        this.pins += cursorTracer.pins();
-        this.unpins += cursorTracer.unpins();
-        this.hits += cursorTracer.hits();
-        this.faults += cursorTracer.faults();
-        this.noFaults += cursorTracer.noFaults();
-        this.failedFaults += cursorTracer.failedFaults();
-        this.bytesRead += cursorTracer.bytesRead();
-        this.bytesWritten += cursorTracer.bytesWritten();
-        this.evictions += cursorTracer.evictions();
-        this.evictionExceptions += cursorTracer.evictionExceptions();
-        this.flushes += cursorTracer.flushes();
-        this.merges += cursorTracer.merges();
+        this.pins += statisticSnapshot.pins();
+        this.unpins += statisticSnapshot.unpins();
+        this.hits += statisticSnapshot.hits();
+        this.faults += statisticSnapshot.faults();
+        this.noFaults += statisticSnapshot.noFaults();
+        this.failedFaults += statisticSnapshot.failedFaults();
+        this.bytesRead += statisticSnapshot.bytesRead();
+        this.bytesWritten += statisticSnapshot.bytesWritten();
+        this.evictions += statisticSnapshot.evictions();
+        this.evictionExceptions += statisticSnapshot.evictionExceptions();
+        this.flushes += statisticSnapshot.flushes();
+        this.merges += statisticSnapshot.merges();
     }
 
     // When updating reporting here please check if that affects any reporting on additional available tracers
@@ -209,7 +209,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer
         return byteArrayOut.toString();
     }
 
-    private void reset()
+    protected void reset()
     {
         pins = 0;
         unpins = 0;

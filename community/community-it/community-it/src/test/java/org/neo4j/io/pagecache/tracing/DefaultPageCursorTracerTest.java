@@ -26,6 +26,7 @@ import java.io.IOException;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageSwapper;
+import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
@@ -338,7 +339,7 @@ class DefaultPageCursorTracerTest
             }
             tracer.unpin( 1, dummyPageSwapper );
         }
-        pageCursorTracer.merge( tracer );
+        pageCursorTracer.merge( new CursorStatisticSnapshot( tracer ) );
 
         assertEquals( 5, pageCursorTracer.pins() );
         assertEquals( 5, pageCursorTracer.unpins() );

@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.tracing.linear;
 
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 
 /**
@@ -154,7 +155,7 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer
     }
 
     @Override
-    public void merge( PageCursorTracer cursorTracer )
+    public void merge( CursorStatisticSnapshot statisticSnapshot )
     {
     }
 }

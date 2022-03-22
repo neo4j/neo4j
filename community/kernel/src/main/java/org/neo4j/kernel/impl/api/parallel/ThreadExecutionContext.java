@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.parallel;
 
+import java.lang.invoke.VarHandle;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -78,6 +80,12 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     }
 
     @Override
+    public void report()
+    {
+        mergeBlocked( cursorTracer );
+    }
+
+    @Override
     public StoreCursors storeCursors()
     {
         return storageCursors;
@@ -90,11 +98,20 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
         {
             Thread.onSpinWait();
         }
-        mergeExecutionContext( this );
+        mergeUnblocked( cursorTracer );
     }
 
-    private void mergeExecutionContext( ExecutionContext executionContext )
+    private void mergeBlocked( ExecutionContextCursorTracer cursorTracer )
     {
-        ktxContext.merge( executionContext.cursorContext() );
+        synchronized ( ktxContext )
+        {
+            mergeUnblocked( cursorTracer );
+        }
+        VarHandle.fullFence();
+    }
+
+    private void mergeUnblocked( ExecutionContextCursorTracer cursorTracer )
+    {
+        ktxContext.merge( cursorTracer.snapshot() );
     }
 }

@@ -65,6 +65,11 @@ public interface ExecutionContext extends AutoCloseable
     void complete();
 
     /**
+     * Report ongoing partial state to parent transaction. Visibility of reported data is eventual on transaction level on this point.
+     */
+    void report();
+
+    /**
      * Close execution context and merge back any data to the owning transaction if such exists.
      * Should be called by transaction thread.
      */

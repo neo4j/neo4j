@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.parallel;
 
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.CursorStatisticSnapshot;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
@@ -28,6 +29,8 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
     private long unpins;
     private long hits;
     private long faults;
+    private long noFaults;
+    private long failedFaults;
     private long bytesRead;
     private long bytesWritten;
     private long evictions;
@@ -50,6 +53,8 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
         unpins = super.unpins();
         hits = super.hits();
         faults = super.faults();
+        noFaults = super.noFaults();
+        failedFaults = super.failedFaults();
         bytesRead = super.bytesRead();
         bytesWritten = super.bytesWritten();
         evictions = super.evictions();
@@ -57,6 +62,15 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
         flushes = super.flushes();
         merges = super.merges();
         completed = true;
+    }
+
+    CursorStatisticSnapshot snapshot()
+    {
+        CursorStatisticSnapshot snapshot =
+                new CursorStatisticSnapshot( super.pins(), super.unpins(), super.hits(), super.faults(), super.noFaults(), super.failedFaults(),
+                        super.bytesRead(), super.bytesWritten(), super.evictions(), super.evictionExceptions(), super.flushes(), super.merges() );
+        reset();
+        return snapshot;
     }
 
     public boolean isCompleted()
@@ -122,5 +136,17 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
     public long merges()
     {
         return merges;
+    }
+
+    @Override
+    public long noFaults()
+    {
+        return noFaults;
+    }
+
+    @Override
+    public long failedFaults()
+    {
+        return failedFaults;
     }
 }
