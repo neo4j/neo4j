@@ -319,7 +319,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case c: HorizonClause =>
             checkHorizon(c, lastResult.state, outerScope, lastResult.errors)
           case _ =>
-            val checked = clause.semanticCheck(lastResult.state)
+            val checked = clause.semanticCheck.run(lastResult.state)
             val errors = lastResult.errors ++ checked.errors
             val resultState = clause match {
               case _: UpdateClause if idx == lastIndex =>
@@ -342,9 +342,9 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     outerScope: Option[Scope],
     prevErrors: Seq[SemanticErrorDef]
   ) = {
-    val closingResult = clause.semanticCheck(state)
+    val closingResult = clause.semanticCheck.run(state)
     val continuationResult =
-      clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope)(closingResult.state)
+      clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope).run(closingResult.state)
     semantics.SemanticCheckResult(
       continuationResult.state,
       prevErrors ++ closingResult.errors ++ continuationResult.errors
@@ -390,7 +390,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         state.addNotification(SubqueryVariableShadowing(pos, varName))
     }
 
-    success(stateWithNotifications)
+    success.run(stateWithNotifications)
   }
 
   override def finalScope(scope: Scope): Scope =

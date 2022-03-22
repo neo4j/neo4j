@@ -426,7 +426,7 @@ case class Match(
       case hint @ UsingJoinHint(_) if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
-    error.getOrElse(success)(semanticState)
+    error.getOrElse(success).run(semanticState)
   }
 
   private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
@@ -1162,14 +1162,14 @@ sealed trait ProjectionClause extends HorizonClause {
           // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
           val stateForSubClauses = state.newChildScope
 
-          val SemanticCheckResult(nextState, errors1) = runChecks(previousScope)(stateForSubClauses)
+          val SemanticCheckResult(nextState, errors1) = runChecks(previousScope).run(stateForSubClauses)
 
           // New sibling scope for the WITH/RETURN clause itself and onwards.
           // Re-declare projected variables in the new scope since the sub-scope is discarded
           // (We do not need to check warnOnAccessToRestrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
           val returnState = nextState.popScope.newSiblingScope
           val SemanticCheckResult(finalState, errors2) =
-            returnItems.declareVariables(state.currentScope.scope)(returnState)
+            returnItems.declareVariables(state.currentScope.scope).run(returnState)
           SemanticCheckResult(finalState, errors1 ++ errors2)
         } else if (specialScopeForSubClausesNeeded) {
           /*
@@ -1188,20 +1188,20 @@ sealed trait ProjectionClause extends HorizonClause {
           // this child scope is used for errors only and will later be discarded.
           val siblingState = state.newSiblingScope
           val stateForSubClauses = siblingState.newChildScope
-          val SemanticCheckResult(nextState, errors1) = runChecks(siblingState.currentScope.scope)(stateForSubClauses)
+          val SemanticCheckResult(nextState, errors1) = runChecks(siblingState.currentScope.scope).run(stateForSubClauses)
 
           // By popping the scope we will discard the special scope used for subclauses
           val returnState = nextState.popScope
 
           // Re-declare projected variables in the new scope since the sub-scope is discarded
           val SemanticCheckResult(finalState, errors2) =
-            returnItems.declareVariables(returnState.currentScope.scope)(returnState)
+            returnItems.declareVariables(returnState.currentScope.scope).run(returnState)
           val niceErrors =
             (errors1 ++ errors2).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
           SemanticCheckResult(finalState, niceErrors)
         } else {
           val returnState = state.newSiblingScope
-          val SemanticCheckResult(finalState, errors) = runChecks(previousScope)(returnState)
+          val SemanticCheckResult(finalState, errors) = runChecks(previousScope).run(returnState)
           val niceErrors = errors.map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
           SemanticCheckResult(finalState, niceErrors)
         }
@@ -1248,10 +1248,10 @@ sealed trait ProjectionClause extends HorizonClause {
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
   private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
-    _ => skip.semanticCheck(SemanticState.clean).errors
+    _ => skip.semanticCheck.run(SemanticState.clean).errors
 
   private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
-    _ => limit.semanticCheck(SemanticState.clean).errors
+    _ => limit.semanticCheck.run(SemanticState.clean).errors
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
@@ -1387,13 +1387,13 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
   }
 
   def checkSubquery: SemanticCheck = { outer: SemanticState =>
-    val SemanticCheckResult(outerStateWithImports, importingWithErrors) = part.checkImportingWith(outer)
+    val SemanticCheckResult(outerStateWithImports, importingWithErrors) = part.checkImportingWith.run(outer)
 
     // Create empty scope under root
     val empty: SemanticState = outerStateWithImports.newBaseScope
 
     // Check inner query. Allow it to import from outer scope
-    val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outerStateWithImports)(empty)
+    val inner: SemanticCheckResult = part.semanticCheckInSubqueryContext(outerStateWithImports).run(empty)
     val innerCurrentScope = inner.state.currentScope.scope
 
     // Keep working from the latest state
@@ -1407,7 +1407,7 @@ case class SubqueryCall(part: QueryPart, inTransactionsParameters: Option[Subque
       .importValuesFromScope(outerStateWithImports.currentScope.scope)
 
     // Declare variables that are in output from subquery
-    val merged = declareOutputVariablesInOuterScope(innerCurrentScope)(after)
+    val merged = declareOutputVariablesInOuterScope(innerCurrentScope).run(after)
 
     // Avoid double errors if inner has errors
     val allErrors = importingWithErrors ++

@@ -178,7 +178,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
     }
 
     def planSystemProcedureCall(resolved: ResolvedCall, returns: Option[Return]): LogicalPlan = {
-      val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
+      val SemanticCheckResult(_, errors) = resolved.semanticCheck.run(SemanticState.clean)
       errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
       val signature = resolved.signature
       val checkCredentialsExpired = !signature.allowExpiredCredentials

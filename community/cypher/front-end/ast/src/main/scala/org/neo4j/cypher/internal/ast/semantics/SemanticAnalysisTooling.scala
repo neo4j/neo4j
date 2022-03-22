@@ -50,14 +50,14 @@ trait SemanticAnalysisTooling {
       traversable.foldLeft(SemanticCheckResult.success(state)) {
         (r1: SemanticCheckResult, o: A) =>
           {
-            val r2 = o.semanticCheck(r1.state)
+            val r2 = o.semanticCheck.run(r1.state)
             SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
           }
       }
 
   /** Runs `check` on `state`. Discards produced state, but retains produced errors */
   def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = (s: SemanticState) =>
-    check(state).copy(state = s)
+    check.run(state).copy(state = s)
 
   def specifyType(
     typeGen: TypeGenerator,
@@ -72,7 +72,7 @@ trait SemanticAnalysisTooling {
     _.specifyType(expression, possibleTypes)
 
   def expectType(typeGen: TypeGenerator, expression: Expression): SemanticCheck =
-    (s: SemanticState) => expectType(typeGen(s), expression)(s)
+    (s: SemanticState) => expectType(typeGen(s), expression).run(s)
 
   def expectType(possibleTypes: TypeSpec, opt: Option[Expression]): SemanticCheck =
     opt.foldSemanticCheck(expectType(possibleTypes, _))
@@ -82,14 +82,14 @@ trait SemanticAnalysisTooling {
     expression: Expression,
     messageGen: (String, String) => String
   ): SemanticCheck =
-    (s: SemanticState) => expectType(typeGen(s), expression, messageGen)(s)
+    (s: SemanticState) => expectType(typeGen(s), expression, messageGen).run(s)
 
   def expectType[Exp <: Expression](possibleTypes: TypeSpec, expressions: Iterable[Exp]): SemanticCheck =
     (state: SemanticState) =>
       expressions.foldLeft(SemanticCheckResult.success(state)) {
         (r1: SemanticCheckResult, o: Exp) =>
           {
-            val r2 = expectType(possibleTypes, o)(r1.state)
+            val r2 = expectType(possibleTypes, o).run(r1.state)
             SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
           }
       }
@@ -145,7 +145,7 @@ trait SemanticAnalysisTooling {
           accumulator
         case ((possibilities, r1), arg) =>
           val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
-          val r2 = expectType(argTypes, arg)(r1.state)
+          val r2 = expectType(argTypes, arg).run(r1.state)
 
           val actualTypes = types(arg)(r2.state)
           val remainingPossibilities = possibilities.filter {
@@ -172,9 +172,9 @@ trait SemanticAnalysisTooling {
     elseBranch: => SemanticCheck = SemanticCheck.success
   ): SemanticCheck = (state: SemanticState) =>
     if (condition(state))
-      thenBranch(state)
+      thenBranch.run(state)
     else
-      elseBranch(state)
+      elseBranch.run(state)
 
   def unless(condition: Boolean)(check: => SemanticCheck): SemanticCheck =
     if (condition)
@@ -197,7 +197,7 @@ trait SemanticAnalysisTooling {
       SemanticAnalysisTooling.popStateScope
 
   def typeSwitch(expr: Expression)(choice: TypeSpec => SemanticCheck): SemanticCheck =
-    (state: SemanticState) => choice(state.expressionType(expr).actual)(state)
+    (state: SemanticState) => choice(state.expressionType(expr).actual).run(state)
 
   def validNumber(long: IntegerLiteral): Boolean =
     try {

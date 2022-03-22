@@ -305,7 +305,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           case _ =>
             s"Type mismatch: expected Boolean or String but was ${specifiedType.mkString(", ")}"
         }
-        error(msg, argument.position)(s)
+        error(msg, argument.position).run(s)
       }
     }
 }
