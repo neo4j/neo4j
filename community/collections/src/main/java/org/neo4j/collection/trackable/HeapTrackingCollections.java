@@ -49,6 +49,10 @@ public final class HeapTrackingCollections {
         return HeapTrackingUnifiedMap.createUnifiedMap(memoryTracker);
     }
 
+    public static HeapTrackingLongLongHashMap newLongLongMap(MemoryTracker memoryTracker) {
+        return HeapTrackingLongLongHashMap.createLongLongHashMap(memoryTracker);
+    }
+
     public static <T> HeapTrackingUnifiedSet<T> newSet(MemoryTracker memoryTracker) {
         return HeapTrackingUnifiedSet.createUnifiedSet(memoryTracker);
     }

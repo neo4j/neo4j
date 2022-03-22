@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.collection.trackable;
+
+import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
+
+import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.VisibleForTesting;
+
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.memory.HeapEstimator.ARRAY_HEADER_BYTES;
+import static org.neo4j.memory.HeapEstimator.alignObjectSize;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+
+@SuppressWarnings( "ExternalizableWithoutPublicNoArgConstructor" )
+public class HeapTrackingLongLongHashMap extends LongLongHashMap implements AutoCloseable
+{
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance( HeapTrackingLongLongHashMap.class );
+    static final int DEFAULT_INITIAL_CAPACITY = 8;
+
+    final MemoryTracker memoryTracker;
+    private int trackedCapacity;
+
+    @VisibleForTesting
+    public static HeapTrackingLongLongHashMap createLongLongHashMap( MemoryTracker memoryTracker )
+    {
+        memoryTracker.allocateHeap( SHALLOW_SIZE + arraysHeapSize( DEFAULT_INITIAL_CAPACITY << 2) );
+        return new HeapTrackingLongLongHashMap( memoryTracker, DEFAULT_INITIAL_CAPACITY << 1 );
+    }
+
+    private HeapTrackingLongLongHashMap( MemoryTracker memoryTracker, int trackedCapacity )
+    {
+        this.memoryTracker = requireNonNull( memoryTracker );
+        this.trackedCapacity = trackedCapacity;
+    }
+
+    @Override
+    protected void allocateTable( int sizeToAllocate )
+    {
+        if ( memoryTracker != null )
+        {
+            memoryTracker.allocateHeap( arraysHeapSize( sizeToAllocate << 1 ) );
+            memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity << 1 ) );
+            trackedCapacity = sizeToAllocate;
+        }
+        super.allocateTable( sizeToAllocate );
+    }
+
+    @Override
+    public void close()
+    {
+        memoryTracker.releaseHeap( arraysHeapSize( trackedCapacity << 1) + SHALLOW_SIZE );
+    }
+
+    /**
+     * Make size() "thread-safer" by grabbing a reference to the values.
+     */
+    @Override
+    public int size()
+    {
+        SentinelValues sentinelValues = getSentinelValues();
+        return getOccupiedWithData() + (sentinelValues == null ? 0 : sentinelValues.size());
+    }
+
+    @VisibleForTesting
+    public static long arraysHeapSize( int arrayLength )
+    {
+        return alignObjectSize( ARRAY_HEADER_BYTES + (long) arrayLength * Long.BYTES );
+    }
+}
