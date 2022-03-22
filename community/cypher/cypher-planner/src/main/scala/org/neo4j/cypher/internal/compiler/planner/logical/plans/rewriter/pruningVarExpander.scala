@@ -162,6 +162,5 @@ case object pruningVarExpander extends Rewriter {
     case _                     => false
   }
 
-  private def isDistinctVarExpand(expand: VarExpand): Boolean =
-    expand.length.min <= 1 && expand.dir != SemanticDirection.BOTH
+  private def isDistinctVarExpand(expand: VarExpand): Boolean = expand.length.min <= 1
 }

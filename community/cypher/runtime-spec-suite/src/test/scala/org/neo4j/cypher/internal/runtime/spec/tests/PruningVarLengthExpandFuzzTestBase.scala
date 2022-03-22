@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -48,8 +49,9 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
 
     withClue("seed used: " + seed) {
       runForMillis(millisToRun)(() => testPruningVarExpand(nodes(random.nextInt(population)), random))
-      runForMillis(millisToRun)(() => testDistinctPruningVarExpand(nodes(random.nextInt(population)), OUTGOING, random))
-      runForMillis(millisToRun)(() => testDistinctPruningVarExpand(nodes(random.nextInt(population)), INCOMING, random))
+      runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), BOTH, random))
+      runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), OUTGOING, random))
+      runForMillis(millisToRun)(() => testBFSPruningVarExpand(nodes(random.nextInt(population)), INCOMING, random))
     }
   }
 
@@ -136,7 +138,7 @@ abstract class PruningVarLengthExpandFuzzTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def testDistinctPruningVarExpand(startNode: Node, direction: SemanticDirection, r: Random): Unit = {
+  private def testBFSPruningVarExpand(startNode: Node, direction: SemanticDirection, r: Random): Unit = {
     val min = r.nextInt(2)
     val max = min + 1 + r.nextInt(3)
 

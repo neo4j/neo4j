@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.function.Predicates
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander
 import org.neo4j.io.IOUtils
@@ -174,12 +175,23 @@ object BFSPruningVarLengthExpandPipe {
           relPredicate,
           memoryTracker
         )
-      case SemanticDirection.BOTH => throw new IllegalStateException("Undirected BFSPruningVarLength is not supported")
+      case SemanticDirection.BOTH =>
+        allExpander(
+          node,
+          types.types(query),
+          max,
+          query.transactionalContext.dataRead,
+          nodeCursor,
+          traversalCursor,
+          nodePredicate,
+          relPredicate,
+          memoryTracker
+        )
     }
     query.resources.trace(nodeCursor)
     query.resources.trace(traversalCursor)
     val iterator = new PrimitiveCursorIterator {
-      override protected def fetchNext(): Long = if (cursor.next()) cursor.otherNodeReference() else -1L
+      override protected def fetchNext(): Long = if (cursor.next()) cursor.endNode() else -1L
       override def close(): Unit = IOUtils.closeAll(nodeCursor, traversalCursor)
     }
     if (includeStartNode) ClosingLongIterator.prepend(node, iterator)

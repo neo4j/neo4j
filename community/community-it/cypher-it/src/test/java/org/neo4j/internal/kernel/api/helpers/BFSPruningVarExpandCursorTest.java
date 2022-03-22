@@ -19,8 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander;
+import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -28,7 +33,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
+import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -38,14 +44,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander;
-import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander;
-import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander;
-import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.kernel.api.KernelTransaction.Type.EXPLICIT;
 
 @ImpermanentDbmsExtension
 class BFSPruningVarExpandCursorTest {

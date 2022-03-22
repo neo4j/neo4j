@@ -19,12 +19,17 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
+import static org.neo4j.function.Predicates.alwaysTrue;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor;
+import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
+import static org.neo4j.kernel.impl.newapi.Cursors.emptyTraversalCursor;
 
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
-
+import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.neo4j.collection.trackable.HeapTrackingArrayDeque;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet;
@@ -36,13 +41,6 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.allCursor;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.incomingCursor;
-import static org.neo4j.internal.kernel.api.helpers.RelationshipSelections.outgoingCursor;
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.kernel.impl.newapi.Cursors.emptyTraversalCursor;
 
 /**
  * Cursor that performs breadth-first search without ever revisiting the same node multiple times.

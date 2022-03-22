@@ -518,7 +518,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     relationshipPredicate: Predicate = AbstractLogicalPlanBuilder.NO_PREDICATE
   ): IMPL = {
     val p = patternParser.parse(pattern)
-    require(p.dir != SemanticDirection.BOTH, "BFSPruningVarExpand only supports directed patterns")
     newRelationship(varFor(p.relName))
     newNode(varFor(p.to))
     p.length match {
