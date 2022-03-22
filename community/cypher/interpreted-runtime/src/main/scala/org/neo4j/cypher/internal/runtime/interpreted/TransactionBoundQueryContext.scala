@@ -162,12 +162,6 @@ sealed class TransactionBoundQueryContext(
 
   private def tokenWrite = transactionalContext.tokenWrite
 
-  override def createParallelQueryContext(): QueryContext = {
-    // TODO: As an optimization, create a single-threaded copy of ResourceManager attach to the ThreadSafeResourceManager coming in
-    val parallelTransactionalContext = transactionalContext.createParallelTransactionalContext()
-    new ParallelTransactionBoundQueryContext(parallelTransactionalContext, resources, closeable)(indexSearchMonitor)
-  }
-
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }
@@ -483,7 +477,24 @@ private[internal] class TransactionBoundReadQueryContext(
   private[internal] lazy val valueMapper: ValueMapper[java.lang.Object] =
     new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
 
-  // We cannot assign to value because of periodic commit
+  override def createParallelQueryContext(): QueryContext = {
+    val newTransactionalContext = transactionalContext.createParallelTransactionalContext
+
+    // Create a single-threaded copy of ResourceManager
+    val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
+
+    val statement = newTransactionalContext.kernelTransactionalContext.statement()
+    statement.registerCloseableResource(newResourceManager)
+    val closeable: AutoCloseable = () => statement.unregisterCloseableResource(newResourceManager)
+
+    new ParallelTransactionBoundQueryContext(
+      newTransactionalContext,
+      newResourceManager,
+      Some(closeable)
+      )(indexSearchMonitor)
+  }
+
+  //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
 
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)

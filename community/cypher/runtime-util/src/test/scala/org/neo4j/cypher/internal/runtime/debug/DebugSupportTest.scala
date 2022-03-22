@@ -35,6 +35,7 @@ class DebugSupportTest extends CypherFunSuite {
     DebugSupport.DEBUG_BUFFERS shouldBe false
     DebugSupport.DEBUG_SCHEDULING shouldBe false
     DebugSupport.DEBUG_ASM shouldBe false
+    DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT shouldBe false
     DebugSupport.DEBUG_PIPELINES shouldBe false
     DebugSupport.DEBUG_GENERATED_SOURCE_CODE shouldBe false
   }

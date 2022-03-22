@@ -34,6 +34,7 @@ object DebugSupport {
   final val DEBUG_BUFFERS = false
   final val DEBUG_SCHEDULING = false
   final val DEBUG_ASM = false
+  final val DEBUG_TRANSACTIONAL_CONTEXT = false
   final val DEBUG_PIPELINES = false
   final val DEBUG_GENERATED_SOURCE_CODE = false
 
@@ -50,6 +51,7 @@ object DebugSupport {
   final val BUFFERS = new DebugLog(DEBUG_BUFFERS, Magenta)
   final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
   final val ASM = new DebugLog(DEBUG_ASM, "")
+  final val TRANSACTIONAL_CONTEXT = new DebugLog(DEBUG_TRANSACTIONAL_CONTEXT, Green)
 
   /** COLORS AND FORMATTING **/
 

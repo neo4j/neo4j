@@ -41,20 +41,16 @@ import org.neo4j.logging.InternalLogProvider
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
-  edition: Edition[CONTEXT],
-  runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+                                                         edition: Edition[CONTEXT],
+                                                         runtime: CypherRuntime[CONTEXT],
+                                                         sizeHint: Int
+                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
 
-  override protected def createRuntimeTestSupport(
-    graphDb: GraphDatabaseService,
-    edition: Edition[CONTEXT],
-    workloadMode: Boolean,
-    logProvider: InternalLogProvider
-  ): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions) {
-      override def getTransactionType: Type = Type.IMPLICIT
-    }
+  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
+                                                  edition: Edition[CONTEXT],
+                                                  workloadMode: Boolean,
+                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
+    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions, defaultTransactionType = Type.IMPLICIT)
   }
 
   test("batchSize 0") {

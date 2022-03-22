@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipOperations
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.WriteQueryContext
+import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.ParallelTransactionBoundQueryContext.UnsupportedWriteQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.dbms.database.DatabaseContext
@@ -54,10 +55,13 @@ sealed class ParallelTransactionBoundQueryContext(
     extends TransactionBoundReadQueryContext(transactionalContext, resources, closeable) with QueryContext
     with UnsupportedWriteQueryContext {
 
-  override def createParallelQueryContext(): QueryContext = {
-    // TODO: Create a single-threaded copy of ResourceManager attach to the ThreadSafeResourceManager coming in
-    val parallelTransactionalContext = transactionalContext.createParallelTransactionalContext()
-    new ParallelTransactionBoundQueryContext(parallelTransactionalContext, resources, closeable)(indexSearchMonitor)
+  override def close(): Unit = {
+    DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close()", this.getClass.getSimpleName)
+    try {
+      super.close()
+    } finally {
+      transactionalContext.close()
+    }
   }
 }
 

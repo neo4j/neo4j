@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
+import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -33,6 +34,7 @@ import org.neo4j.internal.kernel.api.Token
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
@@ -93,12 +95,17 @@ class ParallelTransactionalContextWrapper(
   override def securityAuthorizationHandler: SecurityAuthorizationHandler =
     tc.kernelTransaction.securityAuthorizationHandler() // kernelExecutionContext.securityAuthorizationHandler()
 
+  override def accessMode: AccessMode = kernelExecutionContext.accessMode
+
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
   override def close(): Unit = {
+    if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
+      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s", this.getClass.getSimpleName, this)
+    }
     kernelExecutionContext.complete()
     kernelExecutionContext.close()
-    // tc and threadSafeCursors needs to be closed by external owner
+    // threadSafeCursors needs to be closed by external owner
   }
 
   override def kernelStatisticProvider: KernelStatisticProvider =

@@ -502,6 +502,8 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should unwind after union") {
+    assume(!isParallel)
+
     val size = sizeHint / 2
     // given
     val nodes = given {

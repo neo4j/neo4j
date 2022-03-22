@@ -70,7 +70,14 @@ class ClosingRuntimeResult(
       case t: Throwable =>
         this.error = t
         QuerySubscriber.safelyOnError(subscriber, t)
-        close()
+        try {
+          close()
+        } catch {
+          case t2: Throwable =>
+            t.addSuppressed(t2)
+            throw t
+        }
+
     }
   }
 
@@ -89,7 +96,12 @@ class ClosingRuntimeResult(
       moreData
     } catch {
       case t: Throwable =>
-        closeResources()
+        try {
+          closeResources()
+        } catch {
+          case t2: Throwable =>
+            t.addSuppressed(t2)
+        }
         throw t
     }
   }

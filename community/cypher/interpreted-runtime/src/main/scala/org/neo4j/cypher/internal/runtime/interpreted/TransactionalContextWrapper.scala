@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.profiling.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
+import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
 import org.neo4j.internal.kernel.api.CursorFactory
@@ -34,6 +35,7 @@ import org.neo4j.internal.kernel.api.Token
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
@@ -112,9 +114,14 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
   override def securityAuthorizationHandler: SecurityAuthorizationHandler =
     tc.kernelTransaction.securityAuthorizationHandler()
 
+  override def accessMode: AccessMode = tc.kernelTransaction.securityContext.mode
+
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
-  override def close(): Unit = tc.close()
+  override def close(): Unit = {
+    DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s", this.getClass.getSimpleName, this)
+    tc.close()
+  }
 
   override def kernelStatisticProvider: KernelStatisticProvider =
     ProfileKernelStatisticProvider(tc.kernelStatisticProvider())

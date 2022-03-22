@@ -82,13 +82,13 @@ import scala.collection.mutable.ArrayBuffer
  * This class contains various ugliness needed to perform physical compilation
  * and then execute a query.
  */
-class RuntimeTestSupport[CONTEXT <: RuntimeContext](
-  val graphDb: GraphDatabaseService,
-  val edition: Edition[CONTEXT],
-  val workloadMode: Boolean,
-  val logProvider: InternalLogProvider,
-  val debugOptions: CypherDebugOptions = CypherDebugOptions.default
-) extends RuntimeExecutionSupport[CONTEXT] {
+class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
+                                                    val edition: Edition[CONTEXT],
+                                                    val workloadMode: Boolean,
+                                                    val logProvider: InternalLogProvider,
+                                                    val debugOptions: CypherDebugOptions = CypherDebugOptions.default,
+                                                    val defaultTransactionType: Type = Type.EXPLICIT
+                                                   ) extends RuntimeExecutionSupport[CONTEXT] {
 
   private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val lifeSupport = new LifeSupport
@@ -113,21 +113,18 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     lifeSupport.shutdown()
   }
 
-  def getTransactionType: Type = Type.EXPLICIT
-
-  def startTx(): Unit = {
-    _tx = cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
+  def startTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
+    _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
 
-  def restartTx(transactionType: KernelTransaction.Type = getTransactionType): Unit = {
+  def restartTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
     _txContext.close()
     _tx.commit()
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
     _txContext = contextFactory.newContext(_tx, "<<queryText>>", VirtualValues.EMPTY_MAP)
   }
-
-  def rollbackAndRestartTx(transactionType: KernelTransaction.Type = getTransactionType): Unit = {
+  def rollbackAndRestartTx(transactionType: KernelTransaction.Type = defaultTransactionType): Unit = {
     _txContext.close()
     _tx.rollback()
     _tx = cypherGraphDb.beginTransaction(transactionType, LoginContext.AUTH_DISABLED)
@@ -149,7 +146,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   }
 
   def startNewTx(): InternalTransaction = {
-    cypherGraphDb.beginTransaction(getTransactionType, LoginContext.AUTH_DISABLED)
+    cypherGraphDb.beginTransaction(defaultTransactionType, LoginContext.AUTH_DISABLED)
   }
 
   def getLastClosedTransactionId: Long = {

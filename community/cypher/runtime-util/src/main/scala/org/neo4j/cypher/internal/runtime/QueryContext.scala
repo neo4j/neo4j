@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -95,15 +96,12 @@ import scala.collection.Iterator
  * The driver for this was clarifying who is responsible for ensuring query isolation. By exposing a query concept in
  * the core layer, we can move that responsibility outside of the scope of cypher.
  */
-trait QueryContext extends ReadQueryContext with WriteQueryContext {
-
-  def createParallelQueryContext(): QueryContext =
-    throw new UnsupportedOperationException("Not supported with parallel runtime.")
-}
+trait QueryContext extends ReadQueryContext with WriteQueryContext
 
 trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable {
 
   // See QueryContextAdaptation if you need a dummy that overrides all methods as ??? for writing a test
+  def createParallelQueryContext(): QueryContext = throw new UnsupportedOperationException("Not supported with parallel runtime.")
 
   def transactionalContext: QueryTransactionalContext
 
@@ -625,6 +623,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def securityContext: SecurityContext
 
   def securityAuthorizationHandler: SecurityAuthorizationHandler
+
+  def accessMode: AccessMode
 
   def isTopLevelTx: Boolean
 

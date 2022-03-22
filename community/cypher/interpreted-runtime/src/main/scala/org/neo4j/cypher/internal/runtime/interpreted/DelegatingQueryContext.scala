@@ -92,6 +92,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
+import org.neo4j.internal.kernel.api.security.AccessMode
 
 import java.net.URL
 
@@ -686,6 +687,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def securityContext: SecurityContext = inner.securityContext
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler = inner.securityAuthorizationHandler
+
+  override def accessMode: AccessMode = inner.accessMode
 
   override def memoryTracker: MemoryTracker = inner.memoryTracker
 
