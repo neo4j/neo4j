@@ -25,6 +25,7 @@ import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CloseListener
 import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.DefaultCloseListenable
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
@@ -33,10 +34,7 @@ import org.neo4j.memory.MemoryTracker
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-class ResourceManager(
-  val monitor: ResourceMonitor = ResourceMonitor.NOOP,
-  memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE
-) extends CloseableResource with CloseListener {
+class ResourceManager(val monitor: ResourceMonitor = ResourceMonitor.NOOP, memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE) extends DefaultCloseListenable with CloseListener {
   protected val resources: ResourcePool = new SingleThreadedResourcePool(INITIAL_CAPACITY, monitor, memoryTracker)
 
   /**
@@ -72,7 +70,9 @@ class ResourceManager(
 
   def allResources: Iterator[AutoCloseablePlus] = resources.all()
 
-  override def close(): Unit = resources.closeAll()
+  override def closeInternal(): Unit = resources.closeAll()
+
+  override def isClosed: Boolean = false // resources.closeAll() is idempotent
 }
 
 class ThreadSafeResourceManager(monitor: ResourceMonitor) extends ResourceManager(monitor) {

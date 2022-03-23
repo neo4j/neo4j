@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadQueryContext
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.ThreadSafeResourceManager
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.cypher.internal.runtime.ValuedNodeIndexCursor
 import org.neo4j.cypher.internal.runtime.ValuedRelationshipIndexCursor
@@ -480,18 +482,12 @@ private[internal] class TransactionBoundReadQueryContext(
   override def createParallelQueryContext(): QueryContext = {
     val newTransactionalContext = transactionalContext.createParallelTransactionalContext
 
-    // Create a single-threaded copy of ResourceManager
+    // Create a single-threaded copy of ResourceManager and attach it to the thread-safe resource manager
     val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(resources.isInstanceOf[ThreadSafeResourceManager])
+    resources.trace(newResourceManager)
 
-    val statement = newTransactionalContext.kernelTransactionalContext.statement()
-    statement.registerCloseableResource(newResourceManager)
-    val closeable: AutoCloseable = () => statement.unregisterCloseableResource(newResourceManager)
-
-    new ParallelTransactionBoundQueryContext(
-      newTransactionalContext,
-      newResourceManager,
-      Some(closeable)
-      )(indexSearchMonitor)
+    new ParallelTransactionBoundQueryContext(newTransactionalContext, newResourceManager)(indexSearchMonitor)
   }
 
   //We cannot assign to value because of periodic commit
