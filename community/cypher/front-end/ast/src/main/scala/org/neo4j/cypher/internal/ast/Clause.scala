@@ -413,7 +413,7 @@ case class Match(
       )
     }
 
-    val error: Option[SemanticCheck] = hints.collectFirst {
+    val error: Option[SemanticErrorDef] = hints.collectFirst {
       case hint @ UsingIndexHint(Variable(variable), LabelOrRelTypeName(labelOrRelTypeName), _, _, _)
         if !containsLabelOrRelTypePredicate(variable, labelOrRelTypeName) =>
         SemanticError(getMissingEntityKindError(variable, labelOrRelTypeName, hint), hint.position)
@@ -426,7 +426,7 @@ case class Match(
       case hint @ UsingJoinHint(_) if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
-    error.getOrElse(success).run(semanticState)
+    SemanticCheckResult(semanticState, error.toSeq)
   }
 
   private[ast] def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {

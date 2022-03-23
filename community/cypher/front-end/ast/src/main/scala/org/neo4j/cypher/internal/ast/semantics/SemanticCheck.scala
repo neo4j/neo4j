@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.util.InputPosition
 
 sealed trait SemanticCheck {
 
@@ -79,6 +80,7 @@ object SemanticCheckResult {
   def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult =
     SemanticCheckResult(state, Vector(error))
 
+  def error(state: SemanticState, msg: String, position: InputPosition): SemanticCheckResult = error(state, SemanticError(msg, position))
   def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult =
     SemanticCheckResult(state, error.toVector)
 }

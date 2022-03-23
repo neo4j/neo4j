@@ -88,7 +88,7 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
     def checkForExistsSubquery(where: Where): SemanticCheck = (state: SemanticState) => {
       val invalid: Option[Expression] = where.expression.folder.treeFind[Expression] { case _: ExistsSubClause => true }
-      invalid.map(exp => error("The EXISTS clause is not valid on SHOW commands.", exp.position).run(state))
+      invalid.map(exp => SemanticCheckResult.error(state, "The EXISTS clause is not valid on SHOW commands.", exp.position))
         .getOrElse(SemanticCheckResult.success(state))
     }
 
@@ -102,15 +102,11 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
 
       (maybePatternExpression, maybePatternComprehension) match {
         case (Some(patternExpression), _) =>
-          error(
-            "You cannot include a pattern expression in the RETURN of administration SHOW commands",
-            patternExpression.node.position
-          ).run(state)
+          SemanticCheckResult.error(
+            state, "You cannot include a pattern expression in the RETURN of administration SHOW commands", patternExpression.node.position)
         case (_, Some(patternComprehension)) =>
-          error(
-            "You cannot include a pattern comprehension in the RETURN of administration SHOW commands",
-            patternComprehension.node.position
-          ).run(state)
+          SemanticCheckResult.error(
+            state, "You cannot include a pattern comprehension in the RETURN of administration SHOW commands", patternComprehension.node.position)
         case _ =>
           SemanticCheckResult.success(state)
       }

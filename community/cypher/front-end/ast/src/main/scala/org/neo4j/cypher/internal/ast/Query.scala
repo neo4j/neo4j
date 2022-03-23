@@ -390,7 +390,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
         state.addNotification(SubqueryVariableShadowing(pos, varName))
     }
 
-    success.run(stateWithNotifications)
+    SemanticCheckResult.success(stateWithNotifications)
   }
 
   override def finalScope(scope: Scope): Scope =
