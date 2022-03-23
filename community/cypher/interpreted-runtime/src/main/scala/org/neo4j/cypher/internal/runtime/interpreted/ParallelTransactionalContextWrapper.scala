@@ -45,6 +45,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 
@@ -68,8 +69,8 @@ class ParallelTransactionalContextWrapper(
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 
-  override def memoryTracker: MemoryTracker =
-    tc.kernelTransaction.memoryTracker() // kernelExecutionContext.memoryTracker()
+  // TODO: We eventually want to support memory tracking through ThreadExecutionContext, but currently memory tracking is disabled in parallel runtime anyway
+  override def memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE // kernelExecutionContext.memoryTracker()
 
   override def locks: Locks = tc.kernelTransaction.locks() // kernelExecutionContext.locks()
 
