@@ -82,6 +82,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     public static BFSPruningVarExpandCursor outgoingExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -90,6 +91,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return outgoingExpander(
                 startNode,
                 null,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -101,6 +103,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     public static BFSPruningVarExpandCursor outgoingExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -109,12 +112,22 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
         return outgoingExpander(
-                startNode, null, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+                startNode,
+                null,
+                includeStartNode,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                nodeFilter,
+                relFilter,
+                memoryTracker);
     }
 
     public static BFSPruningVarExpandCursor outgoingExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -123,6 +136,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return outgoingExpander(
                 startNode,
                 types,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -135,6 +149,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     public static BFSPruningVarExpandCursor outgoingExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -143,11 +158,21 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
         return new OutgoingBFSPruningVarExpandCursor(
-                startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+                startNode,
+                types,
+                includeStartNode,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                nodeFilter,
+                relFilter,
+                memoryTracker);
     }
 
     public static BFSPruningVarExpandCursor incomingExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -156,6 +181,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return incomingExpander(
                 startNode,
                 null,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -167,6 +193,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     public static BFSPruningVarExpandCursor incomingExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -175,12 +202,22 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
         return incomingExpander(
-                startNode, null, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+                startNode,
+                null,
+                includeStartNode,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                nodeFilter,
+                relFilter,
+                memoryTracker);
     }
 
     public static BFSPruningVarExpandCursor incomingExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -189,6 +226,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return incomingExpander(
                 startNode,
                 types,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -201,6 +239,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     public static BFSPruningVarExpandCursor incomingExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -209,11 +248,21 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
         return new IncomingBFSPruningVarExpandCursor(
-                startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+                startNode,
+                types,
+                includeStartNode,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                nodeFilter,
+                relFilter,
+                memoryTracker);
     }
 
     public static BFSPruningVarExpandCursor allExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -222,6 +271,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return allExpander(
                 startNode,
                 null,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -233,6 +283,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     public static BFSPruningVarExpandCursor allExpander(
             long startNode,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -240,12 +291,23 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             LongPredicate nodeFilter,
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
-        return allExpander(startNode, null, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+        return allExpander(
+                startNode,
+                null,
+                includeStartNode,
+                maxDepth,
+                read,
+                nodeCursor,
+                cursor,
+                nodeFilter,
+                relFilter,
+                memoryTracker);
     }
 
     public static BFSPruningVarExpandCursor allExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -254,6 +316,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         return allExpander(
                 startNode,
                 types,
+                includeStartNode,
                 maxDepth,
                 read,
                 nodeCursor,
@@ -266,6 +329,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
     public static BFSPruningVarExpandCursor allExpander(
             long startNode,
             int[] types,
+            boolean includeStartNode,
             int maxDepth,
             Read read,
             NodeCursor nodeCursor,
@@ -273,8 +337,13 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             LongPredicate nodeFilter,
             Predicate<RelationshipTraversalCursor> relFilter,
             MemoryTracker memoryTracker) {
-        return new AllBFSPruningVarExpandCursor(
-                startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+        if (includeStartNode) {
+            return new AllBFSPruningVarExpandCursorIncludingStartNode(
+                    startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+        } else {
+            return new AllBFSPruningVarExpandCursor(
+                    startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+        }
     }
 
     /**
@@ -345,14 +414,24 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     private record NodeState(long nodeId, int depth) {}
 
+    private enum EmitState {
+        NO,
+        SHOULD_EMIT,
+        EMIT,
+        EMITTED
+    }
+
     private abstract static class DirectedBFSPruningVarExpandCursor extends BFSPruningVarExpandCursor {
         private int currentDepth;
+        private final long startNode;
         private final HeapTrackingLongHashSet seen;
         private final HeapTrackingArrayDeque<NodeState> queue;
+        private EmitState state;
 
         private DirectedBFSPruningVarExpandCursor(
                 long startNode,
                 int[] types,
+                boolean includeStartNode,
                 int maxDepth,
                 Read read,
                 NodeCursor nodeCursor,
@@ -361,14 +440,21 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 Predicate<RelationshipTraversalCursor> relFilter,
                 MemoryTracker memoryTracker) {
             super(types, maxDepth, read, nodeCursor, relCursor, nodeFilter, relFilter);
+            this.startNode = startNode;
             queue = HeapTrackingCollections.newArrayDeque(memoryTracker);
             seen = HeapTrackingCollections.newLongSet(memoryTracker);
             if (currentDepth < maxDepth) {
                 queue.offer(new NodeState(startNode, currentDepth));
             }
+
+            state = includeStartNode ? EmitState.SHOULD_EMIT : EmitState.NO;
         }
 
         public final boolean next() {
+            if (shouldIncludeStartNode()) {
+                return true;
+            }
+
             while (true) {
                 while (selectionCursor.next()) {
                     if (relFilter.test(selectionCursor)) {
@@ -377,6 +463,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                             if (currentDepth < maxDepth) {
                                 queue.offer(new NodeState(other, currentDepth));
                             }
+
                             return true;
                         }
                     }
@@ -391,7 +478,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
         @Override
         public long endNode() {
-            return selectionCursor.otherNodeReference();
+            return state == EmitState.EMIT ? startNode : selectionCursor.otherNodeReference();
         }
 
         @Override
@@ -402,6 +489,17 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
         protected abstract RelationshipTraversalCursor selectionCursor(
                 RelationshipTraversalCursor relCursor, NodeCursor nodeCursor, int[] types);
+
+        private boolean shouldIncludeStartNode() {
+            if (state == EmitState.SHOULD_EMIT) {
+                seen.add(startNode);
+                state = EmitState.EMIT;
+                return true;
+            } else if (state == EmitState.EMIT) {
+                state = EmitState.EMITTED;
+            }
+            return false;
+        }
 
         private boolean expand(NodeState next) {
             read.singleNode(next.nodeId(), nodeCursor);
@@ -419,6 +517,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         private OutgoingBFSPruningVarExpandCursor(
                 long startNode,
                 int[] types,
+                boolean includeStartNode,
                 int maxDepth,
                 Read read,
                 NodeCursor nodeCursor,
@@ -426,7 +525,17 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 LongPredicate nodeFilter,
                 Predicate<RelationshipTraversalCursor> relFilter,
                 MemoryTracker memoryTracker) {
-            super(startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+            super(
+                    startNode,
+                    types,
+                    includeStartNode,
+                    maxDepth,
+                    read,
+                    nodeCursor,
+                    cursor,
+                    nodeFilter,
+                    relFilter,
+                    memoryTracker);
         }
 
         @Override
@@ -440,6 +549,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         private IncomingBFSPruningVarExpandCursor(
                 long startNode,
                 int[] types,
+                boolean includeStartNode,
                 int maxDepth,
                 Read read,
                 NodeCursor nodeCursor,
@@ -447,7 +557,17 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 LongPredicate nodeFilter,
                 Predicate<RelationshipTraversalCursor> relFilter,
                 MemoryTracker memoryTracker) {
-            super(startNode, types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter, memoryTracker);
+            super(
+                    startNode,
+                    types,
+                    includeStartNode,
+                    maxDepth,
+                    read,
+                    nodeCursor,
+                    cursor,
+                    nodeFilter,
+                    relFilter,
+                    memoryTracker);
         }
 
         @Override
@@ -576,7 +696,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         private boolean checkAndDecreaseLoopCount() {
             if (loopCounter == 0) {
                 loopCounter = EMIT_START_NODE;
-                return nodeFilter.test(startNode);
+                return true;
             } else if (loopCounter > 0) {
                 loopCounter--;
             }
@@ -624,6 +744,99 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             prevFrontier.close();
             currFrontier.close();
             checkUniqueEndNodes.close();
+        }
+    }
+
+    private static class AllBFSPruningVarExpandCursorIncludingStartNode extends BFSPruningVarExpandCursor {
+        private int currentDepth;
+        private HeapTrackingLongHashSet prevFrontier;
+        private HeapTrackingLongHashSet currFrontier;
+        private final HeapTrackingLongHashSet seen;
+        private LongIterator currentExpand;
+        private final long startNode;
+        private EmitState state = EmitState.SHOULD_EMIT;
+
+        private AllBFSPruningVarExpandCursorIncludingStartNode(
+                long startNode,
+                int[] types,
+                int maxDepth,
+                Read read,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor cursor,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter,
+                MemoryTracker memoryTracker) {
+            super(types, maxDepth, read, nodeCursor, cursor, nodeFilter, relFilter);
+            this.startNode = startNode;
+            this.prevFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
+            this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
+            this.seen = HeapTrackingCollections.newLongSet(memoryTracker);
+        }
+
+        @Override
+        public final boolean next() {
+            if (state == EmitState.SHOULD_EMIT) {
+                expand(startNode);
+                seen.add(startNode);
+                state = EmitState.EMIT;
+                return true;
+            }
+            if (state == EmitState.EMIT) {
+                state = EmitState.EMITTED;
+            }
+
+            while (currentDepth < maxDepth) {
+                while (selectionCursor.next()) {
+                    if (relFilter.test(selectionCursor)) {
+                        long other = selectionCursor.otherNodeReference();
+                        if (seen.add(other) && nodeFilter.test(other)) {
+                            currFrontier.add(other);
+                            return true;
+                        }
+                    }
+                }
+
+                if (currentExpand != null && currentExpand.hasNext()) {
+                    if (!expand(currentExpand.next())) {
+                        return false;
+                    }
+                } else {
+                    swapFrontiers();
+                    currentDepth++;
+                }
+            }
+
+            return false;
+        }
+
+        @Override
+        public long endNode() {
+            return state == EmitState.EMIT ? startNode : selectionCursor.otherNodeReference();
+        }
+
+        private void swapFrontiers() {
+            var tmp = prevFrontier;
+            prevFrontier = currFrontier;
+            currentExpand = prevFrontier.longIterator();
+            currFrontier = tmp;
+            currFrontier.clear();
+        }
+
+        private boolean expand(long nodeId) {
+            read.singleNode(nodeId, nodeCursor);
+            if (nodeCursor.next()) {
+                selectionCursor = allCursor(relCursor, nodeCursor, types);
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        @Override
+        protected void closeMore() {
+            seen.close();
+            prevFrontier.close();
+            currFrontier.close();
         }
     }
 }

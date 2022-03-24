@@ -31,8 +31,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
@@ -92,11 +90,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asList(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asList(outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
         }
     }
 
@@ -140,11 +138,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = allExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asList(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
+            assertThat(asList(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
         }
     }
 
@@ -188,19 +186,29 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = outgoingExpander(
-                    start,
-                    26,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    n -> n != a3,
-                    Predicates.alwaysTrue(),
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asList(outgoingExpander(
+                            start,
+                            true,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            n -> n != a3,
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asList(outgoingExpander(
+                            start,
+                            false,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            n -> n != a3,
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
         }
     }
 
@@ -244,19 +252,29 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = allExpander(
-                    start,
-                    26,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    n -> n != a3,
-                    Predicates.alwaysTrue(),
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asList(allExpander(
+                            start,
+                            true,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            n -> n != a3,
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asList(allExpander(
+                            start,
+                            false,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            n -> n != a3,
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
         }
     }
 
@@ -300,20 +318,31 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = outgoingExpander(
-                    start,
-                    26,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    LongPredicates.alwaysTrue(),
-                    cursor -> cursor.relationshipReference() != filterThis
-                            && cursor.relationshipReference() != andFilterThat,
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asList(outgoingExpander(
+                            start,
+                            true,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != filterThis
+                                    && cursor.relationshipReference() != andFilterThat,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asList(outgoingExpander(
+                            start,
+                            false,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != filterThis
+                                    && cursor.relationshipReference() != andFilterThat,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -357,20 +386,31 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a4, rel, b4);
             write.relationshipCreate(a5, rel, b5);
 
-            // when
-            var expander = allExpander(
-                    start,
-                    26,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    LongPredicates.alwaysTrue(),
-                    cursor -> cursor.relationshipReference() != filterThis
-                            && cursor.relationshipReference() != andFilterThat,
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asList(allExpander(
+                            start,
+                            true,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != filterThis
+                                    && cursor.relationshipReference() != andFilterThat,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asList(allExpander(
+                            start,
+                            false,
+                            26,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != filterThis
+                                    && cursor.relationshipReference() != andFilterThat,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -401,7 +441,7 @@ class BFSPruningVarExpandCursorTest {
             long shouldNotCross = write.relationshipCreate(b3, rel, end);
 
             // when
-            var expander = outgoingExpander(start, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+            var expander = outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
             assertThat(asList(expander)).isEqualTo(List.of(a1, b1, a2, b2, end, b3));
@@ -415,11 +455,13 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 4));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph.nodes.subList(0, 4));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph.nodes.subList(1, 4));
         }
     }
 
@@ -430,11 +472,13 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = incomingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(7, 10));
+            assertThat(asList(incomingExpander(
+                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(graph.startNode(), graph.nodes.get(9), graph.nodes.get(8), graph.nodes.get(7)));
+            assertThat(asList(incomingExpander(
+                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(graph.nodes.get(9), graph.nodes.get(8), graph.nodes.get(7)));
         }
     }
 
@@ -445,14 +489,27 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = allExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander))
-                    .hasSameElementsAs(
-                            Stream.concat(graph.nodes.subList(7, 10).stream(), graph.nodes.subList(1, 4).stream())
-                                    .collect(Collectors.toList()));
+            assertThat(asList(
+                            allExpander(graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(
+                            graph.startNode(),
+                            graph.nodes.get(9),
+                            graph.nodes.get(1),
+                            graph.nodes.get(2),
+                            graph.nodes.get(8),
+                            graph.nodes.get(3),
+                            graph.nodes.get(7)));
+            assertThat(asList(allExpander(
+                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(
+                            graph.nodes.get(9),
+                            graph.nodes.get(1),
+                            graph.nodes.get(2),
+                            graph.nodes.get(8),
+                            graph.nodes.get(3),
+                            graph.nodes.get(7)));
         }
     }
 
@@ -472,12 +529,13 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, type1, end);
             write.relationshipCreate(start, type2, write.nodeCreate());
 
-            // when
-            var expander =
-                    outgoingExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(end));
+            assertThat(asList(outgoingExpander(
+                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, end));
+            assertThat(asList(outgoingExpander(
+                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(end));
         }
     }
 
@@ -497,12 +555,13 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(end, type1, start);
             write.relationshipCreate(write.nodeCreate(), type2, start);
 
-            // when
-            var expander =
-                    incomingExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(end));
+            assertThat(asList(incomingExpander(
+                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, end));
+            assertThat(asList(incomingExpander(
+                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(end));
         }
     }
 
@@ -522,11 +581,13 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, type1, end);
             write.relationshipCreate(start, type2, write.nodeCreate());
 
-            // when
-            var expander = allExpander(start, new int[] {type1}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEqualTo(List.of(end));
+            assertThat(asList(allExpander(
+                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, end));
+            assertThat(asList(allExpander(
+                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(end));
         }
     }
 
@@ -537,11 +598,25 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = outgoingExpander(graph.startNode(), 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).isEmpty();
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(graph.startNode()));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(incomingExpander(
+                            graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(graph.startNode()));
+            assertThat(asList(incomingExpander(
+                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(
+                            allExpander(graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(graph.startNode()));
+            assertThat(asList(allExpander(
+                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
         }
     }
 
@@ -563,8 +638,8 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(middleNode, type, end);
 
             // when
-            var expander =
-                    outgoingExpander(start, new int[] {type}, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+            var expander = outgoingExpander(
+                    start, new int[] {type}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
             assertThat(asList(expander)).hasSameElementsAs(List.of(middleNode, end));
@@ -578,11 +653,14 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander)).hasSameElementsAs(graph.dropStartNode());
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(graph.nodes());
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .hasSameElementsAs(graph.dropStartNode());
         }
     }
 
@@ -594,7 +672,8 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // when
-            var expander = outgoingExpander(graph.startNode(), 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+            var expander =
+                    outgoingExpander(graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
             assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 15));
@@ -608,19 +687,29 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = outgoingExpander(
-                    graph.startNode(),
-                    11,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    value -> value <= graph.nodes.get(5),
-                    Predicates.alwaysTrue(),
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 6));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(),
+                            true,
+                            11,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            value -> value <= graph.nodes.get(5),
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .hasSameElementsAs(graph.nodes.subList(0, 6));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(),
+                            false,
+                            11,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            value -> value <= graph.nodes.get(5),
+                            Predicates.alwaysTrue(),
+                            NO_TRACKING)))
+                    .hasSameElementsAs(graph.nodes.subList(1, 6));
         }
     }
 
@@ -631,19 +720,29 @@ class BFSPruningVarExpandCursorTest {
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            // when
-            var expander = outgoingExpander(
-                    graph.startNode(),
-                    11,
-                    tx.dataRead(),
-                    nodeCursor,
-                    relCursor,
-                    LongPredicates.alwaysTrue(),
-                    cursor -> cursor.relationshipReference() < graph.relationships.get(9),
-                    NO_TRACKING);
-
             // then
-            assertThat(asList(expander)).hasSameElementsAs(graph.nodes.subList(1, 10));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(),
+                            true,
+                            11,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() < graph.relationships.get(9),
+                            NO_TRACKING)))
+                    .isEqualTo(graph.nodes.subList(0, 10));
+            assertThat(asList(outgoingExpander(
+                            graph.startNode(),
+                            false,
+                            11,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() < graph.relationships.get(9),
+                            NO_TRACKING)))
+                    .isEqualTo(graph.nodes.subList(1, 10));
         }
     }
 
@@ -661,10 +760,12 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node2, rel, node1);
 
             // when
-            var expander = outgoingExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(asList(expander)).hasSameElementsAs(List.of(node2, node1));
+            assertThat(asList(outgoingExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(outgoingExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node2, node1));
         }
     }
 
@@ -682,11 +783,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node1, rel, node2);
 
             // then
-            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node2));
-            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node2));
         }
     }
@@ -703,11 +808,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node1, rel, node1);
 
             // then
-            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node1));
-            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1));
+            assertThat(asList(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1));
+            assertThat(asList(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node1));
         }
     }
@@ -726,11 +835,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node2, rel, node1);
 
             // then
-            assertThat(asList(allExpander(node1, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(node1, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node2));
-            assertThat(asList(allExpander(node1, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(node2, node1));
         }
     }
@@ -751,6 +864,18 @@ class BFSPruningVarExpandCursorTest {
             // then
             assertThat(asList(allExpander(
                             node1,
+                            true,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            cursor -> cursor.relationshipReference() != dontUse,
+                            NO_TRACKING)))
+                    .isEqualTo(List.of(node1, node2));
+            assertThat(asList(allExpander(
+                            node1,
+                            false,
                             2,
                             tx.dataRead(),
                             nodeCursor,
@@ -782,11 +907,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a, rel, c);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
         }
     }
@@ -812,11 +941,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a, rel, c);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, a));
         }
     }
@@ -842,11 +975,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, a);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, c, b));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(c, b));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, c, b));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(c, b, a));
         }
     }
@@ -872,48 +1009,20 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, c);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, a));
-        }
-    }
-
-    @Test
-    void shouldHandleTriangularLoopWithStartNodeFilteredOut() throws KernelException {
-        // given
-        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
-                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
-                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
-            Write write = tx.dataWrite();
-            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
-            //     (b)
-            //    / |
-            // (a)  |
-            //    \ |
-            //     (c)
-            long a = write.nodeCreate();
-            long b = write.nodeCreate();
-            long c = write.nodeCreate();
-            write.relationshipCreate(a, rel, b);
-            write.relationshipCreate(a, rel, c);
-            write.relationshipCreate(b, rel, c);
-
-            // then
-            assertThat(asList(allExpander(
-                            a,
-                            3,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            n -> n != a,
-                            Predicates.alwaysTrue(),
-                            NO_TRACKING)))
-                    .isEqualTo(List.of(b, c));
         }
     }
 
@@ -940,17 +1049,27 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, c);
 
             // then
-            assertThat(asList(allExpander(start, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(start, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a));
+            assertThat(asList(allExpander(start, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(a));
-            assertThat(asList(allExpander(start, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a, b, c));
+            assertThat(asList(allExpander(start, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(a, b, c));
-            assertThat(asList(allExpander(start, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a, b, c));
+            assertThat(asList(allExpander(start, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(a, b, c));
-            assertThat(asList(allExpander(start, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a, b, c));
+            assertThat(asList(allExpander(start, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(a, b, c));
-            assertThat(asList(allExpander(start, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(start, a, b, c));
+            assertThat(asList(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(a, b, c, start));
         }
     }
@@ -978,16 +1097,24 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(d, rel, c);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .hasSameElementsAs(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .hasSameElementsAs(List.of(b, c, d));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .hasSameElementsAs(List.of(b, c, d));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .hasSameElementsAs(List.of(b, c, d, a));
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d));
+            assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d));
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d));
+            assertThat(asList(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d));
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c, d, a));
         }
     }
 
@@ -1016,17 +1143,25 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, d);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d, e));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d, e));
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d, e));
+            assertThat(asList(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e, a));
         }
     }
@@ -1061,13 +1196,19 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b3, rel, c3);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b1, b2, b3));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b1, b2, b3, c1, c2, c3));
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3, c1, c2, c3));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b1, b2, b3, c1, c2, c3));
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, a));
         }
     }
@@ -1099,15 +1240,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, f);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d, e, f, a));
         }
     }
@@ -1140,17 +1281,21 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, g);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e, f, g));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e, f, g));
-            assertThat(asList(allExpander(a, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c, d, e, f, g));
+            assertThat(asList(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, d, e, f, g));
         }
     }
@@ -1173,15 +1318,54 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, b);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b));
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+        }
+    }
+
+    @Test
+    void shouldNotRetraceWhenALoopIsDetectedThatHasNoPathLeftToOriginOutGoing() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+            // (a) -> (b) <=> (c)
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(b, rel, c);
+            write.relationshipCreate(c, rel, b);
+
+            // then
+            assertThat(asList(outgoingExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEmpty();
+            assertThat(asList(outgoingExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b));
+            assertThat(asList(outgoingExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b));
+            assertThat(asList(outgoingExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(outgoingExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(b, c));
+            assertThat(asList(outgoingExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b, c));
+            assertThat(asList(outgoingExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c));
         }
     }
@@ -1202,15 +1386,17 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, b);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(List.of(a, b));
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
         }
     }
@@ -1234,15 +1420,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, b);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, a));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, a));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b, c, a));
         }
     }
@@ -1314,15 +1500,15 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b3, rel, c9);
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
-            assertThat(asList(allExpander(a, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
         }
     }
@@ -1359,13 +1545,13 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, d); // 7
 
             // then
-            assertThat(asList(allExpander(a, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEmpty();
-            assertThat(asList(allExpander(a, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d, e));
-            assertThat(asList(allExpander(a, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(asList(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .hasSameElementsAs(List.of(b, c, d, e, a));
         }
     }

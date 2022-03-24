@@ -67,7 +67,7 @@ case class BFSPruningVarLengthExpandPipe(
           row.getByName(fromName) match {
             case node: VirtualNodeValue =>
               if (filteringStep.filterNode(row, state)(node)) {
-                val (nodePredicate, relationshipPredicate) = createPredicates(state, node.id(), row)
+                val (nodePredicate, relationshipPredicate) = createPredicates(state, row)
                 val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
                 val expand = bfsIterator(
                   state.query,
@@ -100,23 +100,14 @@ case class BFSPruningVarLengthExpandPipe(
 
   private def createPredicates(
     state: QueryState,
-    node: Long,
     row: CypherRow
   ): (LongPredicate, Predicate[RelationshipTraversalCursor]) = {
     def toLongPredicate(f: Long => Boolean): LongPredicate = (value: Long) => f(value)
     filteringStep match {
       case VarLengthPredicate.NONE =>
-        (
-          if (includeStartNode) toLongPredicate(_ != node) else LongPredicates.alwaysTrue(),
-          Predicates.alwaysTrue[RelationshipTraversalCursor]()
-        )
+        (LongPredicates.alwaysTrue(), Predicates.alwaysTrue[RelationshipTraversalCursor]())
       case _ =>
-        val nodePredicate =
-          if (includeStartNode) {
-            toLongPredicate(t => t != node && filteringStep.filterNode(row, state)(VirtualValues.node(t)))
-          } else {
-            toLongPredicate(t => filteringStep.filterNode(row, state)(VirtualValues.node(t)))
-          }
+        val nodePredicate = toLongPredicate(t => filteringStep.filterNode(row, state)(VirtualValues.node(t)))
         val relationshipPredicate = new Predicate[RelationshipTraversalCursor] {
           override def test(t: RelationshipTraversalCursor): Boolean = {
             filteringStep.filterRelationship(row, state)(relationship(
@@ -155,6 +146,7 @@ object BFSPruningVarLengthExpandPipe {
         outgoingExpander(
           node,
           types.types(query),
+          includeStartNode,
           max,
           query.transactionalContext.dataRead,
           nodeCursor,
@@ -167,6 +159,7 @@ object BFSPruningVarLengthExpandPipe {
         incomingExpander(
           node,
           types.types(query),
+          includeStartNode,
           max,
           query.transactionalContext.dataRead,
           nodeCursor,
@@ -179,6 +172,7 @@ object BFSPruningVarLengthExpandPipe {
         allExpander(
           node,
           types.types(query),
+          includeStartNode,
           max,
           query.transactionalContext.dataRead,
           nodeCursor,
@@ -190,11 +184,9 @@ object BFSPruningVarLengthExpandPipe {
     }
     query.resources.trace(nodeCursor)
     query.resources.trace(traversalCursor)
-    val iterator = new PrimitiveCursorIterator {
+    new PrimitiveCursorIterator {
       override protected def fetchNext(): Long = if (cursor.next()) cursor.endNode() else -1L
       override def close(): Unit = IOUtils.closeAll(nodeCursor, traversalCursor)
     }
-    if (includeStartNode) ClosingLongIterator.prepend(node, iterator)
-    else iterator
   }
 }
