@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader.DatabaseNotCleanlyShutDownException;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -75,32 +74,31 @@ public class LogsMigrator
 
     public void assertCleanlyShutDown()
     {
-        Throwable suppressibleException = null;
-        var logTail = logTailSupplier.get();
+        LogTailMetadata logTail;
+
         try
         {
-            if ( !logTail.isRecoveryRequired() )
-            {
-                // All good
-                return;
-            }
-            if ( logTail.logsMissing() && !config.get( fail_on_missing_files ) )
-            {
-                // We don't have any log files, but we were told to ignore this.
-                return;
-            }
+            logTail = logTailSupplier.get();
         }
         catch ( Throwable throwable )
         {
-            // ignore exception and throw db not cleanly shutdown
-            suppressibleException = throwable;
+            throw new UnableToMigrateException( "Failed to verify the transaction logs. This most likely means that the transaction logs are corrupted.",
+                    throwable );
         }
-        DatabaseNotCleanlyShutDownException exception = upgradeException( logTail );
-        if ( suppressibleException != null )
+        if ( logTail.logsMissing() )
         {
-            exception.addSuppressed( suppressibleException );
+            if ( config.get( fail_on_missing_files ) )
+            {
+                throw new UnableToMigrateException( "Transaction logs not found" );
+            }
+            return;
         }
-        throw exception;
+        if ( logTail.isRecoveryRequired() )
+        {
+            throw new UnableToMigrateException( "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
+                    + "please run the version of the DBMS you are migrating from on this store." );
+        }
+        // all good
     }
 
     public void upgrade( DatabaseLayout layout ) throws IOException
@@ -142,10 +140,5 @@ public class LogsMigrator
     {
         return storageEngineFactoryToMigrateTo.transactionMetaDataStore( fs, databaseLayout, config, pageCache, DatabaseReadOnlyChecker.readOnly(),
                 contextFactory, logTailSupplier.get() );
-    }
-
-    private static DatabaseNotCleanlyShutDownException upgradeException( LogTailMetadata tail )
-    {
-        return tail == null ? new DatabaseNotCleanlyShutDownException() : new DatabaseNotCleanlyShutDownException( tail );
     }
 }

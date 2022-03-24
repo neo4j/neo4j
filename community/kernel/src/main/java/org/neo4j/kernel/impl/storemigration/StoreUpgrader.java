@@ -417,21 +417,4 @@ public class StoreUpgrader
             super( String.format( MESSAGE, GraphDatabaseSettings.record_format.name() ) );
         }
     }
-
-    public static class DatabaseNotCleanlyShutDownException extends UnableToUpgradeException
-    {
-        private static final String DEFAULT_MESSAGE =
-                "The database is not cleanly shutdown. The database needs recovery, in order to recover the database, "
-                + "please run the old version of the database on this store.";
-
-        DatabaseNotCleanlyShutDownException()
-        {
-            super( DEFAULT_MESSAGE );
-        }
-
-        DatabaseNotCleanlyShutDownException( LogTailMetadata logTail )
-        {
-            super( DEFAULT_MESSAGE + " Log tail: " + logTail );
-        }
-    }
 }
