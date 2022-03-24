@@ -306,9 +306,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 }
             }
             fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
-                    ExistingTargetStrategy.SKIP );
-
-            fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
                            ExistingTargetStrategy.SKIP );
             MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
                     migrationLayout.getDatabaseName(), cursorContext );
