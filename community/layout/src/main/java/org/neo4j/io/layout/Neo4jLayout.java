@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileUtils;
 
 import static java.util.Collections.emptyList;
@@ -93,7 +94,7 @@ public final class Neo4jLayout
         return of( Config.defaults( GraphDatabaseSettings.neo4j_home, FileUtils.getCanonicalFile( homeDirectory ).toAbsolutePath() ) );
     }
 
-    public static Neo4jLayout of( Config config )
+    public static Neo4jLayout of( Configuration config )
     {
         var homeDirectory = config.get( GraphDatabaseSettings.neo4j_home );
         var dataDirectory = config.get( GraphDatabaseSettings.data_directory );

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 import picocli.CommandLine;
 
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -171,14 +172,14 @@ class Neo4jCommand extends BootloaderCommand
     {
         Neo4jBootloaderContext()
         {
-            super( EntryPoint.serviceloadEntryPoint() );
+            super( EntryPoint.serviceloadEntryPoint(), BootloaderExtension.serviceLoadExtensions() );
         }
 
         @VisibleForTesting
         Neo4jBootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
-                Class<? extends EntryPoint> entrypoint, Runtime.Version version )
+                Class<? extends EntryPoint> entrypoint, Runtime.Version version, Collection<BootloaderExtension> extensions )
         {
-            super( out, err, envLookup, propLookup, entrypoint, version );
+            super( out, err, envLookup, propLookup, entrypoint, version, extensions );
         }
 
         @Override

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.parallel.Isolated;
 
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,7 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 
 import static java.lang.System.currentTimeMillis;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
@@ -147,9 +149,8 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
     private void printVerboseWindowsDebugInformation()
     {
         PrintStream err = new PrintStream( this.err );
-        Neo4jCommand.Neo4jBootloaderContext bootloaderContext =
-                new Neo4jCommand.Neo4jBootloaderContext( new PrintStream( out ), err, System::getenv, System::getProperty, entrypoint(),
-                        Runtime.version() );
+        var bootloaderContext = new Neo4jCommand.Neo4jBootloaderContext( new PrintStream( out ), err, System::getenv, System::getProperty, entrypoint(),
+                                                                         Runtime.version(), List.of() );
         bootloaderContext.init( false, false );
         WindowsBootloaderOs windows = (WindowsBootloaderOs) BootloaderOsAbstraction.getOsAbstraction( bootloaderContext );
         try
@@ -176,7 +177,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase
         int startSig = execute( List.of( "start" ), Map.of( Bootloader.ENV_NEO4J_START_WAIT, "3" ) );
         assertThat( startSig ).isEqualTo( EXIT_CODE_OK );
         assertEventually( this::getDebugLogLines,
-                          s -> s.contains( String.format( "VM Arguments: [-Xms%dk, -Xmx%dk", initialHeapSize * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
+                          s -> s.contains( String.format( "-Xms%dk, -Xmx%dk", initialHeapSize * 1024, MAX_HEAP_MB * 1024 ) ), 5, MINUTES );
         assertEventually( this::getDebugLogLines, s -> s.contains( getVersion() + "NeoWebServer] ========" ), 5, MINUTES );
         assertEventually( this::getUserLogLines, s -> s.contains( "Remote interface available at" ), 5, MINUTES );
         assertThat( execute( "stop" ) ).isEqualTo( EXIT_CODE_OK );

@@ -130,7 +130,7 @@ public final class ProcessUtil
         // Classpath can get very long and that can upset Windows, so write it to a file
         Path p = Files.createTempFile( "jvm", ".args" );
         p.toFile().deleteOnExit();
-        Files.writeString( p, systemProperties() + " -cp " + getClassPath(), StandardCharsets.UTF_8 );
+        Files.writeString( p, systemProperties() + "-cp " + wrapSpaces( getClassPath() ), StandardCharsets.UTF_8 );
 
         args.add( "@" + p.normalize() );
         args.addAll( Arrays.asList( arguments ) );
@@ -163,5 +163,10 @@ public final class ProcessUtil
     private static String systemProperty( String key, String value )
     {
         return "-D" + key + "=" + value;
+    }
+
+    private static String wrapSpaces( String value )
+    {
+        return value.replace( " ", "\" \"" );
     }
 }

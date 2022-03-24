@@ -149,7 +149,7 @@ abstract class Neo4jCommandTestBase extends BootloaderCommandTestBase
     protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
             Runtime.Version version )
     {
-        Neo4jCommand.Neo4jBootloaderContext ctx = new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version );
+        var ctx = new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version, List.of() );
         return Neo4jCommand.asCommandLine( ctx );
     }
 

@@ -123,7 +123,7 @@ class Neo4jAdminCommand extends BootloaderCommand implements Callable<Integer>, 
         Neo4jAdminBootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
                 Runtime.Version version )
         {
-            super( out, err, envLookup, propLookup, entrypoint, version );
+            super( out, err, envLookup, propLookup, entrypoint, version, List.of() );
         }
 
         @Override

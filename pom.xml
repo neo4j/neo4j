@@ -1327,7 +1327,6 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-math3</artifactId>
-        <scope>test</scope>
         <version>3.6.1</version>
       </dependency>
       <dependency>

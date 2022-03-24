@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -39,8 +40,10 @@ import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.server.startup.BootloaderExtension.BootloaderArguments;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
@@ -102,18 +105,29 @@ abstract class BootloaderOsAbstraction
 
     protected List<String> buildStandardStartArguments()
     {
-        return buildBaseArguments()
+        var extensionContext = new BootloaderExtension.ExtensionContext( ctx.config(), ctx.out, ctx.err );
+        var extensionArguments = ctx.extensions.stream().map( e -> e.getBootloaderArguments( extensionContext ) ).toList();
+        var extensionJvmOptions = extensionArguments.stream().map( BootloaderArguments::jvmOptions ).flatMap( Collection::stream ).toList();
+        var extensionAdditionalArgs =
+                extensionArguments.stream().map( BootloaderArguments::additionalArguments ).flatMap( Collection::stream ).toList();
+        return buildBaseArguments( extensionJvmOptions )
                 .with( "--home-dir=" + ctx.home() )
                 .with( "--config-dir=" + ctx.confDir() )
-                .withAll( ctx.additionalArgs );
+                .withAll( ctx.additionalArgs )
+                .withAll( extensionAdditionalArgs );
     }
 
     private MutableList<String> buildBaseArguments()
     {
+        return buildBaseArguments( emptyList() );
+    }
+
+    private MutableList<String> buildBaseArguments( List<String> extensionJvmOptions )
+    {
         return Lists.mutable
                 .with( getJavaCmd() )
                 .with( "-cp" ).with( getClassPath() )
-                .withAll( getJvmOpts() )
+                .withAll( getJvmOpts( extensionJvmOptions ) )
                 .with( ctx.entrypoint.getName() );
     }
 
@@ -202,7 +216,7 @@ abstract class BootloaderOsAbstraction
         return Math.max( bytes / ByteUnit.kibiBytes( 1 ), 1 ) + "k";
     }
 
-    protected List<String> getJvmOpts()
+    protected List<String> getJvmOpts( List<String> extensionJvmOptions )
     {
         // If JAVA_OPTS is provided, it has the highest priority
         // and we just use that as it is without any modification
@@ -215,44 +229,25 @@ abstract class BootloaderOsAbstraction
                 ctx.err.println( "WARNING! HEAP_SIZE is ignored, because JAVA_OPTS is set" );
             }
 
+            if ( !extensionJvmOptions.isEmpty() )
+            {
+                ctx.err.println( "WARNING! Extension provided JVM options are ignored, because JAVA_OPTS is set" );
+            }
+
             // We need to turn a list of JVM options provided as one string into a list of individual options.
             // We don't have a code that does exactly that, but SettingValueParsers.JVM_ADDITIONAL turns
             // options provided as one string into a 'list' of individual options separated by a new line.
             return List.of( SettingValueParsers.JVM_ADDITIONAL.parse( envJavaOptions ).split( System.lineSeparator() ) );
         }
 
-        return buildJvmOpts();
+        return buildJvmOpts( extensionJvmOptions );
     }
 
-    private List<String> buildJvmOpts()
+    private List<String> buildJvmOpts( List<String> extensionJvmOptions )
     {
         MutableList<String> opts = Lists.mutable.empty();
-        String xmsValue;
-        String xmxValue;
-        String envHeapSize = ctx.getEnv( ENV_HEAP_SIZE );
-        Configuration config = ctx.config();
-        if ( isNotEmpty( envHeapSize ) )
-        {
-            // HEAP_SIZE env. variable has highest priority
-            xmsValue = envHeapSize;
-            xmxValue = envHeapSize;
-        }
-        else
-        {
-            Long xmsConfigValue = config.get( initial_heap_size );
-            Long xmxConfigValue = config.get( max_heap_size );
-            xmsValue = xmsConfigValue != null ? bytesToSuitableJvmString( xmsConfigValue ) : null;
-            xmxValue = xmxConfigValue != null ? bytesToSuitableJvmString( xmxConfigValue ) : null;
-        }
-        if ( xmsValue != null )
-        {
-            opts.with( "-Xms" + xmsValue );
-        }
-        if ( xmxValue != null )
-        {
-            opts.with( "-Xmx" + xmxValue );
-        }
 
+        var config = ctx.config();
         String jvmAdditionals = config.get( BootloaderSettings.additional_jvm );
         if ( isNotEmpty( jvmAdditionals ) )
         {
@@ -262,14 +257,54 @@ abstract class BootloaderOsAbstraction
         if ( config.get( BootloaderSettings.gc_logging_enabled ) )
         {
             opts.with( String.format( "%s:file=%s::filecount=%s,filesize=%s",
-                    config.get( BootloaderSettings.gc_logging_options ),
-                    config.get( GraphDatabaseSettings.logs_directory ).resolve( "gc.log" ),
-                    config.get( BootloaderSettings.gc_logging_rotation_keep_number ),
-                    bytesToSuitableJvmString( config.get( BootloaderSettings.gc_logging_rotation_size ) )
+                                      config.get( BootloaderSettings.gc_logging_options ),
+                                      config.get( GraphDatabaseSettings.logs_directory ).resolve( "gc.log" ),
+                                      config.get( BootloaderSettings.gc_logging_rotation_keep_number ),
+                                      bytesToSuitableJvmString( config.get( BootloaderSettings.gc_logging_rotation_size ) )
             ) );
         }
         opts.with( "-Dfile.encoding=UTF-8" );
+        opts.withAll( extensionJvmOptions );
+        // heap settings appended at the end so HEAP_SIZE env variable can override extension options
+        selectHeapSettings( opts, extensionJvmOptions );
         return opts;
+    }
+
+    private void selectHeapSettings( MutableList<String> opts, List<String> extensionJvmOptions )
+    {
+        String envHeapSize = ctx.getEnv( ENV_HEAP_SIZE );
+        if ( isNotEmpty( envHeapSize ) )
+        {
+            // HEAP_SIZE env. variable has highest priority
+            opts.with( "-Xms" + envHeapSize )
+                .with( "-Xmx" + envHeapSize );
+            return;
+        }
+
+        var config = ctx.config();
+        var extensionHasMs = extensionJvmOptions.stream().anyMatch( o -> o.startsWith( "-Xms" ) );
+        var extensionHasMx = extensionJvmOptions.stream().anyMatch( o -> o.startsWith( "-Xmx" ) );
+
+        // Extension heap options is the next priority, skip reading config if there is setting from extension
+        if ( !extensionHasMs )
+        {
+            Long xmsConfigValue = config.get( initial_heap_size );
+            var xmsValue = xmsConfigValue != null ? bytesToSuitableJvmString( xmsConfigValue ) : null;
+            if ( xmsValue != null )
+            {
+                opts.with( "-Xms" + xmsValue );
+            }
+        }
+
+        if ( !extensionHasMx )
+        {
+            Long xmxConfigValue = config.get( max_heap_size );
+            var xmxValue = xmxConfigValue != null ? bytesToSuitableJvmString( xmxConfigValue ) : null;
+            if ( xmxValue != null )
+            {
+                opts.with( "-Xmx" + xmxValue );
+            }
+        }
     }
 
     protected String getClassPath()

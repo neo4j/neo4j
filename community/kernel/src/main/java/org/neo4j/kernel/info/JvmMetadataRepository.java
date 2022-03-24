@@ -19,11 +19,20 @@
  */
 package org.neo4j.kernel.info;
 
+import jdk.jfr.Configuration;
+import jdk.jfr.FlightRecorder;
+import jdk.jfr.consumer.RecordingStream;
+
+import java.io.IOException;
 import java.lang.Runtime.Version;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.lang.management.RuntimeMXBean;
+import java.text.ParseException;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class JvmMetadataRepository
 {
@@ -46,5 +55,33 @@ public class JvmMetadataRepository
     public MemoryUsage getHeapMemoryUsage()
     {
         return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage();
+    }
+
+    public long getReservedCodeCacheSize()
+    {
+        AtomicLong reservedSize = new AtomicLong( -1 );
+        try ( var rs = new RecordingStream( Configuration.getConfiguration( "default" ) ) )
+        {
+
+            var latch = new CountDownLatch( 1 );
+            rs.onEvent( "jdk.CodeCacheConfiguration", event ->
+            {
+                try
+                {
+                     reservedSize.set( event.getLong( "reservedSize" ) );
+                }
+                finally
+                {
+                    latch.countDown();
+                }
+            } );
+            rs.startAsync();
+            latch.await( 10, TimeUnit.SECONDS );
+        }
+        catch ( IOException | ParseException | InterruptedException e )
+        {
+            // ignore
+        }
+        return reservedSize.get();
     }
 }

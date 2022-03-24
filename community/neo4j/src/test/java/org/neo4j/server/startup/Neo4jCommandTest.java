@@ -70,6 +70,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
+import static org.neo4j.server.startup.Bootloader.ENV_JAVA_OPTS;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_NOT_RUNNING;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_RUNNING;
@@ -466,7 +467,7 @@ class Neo4jCommandTest
         protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
                 Runtime.Version version )
         {
-            Neo4jCommand.Neo4jBootloaderContext ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version ) );
+            var ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup, entrypoint(), version, List.of() ) );
             ProcessManager pm = new FakeProcessManager( config, ctx, handler, TestEntryPoint.class );
             doAnswer( inv -> pm ).when( ctx ).processManager();
             return Neo4jCommand.asCommandLine( ctx );
@@ -515,6 +516,82 @@ class Neo4jCommandTest
         protected Class<? extends EntryPoint> entrypoint()
         {
             return TestEntryPoint.class;
+        }
+    }
+
+    abstract static class Neo4jCommandTestWithExtensionBase extends Neo4jCommandTestBase
+    {
+        private final ProcessHandler handler = new ProcessHandler();
+        private final BootloaderExtension extension;
+
+        Neo4jCommandTestWithExtensionBase( BootloaderExtension extension )
+        {
+            this.extension = extension;
+        }
+
+        @Override
+        protected CommandLine createCommand( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+                                             Runtime.Version version )
+        {
+            var ctx = spy( new Neo4jCommand.Neo4jBootloaderContext( out, err, envLookup, propLookup,
+                                                                    entrypoint(), version, List.of( extension ) ) );
+            ProcessManager pm = new FakeProcessManager( config, ctx, handler, TestEntryPoint.class );
+            doAnswer( inv -> pm ).when( ctx ).processManager();
+            return Neo4jCommand.asCommandLine( ctx );
+        }
+
+        @Override
+        protected Class<? extends EntryPoint> entrypoint()
+        {
+            return TestEntryPoint.class;
+        }
+    }
+
+    @Nested
+    class UsingFakeProcessWithExtension extends Neo4jCommandTestWithExtensionBase
+    {
+        UsingFakeProcessWithExtension()
+        {
+            super( config -> new BootloaderExtension.BootloaderArguments( List.of( "-Xmx38m", "-Xms26m" ), List.of( "-TestAdditionalArgument" ) ) );
+        }
+
+        @Test
+        void consoleShouldIncludeParametersFromExtension()
+        {
+            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        }
+
+        @Test
+        void consoleDryRunShouldIncludeParametersFromExtension()
+        {
+            assertThat( execute( "console", "--dry-run" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        }
+
+        // bootloader extension isn't fully supported when starting windows service
+        @DisabledOnOs( OS.WINDOWS )
+        @Test
+        void startShouldIncludeParametersFromExtension()
+        {
+            assertThat( execute( "start" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        }
+
+        @Test
+        void extensionHeapOptionsShouldOverrideConfig()
+        {
+            addConf( BootloaderSettings.max_heap_size, "66m" );
+            addConf( BootloaderSettings.initial_heap_size, "49m" );
+            assertThat( execute( "console" ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() ).contains( "-Xmx38m", "-Xms26m", "-TestAdditionalArgument" );
+        }
+
+        @Test
+        void envJavaOptsShouldOverrideExtensionOpts()
+        {
+            assertThat( execute( List.of( "console" ), Map.of( ENV_JAVA_OPTS, "-Xmx33m" ) ) ).isEqualTo( EXIT_CODE_OK );
+            assertThat( out.toString() ).contains( "-Xmx33m", "-TestAdditionalArgument" ).doesNotContain( "-Xms26m" );
         }
     }
 

@@ -24,6 +24,7 @@ import org.eclipse.collections.api.factory.Lists;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -55,6 +56,7 @@ abstract class BootloaderContext
     private final Function<String,String> envLookup;
     private final Function<String,String> propLookup;
     private final Runtime.Version version;
+    final Collection<BootloaderExtension> extensions;
 
     //init
     private boolean initiated;
@@ -72,11 +74,16 @@ abstract class BootloaderContext
 
     protected BootloaderContext( Class<?> entrypoint )
     {
-        this( System.out, System.err, System::getenv, System::getProperty, entrypoint, Runtime.version() );
+        this( entrypoint, List.of() );
     }
 
-    protected BootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup, Class<?> entrypoint,
-            Runtime.Version version )
+    protected BootloaderContext( Class<?> entrypoint, Collection<BootloaderExtension> extensions )
+    {
+        this( System.out, System.err, System::getenv, System::getProperty, entrypoint, Runtime.version(), extensions );
+    }
+
+    protected BootloaderContext( PrintStream out, PrintStream err, Function<String,String> envLookup, Function<String,String> propLookup,
+                                 Class<?> entrypoint, Runtime.Version version, Collection<BootloaderExtension> extensions )
     {
         this.out = out;
         this.err = err;
@@ -84,6 +91,7 @@ abstract class BootloaderContext
         this.propLookup = propLookup;
         this.entrypoint = entrypoint;
         this.version = version;
+        this.extensions = extensions;
     }
 
     String getEnv( String key )
