@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,10 +56,10 @@ import static org.neo4j.memory.HeapEstimator.alignObjectSize;
  * blocks to store its data.
  * <p>
  * A dynamic store don't have a {@link IdGenerator} because the position of a
- * record can't be calculated just by knowing the id. Instead one should use
+ * record can't be calculated just by knowing the id. Instead, one should use
  * another store and store the start block of the record located in the
  * dynamic store. Note: This class makes use of an id generator internally for
- * managing free and non free blocks.
+ * managing free and non-free blocks.
  * <p>
  * Note, the first block of a dynamic store is reserved and contains information
  * about the store.
@@ -142,32 +141,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             assert record.getData() != null;
         }
         while ( nextRecord != null );
-    }
-
-    /**
-     * @return a {@link ByteBuffer#slice() sliced} {@link ByteBuffer} wrapping {@code target} or,
-     * if necessary a new larger {@code byte[]} and containing exactly all concatenated data read from records
-     */
-    public static ByteBuffer concatData( Collection<DynamicRecord> records, byte[] target )
-    {
-        int totalLength = 0;
-        for ( DynamicRecord record : records )
-        {
-            totalLength += record.getLength();
-        }
-
-        if ( target.length < totalLength )
-        {
-            target = new byte[totalLength];
-        }
-
-        ByteBuffer buffer = ByteBuffer.wrap( target, 0, totalLength );
-        for ( DynamicRecord record : records )
-        {
-            buffer.put( record.getData() );
-        }
-        buffer.position( 0 );
-        return buffer;
     }
 
     /**
