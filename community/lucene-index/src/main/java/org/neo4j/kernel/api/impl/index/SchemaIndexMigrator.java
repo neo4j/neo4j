@@ -50,20 +50,17 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final IndexDirectoryStructure indexDirectoryStructure;
     private final StorageEngineFactory storageEngineFactory;
-    private final boolean checkIndexCapabilities;
     private final CursorContextFactory contextFactory;
-    private boolean deleteAllIndexes;
     private boolean deleteRelationshipIndexes;
 
     public SchemaIndexMigrator( String name, FileSystemAbstraction fileSystem, PageCache pageCache, IndexDirectoryStructure indexDirectoryStructure,
-            StorageEngineFactory storageEngineFactory, boolean checkIndexCapabilities, CursorContextFactory contextFactory )
+                                StorageEngineFactory storageEngineFactory, CursorContextFactory contextFactory )
     {
         super( name );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.indexDirectoryStructure = indexDirectoryStructure;
         this.storageEngineFactory = storageEngineFactory;
-        this.checkIndexCapabilities = checkIndexCapabilities;
         this.contextFactory = contextFactory;
     }
 
@@ -71,7 +68,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             StoreVersion fromVersion, StoreVersion toVersion, IndexImporterFactory indexImporterFactory, LogTailMetadata tailMetadata )
     {
-        deleteAllIndexes = checkIndexCapabilities && !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.INDEX );
         deleteRelationshipIndexes = !fromVersion.hasCompatibleCapabilities( toVersion, CapabilityType.FORMAT );
     }
 
@@ -82,11 +78,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         Path schemaIndexDirectory = indexDirectoryStructure.rootDirectory();
         if ( schemaIndexDirectory != null )
         {
-            if ( deleteAllIndexes )
-            {
-                deleteIndexes( schemaIndexDirectory );
-            }
-            else if ( deleteRelationshipIndexes )
+            if ( deleteRelationshipIndexes )
             {
                 deleteRelationshipIndexes( directoryLayout );
             }
@@ -97,11 +89,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     public void cleanup( DatabaseLayout migrationLayout )
     {
         // nop
-    }
-
-    private void deleteIndexes( Path indexRootDirectory ) throws IOException
-    {
-        fileSystem.deleteRecursively( indexRootDirectory );
     }
 
     private void deleteRelationshipIndexes( DatabaseLayout databaseLayout ) throws IOException

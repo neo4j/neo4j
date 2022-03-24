@@ -149,8 +149,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory )
     {
-        return new SchemaIndexMigrator( getProviderDescriptor().name() + " indexes", fs, pageCache, directoryStructure(), storageEngineFactory, false,
-                contextFactory );
+        return new SchemaIndexMigrator( getProviderDescriptor().name() + " indexes", fs, pageCache, directoryStructure(), storageEngineFactory,
+                                        contextFactory );
     }
 
     private Path storeFile( IndexDescriptor descriptor )

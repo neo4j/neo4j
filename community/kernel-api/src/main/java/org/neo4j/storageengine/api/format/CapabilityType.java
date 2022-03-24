@@ -22,8 +22,5 @@ package org.neo4j.storageengine.api.format;
 public enum CapabilityType
 {
     FORMAT,
-    STORE,
-    INDEX,
-    INDEX_PROVIDER,
-    INDEX_CONFIG;
+    STORE
 }

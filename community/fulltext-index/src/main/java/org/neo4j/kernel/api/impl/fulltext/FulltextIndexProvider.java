@@ -299,8 +299,8 @@ public class FulltextIndexProvider extends IndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory,
             CursorContextFactory contextFactory )
     {
-        return new SchemaIndexMigrator( "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory, true,
-                contextFactory );
+        return new SchemaIndexMigrator( "Fulltext indexes", fs, pageCache, this.directoryStructure(), storageEngineFactory,
+                                        contextFactory );
     }
 
     @Override

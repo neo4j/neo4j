@@ -506,8 +506,8 @@ public class StoreUpgraderTest
                 contextFactory, batchImporterFactory, INSTANCE );
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
         SchemaIndexMigrator indexMigrator =
-                new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory, true,
-                        contextFactory );
+                new SchemaIndexMigrator( "Indexes", fileSystem, pageCache, IndexProvider.EMPTY.directoryStructure(), storageEngineFactory,
+                                         contextFactory );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new Monitors() );

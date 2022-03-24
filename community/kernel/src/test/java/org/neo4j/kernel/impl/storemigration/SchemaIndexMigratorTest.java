@@ -23,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +37,6 @@ import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.CapabilityType;
@@ -48,8 +46,6 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -70,7 +66,6 @@ class SchemaIndexMigratorTest
 
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
-    private final IndexProvider indexProvider = mock( IndexProvider.class );
     private final PageCache pageCache = mock( PageCache.class );
     private DatabaseLayout databaseLayout;
     private DatabaseLayout migrationLayout;
@@ -80,29 +75,6 @@ class SchemaIndexMigratorTest
     {
         databaseLayout = Neo4jLayout.of( testDirectory.directory( "store" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
         migrationLayout = Neo4jLayout.of( testDirectory.directory( "migrationDir" ) ).databaseLayout( DEFAULT_DATABASE_NAME );
-    }
-
-    @Test
-    void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
-    {
-        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
-        StoreVersion version = mock( StoreVersion.class );
-        when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
-        when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
-        IndexImporterFactory indexImporterFactory = mock( IndexImporterFactory.class );
-        IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
-        Path indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
-        when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, true,
-                NULL_CONTEXT_FACTORY );
-        when( indexProvider.getProviderDescriptor() )
-                .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
-
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, mock( StoreVersion.class ), mock( StoreVersion.class ), indexImporterFactory,
-                EMPTY_LOG_TAIL );
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
-
-        verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }
 
     @Test
@@ -121,8 +93,8 @@ class SchemaIndexMigratorTest
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( RELATIONSHIP, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "r2" ).materialise( 3L ) );
         schemaRules.add( forSchema( SchemaDescriptors.fulltext( NODE, new int[]{1, 2, 3}, new int[]{4, 5, 6} ) ).withName( "n2" ).materialise( 4L ) );
         when( storageEngineFactory.loadSchemaRules( any(), any(), any(), any(), anyBoolean(), any(), any() ) ).thenReturn( schemaRules );
-        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory, false,
-                NULL_CONTEXT_FACTORY );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( "Test migrator", fs, pageCache, directoryStructure, storageEngineFactory,
+                                                                NULL_CONTEXT_FACTORY );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressReporter, fromVersion, toVersion, IndexImporterFactory.EMPTY,

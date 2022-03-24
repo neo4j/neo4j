@@ -174,7 +174,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
             CursorContextFactory contextFactory )
     {
         return new SchemaIndexMigrator(
-                getProviderDescriptor().name(), fs, pageCache, this.directoryStructure(), storageEngineFactory, true, contextFactory );
+                getProviderDescriptor().name(), fs, pageCache, this.directoryStructure(), storageEngineFactory, contextFactory );
     }
 
     @Override

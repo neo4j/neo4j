@@ -187,7 +187,7 @@ public class StoreUpgraderInterruptionTestIT
     private SchemaIndexMigrator createIndexMigrator( CursorContextFactory contextFactory )
     {
         return new SchemaIndexMigrator( "upgrade test indexes", fs, pageCache, IndexProvider.EMPTY.directoryStructure(),
-                StorageEngineFactory.defaultStorageEngine(), true, contextFactory );
+                                        StorageEngineFactory.defaultStorageEngine(), contextFactory );
     }
 
     @ParameterizedTest
