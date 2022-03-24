@@ -87,7 +87,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(input) should equal(expectedOutput)
   }
 
-  test("do not use BFSPruningVarExpand for undirected search") {
+  test("do use BFSPruningVarExpand for undirected search") {
     val fromId = "from"
     val allNodes = AllNodesScan(fromId, Set.empty)
     val dir = SemanticDirection.BOTH
@@ -97,7 +97,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
     val input = Distinct(originalExpand, Map("to" -> varFor("to")))
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)
+    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
     val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
 
     rewrite(input) should equal(expectedOutput)
