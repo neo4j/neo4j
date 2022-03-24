@@ -37,7 +37,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -92,11 +91,12 @@ abstract class TraversalTestBase
 
     private void resetDatabase()
     {
-        try ( Transaction transaction = getGraphDb().beginTx() )
+        try ( Transaction transaction = getGraphDb().beginTx();
+              ResourceIterable<Node> allNodes = transaction.getAllNodes() )
         {
-            for ( Node node : transaction.getAllNodes() )
+            for ( Node node : allNodes )
             {
-                node.getRelationships().forEach( Relationship::delete );
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
             transaction.commit();
@@ -111,12 +111,10 @@ abstract class TraversalTestBase
 
     protected static Node getNodeWithName( Transaction transaction, String name )
     {
-        ResourceIterable<Node> allNodes = transaction.getAllNodes();
-        try ( ResourceIterator<Node> nodeIterator = allNodes.iterator() )
+        try ( ResourceIterable<Node> allNodes = transaction.getAllNodes() )
         {
-            while ( nodeIterator.hasNext() )
+            for ( final var node : allNodes )
             {
-                Node node = nodeIterator.next();
                 {
                     String nodeName = (String) node.getProperty( "name", null );
                     if ( nodeName != null && nodeName.equals( name ) )

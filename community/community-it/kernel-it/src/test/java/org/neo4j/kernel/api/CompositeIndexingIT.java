@@ -33,7 +33,9 @@ import java.util.stream.Stream;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -143,11 +145,12 @@ class CompositeIndexingIT
             tx.commit();
         }
 
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            for ( Node node : tx.getAllNodes() )
+            for ( Node node : allNodes )
             {
-                node.getRelationships().forEach( Relationship::delete );
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
             tx.commit();

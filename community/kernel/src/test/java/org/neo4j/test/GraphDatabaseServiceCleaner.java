@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.AnyTokens;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -72,17 +73,12 @@ public class GraphDatabaseServiceCleaner
 
     public static void cleanupAllRelationshipsAndNodes( GraphDatabaseService db )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            for ( Relationship relationship : tx.getAllRelationships() )
-            {
-                relationship.delete();
-            }
-
-            for ( Node node : tx.getAllNodes() )
-            {
-                node.delete();
-            }
+            allRelationships.forEach( Relationship::delete );
+            allNodes.forEach( Node::delete );
             tx.commit();
         }
     }

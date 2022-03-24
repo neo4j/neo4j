@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -52,7 +53,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
          .shouldBe(sizeHint)
 
@@ -79,7 +80,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
          .shouldBe(0)
 
@@ -102,16 +103,21 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     consume(runtimeResult)
 
-    // then
-    val nodes = tx.getAllNodes.asScala.toList
-    nodes.map(_.getProperty("prop").asInstanceOf[Long]).toSet
-         .shouldEqual(Range.inclusive(1, sizeHint).toSet)
+    val allNodes = tx.getAllNodes
+    try {
+      // then
+      val nodes = allNodes.asScala.toList
+      nodes.map(_.getProperty("prop").asInstanceOf[Long]).toSet
+           .shouldEqual(Range.inclusive(1, sizeHint).toSet)
 
-    runtimeResult
-      .should(beColumns("x")
-        .withRows(singleColumn(Range.inclusive(1, sizeHint)))
-        .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint, propertiesSet = sizeHint)
-      )
+      runtimeResult
+        .should(beColumns("x")
+          .withRows(singleColumn(Range.inclusive(1, sizeHint)))
+          .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint, propertiesSet = sizeHint)
+        )
+    } finally {
+      allNodes.close()
+    }
   }
 
 
@@ -305,7 +311,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
 
     // then
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size
          .shouldBe(sizeHint)
 

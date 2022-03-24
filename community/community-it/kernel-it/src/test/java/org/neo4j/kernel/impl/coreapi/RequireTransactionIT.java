@@ -304,14 +304,14 @@ class RequireTransactionIT
     @Test
     void requireTransactionForAllNodesLookup()
     {
-        Executable executable = () -> transaction.getAllNodes();
+        Executable executable = () -> transaction.getAllNodes().close();
         checkTransactionRequirement( transaction, executable );
     }
 
     @Test
     void requireTransactionForAllRelationshipsLookup()
     {
-        Executable executable = () -> transaction.getAllRelationships();
+        Executable executable = () -> transaction.getAllRelationships().close();
         checkTransactionRequirement( transaction, executable );
     }
 

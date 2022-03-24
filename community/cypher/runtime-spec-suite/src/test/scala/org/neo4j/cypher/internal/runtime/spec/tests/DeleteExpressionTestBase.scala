@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ConstraintViolationException
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature
 import org.neo4j.kernel.api.procedure.CallableUserFunction.BasicUserFunction
@@ -91,7 +92,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("delete relationship in map") {
@@ -118,7 +119,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(relationshipsDeleted = 3*3)
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("delete path in map") {
@@ -141,7 +142,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("fail to delete nodes with relationships in map") {
@@ -165,8 +166,8 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 
     val tx = runtimeTestSupport.startNewTx()
     // Nodes and relationships should still be there
-    tx.getAllNodes.stream().count() shouldBe 3*2
-    tx.getAllRelationships.stream().count() shouldBe 3
+    Iterables.count(tx.getAllNodes) shouldBe 3*2
+    Iterables.count(tx.getAllRelationships) shouldBe 3
   }
 
   test("should not delete too many nodes if delete is between two loops with continuation") {

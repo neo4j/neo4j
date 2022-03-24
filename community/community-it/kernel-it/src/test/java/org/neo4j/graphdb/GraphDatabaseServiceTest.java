@@ -208,9 +208,10 @@ public class GraphDatabaseServiceTest
         }
         transaction.terminate();
 
-        try ( Transaction tx = database.beginTx() )
+        try ( Transaction tx = database.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            assertThat( tx.getAllNodes() ).hasSize( 2 );
+            assertThat( allNodes ).hasSize( 2 );
             tx.commit();
         }
     }

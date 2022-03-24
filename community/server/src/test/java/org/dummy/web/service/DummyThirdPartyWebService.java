@@ -32,8 +32,8 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 @Path( "/" )
 public class DummyThirdPartyWebService
@@ -97,11 +97,6 @@ public class DummyThirdPartyWebService
 
     private static int countNodesIn( Transaction tx )
     {
-        int count = 0;
-        for ( Node ignore : tx.getAllNodes() )
-        {
-            count++;
-        }
-        return count;
+        return (int) Iterables.count( tx.getAllNodes() );
     }
 }

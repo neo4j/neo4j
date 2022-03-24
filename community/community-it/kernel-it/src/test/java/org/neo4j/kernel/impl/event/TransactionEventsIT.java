@@ -45,6 +45,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventListener;
 import org.neo4j.graphdb.event.TransactionEventListenerAdapter;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
@@ -53,10 +54,10 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
@@ -390,12 +391,12 @@ class TransactionEventsIT
                 if ( node != null )
                 {
                     node = tx.getNodeById( node.getId() );
-                    for ( Relationship relationship : node.getRelationships() )
+                    Iterables.forEach( node.getRelationships(), relationship ->
                     {
                         graph.deleteRelationship( relationship );
                         expectations.deletedRelationship( relationship );
                         debug( relationship );
-                    }
+                    } );
                     graph.deleteNode( node );
                     expectations.deletedNode( node );
                     debug( node );

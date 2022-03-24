@@ -45,9 +45,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -369,15 +370,16 @@ class DatabaseUpgradeTransactionIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            return Iterators.count( tx.getAllNodes().iterator() );
+            return Iterables.count( tx.getAllNodes() );
         }
     }
 
     private void createReadTransaction()
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            tx.getAllNodes().stream().forEach( Entity::getAllProperties );
+            allNodes.forEach( Entity::getAllProperties );
             tx.commit();
         }
     }
@@ -496,22 +498,24 @@ class DatabaseUpgradeTransactionIT
         {
             Node node = tx.getNodeById( nodeId );
             Map<String,Map<Direction,MutableLong>> actualDegrees = new HashMap<>();
-            node.getRelationships().forEach(
-                    r -> actualDegrees.computeIfAbsent( r.getType().name(), t -> new HashMap<>() ).computeIfAbsent( directionOf( node, r ),
-                            d -> new MutableLong() ).increment() );
+            Iterables.forEach( node.getRelationships(), r ->
+            {
+                actualDegrees.computeIfAbsent( r.getType().name(), t -> new HashMap<>() )
+                             .computeIfAbsent( directionOf( node, r ), d -> new MutableLong() ).increment();
+            } );
             MutableLong actualTotalDegree = new MutableLong();
             actualDegrees.forEach( ( typeName, directions ) ->
-            {
-                long actualTotalDirectionDegree = 0;
-                for ( Map.Entry<Direction,MutableLong> actualDirectionDegree : directions.entrySet() )
-                {
-                    assertThat( node.getDegree( RelationshipType.withName( typeName ), actualDirectionDegree.getKey() ) ).isEqualTo(
-                            actualDirectionDegree.getValue().longValue() );
-                    actualTotalDirectionDegree += actualDirectionDegree.getValue().longValue();
-                }
-                assertThat( node.getDegree( RelationshipType.withName( typeName ) ) ).isEqualTo( actualTotalDirectionDegree );
-                actualTotalDegree.add( actualTotalDirectionDegree );
-            } );
+               {
+                   long actualTotalDirectionDegree = 0;
+                   for ( Map.Entry<Direction,MutableLong> actualDirectionDegree : directions.entrySet() )
+                   {
+                       assertThat( node.getDegree( RelationshipType.withName( typeName ), actualDirectionDegree.getKey() ) ).isEqualTo(
+                               actualDirectionDegree.getValue().longValue() );
+                       actualTotalDirectionDegree += actualDirectionDegree.getValue().longValue();
+                   }
+                   assertThat( node.getDegree( RelationshipType.withName( typeName ) ) ).isEqualTo( actualTotalDirectionDegree );
+                   actualTotalDegree.add( actualTotalDirectionDegree );
+               } );
             assertThat( node.getDegree() ).isEqualTo( actualTotalDegree.longValue() );
         }
     }

@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
@@ -1710,7 +1711,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size/10)
-    tx.getAllNodes.stream().count() shouldBe size * 0.9
+    Iterables.count(tx.getAllNodes) shouldBe size * 0.9
   }
 
   test("should not create too many nodes after a multi node index seek") {

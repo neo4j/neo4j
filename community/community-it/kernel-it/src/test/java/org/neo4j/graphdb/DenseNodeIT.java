@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -30,7 +31,6 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterables.single;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 
 @ImpermanentDbmsExtension
 class DenseNodeIT
@@ -224,7 +224,8 @@ class DenseNodeIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            tx.getNodeById( node.getId() ).getRelationships().forEach( Relationship::delete );
+            long nodeId = node.getId();
+            Iterables.forEach( tx.getNodeById( nodeId ).getRelationships(), Relationship::delete );
             tx.commit();
         }
 
@@ -254,11 +255,10 @@ class DenseNodeIT
     private static void deleteRelationshipsFromNode( Node root, int numberOfRelationships )
     {
         int deleted = 0;
-        try ( ResourceIterator<Relationship> iterator = asResourceIterator( root.getRelationships().iterator() ) )
+        try ( ResourceIterable<Relationship> relationships = root.getRelationships() )
         {
-            while ( iterator.hasNext() )
+            for ( final var relationship : relationships )
             {
-                Relationship relationship = iterator.next();
                 relationship.delete();
                 deleted++;
                 if ( deleted == numberOfRelationships )

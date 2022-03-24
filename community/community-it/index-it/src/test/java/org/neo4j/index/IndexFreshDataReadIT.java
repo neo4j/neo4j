@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -60,8 +59,7 @@ class IndexFreshDataReadIT
             assertEquals( 1, countStaff( transaction ).intValue() );
 
             Node fry = transaction.getNodeById( 0 );
-            Iterable<Relationship> fryRelationships = fry.getRelationships();
-            assertFalse( fryRelationships.iterator().hasNext() );
+            assertFalse( fry.hasRelationship() );
 
             addStaffMember( "Lila" );
             assertEquals( 2, countStaff( transaction ).intValue() );

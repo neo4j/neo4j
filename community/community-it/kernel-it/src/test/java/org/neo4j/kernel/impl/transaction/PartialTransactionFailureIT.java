@@ -23,7 +23,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -36,6 +35,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.recordstorage.Command;
@@ -128,33 +129,42 @@ class PartialTransactionFailureIT
             Node y = tx.getNodeById( b.getId() );
             Node z = tx.getNodeById( c.getId() );
             Node w = tx.getNodeById( d.getId() );
-            Iterator<Relationship> itrRelX = x.getRelationships().iterator();
-            Iterator<Relationship> itrRelY = y.getRelationships().iterator();
-            Iterator<Relationship> itrRelZ = z.getRelationships().iterator();
-            Iterator<Relationship> itrRelW = w.getRelationships().iterator();
 
-            if ( itrRelX.hasNext() != itrRelY.hasNext() )
-            {
-                fail( "Node x and y have inconsistent relationship counts" );
-            }
-            else if ( itrRelX.hasNext() )
-            {
-                Relationship rel = itrRelX.next();
-                assertEquals( rel, itrRelY.next() );
-                assertFalse( itrRelX.hasNext() );
-                assertFalse( itrRelY.hasNext() );
-            }
+            try ( ResourceIterable<Relationship> relsW = w.getRelationships();
+                  ResourceIterator<Relationship> itrRelW = relsW.iterator();
 
-            if ( itrRelZ.hasNext() != itrRelW.hasNext() )
+                  ResourceIterable<Relationship> relsX = x.getRelationships();
+                  ResourceIterator<Relationship> itrRelX = relsX.iterator();
+
+                  ResourceIterable<Relationship> relsY = y.getRelationships();
+                  ResourceIterator<Relationship> itrRelY = relsY.iterator();
+
+                  ResourceIterable<Relationship> relsZ = z.getRelationships();
+                  ResourceIterator<Relationship> itrRelZ = relsZ.iterator() )
             {
-                fail( "Node z and w have inconsistent relationship counts" );
-            }
-            else if ( itrRelZ.hasNext() )
-            {
-                Relationship rel = itrRelZ.next();
-                assertEquals( rel, itrRelW.next() );
-                assertFalse( itrRelZ.hasNext() );
-                assertFalse( itrRelW.hasNext() );
+                if ( itrRelX.hasNext() != itrRelY.hasNext() )
+                {
+                    fail( "Node x and y have inconsistent relationship counts" );
+                }
+                else if ( itrRelX.hasNext() )
+                {
+                    Relationship rel = itrRelX.next();
+                    assertEquals( rel, itrRelY.next() );
+                    assertFalse( itrRelX.hasNext() );
+                    assertFalse( itrRelY.hasNext() );
+                }
+
+                if ( itrRelZ.hasNext() != itrRelW.hasNext() )
+                {
+                    fail( "Node z and w have inconsistent relationship counts" );
+                }
+                else if ( itrRelZ.hasNext() )
+                {
+                    Relationship rel = itrRelZ.next();
+                    assertEquals( rel, itrRelW.next() );
+                    assertFalse( itrRelZ.hasNext() );
+                    assertFalse( itrRelW.hasNext() );
+                }
             }
         }
     }

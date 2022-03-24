@@ -56,7 +56,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
@@ -466,8 +465,7 @@ class DenseNodeConcurrencyIT
         try ( Transaction tx = database.beginTx() )
         {
             Node node = tx.getNodeById( denseNodeId );
-            Set<Relationship> currentRelationships = new HashSet<>();
-            node.getRelationships().forEach( currentRelationships::add );
+            Set<Relationship> currentRelationships = Iterables.asSet( node.getRelationships() );
             assertThat( currentRelationships )
                     .as( new Description()
                     {
@@ -603,7 +601,7 @@ class DenseNodeConcurrencyIT
         assertBlocking( tx ->
                 {
                     Node denseNode = tx.getNodeById( denseNodeId );
-                    denseNode.getRelationships().forEach( Relationship::delete );
+                    Iterables.forEach( denseNode.getRelationships(), Relationship::delete );
                     denseNode.delete();
                 }, tx -> assertThatThrownBy( () -> tx.getNodeById( denseNodeId ).createRelationshipTo( tx.createNode(), INITIAL_DENSE_NODE_TYPE )  )
                         .isInstanceOfAny( NotFoundException.class ),
@@ -665,7 +663,7 @@ class DenseNodeConcurrencyIT
             tx.commit();
         }
 
-        operationShouldBeBlocked( tx -> tx.getNodeById( nodeId ), node -> blockedOperation.accept( Iterables.asList( node.getRelationships() ).get( 0 ) ),
+        operationShouldBeBlocked( tx -> tx.getNodeById( nodeId ), node -> blockedOperation.accept( Iterables.first( node.getRelationships() ) ),
                 writeLock, RelationshipEntity.class, blockedAt );
     }
 
@@ -696,7 +694,7 @@ class DenseNodeConcurrencyIT
         }
         try ( Transaction tx = database.beginTx() )
         {
-            tx.getNodeById( nodeId ).getRelationships().forEach( Relationship::delete );
+            Iterables.forEach( tx.getNodeById( nodeId ).getRelationships(), Relationship::delete );
             tx.commit();
         }
 
@@ -960,8 +958,10 @@ class DenseNodeConcurrencyIT
                             Set<Relationship> allRelationships, RandomSupport random, Map<Long,TxNodeChanges> txCreated, Map<Long,TxNodeChanges> txDeleted )
                     {
                         Node onNode = randomDenseNode( tx, denseNodeIds, random );
-                        Iterable<Relationship> relationships = onNode.getRelationships( random.among( Direction.values() ), type );
-                        deleteRelationships( allRelationships, txCreated, txDeleted, relationships, denseNodeIds );
+                        try ( ResourceIterable<Relationship> relationships = onNode.getRelationships( random.among( Direction.values() ), type ) )
+                        {
+                            deleteRelationships( allRelationships, txCreated, txDeleted, relationships, denseNodeIds );
+                        }
                     }
                 },
         DELETE_ALL_TYPE
@@ -1106,7 +1106,7 @@ class DenseNodeConcurrencyIT
         private static void deleteRelationships( Set<Relationship> allRelationships, Map<Long,TxNodeChanges> txCreated,
                 Map<Long,TxNodeChanges> txDeleted, Iterable<Relationship> relationships, Set<Long> denseNodeIds )
         {
-            List<Relationship> readRelationships = StreamSupport.stream( relationships.spliterator(), false ).toList();
+            List<Relationship> readRelationships = Iterables.asList( relationships );
             readRelationships.stream().filter( allRelationships::remove ).forEach(
                     relationship -> safeDeleteRelationship( relationship, txCreated, txDeleted, denseNodeIds ) );
         }

@@ -32,7 +32,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
@@ -65,10 +67,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
         {
             target = transaction.getNodeById( target.getId() );
 
-            for ( Relationship rel : target.getRelationships() )
-            {
-                rel.delete();
-            }
+            Iterables.forEach( target.getRelationships(), Relationship::delete );
             target.delete();
             transaction.commit();
         }
@@ -87,10 +86,7 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
             txCreateRel( transaction, node );
             txCreateLoop( node );
 
-            for ( Relationship rel : node.getRelationships() )
-            {
-                rel.delete();
-            }
+            Iterables.forEach( node.getRelationships(), Relationship::delete );
             node.delete();
             transaction.commit();
         }
@@ -123,12 +119,15 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
             for ( Direction dir : Direction.values() )
             {
                 int count = 0;
-                for ( Relationship rel : node.getRelationships( dir ) )
+                try ( ResourceIterable<Relationship> relationships = node.getRelationships( dir ) )
                 {
-                    count++;
-                    assertEquals( node, rel.getStartNode(), "start node" );
-                    assertEquals( node, rel.getEndNode(), "end node" );
-                    assertEquals( node, rel.getOtherNode( node ), "other node" );
+                    for ( final var rel : relationships )
+                    {
+                        assertEquals( node, rel.getStartNode(), "start node" );
+                        assertEquals( node, rel.getEndNode(), "end node" );
+                        assertEquals( node, rel.getOtherNode( node ), "other node" );
+                        count++;
+                    }
                 }
                 assertEquals( 1, count, dir.name() + " relationship count" );
             }
@@ -413,9 +412,12 @@ class TestLoopRelationships extends AbstractNeo4jTestCase
                     }
                 }
 
-                for ( Relationship rel : root.getRelationships( dir ) )
+                try ( ResourceIterable<Relationship> rootRels = root.getRelationships( dir ) )
                 {
-                    assertTrue( expected.remove( rel ), message + ": unexpected relationship: " + rel );
+                    for ( Relationship rel : rootRels )
+                    {
+                        assertTrue( expected.remove( rel ), message + ": unexpected relationship: " + rel );
+                    }
                 }
                 assertTrue( expected.isEmpty(), message + ": expected relationships not seen " + expected );
             }

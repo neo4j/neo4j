@@ -34,6 +34,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.IndexingTestUtil;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -156,9 +157,10 @@ public class IndexPopulationMissConcurrentUpdateIT
 
         // then all nodes must be in the index
         assertEquals( nodes.size(), index.entitiesByScan.size() + index.entitiesByUpdater.size() );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            for ( Node node : tx.getAllNodes() )
+            for ( Node node : allNodes )
             {
                 assertTrue( index.entitiesByScan.contains( node.getId() ) || index.entitiesByUpdater.contains( node.getId() ) );
             }

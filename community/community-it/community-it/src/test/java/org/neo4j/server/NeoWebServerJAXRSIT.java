@@ -27,7 +27,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
@@ -104,16 +106,22 @@ class NeoWebServerJAXRSIT extends ExclusiveWebContainerTestBase
                 tx.createNode();
             }
 
-            for ( var node1 : tx.getAllNodes() )
+            try ( ResourceIterable<Node> allNodes1 = tx.getAllNodes() )
             {
-                for ( var node2 : tx.getAllNodes() )
+                for ( var node1 : allNodes1 )
                 {
-                    if ( node1.equals( node2 ) )
+                    try ( ResourceIterable<Node> allNodes2 = tx.getAllNodes() )
                     {
-                        continue;
-                    }
+                        for ( var node2 : allNodes2 )
+                        {
+                            if ( node1.equals( node2 ) )
+                            {
+                                continue;
+                            }
 
-                    node1.createRelationshipTo( node2, RelationshipType.withName( "REL" ) );
+                            node1.createRelationshipTo( node2, RelationshipType.withName( "REL" ) );
+                        }
+                    }
                 }
             }
         } ).execute();

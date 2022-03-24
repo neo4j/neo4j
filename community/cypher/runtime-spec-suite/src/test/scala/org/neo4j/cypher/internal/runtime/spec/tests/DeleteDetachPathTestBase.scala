@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.helpers.collection.Iterables
 
 abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -63,8 +64,8 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount*4, relationshipsDeleted = chainCount*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("detach delete path that is part of connected graph") {
@@ -99,8 +100,8 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 2, relationshipsDeleted = 8 + (8 * (nodeCount - 2)))
-    tx.getAllNodes.stream().count() shouldBe 2
-    tx.getAllRelationships.stream().count() shouldBe 8
+    Iterables.count(tx.getAllNodes) shouldBe 2
+    Iterables.count(tx.getAllRelationships) shouldBe 8
   }
 
   test("multiple detach delete") {
@@ -127,8 +128,8 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount*4, relationshipsDeleted = chainCount*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("detach delete on rhs of apply") {
@@ -155,8 +156,8 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount*4, relationshipsDeleted = chainCount*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("detach delete paths with single node") {
@@ -179,7 +180,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 1)
-    tx.getAllNodes.stream().count() shouldBe (nodeCount - 1)
+    Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)
   }
 
   def singleOutgoingRelationshipPath(fromNode: String, relationship: String, toNode: String) = {

@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
@@ -81,9 +82,12 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
         try ( Transaction tx = graphDb.beginTx() )
         {
             tx.getRelationshipById( deleted.getId() ).delete();
-            for ( Relationship relationship : tx.getAllRelationships() )
+            try ( ResourceIterable<Relationship> allRelationships = tx.getAllRelationships() )
             {
-                RELATIONSHIP_IDS.add( relationship.getId() );
+                for ( Relationship relationship : allRelationships )
+                {
+                    RELATIONSHIP_IDS.add( relationship.getId() );
+                }
             }
             tx.commit();
         }

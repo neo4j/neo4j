@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdGenerator;
@@ -167,14 +168,17 @@ class BigStoreIT
         try ( Transaction transaction = db.beginTx() )
         {
             refNode = transaction.getNodeById( refNode.getId() );
-            for ( Relationship rel : refNode.getRelationships( Direction.OUTGOING ) )
+            try ( ResourceIterable<Relationship> relationships = refNode.getRelationships( Direction.OUTGOING ) )
             {
-                Node node = rel.getEndNode();
-                assertProperties( properties, node );
-                assertProperties( properties, rel );
-                Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
-                assertProperties( properties, highNode );
-                verified++;
+                for ( final var rel : relationships )
+                {
+                    Node node = rel.getEndNode();
+                    assertProperties( properties, node );
+                    assertProperties( properties, rel );
+                    Node highNode = node.getSingleRelationship( OTHER_TYPE, Direction.OUTGOING ).getEndNode();
+                    assertProperties( properties, highNode );
+                    verified++;
+                }
             }
             transaction.commit();
         }
@@ -270,7 +274,7 @@ class BigStoreIT
                 assertEquals( idBelow, relBelowTheLine.getId() );
                 assertEquals( highMark, relAboveTheLine.getId() );
                 assertEquals( asSet( asList( relBelowTheLine, relAboveTheLine ) ),
-                    asSet( Iterables.asCollection( transaction.getNodeById( idBelow ).getRelationships() ) ) );
+                              Iterables.asSet( transaction.getNodeById( idBelow ).getRelationships() ) );
                 transaction.commit();
             }
             if ( i == 0 )

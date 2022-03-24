@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -67,8 +68,8 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("delete some nodes") {
@@ -91,7 +92,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = deleteNodeCount)
-    tx.getAllNodes.stream().count() shouldBe (nodeCount - deleteNodeCount)
+    Iterables.count(tx.getAllNodes) shouldBe (nodeCount - deleteNodeCount)
   }
 
   test("duplicate delete") {
@@ -112,7 +113,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("delete on rhs of apply") {
@@ -134,7 +135,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("fail to delete nodes with relationships") {
@@ -161,8 +162,8 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     val tx = runtimeTestSupport.startNewTx()
     // Nodes and relationships should still be there
-    tx.getAllNodes.stream().count() shouldBe nodeCount
-    tx.getAllRelationships.stream().count() shouldBe 1
+    Iterables.count(tx.getAllNodes) shouldBe nodeCount
+    Iterables.count(tx.getAllRelationships) shouldBe 1
   }
 
   test("should not delete too many nodes if delete is between two loops with continuation") {
@@ -185,12 +186,10 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(nodesDeleted = sizeHint)
-    tx.getAllNodes.iterator().hasNext shouldBe false
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   private def deleteAllTest(nodeCount: Int): Unit = {
-
-    val allNodes = tx.getAllNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -199,12 +198,19 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n")
       .build(readOnly = false)
 
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    runtimeResult should beColumns("n")
-      .withRows(allNodes)
-      .withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    val allNodes = tx.getAllNodes
+    try {
+      val nodesArray = allNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
+
+      // then
+      val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+      consume(runtimeResult)
+      runtimeResult should beColumns("n")
+        .withRows(nodesArray)
+        .withStatistics(nodesDeleted = nodeCount)
+      Iterables.count(tx.getAllNodes) shouldBe 0
+    } finally {
+      allNodes.close()
+    }
   }
 }

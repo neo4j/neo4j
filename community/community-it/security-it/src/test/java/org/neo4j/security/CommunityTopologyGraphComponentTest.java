@@ -36,7 +36,9 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -49,7 +51,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_ACCESS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_LABEL;
-import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DatabaseAccess.READ_WRITE;
@@ -76,9 +77,9 @@ class CommunityTopologyGraphComponentTest
     @BeforeEach
     void clear() throws Exception
     {
-        inTx( tx -> tx.getAllNodes().stream().forEach( n ->
+        inTx( tx -> Iterables.forEach( tx.getAllNodes(), n ->
         {
-            n.getRelationships().forEach( Relationship::delete );
+            Iterables.forEach( n.getRelationships(), Relationship::delete );
             n.delete();
         } ) );
     }
@@ -238,10 +239,8 @@ class CommunityTopologyGraphComponentTest
         Node dbAlias =
                 tx.findNode( DATABASE_NAME_LABEL, DATABASE_NAME_PROPERTY, dbName );
         assertThat( dbAlias.getProperty( PRIMARY_PROPERTY ) ).isEqualTo( true );
-        dbAlias.getRelationships( TARGETS_RELATIONSHIP )
-               .forEach( target ->
-                                 assertThat( target.getEndNode().hasLabel( DATABASE_LABEL ) ).isTrue()
-               );
+        Iterables.forEach( dbAlias.getRelationships( TARGETS_RELATIONSHIP ), target ->
+                assertThat( target.getEndNode().hasLabel( DATABASE_LABEL ) ).isTrue() );
     }
 
     private static void initializeSystem() throws Exception

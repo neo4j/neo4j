@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,6 +34,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
@@ -133,21 +134,27 @@ public class TestGraphDescription implements GraphHolder
             assertEquals( myName, iNode.getProperty( "name" ), "'I' has wrong 'name'." );
             assertEquals( "you", you.getProperty( "name" ), "'you' has wrong 'name'." );
 
-            Iterator<Relationship> rels = iNode.getRelationships().iterator();
-            assertTrue( rels.hasNext(), "'I' has too few relationships" );
-            Relationship rel = rels.next();
-            assertEquals( you, rel.getOtherNode( iNode ), "'I' is not related to 'you'" );
-            assertEquals( type, rel.getType().name(), "Wrong relationship type." );
-            assertFalse( rels.hasNext(), "'I' has too many relationships" );
+            try ( ResourceIterable<Relationship> relationships = iNode.getRelationships();
+                  ResourceIterator<Relationship> rels = relationships.iterator() )
+            {
+                assertTrue( rels.hasNext(), "'I' has too few relationships" );
+                Relationship rel = rels.next();
+                assertEquals( you, rel.getOtherNode( iNode ), "'I' is not related to 'you'" );
+                assertEquals( type, rel.getType().name(), "Wrong relationship type." );
+                assertFalse( rels.hasNext(), "'I' has too many relationships" );
+            }
 
-            rels = you.getRelationships().iterator();
-            assertTrue( rels.hasNext(), "'you' has too few relationships" );
-            rel = rels.next();
-            assertEquals( iNode, rel.getOtherNode( you ), "'you' is not related to 'i'" );
-            assertEquals( type, rel.getType().name(), "Wrong relationship type." );
-            assertFalse( rels.hasNext(), "'you' has too many relationships" );
+            try ( ResourceIterable<Relationship> relationships = you.getRelationships();
+                  ResourceIterator<Relationship> rels = relationships.iterator() )
+            {
+                assertTrue( rels.hasNext(), "'you' has too few relationships" );
+                Relationship rel = rels.next();
+                assertEquals( iNode, rel.getOtherNode( you ), "'you' is not related to 'i'" );
+                assertEquals( type, rel.getType().name(), "Wrong relationship type." );
+                assertFalse( rels.hasNext(), "'you' has too many relationships" );
 
-            assertEquals( iNode, rel.getStartNode(), "wrong direction" );
+                assertEquals( iNode, rel.getStartNode(), "wrong direction" );
+            }
         }
     }
 

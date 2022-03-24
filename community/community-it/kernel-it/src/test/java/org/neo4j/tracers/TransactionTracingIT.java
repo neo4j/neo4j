@@ -73,7 +73,8 @@ class TransactionTracingIT
             var cursorContext = transaction.kernelTransaction().cursorContext();
             assertZeroCursor( cursorContext );
 
-            softly.assertThat( Iterables.count( transaction.getAllNodes() ) ).as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
+            softly.assertThat( Iterables.count( transaction.getAllNodes() ) )
+                  .as( "Number of expected nodes" ).isEqualTo( ENTITY_COUNT );
 
             softly.assertThat( cursorContext.getCursorTracer().pins() ).as( "Number of cursor pins" ).isEqualTo( 2 );
             softly.assertThat( cursorContext.getCursorTracer().unpins() ).as( "Number of cursor unpins" ).isEqualTo( 2 );

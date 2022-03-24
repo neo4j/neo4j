@@ -30,6 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 
@@ -72,10 +73,12 @@ class RelationshipsIterationTest
     void setUpEach()
     {
         db = DATABASE.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            tx.getAllRelationships().forEach( Relationship::delete );
-            tx.getAllNodes().forEach( Node::delete );
+            allRelationships.forEach( Relationship::delete );
+            allNodes.forEach( Node::delete );
             tx.commit();
         }
     }
@@ -576,15 +579,18 @@ class RelationshipsIterationTest
             }
         }
 
-        private int countTypes( RelationshipType type, Iterable<Relationship> iterable )
+        private int countTypes( RelationshipType type, ResourceIterable<Relationship> iterable )
         {
-            int count = 0;
-            for ( Relationship relationship : iterable )
+            try ( iterable )
             {
-                assertEquals( type, relationship.getType() );
-                count++;
+                var count = 0;
+                for ( final var relationship : iterable )
+                {
+                    assertEquals( type, relationship.getType() );
+                    count++;
+                }
+                return count;
             }
-            return count;
         }
     }
 

@@ -92,8 +92,7 @@ public interface Node extends Entity
      * iterable will be returned.
      *
      * @param types the given relationship type(s)
-     * @return all relationships of the given type(s) that are attached to this
-     *         node
+     * @return all relationships of the given type(s) that are attached to this node
      */
     ResourceIterable<Relationship> getRelationships( RelationshipType... types );
 
@@ -105,8 +104,7 @@ public interface Node extends Entity
      *
      * @param types the given relationship type(s)
      * @param direction the direction of the relationships to return.
-     * @return all relationships of the given type(s) that are attached to this
-     *         node
+     * @return all relationships of the given type(s) that are attached to this node
      */
     ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
@@ -149,8 +147,7 @@ public interface Node extends Entity
      * Direction.INCOMING</code>
      *            means all relationships that have this node as
      *            {@link Relationship#getEndNode() end node}
-     * @return all relationships with the given direction that are attached to
-     *         this node
+     * @return all relationships with the given direction that are attached to this node
      */
     ResourceIterable<Relationship> getRelationships( Direction dir );
 

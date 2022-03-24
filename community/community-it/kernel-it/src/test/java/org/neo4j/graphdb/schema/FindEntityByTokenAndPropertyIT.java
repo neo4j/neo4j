@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
@@ -102,14 +103,16 @@ public class FindEntityByTokenAndPropertyIT
             tx.schema().getIndexes().forEach( IndexDefinition::drop );
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships() )
         {
-            tx.getAllRelationships().stream().forEach( Relationship::delete );
+            allRelationships.forEach( Relationship::delete );
             tx.commit();
         }
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            tx.getAllNodes().stream().forEach( Node::delete );
+            allNodes.forEach( Node::delete );
             tx.commit();
         }
     }

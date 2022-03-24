@@ -27,6 +27,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -52,10 +54,11 @@ class NodeManagerTest
         }
 
         // WHEN iterator is started
-        try ( var tx = db.beginTx() )
+        try ( var tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            Iterator<Node> allNodes = tx.getAllNodes().iterator();
-            allNodes.next();
+            Iterator<Node> nodeIterator = allNodes.iterator();
+            nodeIterator.next();
 
             // and WHEN another node is then added
             Thread thread = new Thread( () ->
@@ -68,7 +71,7 @@ class NodeManagerTest
             thread.join();
 
             // THEN the new node is picked up by the iterator
-            assertThat( count( allNodes ) ).isEqualTo( 2 );
+            assertThat( count( nodeIterator ) ).isEqualTo( 2 );
         }
     }
 
@@ -84,10 +87,11 @@ class NodeManagerTest
         }
 
         // WHEN
-        try ( var tx = db.beginTx() )
+        try ( var tx = db.beginTx();
+              ResourceIterable<Relationship> allRelationships = tx.getAllRelationships();
+              ResourceIterator<Relationship> relationships = allRelationships.iterator() )
         {
-            Iterator<Relationship> allRelationships = tx.getAllRelationships().iterator();
-            allRelationships.next();
+            relationships.next();
 
             Thread thread = new Thread( () ->
             {
@@ -99,7 +103,7 @@ class NodeManagerTest
             thread.join();
 
             // THEN
-            assertThat( count( allRelationships ) ).isEqualTo( 2 );
+            assertThat( count( relationships ) ).isEqualTo( 2 );
         }
     }
 

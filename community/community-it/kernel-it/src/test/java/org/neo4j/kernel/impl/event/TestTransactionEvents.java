@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.LabelEntry;
@@ -1180,7 +1181,8 @@ class TestTransactionEvents
     {
         var db = managementService.database( databaseName );
         try ( var tx = db.beginTx();
-              var nodesIterator = tx.getAllNodes().iterator() )
+              ResourceIterable<Node> allNodes = tx.getAllNodes();
+              var nodesIterator = allNodes.iterator() )
         {
             // perform some read-only activity
             while ( nodesIterator.hasNext() )

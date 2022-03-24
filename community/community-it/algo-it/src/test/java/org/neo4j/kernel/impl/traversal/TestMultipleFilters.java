@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
@@ -79,13 +78,10 @@ class TestMultipleFilters extends TraversalTestBase
         @Override
         public boolean test( Path item )
         {
-            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) item.endNode()
-                    .getRelationships( Direction.OUTGOING );
-            try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
+            try ( ResourceIterable<Relationship> relationships = item.endNode().getRelationships( Direction.OUTGOING ) )
             {
-                while ( iterator.hasNext() )
+                for ( final var rel : relationships )
                 {
-                    Relationship rel = iterator.next();
                     if ( rel.getEndNode().equals( node ) )
                     {
                         return true;

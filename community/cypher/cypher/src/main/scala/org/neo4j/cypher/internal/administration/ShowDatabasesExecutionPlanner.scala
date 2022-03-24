@@ -52,6 +52,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.Transaction
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
@@ -163,22 +164,37 @@ case class ShowDatabasesExecutionPlanner(resolver: DependencyResolver, defaultDa
     def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
       //(:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
       var result: Seq[Boolean] = Seq.empty
-      database.getRelationships(Direction.INCOMING, withName("FOR")).forEach { f =>
-        f.getStartNode.getRelationships(Direction.INCOMING, withName("SCOPE")).forEach { s =>
-          val privilegeNode = s.getStartNode
-          if (privilegeNode.getProperty("action").equals("access")) {
-            privilegeNode.getRelationships(Direction.INCOMING).forEach { p =>
-              val roleName = p.getStartNode.getProperty("name")
-              if (roles.contains(roleName)) {
-                p.getType.name() match {
-                  case "DENIED" => result = result :+ false
-                  case "GRANTED" => result = result :+ true
-                  case _ =>
+      val dbRelationships = database.getRelationships(Direction.INCOMING, withName("FOR"))
+      try {
+        dbRelationships.forEach { f =>
+          val startRelationships = f.getStartNode.getRelationships(Direction.INCOMING, withName("SCOPE"))
+          try {
+            startRelationships.forEach { s =>
+              val privilegeNode = s.getStartNode
+              if (privilegeNode.getProperty("action").equals("access")) {
+                val prevRelationships = privilegeNode.getRelationships(Direction.INCOMING)
+                try {
+                  prevRelationships.forEach { p =>
+                    val roleName = p.getStartNode.getProperty("name")
+                    if (roles.contains(roleName)) {
+                      p.getType.name() match {
+                        case "DENIED" => result = result :+ false
+                        case "GRANTED" => result = result :+ true
+                        case _ =>
+                      }
+                    }
+                  }
+                } finally {
+                  prevRelationships.close()
                 }
               }
             }
+          } finally {
+            startRelationships.close()
           }
         }
+      } finally {
+        dbRelationships.close()
       }
       result.reduceOption(_ && _)
     }

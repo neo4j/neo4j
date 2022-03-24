@@ -206,8 +206,8 @@ class MultipleIndexPopulationStressIT
             try ( var tx = db.beginTx();
                   var softly = new AutoCloseableSoftAssertions() )
             {
-                softly.assertThat( tx.getAllNodes().stream().count() ).as( "Number of nodes" ).isEqualTo( nodeCount );
-                softly.assertThat( tx.getAllRelationships().stream().count() ).as( "Number of relationships" ).isEqualTo( relCount );
+                softly.assertThat( Iterables.count( tx.getAllNodes() ) ).as( "Number of nodes" ).isEqualTo( nodeCount );
+                softly.assertThat( Iterables.count( tx.getAllRelationships() ) ).as( "Number of relationships" ).isEqualTo( relCount );
             }
             createIndexes( db );
             final AtomicBoolean end = new AtomicBoolean();

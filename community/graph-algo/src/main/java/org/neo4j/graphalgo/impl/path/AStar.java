@@ -42,6 +42,7 @@ import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalMetadata;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 import static org.neo4j.internal.helpers.collection.Iterables.option;
@@ -206,34 +207,41 @@ public class AStar implements PathFinder<WeightedPath>
         private void expand()
         {
             Iterable<Relationship> expand = expander.expand( this, BranchState.NO_STATE );
-            for ( Relationship rel : expand )
+            try
             {
-                lastMetadata.rels++;
-                Node node = rel.getOtherNode( lastNode );
-                Visit visit = visitData.get( node.getId() );
-                if ( visit != null && visit.visited )
+                for ( Relationship rel : expand )
                 {
-                    continue;
-                }
-
-                Visit lastVisit = visitData.get( lastNode.getId() );
-                double tentativeGScore = lastVisit.wayLength +
-                        lengthEvaluator.getCost( rel, Direction.OUTGOING );
-                double estimate = estimateEvaluator.getCost( node, end );
-
-                if ( visit == null || !visit.next || tentativeGScore < visit.wayLength )
-                {
-                    if ( visit == null )
+                    lastMetadata.rels++;
+                    Node node = rel.getOtherNode( lastNode );
+                    Visit visit = visitData.get( node.getId() );
+                    if ( visit != null && visit.visited )
                     {
-                        visit = new Visit( rel.getId(), tentativeGScore, estimate );
-                        visitData.put( node.getId(), visit );
+                        continue;
                     }
-                    else
+
+                    Visit lastVisit = visitData.get( lastNode.getId() );
+                    double tentativeGScore = lastVisit.wayLength +
+                            lengthEvaluator.getCost( rel, Direction.OUTGOING );
+                    double estimate = estimateEvaluator.getCost( node, end );
+
+                    if ( visit == null || !visit.next || tentativeGScore < visit.wayLength )
                     {
-                        visit.update( rel.getId(), tentativeGScore, estimate );
+                        if ( visit == null )
+                        {
+                            visit = new Visit( rel.getId(), tentativeGScore, estimate );
+                            visitData.put( node.getId(), visit );
+                        }
+                        else
+                        {
+                            visit.update( rel.getId(), tentativeGScore, estimate );
+                        }
+                        addNext( node, estimate + tentativeGScore, visit );
                     }
-                    addNext( node, estimate + tentativeGScore, visit );
                 }
+            }
+            finally
+            {
+                Iterables.tryCloseResource( expand );
             }
         }
 

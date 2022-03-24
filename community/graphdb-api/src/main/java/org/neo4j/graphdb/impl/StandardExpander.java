@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -37,17 +36,17 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
+import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.helpers.collection.ArrayIterator;
 import org.neo4j.internal.helpers.collection.FilteringIterator;
 import org.neo4j.internal.helpers.collection.MappingResourceIterator;
 import org.neo4j.internal.helpers.collection.NestingResourceIterator;
+import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.traversal.Paths.singleNodePath;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 public abstract class StandardExpander implements PathExpander
@@ -56,7 +55,7 @@ public abstract class StandardExpander implements PathExpander
     {
     }
 
-    abstract static class StandardExpansion<T> implements ResourceIterable<T>
+    abstract static class StandardExpansion<T> extends AbstractResourceIterable<T>
     {
         final StandardExpander expander;
         final Path path;
@@ -93,15 +92,17 @@ public abstract class StandardExpander implements PathExpander
 
         public T getSingle()
         {
-            final Iterator<T> expanded = iterator();
-            if ( expanded.hasNext() )
+            try ( ResourceIterator<T> expanded = iterator() )
             {
-                final T result = expanded.next();
                 if ( expanded.hasNext() )
                 {
-                    throw new NotFoundException( "More than one relationship found for " + this );
+                    final T result = expanded.next();
+                    if ( expanded.hasNext() )
+                    {
+                        throw new NotFoundException( "More than one relationship found for " + this );
+                    }
+                    return result;
                 }
-                return result;
             }
             return null;
         }
@@ -149,7 +150,7 @@ public abstract class StandardExpander implements PathExpander
         }
 
         @Override
-        public ResourceIterator<Relationship> iterator()
+        protected ResourceIterator<Relationship> newIterator()
         {
             return expander.doExpand( path, state );
         }
@@ -181,7 +182,7 @@ public abstract class StandardExpander implements PathExpander
         }
 
         @Override
-        public ResourceIterator<Node> iterator()
+        protected ResourceIterator<Node> newIterator()
         {
             final Node node = path.endNode();
 
@@ -219,7 +220,7 @@ public abstract class StandardExpander implements PathExpander
         @Override
         ResourceIterator<Relationship> doExpand( Path path, BranchState state )
         {
-            return asResourceIterator( path.endNode().getRelationships( direction ).iterator() );
+            return ResourceClosingIterator.fromResourceIterable( path.endNode().getRelationships( direction ) );
         }
 
         @Override
@@ -364,7 +365,7 @@ public abstract class StandardExpander implements PathExpander
         ResourceIterator<Relationship> doExpand( Path path, BranchState state )
         {
             final Node node = path.endNode();
-            ResourceIterator<Relationship> resourceIterator = asResourceIterator( node.getRelationships().iterator() );
+            ResourceIterator<Relationship> resourceIterator = ResourceClosingIterator.fromResourceIterable( node.getRelationships() );
             return newResourceIterator( new FilteringIterator<>( resourceIterator, rel ->
             {
                 Exclusion exclude = exclusion.get( rel.getType().name() );
@@ -483,7 +484,7 @@ public abstract class StandardExpander implements PathExpander
             if ( directions.length == 1 )
             {
                 DirectionAndTypes direction = directions[0];
-                return asResourceIterator( node.getRelationships( direction.direction, direction.types ) );
+                return ResourceClosingIterator.fromResourceIterable( node.getRelationships( direction.direction, direction.types ) );
             }
             else
             {
@@ -492,7 +493,7 @@ public abstract class StandardExpander implements PathExpander
                     @Override
                     protected ResourceIterator<Relationship> createNestedIterator( DirectionAndTypes item )
                     {
-                        return asResourceIterator( node.getRelationships( item.direction, item.types ) );
+                        return ResourceClosingIterator.fromResourceIterable( node.getRelationships( item.direction, item.types ) );
                     }
                 };
             }

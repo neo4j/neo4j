@@ -595,9 +595,10 @@ class LabelsAcceptanceTest
         }
 
         // WHEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            for ( final Node node : tx.getAllNodes() )
+            for ( final Node node : allNodes )
             {
                 node.removeLabel( label ); // remove Label ...
                 node.delete(); // ... and afterwards the node

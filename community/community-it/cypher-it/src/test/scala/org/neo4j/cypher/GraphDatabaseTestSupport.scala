@@ -32,6 +32,7 @@ import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.Transaction
 import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.QualifiedName
@@ -204,11 +205,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def countNodes() = graph.withTx(tx => {
-    tx.getAllNodes.asScala.size
+    Iterables.count(tx.getAllNodes).toInt
   })
 
   def countRelationships() = graph.withTx( tx => {
-    tx.getAllRelationships.asScala.size
+    Iterables.count(tx.getAllRelationships).toInt
   })
 
   def createNode(): Node = createNode(Map[String, Any]())
@@ -244,17 +245,30 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
 
   def deleteAllEntities() = {
     withTx( tx => {
-      val relIterator = tx.getAllRelationships.iterator()
+      val relationships = tx.getAllRelationships
+      try {
+        val relIterator = relationships.iterator()
 
-      while (relIterator.hasNext) {
-        relIterator.next().delete()
+        while (relIterator.hasNext) {
+          relIterator.next().delete()
+        }
+      } finally {
+        relationships.close()
       }
-      val nodeIterator = tx.getAllNodes.iterator()
-      while (nodeIterator.hasNext) {
-        nodeIterator.next().delete()
+      val allNodes = tx.getAllNodes
+      try {
+        val nodeIterator = allNodes.iterator()
+        try {
+          while (nodeIterator.hasNext) {
+            nodeIterator.next().delete()
+          }
+        } finally {
+          nodeIterator.close()
+        }
+      } finally {
+        allNodes.close()
       }
     })
-
   }
 
   def nodeIds = nodes.map(_.getId).toArray

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -63,8 +64,8 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(nodesDeleted = 3*4, relationshipsDeleted = 3*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("detach delete relationship in map") {
@@ -91,7 +92,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(relationshipsDeleted = 3*3)
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("detach delete path in map") {
@@ -120,7 +121,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withStatistics(nodesDeleted = 3*4, relationshipsDeleted = 3*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 }

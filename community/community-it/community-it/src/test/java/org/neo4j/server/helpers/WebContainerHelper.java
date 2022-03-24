@@ -25,10 +25,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 public final class WebContainerHelper
 {
@@ -105,15 +107,13 @@ public final class WebContainerHelper
 
         private static void deleteAllNodesAndRelationships( Transaction tx )
         {
-            Iterable<Node> allNodes = tx.getAllNodes();
-            for ( Node n : allNodes )
+            try ( ResourceIterable<Node> allNodes = tx.getAllNodes() )
             {
-                Iterable<Relationship> relationships = n.getRelationships();
-                for ( Relationship rel : relationships )
+                for ( Node n : allNodes )
                 {
-                    rel.delete();
+                    Iterables.forEach( n.getRelationships(), Relationship::delete );
+                    n.delete();
                 }
-                n.delete();
             }
         }
     }

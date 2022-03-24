@@ -38,8 +38,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Dijkstra class. This class can be used to perform shortest path computations
@@ -317,13 +315,11 @@ public class Dijkstra<CostType> implements
                 // Otherwise, follow all edges from this node
                 for ( RelationshipType costRelationType : costRelationTypes )
                 {
-                    ResourceIterable<Relationship> relationships = Iterables.asResourceIterable(
-                            currentNode.getRelationships( getDirection(), costRelationType ) );
-                    try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
+                    try ( ResourceIterable<Relationship> relationships = currentNode.getRelationships( getDirection(),
+                                                                                                       costRelationType ) )
                     {
-                        while ( iterator.hasNext() )
+                        for ( final var relationship : relationships )
                         {
-                            Relationship relationship = iterator.next();
                             if ( limitReached() )
                             {
                                 break;

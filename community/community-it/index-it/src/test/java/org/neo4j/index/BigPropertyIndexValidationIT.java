@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ImpermanentDbmsExtension
@@ -72,10 +72,10 @@ class BigPropertyIndexValidationIT
                 tx.commit();
             }
             //Check that the database is empty.
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
             {
-                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
-                assertFalse( nodes.hasNext() );
+                assertThat( allNodes ).hasSize( 0 );
             }
         } );
     }
@@ -96,10 +96,10 @@ class BigPropertyIndexValidationIT
                 tx.commit();
             }
             //Check that the database is empty.
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
             {
-                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
-                assertFalse( nodes.hasNext() );
+                assertThat( allNodes ).hasSize( 0 );
             }
         } );
     }
@@ -121,10 +121,10 @@ class BigPropertyIndexValidationIT
                 tx.commit();
             }
             //Check that the database is empty.
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                  ResourceIterable<Node> allNodes = tx.getAllNodes() )
             {
-                ResourceIterator<Node> nodes = tx.getAllNodes().iterator();
-                assertFalse( nodes.hasNext() );
+                assertThat( allNodes ).hasSize( 0 );
             }
         } );
     }

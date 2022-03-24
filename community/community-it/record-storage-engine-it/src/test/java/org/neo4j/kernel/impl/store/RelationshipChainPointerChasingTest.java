@@ -30,6 +30,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -94,19 +96,22 @@ class RelationshipChainPointerChasingTest
             node = tx.getNodeById( node.getId() );
             // WHEN getting the relationship iterator, i.e. starting to traverse this relationship chain,
             // the cursor eagerly goes to the first relationship before we call #hasNexxt/#next.
-            Iterator<Relationship> iterator = node.getRelationships().iterator();
+            try ( ResourceIterable<Relationship> nodeRels = node.getRelationships();
+                  ResourceIterator<Relationship> iterator = nodeRels.iterator() )
+            {
+                // Therefore we delete relationships [1] and [2] (the second and third), since currently
+                // the relationship iterator has read [0] and have already decided to go to [1] after our next
+                // call to #next
+                deleteRelationshipsInSeparateThread( relationships[1], relationships[2] );
 
-            // Therefore we delete relationships [1] and [2] (the second and third), since currently
-            // the relationship iterator has read [0] and have already decided to go to [1] after our next
-            // call to #next
-            deleteRelationshipsInSeparateThread( relationships[1], relationships[2] );
+                // THEN the relationship iterator should recognize the unused relationship, but still try to find
+                // the next used relationship in this chain by following the pointers in the unused records.
+                assertNext( relationships[0], iterator );
+                assertNext( relationships[3], iterator );
+                assertNext( relationships[4], iterator );
+                assertFalse( iterator.hasNext() );
+            }
 
-            // THEN the relationship iterator should recognize the unused relationship, but still try to find
-            // the next used relationship in this chain by following the pointers in the unused records.
-            assertNext( relationships[0], iterator );
-            assertNext( relationships[3], iterator );
-            assertNext( relationships[4], iterator );
-            assertFalse( iterator.hasNext() );
             tx.commit();
         }
     }
@@ -137,26 +142,29 @@ class RelationshipChainPointerChasingTest
 
             // WHEN getting the relationship iterator, the first group record will be read and held,
             // already pointing to the next group
-            Iterator<Relationship> relationships = node.getRelationships().iterator();
-            for ( int i = 0; i < THRESHOLD / 2; i++ )
+            try ( ResourceIterable<Relationship> nodeRels = node.getRelationships();
+                  ResourceIterator<Relationship> relationships = nodeRels.iterator() )
             {
-                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
-            }
+                for ( int i = 0; i < THRESHOLD / 2; i++ )
+                {
+                    assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
+                }
 
-            // Here we're awfully certain that we're on this first group, so we go ahead and delete the
-            // next one in a simulated concurrent transaction in another thread
-            deleteRelationshipsInSeparateThread( relationshipInTheMiddle );
+                // Here we're awfully certain that we're on this first group, so we go ahead and delete the
+                // next one in a simulated concurrent transaction in another thread
+                deleteRelationshipsInSeparateThread( relationshipInTheMiddle );
 
-            // THEN we should be able to, first of all, iterate through the rest of the relationships of the first type
-            for ( int i = 0; i < THRESHOLD / 2; i++ )
-            {
-                assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
+                // THEN we should be able to, first of all, iterate through the rest of the relationships of the first type
+                for ( int i = 0; i < THRESHOLD / 2; i++ )
+                {
+                    assertTrue( relationships.next().isType( MyRelTypes.TEST ) );
+                }
+                // THEN we should be able to see the last relationship, after the deleted one
+                // where the group for the deleted relationship also should've been deleted since it was the
+                // only on of that type.
+                assertNext( relationshipInTheEnd, relationships );
+                assertFalse( relationships.hasNext() );
             }
-            // THEN we should be able to see the last relationship, after the deleted one
-            // where the group for the deleted relationship also should've been deleted since it was the
-            // only on of that type.
-            assertNext( relationshipInTheEnd, relationships );
-            assertFalse( relationships.hasNext() );
 
             tx.commit();
         }

@@ -42,6 +42,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionExceptionMapper;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -181,7 +182,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     {
         var kernelTransaction = beginKernelTransaction( type, loginContext, connectionInfo, timeoutMillis );
         return new TransactionImpl( database.getTokenHolders(), contextFactory, availabilityGuard, database.getExecutionEngine(), kernelTransaction,
-                terminationCallback, transactionExceptionMapper, database.getElementIdMapper() );
+                                    new CloseableResourceManager(), terminationCallback, transactionExceptionMapper, database.getElementIdMapper() );
     }
 
     @Override

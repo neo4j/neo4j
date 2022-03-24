@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -69,12 +70,15 @@ public class DbRepresentation
                 var schema = transaction.schema();
                 schema.awaitIndexesOnline( 1, TimeUnit.MINUTES );
                 DbRepresentation result = new DbRepresentation();
-                for ( Node node : transaction.getAllNodes() )
+                try ( ResourceIterable<Node> allNodes = transaction.getAllNodes() )
                 {
-                    NodeRep nodeRep = new NodeRep( node );
-                    result.nodes.put( node.getId(), nodeRep );
-                    result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
-                    result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    for ( Node node : allNodes )
+                    {
+                        NodeRep nodeRep = new NodeRep( node );
+                        result.nodes.put( node.getId(), nodeRep );
+                        result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
+                        result.highestRelationshipId = Math.max( nodeRep.highestRelationshipId, result.highestRelationshipId );
+                    }
                 }
                 for ( IndexDefinition indexDefinition : schema.getIndexes() )
                 {
@@ -275,11 +279,15 @@ public class DbRepresentation
             id = node.getId();
             properties = new PropertiesRep( node, node.getId() );
             long highestRel = 0;
-            for ( Relationship rel : node.getRelationships( Direction.OUTGOING ) )
+            try ( ResourceIterable<Relationship> relationships = node.getRelationships( Direction.OUTGOING ) )
             {
-                outRelationships.put( rel.getId(), new PropertiesRep( rel, rel.getId() ) );
-                highestRel = Math.max( highestRel, rel.getId() );
+                for ( final var rel : relationships )
+                {
+                    outRelationships.put( rel.getId(), new PropertiesRep( rel, rel.getId() ) );
+                    highestRel = Math.max( highestRel, rel.getId() );
+                }
             }
+
             this.highestRelationshipId = highestRel;
         }
 

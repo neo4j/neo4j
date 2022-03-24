@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -64,8 +65,8 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 3)
-    tx.getAllNodes.stream().count() shouldBe 4
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 4
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("delete some relationships") {
@@ -85,7 +86,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 4)
-    tx.getAllRelationships.stream().count() shouldBe 4
+    Iterables.count(tx.getAllRelationships) shouldBe 4
   }
 
   test("duplicate delete") {
@@ -105,7 +106,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 3)
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("delete on rhs of apply") {
@@ -126,27 +127,32 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 6)
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   private def deleteAllTest(relationshipCount: Int): Unit = {
 
-    val allRelationships = tx.getAllRelationships.iterator().asScala.toIndexedSeq.map(n => Array(n))
+    val allRelationships = tx.getAllRelationships
+    try {
+      val relationshipsArray = allRelationships.iterator().asScala.toIndexedSeq.map(n => Array(n))
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r")
-      .deleteRelationship("r")
-      .expandAll("(n)-[r]->()")
-      .allNodeScan("n")
-      .build(readOnly = false)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("r")
+        .deleteRelationship("r")
+        .expandAll("(n)-[r]->()")
+        .allNodeScan("n")
+        .build(readOnly = false)
 
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    runtimeResult should beColumns("r")
-      .withRows(allRelationships, listInAnyOrder = true)
-      .withStatistics(relationshipsDeleted = relationshipCount)
-    tx.getAllRelationships.stream().count() shouldBe 0
+      // then
+      val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+      consume(runtimeResult)
+      runtimeResult should beColumns("r")
+        .withRows(relationshipsArray, listInAnyOrder = true)
+        .withStatistics(relationshipsDeleted = relationshipCount)
+    } finally {
+      allRelationships.close()
+    }
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 }

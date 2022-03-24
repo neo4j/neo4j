@@ -76,7 +76,12 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withSingleRow(10)
       .withStatistics(nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("foreachApply together with anti-conditional apply") {
@@ -103,7 +108,12 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withSingleRow(10)
       .withStatistics(nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("foreachApply on empty list") {
@@ -148,7 +158,12 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq(10, 20, 30)))
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("foreachApply should handle many rows") {
@@ -222,7 +237,12 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withSingleRow(1)
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 101, 102, 103, 1001, 1002, 1003)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 101, 102, 103, 1001, 1002, 1003)
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("handle deeply nested foreachApply") {

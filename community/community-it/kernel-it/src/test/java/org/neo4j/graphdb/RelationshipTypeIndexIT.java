@@ -33,6 +33,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenPredicate;
@@ -115,11 +116,11 @@ class RelationshipTypeIndexIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
-            for ( Relationship relationship : node.getRelationships() )
+            Iterables.forEach( node.getRelationships(), rel ->
             {
-                relationship.delete();
-                expectedIds.remove( relationship.getId() );
-            }
+                expectedIds.remove( rel.getId() );
+                rel.delete();
+            } );
             tx.commit();
         }
 

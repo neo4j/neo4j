@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Point;
@@ -74,15 +75,18 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         var db = container().getDefaultDatabase();
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : tx.getAllNodes() )
+            try ( ResourceIterable<Node> allNodes = tx.getAllNodes() )
             {
-                if ( node.hasLabel( label( "Node" ) ) && node.hasProperty( "points" ) )
+                for ( Node node : allNodes )
                 {
-                    Point[] points = (Point[]) node.getProperty( "points" );
+                    if ( node.hasLabel( label( "Node" ) ) && node.hasProperty( "points" ) )
+                    {
+                        Point[] points = (Point[]) node.getProperty( "points" );
 
-                    verifyPoint( points[0], CARTESIAN, 1.0, 1.0 );
-                    verifyPoint( points[1], CARTESIAN, 2.0, 2.0 );
-                    verifyPoint( points[2], CARTESIAN, 3.0, 3.0 );
+                        verifyPoint( points[0], CARTESIAN, 1.0, 1.0 );
+                        verifyPoint( points[1], CARTESIAN, 2.0, 2.0 );
+                        verifyPoint( points[2], CARTESIAN, 3.0, 3.0 );
+                    }
                 }
             }
             tx.commit();

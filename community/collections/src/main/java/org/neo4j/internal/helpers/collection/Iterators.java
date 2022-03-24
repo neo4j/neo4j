@@ -176,7 +176,14 @@ public final class Iterators
      */
     public static <T> T singleOrNull( Iterator<T> iterator )
     {
-        return single( iterator, null );
+        try
+        {
+            return single( iterator, null );
+        }
+        finally
+        {
+            tryCloseResource( iterator );
+        }
     }
 
     /**
@@ -406,6 +413,17 @@ public final class Iterators
         return () -> iterator;
     }
 
+    /**
+     * Counts the number of items in the {@code iterator} by looping
+     * through it.
+     *
+     * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
+     * in a {@code finally} block after the items have been counted.
+     *
+     * @param <T> the type of items in the iterator.
+     * @param iterator the {@link Iterator} to count items in.
+     * @return the number of items found in {@code iterator}.
+     */
     public static <T> long count( Iterator<T> iterator )
     {
         return count( iterator, Predicates.alwaysTrue() );
@@ -414,6 +432,10 @@ public final class Iterators
     /**
      * Counts the number of filtered in the {@code iterator} by looping
      * through it.
+     *
+     * If the {@code iterator} implements {@link Resource} it will be {@link Resource#close() closed}
+     * in a {@code finally} block after the items have been counted.
+     *
      * @param <T> the type of items in the iterator.
      * @param iterator the {@link Iterator} to count items in.
      * @param filter the filter to test items against

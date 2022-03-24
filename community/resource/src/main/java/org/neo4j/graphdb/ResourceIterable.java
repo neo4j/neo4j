@@ -77,7 +77,7 @@ import org.neo4j.annotations.api.PublicApi;
  * @see ResourceIterator
  */
 @PublicApi
-public interface ResourceIterable<T> extends Iterable<T>
+public interface ResourceIterable<T> extends Iterable<T>, Resource
 {
     /**
      * Returns an {@link ResourceIterator iterator} with associated resources that may be managed.
@@ -86,10 +86,13 @@ public interface ResourceIterable<T> extends Iterable<T>
     ResourceIterator<T> iterator();
 
     /**
+     * Returns an {@link Stream} of associated resources that may be managed. Care should be taken to
+     * {@link Stream#close()} the stream to also close the underlying {@link ResourceIterable}.
+     *
      * @return this iterable as a {@link Stream}
      */
     default Stream<T> stream()
     {
-        return iterator().stream();
+        return iterator().stream().onClose( this::close );
     }
 }

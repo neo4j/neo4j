@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
@@ -160,14 +160,15 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel
     private static Optional<NamedDatabaseId> getTargetedDatabase( Node aliasNode )
     {
         return ignoreConcurrentDeletes( () ->
-        {
-            var targetDatabases = StreamSupport.stream( aliasNode.getRelationships( Direction.OUTGOING, TARGETS_RELATIONSHIP ).spliterator(), false )
-                                               .collect( Collectors.toList() ); // Must be collected to exhaust the underlying iterator
-
-            return targetDatabases.stream().findFirst()
-                                  .map( Relationship::getEndNode )
-                                  .map( CommunityTopologyGraphDbmsModel::getDatabaseId );
-        } );
+            {
+                try ( Stream<Relationship> stream = aliasNode.getRelationships( Direction.OUTGOING, TARGETS_RELATIONSHIP )
+                                                             .stream() )
+                {
+                    return stream.findFirst()
+                                 .map( Relationship::getEndNode )
+                                 .map( CommunityTopologyGraphDbmsModel::getDatabaseId );
+                }
+            } );
     }
 
     private static NamedDatabaseId getDatabaseId( Node databaseNode )

@@ -283,15 +283,20 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
 
-    // then
-    val nodes = tx.getAllNodes.asScala.toArray
-    val expected = nodes.map(Array(_))
-    runtimeResult should beColumns("n")
-      .withRows(expected)
-      .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
+    val allNodes = tx.getAllNodes
+    try {
+      // then
+      val nodes = allNodes.asScala.toArray
+      val expected = nodes.map(Array(_))
+      runtimeResult should beColumns("n")
+        .withRows(expected)
+        .withStatistics(nodesCreated = testRange.size, labelsAdded = testRange.size, propertiesSet = testRange.size * 3)
 
-    nodes.map { _.getAllProperties.asScala } should contain theSameElementsAs
-      testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
+      nodes.map { _.getAllProperties.asScala } should contain theSameElementsAs
+        testRange.map { i => Map("p1" -> s"${testValueOffset + i}", "p2" -> s"${testValueOffset*2 + i}", "p3" -> s"${testValueOffset*3 + i}") }
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("should load csv file with linenumber") {

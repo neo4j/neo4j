@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -86,7 +87,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withSingleRow(10)
       .withStatistics(nodesCreated = 3, labelsAdded = 3, propertiesSet = 3)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should equal(List(1, 2, 3))
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("foreach on empty list") {
@@ -128,7 +134,12 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq(10, 20, 30)))
       .withStatistics(nodesCreated = 9, labelsAdded = 9, propertiesSet = 9)
-    tx.getAllNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.map(_.getProperty("prop")) should contain theSameElementsAs List(11, 12, 13, 21, 22, 23, 31, 32, 33)
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("foreach should handle many rows") {
@@ -262,10 +273,15 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(labelsAdded = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.hasLabel(Label.label("A")) shouldBe true
-      n.hasLabel(Label.label("B")) shouldBe true
-      n.hasLabel(Label.label("C")) shouldBe true
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.hasLabel(Label.label("A")) shouldBe true
+        n.hasLabel(Label.label("B")) shouldBe true
+        n.hasLabel(Label.label("C")) shouldBe true
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -286,10 +302,15 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(labelsAdded = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.hasLabel(Label.label("A")) shouldBe true
-      n.hasLabel(Label.label("B")) shouldBe true
-      n.hasLabel(Label.label("C")) shouldBe true
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.hasLabel(Label.label("A")) shouldBe true
+        n.hasLabel(Label.label("B")) shouldBe true
+        n.hasLabel(Label.label("C")) shouldBe true
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -310,8 +331,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(3)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(3)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -332,8 +358,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(42)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -354,8 +385,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(3)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(3)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -376,8 +412,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(42)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -399,8 +440,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels))
       .withStatistics(propertiesSet = 3 * sizeHint)
-    tx.getAllRelationships.asScala.foreach {r =>
-      r.getProperty("prop") should equal(3)
+    val allRelationships = tx.getAllRelationships
+    try {
+      allRelationships.asScala.foreach { r =>
+        r.getProperty("prop") should equal(3)
+      }
+    } finally {
+      allRelationships.close()
     }
   }
 
@@ -422,8 +468,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllRelationships.asScala.foreach {r =>
-      r.getProperty("prop") should equal(42)
+    val allRelationships = tx.getAllRelationships
+    try {
+      allRelationships.asScala.foreach { r =>
+        r.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allRelationships.close()
     }
   }
 
@@ -445,8 +496,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllRelationships.asScala.foreach {r =>
-      r.getProperty("prop") should equal(42)
+    val allRelationships = tx.getAllRelationships
+    try {
+      allRelationships.asScala.foreach { r =>
+        r.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allRelationships.close()
     }
   }
 
@@ -468,8 +524,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllRelationships.asScala.foreach {r =>
-      r.getProperty("prop") should equal(42)
+    val allRelationships = tx.getAllRelationships
+    try {
+      allRelationships.asScala.foreach { r =>
+        r.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allRelationships.close()
     }
   }
 
@@ -491,8 +552,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(3)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(3)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -513,8 +579,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(42)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -535,10 +606,15 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = 3 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop1") should equal(1)
-      n.getProperty("prop2") should equal(2)
-      n.getProperty("prop3") should equal(3)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop1") should equal(1)
+        n.getProperty("prop2") should equal(2)
+        n.getProperty("prop3") should equal(3)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -559,8 +635,13 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(propertiesSet = sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.getProperty("prop") should equal(42)
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.getProperty("prop") should equal(42)
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -581,10 +662,15 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(labelsRemoved = 2 * sizeHint)
-    tx.getAllNodes.asScala.foreach {n =>
-      n.hasLabel(Label.label("A")) shouldBe false
-      n.hasLabel(Label.label("B")) shouldBe false
-      n.hasLabel(Label.label("C")) shouldBe true
+    val allNodes = tx.getAllNodes
+    try {
+      allNodes.asScala.foreach { n =>
+        n.hasLabel(Label.label("A")) shouldBe false
+        n.hasLabel(Label.label("B")) shouldBe false
+        n.hasLabel(Label.label("C")) shouldBe true
+      }
+    } finally {
+      allNodes.close()
     }
   }
 
@@ -605,7 +691,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(nodesDeleted = sizeHint)
-    tx.getAllNodes.asScala shouldBe empty
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("foreach + detach delete" ) {
@@ -625,7 +711,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(nodesDeleted = sizeHint, relationshipsDeleted = sizeHint)
-    tx.getAllNodes.asScala shouldBe empty
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("foreach should create nodes and ignore null properties") {

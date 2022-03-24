@@ -23,17 +23,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
@@ -204,15 +203,9 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         }
     }
 
-    private static Relationship[] getRelationshipArray(
-            Iterable<Relationship> relsIterable )
+    private static Relationship[] getRelationshipArray( Iterable<Relationship> relsIterable )
     {
-        List<Relationship> relList = new ArrayList<>();
-        for ( Relationship rel : relsIterable )
-        {
-            relList.add( rel );
-        }
-        return relList.toArray( new Relationship[0] );
+        return Iterables.asArray( Relationship.class, relsIterable );
     }
 
     @Test
@@ -313,11 +306,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             rel = transaction.getRelationshipById( rel.getId() );
 
             nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
-            int count = 0;
-            for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
-            {
-                count++;
-            }
+            int count = (int) Iterables.count( nodeA.getRelationships( MyRelTypes.TEST ) );
             assertEquals( 2, count );
             nodeA.setProperty( "2", 2 );
             assertEquals( 1, nodeA.getProperty( "1" ) );
@@ -333,11 +322,7 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             nodeA = transaction.getNodeById( nodeA.getId() );
             rel = transaction.getRelationshipById( rel.getId() );
 
-            int count = 0;
-            for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
-            {
-                count++;
-            }
+            int count = (int) Iterables.count( nodeA.getRelationships( MyRelTypes.TEST ) );
             assertEquals( 2, count );
             assertEquals( 1, nodeA.getProperty( "1" ) );
             assertEquals( 1, rel.getProperty( "1" ) );
@@ -533,22 +518,27 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             Collection<Relationship> outgoing = new HashSet<>( outgoingOriginal );
             Collection<Relationship> incoming = new HashSet<>( incomingOriginal );
             Collection<Relationship> loops = new HashSet<>( loopsOriginal );
-            for ( Relationship rel : node2.getRelationships( MyRelTypes.TEST ) )
+
+            try ( ResourceIterable<Relationship> types = node2.getRelationships( MyRelTypes.TEST ) )
             {
-                assertTrue( rels.add( rel ) );
-                if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                for ( final var rel : types )
                 {
-                    assertTrue( loops.remove( rel ) );
-                }
-                else if ( rel.getStartNode().equals( node2 ) )
-                {
-                    assertTrue( outgoing.remove( rel ) );
-                }
-                else
-                {
-                    assertTrue( incoming.remove( rel ) );
+                    assertTrue( rels.add( rel ) );
+                    if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                    {
+                        assertTrue( loops.remove( rel ) );
+                    }
+                    else if ( rel.getStartNode().equals( node2 ) )
+                    {
+                        assertTrue( outgoing.remove( rel ) );
+                    }
+                    else
+                    {
+                        assertTrue( incoming.remove( rel ) );
+                    }
                 }
             }
+
             assertEquals( total, rels.size() );
             assertEquals( 0, loops.size() );
             assertEquals( 0, incoming.size() );
@@ -558,20 +548,23 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             outgoing = new HashSet<>( outgoingOriginal );
             incoming = new HashSet<>( incomingOriginal );
             loops = new HashSet<>( loopsOriginal );
-            for ( Relationship rel : node2.getRelationships( Direction.OUTGOING ) )
+            try ( ResourceIterable<Relationship> relationships = node2.getRelationships( OUTGOING ) )
             {
-                assertTrue( rels.add( rel ) );
-                if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                for ( final var rel : relationships )
                 {
-                    assertTrue( loops.remove( rel ) );
-                }
-                else if ( rel.getStartNode().equals( node2 ) )
-                {
-                    assertTrue( outgoing.remove( rel ) );
-                }
-                else
-                {
-                    fail( "There should be no incoming relationships " + rel );
+                    assertTrue( rels.add( rel ) );
+                    if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                    {
+                        assertTrue( loops.remove( rel ) );
+                    }
+                    else if ( rel.getStartNode().equals( node2 ) )
+                    {
+                        assertTrue( outgoing.remove( rel ) );
+                    }
+                    else
+                    {
+                        fail( "There should be no incoming relationships " + rel );
+                    }
                 }
             }
             assertEquals( totalOneDirection, rels.size() );
@@ -582,20 +575,23 @@ class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
             outgoing = new HashSet<>( outgoingOriginal );
             incoming = new HashSet<>( incomingOriginal );
             loops = new HashSet<>( loopsOriginal );
-            for ( Relationship rel : node2.getRelationships( Direction.INCOMING ) )
+            try ( ResourceIterable<Relationship> relationships = node2.getRelationships( INCOMING ) )
             {
-                assertTrue( rels.add( rel ) );
-                if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                for ( final var rel : relationships )
                 {
-                    assertTrue( loops.remove( rel ) );
-                }
-                else if ( rel.getEndNode().equals( node2 ) )
-                {
-                    assertTrue( incoming.remove( rel ) );
-                }
-                else
-                {
-                    fail( "There should be no outgoing relationships " + rel );
+                    assertTrue( rels.add( rel ) );
+                    if ( rel.getStartNode().equals( node2 ) && rel.getEndNode().equals( node2 ) )
+                    {
+                        assertTrue( loops.remove( rel ) );
+                    }
+                    else if ( rel.getEndNode().equals( node2 ) )
+                    {
+                        assertTrue( incoming.remove( rel ) );
+                    }
+                    else
+                    {
+                        fail( "There should be no outgoing relationships " + rel );
+                    }
                 }
             }
             assertEquals( totalOneDirection, rels.size() );

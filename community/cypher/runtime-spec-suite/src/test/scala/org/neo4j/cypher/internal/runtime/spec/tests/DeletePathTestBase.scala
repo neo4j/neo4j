@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.Label
+import org.neo4j.internal.helpers.collection.Iterables
 
 abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -60,7 +61,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 1)
-    tx.getAllNodes.stream().count() shouldBe (nodeCount - 1)
+    Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)
   }
 
   test("delete path with relationships") {
@@ -87,8 +88,8 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount*4, relationshipsDeleted = chainCount*3)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   test("fail to delete path with relationships connected to other nodes") {
@@ -114,8 +115,8 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
     thrown.getMessage should include regex "Cannot delete.*because it still has relationships"
 
     val tx = runtimeTestSupport.startNewTx()
-    tx.getAllNodes.stream().count() shouldBe (4*chainCount)
-    tx.getAllRelationships.stream().count() shouldBe (3*chainCount)
+    Iterables.count(tx.getAllNodes) shouldBe (4*chainCount)
+    Iterables.count(tx.getAllRelationships) shouldBe (3*chainCount)
   }
 
 

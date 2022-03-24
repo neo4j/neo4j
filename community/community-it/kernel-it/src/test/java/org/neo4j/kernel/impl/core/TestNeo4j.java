@@ -38,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator;
 
 class TestNeo4j extends AbstractNeo4jTestCase
 {
@@ -62,11 +61,14 @@ class TestNeo4j extends AbstractNeo4jTestCase
 
             // Verify that the node reports that it has a relationship of
             // the type we created above
-            try ( ResourceIterator<Relationship> iterator = asResourceIterator( firstNode.getRelationships( relType ).iterator() ) )
+            try ( ResourceIterable<Relationship> relationships = firstNode.getRelationships( relType );
+                  ResourceIterator<Relationship> iterator = relationships.iterator() )
             {
                 assertTrue( iterator.hasNext() );
             }
-            try ( ResourceIterator<Relationship> iterator = asResourceIterator( secondNode.getRelationships( relType ).iterator() ) )
+
+            try ( ResourceIterable<Relationship> relationships = secondNode.getRelationships( relType );
+                  ResourceIterator<Relationship> iterator = relationships.iterator() )
             {
                 assertTrue( iterator.hasNext() );
             }
@@ -74,14 +76,14 @@ class TestNeo4j extends AbstractNeo4jTestCase
             ResourceIterable<Relationship> allRels;
 
             // Verify that both nodes return the relationship we created above
-            allRels = (ResourceIterable<Relationship>) firstNode.getRelationships();
+            allRels = firstNode.getRelationships();
             assertTrue( objectExistsInIterable( rel, allRels ) );
-            allRels = (ResourceIterable<Relationship>) firstNode.getRelationships( relType );
+            allRels = firstNode.getRelationships( relType );
             assertTrue( objectExistsInIterable( rel, allRels ) );
 
-            allRels = (ResourceIterable<Relationship>) secondNode.getRelationships();
+            allRels = secondNode.getRelationships();
             assertTrue( objectExistsInIterable( rel, allRels ) );
-            allRels = (ResourceIterable<Relationship>) secondNode.getRelationships( relType );
+            allRels = secondNode.getRelationships( relType );
             assertTrue( objectExistsInIterable( rel, allRels ) );
 
             // Verify that the relationship reports that it is associated with
@@ -101,19 +103,22 @@ class TestNeo4j extends AbstractNeo4jTestCase
 
     private static boolean objectExistsInIterable( Relationship rel, ResourceIterable<Relationship> allRels )
     {
-        try ( ResourceIterator<Relationship> resourceIterator = allRels.iterator() )
+        try ( allRels )
         {
-            while ( resourceIterator.hasNext() )
+            try ( ResourceIterator<Relationship> resourceIterator = allRels.iterator() )
             {
-                Relationship iteratedRel = resourceIterator.next();
+                while ( resourceIterator.hasNext() )
                 {
-                    if ( rel.equals( iteratedRel ) )
+                    Relationship iteratedRel = resourceIterator.next();
                     {
-                        return true;
+                        if ( rel.equals( iteratedRel ) )
+                        {
+                            return true;
+                        }
                     }
                 }
+                return false;
             }
-            return false;
         }
     }
 
@@ -193,30 +198,38 @@ class TestNeo4j extends AbstractNeo4jTestCase
             count = 0;
             try ( Transaction transaction = getGraphDb().beginTx() )
             {
-                for ( Node node : transaction.getAllNodes() )
+                try ( ResourceIterable<Node> allNodes = transaction.getAllNodes() )
                 {
-                    count++;
-                    if ( node.equals( newNode ) )
+                    for ( Node node : allNodes )
                     {
-                        found = true;
+                        count++;
+                        if ( node.equals( newNode ) )
+                        {
+                            found = true;
+                        }
                     }
                 }
                 assertTrue( found );
                 assertEquals( count, oldCount + 1 );
 
-                // Tests a bug in the "all nodes" iterator
-                ResourceIterator<Node> allNodesIterator = transaction.getAllNodes().iterator();
-                assertNotNull( allNodesIterator.next() );
-                allNodesIterator.close();
+                try ( ResourceIterable<Node> allNodes = transaction.getAllNodes() )
+                {
+                    // Tests a bug in the "all nodes" iterator
+                    try ( ResourceIterator<Node> allNodesIterator = allNodes.iterator() )
+                    {
+                        assertNotNull( allNodesIterator.next() );
+                    }
+                }
 
                 transaction.getNodeById( newNode.getId() ).delete();
                 transaction.commit();
             }
             found = false;
-            try ( Transaction transaction = getGraphDb().beginTx() )
+            try ( Transaction transaction = getGraphDb().beginTx();
+                  ResourceIterable<Node> allNodes = transaction.getAllNodes() )
             {
                 count = 0;
-                for ( Node node : transaction.getAllNodes() )
+                for ( Node node : allNodes )
                 {
                     count++;
                     if ( node.equals( newNode ) )

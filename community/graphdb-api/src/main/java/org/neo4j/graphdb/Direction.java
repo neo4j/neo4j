@@ -58,17 +58,11 @@ public enum Direction
      */
     public Direction reverse()
     {
-        switch ( this )
-        {
-            case OUTGOING:
-                return INCOMING;
-            case INCOMING:
-                return OUTGOING;
-            case BOTH:
-                return BOTH;
-            default:
-                throw new IllegalStateException( "Unknown Direction "
-                    + "enum: " + this );
-        }
+        return switch ( this )
+                {
+                    case OUTGOING -> INCOMING;
+                    case INCOMING -> OUTGOING;
+                    case BOTH -> BOTH;
+                };
     }
 }

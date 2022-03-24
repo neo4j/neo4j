@@ -19,19 +19,21 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.internal.helpers.collection.Iterators.iterator;
+import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 class IterablesTest
 {
@@ -39,8 +41,8 @@ class IterablesTest
     void safeForAllShouldConsumeAllSubjectsRegardlessOfSuccess()
     {
         // given
-        List<String> seenSubjects = new ArrayList<>();
-        List<String> failedSubjects = new ArrayList<>();
+        final var seenSubjects = new ArrayList<>();
+        final var failedSubjects = new ArrayList<>();
         ThrowingConsumer<String,RuntimeException> consumer = s ->
         {
             seenSubjects.add( s );
@@ -52,27 +54,185 @@ class IterablesTest
                 throw new RuntimeException( s );
             }
         };
-        Iterable<String> subjects = asList( "1", "2", "3", "4", "5" );
+        final var subjects = asList( "1", "2", "3", "4", "5" );
 
         // when
-        try
+        assertThatThrownBy( () -> Iterables.safeForAll( consumer, subjects ) )
+                .isInstanceOf( RuntimeException.class ).hasMessage( "1" )
+                .hasSuppressedException( new RuntimeException( "3" ) )
+                .hasSuppressedException( new RuntimeException( "5" ) );
+
+        // then good
+        assertThat( seenSubjects ).isEqualTo( subjects );
+        assertThat( failedSubjects ).containsExactly( "1", "3", "5" );
+    }
+
+    @Test
+    void resourceIterableShouldNotCloseIfNoIteratorCreated()
+    {
+        // Given
+        final var closed = new MutableBoolean( false );
+        final var resourceIterator = newResourceIterator( iterator( new Integer[0] ), closed::setTrue );
+
+        // When
+        Iterables.resourceIterable( () -> resourceIterator ).close();
+
+        // Then
+        assertThat( closed.isTrue() ).isFalse();
+    }
+
+    @Test
+    void resourceIterableShouldAlsoCloseIteratorIfResource()
+    {
+        // Given
+        final var closed = new MutableBoolean( false );
+        final var resourceIterator = newResourceIterator( iterator( new Integer[]{1} ), closed::setTrue );
+
+        // When
+        try ( ResourceIterable<Integer> integers = Iterables.resourceIterable( () -> resourceIterator ) )
         {
-            Iterables.safeForAll( consumer, subjects );
-            fail( "Should have thrown exception" );
+            integers.iterator().next();
         }
-        catch ( RuntimeException e )
+
+        // Then
+        assertThat( closed.isTrue() ).isTrue();
+    }
+
+    @Test
+    void forEachShouldProcessAllItemsAndClose()
+    {
+        // Given
+        final var subjects = asList( 1, 2, 3, 4, 5 );
+        final var closed = new MutableBoolean( false );
+        final var resourceIterator = newResourceIterator( subjects.iterator(), closed::setTrue );
+        final var seenSubjects = new ArrayList<>();
+
+        // when
+        Iterables.forEach( Iterables.resourceIterable( () -> resourceIterator ), seenSubjects::add );
+
+        // then good
+        assertThat( seenSubjects ).isEqualTo( subjects );
+        assertThat( closed.isTrue() ).isTrue();
+    }
+
+    @Test
+    void forEachShouldBailOnFirstExceptionAndClose()
+    {
+        // Given
+        final var subjects = asList( 1, 2, 3, 4, 5 );
+        final var closed = new MutableBoolean( false );
+        final var resourceIterator = newResourceIterator( subjects.iterator(), () -> closed.setTrue() );
+        final var seenSubjects = new ArrayList<>();
+        final var failedSubjects = new ArrayList<>();
+
+        var consumer = (Consumer<Integer>) s ->
         {
-            // then good
-            assertEquals( subjects, seenSubjects );
-            Iterator<String> failed = failedSubjects.iterator();
-            assertTrue( failed.hasNext() );
-            assertEquals( e.getMessage(), failed.next() );
-            for ( Throwable suppressed : e.getSuppressed() )
+            seenSubjects.add( s );
+
+            if ( seenSubjects.size() % 3 == 2 )
             {
-                assertTrue( failed.hasNext() );
-                assertEquals( suppressed.getMessage(), failed.next() );
+                failedSubjects.add( s );
+                throw new RuntimeException( "Boom on " + s );
             }
-            assertFalse( failed.hasNext() );
-        }
+        };
+
+        // when
+        assertThatThrownBy( () -> Iterables.forEach( Iterables.resourceIterable( () -> resourceIterator ), consumer ) );
+
+        // then good
+        assertThat( seenSubjects ).isEqualTo( asList( 1, 2 ) );
+        assertThat( failedSubjects ).containsExactly( 2 );
+        assertThat( closed.isTrue() ).isTrue();
+    }
+
+    @Test
+    void count()
+    {
+        // Given
+        final var subjects = asList( 1, 2, 3, 4, 5 );
+        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean( false );
+        final var iterable = new AbstractResourceIterable<Integer>()
+        {
+            @Override
+            protected ResourceIterator<Integer> newIterator()
+            {
+                return newResourceIterator( subjects.iterator(), iteratorClosed::setTrue );
+            }
+
+            @Override
+            protected void onClosed()
+            {
+                iterableClosed.setTrue();
+            }
+        };
+
+        // when
+        long count = Iterables.count( iterable );
+
+        //then
+        assertThat( count ).isEqualTo( subjects.size() );
+        assertThat( iteratorClosed.isTrue() ).isTrue();
+        assertThat( iterableClosed.isTrue() ).isTrue();
+    }
+
+    @Test
+    void firstNoItems()
+    {
+        // Given
+        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean( false );
+        final var iterable = new AbstractResourceIterable<Integer>()
+        {
+            @Override
+            protected ResourceIterator<Integer> newIterator()
+            {
+                return newResourceIterator( Iterators.emptyResourceIterator(), iteratorClosed::setTrue );
+            }
+
+            @Override
+            protected void onClosed()
+            {
+                iterableClosed.setTrue();
+            }
+        };
+
+        // when
+        assertThatThrownBy( () -> Iterables.first( iterable ) );
+
+        //then
+        assertThat( iteratorClosed.isTrue() ).isTrue();
+        assertThat( iterableClosed.isTrue() ).isTrue();
+    }
+
+    @Test
+    void firstWithItems()
+    {
+        // Given
+        final var subjects = asList( 1, 2, 3, 4, 5 );
+        final var iteratorClosed = new MutableBoolean( false );
+        final var iterableClosed = new MutableBoolean( false );
+        final var iterable = new AbstractResourceIterable<Integer>()
+        {
+            @Override
+            protected ResourceIterator<Integer> newIterator()
+            {
+                return newResourceIterator( subjects.iterator(), iteratorClosed::setTrue );
+            }
+
+            @Override
+            protected void onClosed()
+            {
+                iterableClosed.setTrue();
+            }
+        };
+
+        // when
+        long first = Iterables.first( iterable );
+
+        //then
+        assertThat( first ).isEqualTo( 1 );
+        assertThat( iteratorClosed.isTrue() ).isTrue();
+        assertThat( iterableClosed.isTrue() ).isTrue();
     }
 }

@@ -358,15 +358,14 @@ class ReuseStorageSpaceIT
         do
         {
             deleted = 0;
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                  ResourceIterable<ENTITY> entities = provider.apply( tx );
+                  ResourceIterator<ENTITY> iterator = entities.iterator() )
             {
-                try ( ResourceIterator<ENTITY> iterator = provider.apply( tx ).iterator() )
+                for ( ; iterator.hasNext() && deleted < 10_000; deleted++ )
                 {
-                    for ( ; iterator.hasNext() && deleted < 10_000; deleted++ )
-                    {
-                        ENTITY entity = iterator.next();
-                        deleter.accept( entity );
-                    }
+                    ENTITY entity = iterator.next();
+                    deleter.accept( entity );
                 }
                 tx.commit();
             }

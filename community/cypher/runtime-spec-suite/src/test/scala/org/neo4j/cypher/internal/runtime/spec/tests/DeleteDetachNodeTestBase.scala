@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -97,8 +98,8 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withStatistics(nodesDeleted = 1, relationshipsDeleted = nodeCount * 2 + (nodeCount - 1) * 2)
-    tx.getAllNodes.stream().count() shouldBe (nodeCount - 1)
-    tx.getAllRelationships.stream().count() shouldBe ((nodeCount - 1)*(nodeCount - 1)*2)
+    Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)
+    Iterables.count(tx.getAllRelationships) shouldBe ((nodeCount - 1)*(nodeCount - 1)*2)
   }
 
   test("duplicate detach delete") {
@@ -119,7 +120,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
-    tx.getAllNodes.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
   }
 
   test("detach delete on rhs of apply") {
@@ -140,14 +141,11 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = 14, relationshipsDeleted = 33)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 
   private def detachDeleteAllTest(nodeCount: Int, relationshipCount: Int): Unit = {
-
-    val allNodes = tx.getAllNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
-
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -155,13 +153,20 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n")
       .build(readOnly = false)
 
-    // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
-    runtimeResult should beColumns("n")
-      .withRows(allNodes, listInAnyOrder = true)
-      .withStatistics(nodesDeleted = nodeCount, relationshipsDeleted = relationshipCount)
-    tx.getAllNodes.stream().count() shouldBe 0
-    tx.getAllRelationships.stream().count() shouldBe 0
+    val allNodes = tx.getAllNodes
+    try {
+      val nodeArray = allNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
+      // then
+      val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+      consume(runtimeResult)
+      runtimeResult should beColumns("n")
+        .withRows(nodeArray, listInAnyOrder = true)
+        .withStatistics(nodesDeleted = nodeCount, relationshipsDeleted = relationshipCount)
+    } finally {
+      allNodes.close()
+    }
+
+    Iterables.count(tx.getAllNodes) shouldBe 0
+    Iterables.count(tx.getAllRelationships) shouldBe 0
   }
 }

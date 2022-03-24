@@ -51,9 +51,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -543,14 +545,12 @@ class DatabaseRecoveryIT
         // Load all existing nodes
         List<Node> nodes = new ArrayList<>();
         List<String> indexNames = new ArrayList<>();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            try ( ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
+            for ( final var node : allNodes )
             {
-                while ( allNodes.hasNext() )
-                {
-                    nodes.add( allNodes.next() );
-                }
+                nodes.add( node );
             }
             tx.schema().getIndexes().forEach( i -> indexNames.add( i.getName() ) );
         }
@@ -694,10 +694,7 @@ class DatabaseRecoveryIT
                         random.among( nodes, node ->
                         {
                             node = tx.getNodeById( node.getId() );
-                            for ( Relationship relationship : node.getRelationships() )
-                            {
-                                relationship.delete();
-                            }
+                            Iterables.forEach( node.getRelationships(), Relationship::delete );
                             node.delete();
                             nodes.remove( node );
                         } );
@@ -761,14 +758,12 @@ class DatabaseRecoveryIT
     {
         // Load all existing nodes
         List<Node> nodes = new ArrayList<>();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
-            try ( ResourceIterator<Node> allNodes = tx.getAllNodes().iterator() )
+            for ( final var node : allNodes )
             {
-                while ( allNodes.hasNext() )
-                {
-                    nodes.add( allNodes.next() );
-                }
+                nodes.add( node );
             }
             tx.commit();
         }

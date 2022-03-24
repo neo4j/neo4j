@@ -91,7 +91,7 @@ class CachingExpandIntoTest
     private KernelTransaction transaction() throws TransactionFailureException
     {
         KernelTransaction kernelTransaction = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED );
-        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, elementIdMapper );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, elementIdMapper );
         return kernelTransaction;
     }
 

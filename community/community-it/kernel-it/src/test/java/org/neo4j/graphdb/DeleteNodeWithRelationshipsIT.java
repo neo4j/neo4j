@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
@@ -88,7 +89,7 @@ class DeleteNodeWithRelationshipsIT
             // Create temporary relationships of new types, which will be deleted right afterwards
             node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "OTHER_TYPE_1" ) );
             node.createRelationshipTo( tx.createNode(), RelationshipType.withName( "OTHER_TYPE_2" ) );
-            node.getRelationships().forEach( Relationship::delete );
+            Iterables.forEach( node.getRelationships(), Relationship::delete );
             node.delete();
             tx.commit();
         }
@@ -139,7 +140,7 @@ class DeleteNodeWithRelationshipsIT
             // and another transaction which deletes all relationships of type A, and let it commit
             try ( Transaction tx = db.beginTx() )
             {
-                tx.getNodeById( nodeId ).getRelationships( typeA ).forEach( Relationship::delete );
+                Iterables.forEach( tx.getNodeById( nodeId ).getRelationships( typeA ), Relationship::delete );
                 tx.commit();
             }
             // and letting the first transaction complete
@@ -151,10 +152,10 @@ class DeleteNodeWithRelationshipsIT
         try ( Transaction tx = db.beginTx() )
         {
             Node node = tx.getNodeById( nodeId );
-            node.getRelationships().forEach( relationship ->
+            Iterables.forEach( node.getRelationships(), rel ->
             {
-                assertThat( relationship.isType( typeB ) ).isTrue();
-                relationship.delete();
+                assertThat( rel.isType( typeB ) ).isTrue();
+                rel.delete();
             } );
             node.delete();
             tx.commit();
@@ -201,7 +202,7 @@ class DeleteNodeWithRelationshipsIT
             // and another transaction which deletes all relationships of type B, and let it commit
             try ( Transaction tx = db.beginTx() )
             {
-                tx.getNodeById( nodeId ).getRelationships( typeB ).forEach( Relationship::delete );
+                Iterables.forEach( tx.getNodeById( nodeId ).getRelationships( typeB ), Relationship::delete );
                 tx.commit(); //This will fail to delete the group B since it can not get exlusive locks
             }
             // and letting the first transaction complete
@@ -211,7 +212,7 @@ class DeleteNodeWithRelationshipsIT
             //then removing the remaining relationships of A
             try ( Transaction tx = db.beginTx() )
             {
-                tx.getNodeById( nodeId ).getRelationships( typeA ).forEach( Relationship::delete );
+                Iterables.forEach( tx.getNodeById( nodeId ).getRelationships( typeA ), Relationship::delete );
                 tx.commit(); //this should only delete group A since B has a higher typeId than A (later in group-chain)
             }
         }

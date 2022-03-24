@@ -25,6 +25,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
@@ -33,12 +34,11 @@ import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Race;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
-import org.neo4j.test.RandomSupport;
 
-import static java.util.stream.Collectors.toList;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
@@ -134,8 +134,10 @@ class UpdateCreatedTokenIndexIT
         try ( var tx = db.beginTx() )
         {
             var labeledNodes = Iterators.count( tx.findNodes( LABEL_ONE ));
-            var allNodex = tx.getAllNodes().stream().collect( toList() );
-            Assertions.assertThat( allNodex.stream().filter( n -> n.hasLabel( LABEL_ONE ) ).count() ).isEqualTo( labeledNodes );
+            try ( Stream<Node> allNodes = tx.getAllNodes().stream() )
+            {
+                Assertions.assertThat( allNodes.filter( n -> n.hasLabel( LABEL_ONE ) ).count() ).isEqualTo( labeledNodes );
+            }
         }
     }
 

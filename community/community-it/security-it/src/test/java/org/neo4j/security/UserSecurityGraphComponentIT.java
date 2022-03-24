@@ -42,9 +42,11 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -123,9 +125,9 @@ class UserSecurityGraphComponentIT
     @BeforeEach
     void clear() throws Exception
     {
-        inTx( tx -> tx.getAllNodes().stream().forEach( n ->
+        inTx( tx -> Iterables.forEach( tx.getAllNodes(), n ->
         {
-            n.getRelationships().forEach( Relationship::delete );
+            Iterables.forEach( n.getRelationships(), Relationship::delete );
             n.delete();
         } ) );
         inTx( tx -> tx.schema().getConstraints().forEach( ConstraintDefinition::drop ) );

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -163,10 +164,7 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
         {
             var txNode = tx.getNodeById( node1.getId() );
             var txNode2 = tx.getNodeById( node2.getId() );
-            for ( Relationship rel : txNode.getRelationships() )
-            {
-                rel.delete();
-            }
+            Iterables.forEach( txNode.getRelationships(), Relationship::delete );
             txNode.delete();
             txNode2.delete();
             tx.commit();
@@ -180,11 +178,6 @@ class TestIsolationBasic extends AbstractNeo4jTestCase
 
     private static void assertRelationshipCount( Node node, int count )
     {
-        int actualCount = 0;
-        for ( Relationship rel : node.getRelationships() )
-        {
-            actualCount++;
-        }
-        assertEquals( count, actualCount );
+        assertEquals( count, (int) Iterables.count( node.getRelationships() ) );
     }
 }

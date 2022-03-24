@@ -178,7 +178,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    tx.getAllNodes.asScala shouldBe empty
+    Iterables.count(tx.getAllNodes) shouldBe 0
     runtimeResult should beColumns("n").withNoRows().withNoUpdates()
   }
 
@@ -359,9 +359,14 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val relationships = tx.getAllRelationships.asScala.filter(_.getType.name() == "NEW").toList
-    relationships should have size 2 * sizeHint
-    runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated = 2 * sizeHint)
+    val allRelationships = tx.getAllRelationships
+    try {
+      val relationships = allRelationships.asScala.filter(_.getType.name() == "NEW").toList
+      relationships should have size 2 * sizeHint
+      runtimeResult should beColumns("r").withRows(singleColumn(relationships)).withStatistics(relationshipsCreated = 2 * sizeHint)
+    } finally {
+      allRelationships.close()
+    }
   }
 
   test("should fail to create relationship if both nodes are missing") {
@@ -465,10 +470,15 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val nodes = tx.getAllNodes.asScala
-    runtimeResult should beColumns("r").withRows(singleColumn(1 to sizeHint)).withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
-    nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
-    nodes should have size sizeHint
+    val allNodes = tx.getAllNodes
+    try {
+      val nodes = allNodes.asScala
+      runtimeResult should beColumns("r").withRows(singleColumn(1 to sizeHint)).withStatistics(nodesCreated = sizeHint, labelsAdded = 3 * sizeHint)
+      nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
+      nodes should have size sizeHint
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("should not create too many nodes when create is after after loop with continuations 2") {
@@ -558,12 +568,18 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val nodes = tx.getAllNodes.asScala
-    runtimeResult should beColumns("r1")
-      .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
-      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
-    nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
-    nodes should have size size
+
+    val allNodes = tx.getAllNodes
+    try {
+      val nodes = allNodes.asScala
+      runtimeResult should beColumns("r1")
+        .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
+        .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
+      nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
+      nodes should have size size
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 2") {
@@ -606,12 +622,17 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, inputValues((1 to size).map(i => Array[Any](i)):_*))
     consume(runtimeResult)
-    val nodes = tx.getAllNodes.asScala
-    runtimeResult should beColumns("r1").
-      withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
-      .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
-    nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
-    nodes should have size size
+    val allNodes = tx.getAllNodes
+    try {
+      val nodes = allNodes.asScala
+      runtimeResult should beColumns("r1").
+        withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
+        .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
+      nodes.foreach(n => n.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C")))
+      nodes should have size size
+    } finally {
+      allNodes.close()
+    }
   }
 
   test("should not create too many nodes if creates is between two loops with continuation 4") {

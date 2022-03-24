@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
@@ -84,7 +85,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     consume(runtimeResult)
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe 3
   }
 
@@ -123,7 +124,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     runtimeResult should beColumns("prop").withRows(singleColumn(List(17, 17, 17)))
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe 3
   }
 
@@ -170,14 +171,14 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual offset
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual offset
     )
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
     runtimeResult should beColumns("n").withRows(rowCount(numberOfIterations))
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -198,14 +199,14 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual (offset / batchSize * batchSize)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual (offset / batchSize * batchSize)
     )
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
     runtimeResult should beColumns("n").withRows(rowCount(numberOfIterations))
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -230,14 +231,14 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
     )
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
     runtimeResult should beColumns("n").withRows(rowCount(Math.pow(2, numberOfIterations).toInt - 1))
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
@@ -263,14 +264,14 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
     )
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
     runtimeResult should beColumns("b").withRows(rowCount(Math.pow(2, numberOfIterations).toInt - 1))
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 

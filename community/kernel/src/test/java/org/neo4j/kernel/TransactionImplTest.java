@@ -27,7 +27,10 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
@@ -35,6 +38,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -49,9 +53,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TransactionImplTest
@@ -60,6 +68,7 @@ class TransactionImplTest
     private final QueryExecutionEngine engine = mock( QueryExecutionEngine.class );
     private final TransactionalContextFactory contextFactory = mock( TransactionalContextFactory.class );
     private final DatabaseAvailabilityGuard availabilityGuard = mock( DatabaseAvailabilityGuard.class );
+    private final ResourceTracker resourceTracker = mock( ResourceTracker.class );
 
     @Test
     void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
@@ -73,6 +82,7 @@ class TransactionImplTest
 
         // WHEN
         transaction.commit();
+        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -86,6 +96,7 @@ class TransactionImplTest
 
         // WHEN
         transaction.commit();
+        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -107,6 +118,7 @@ class TransactionImplTest
 
         // WHEN
         transaction.commit();
+        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -119,6 +131,7 @@ class TransactionImplTest
         TransactionImpl transaction = createTransaction( kernelTransaction );
 
         transaction.commit();
+        verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -136,6 +149,8 @@ class TransactionImplTest
         assertFalse( terminationReason1.isPresent() );
         assertTrue( terminationReason2.isPresent() );
         assertEquals( Status.Transaction.Terminated, terminationReason2.get() );
+
+        verify( resourceTracker, never() ).closeAllCloseableResources();
     }
 
     @Test
@@ -166,6 +181,7 @@ class TransactionImplTest
 
         // should all invoke the callback
         assertEquals( 3, calls.longValue() );
+        verify( resourceTracker, times( 3 ) ).closeAllCloseableResources();
     }
 
     @Test
@@ -226,6 +242,48 @@ class TransactionImplTest
         checkForIAE( tx -> tx.findRelationships( RelationshipType.withName( "test" ), null ), "Property values" );
     }
 
+    @Test
+    void getAllNodesShouldRegisterAndUnregisterAsResource()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+
+        // commit
+        try ( TransactionImpl tx = createTransaction( kernelTransaction );
+              ResourceIterable<Node> nodes = tx.getAllNodes() )
+        {
+            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
+            verify( resourceTracker, never() ).unregisterCloseableResource( any() );
+
+            nodes.close();
+            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
+            verify( resourceTracker, times( 1 ) ).unregisterCloseableResource( eq( nodes ) );
+
+            tx.commit();
+            verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
+        }
+    }
+
+    @Test
+    void getAllRelationshipsShouldRegisterAndUnregisterAsResource()
+    {
+        KernelTransaction kernelTransaction = mock( KernelTransaction.class );
+
+        // commit
+        try ( TransactionImpl tx = createTransaction( kernelTransaction );
+              ResourceIterable<Relationship> nodes = tx.getAllRelationships() )
+        {
+            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
+            verify( resourceTracker, never() ).unregisterCloseableResource( any() );
+
+            nodes.close();
+            verify( resourceTracker, times( 1 ) ).registerCloseableResource( eq( nodes ) );
+            verify( resourceTracker, times( 1 ) ).unregisterCloseableResource( eq( nodes ) );
+
+            tx.commit();
+            verify( resourceTracker, times( 1 ) ).closeAllCloseableResources();
+        }
+    }
+
     private void checkForIAE( Consumer<Transaction> consumer, String message )
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -242,6 +300,7 @@ class TransactionImplTest
 
     private TransactionImpl createTransaction( KernelTransaction kernelTransaction )
     {
-        return new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, mock( ElementIdMapper.class ) );
+        return new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, resourceTracker, null, null,
+                                    mock( ElementIdMapper.class ) );
     }
 }

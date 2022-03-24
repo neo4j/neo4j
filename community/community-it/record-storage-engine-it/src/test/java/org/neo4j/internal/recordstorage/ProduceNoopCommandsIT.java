@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -34,6 +33,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -245,15 +246,18 @@ class ProduceNoopCommandsIT
 
     private static void deleteRelationship( Node node, int index )
     {
-        Iterator<Relationship> relationships = node.getRelationships().iterator();
-        for ( int i = 0; i < index - 1; i++ )
+        try ( ResourceIterable<Relationship> relationships = node.getRelationships();
+              ResourceIterator<Relationship> relsIterator = relationships.iterator() )
         {
-            relationships.next();
-        }
-        relationships.next().delete();
-        while ( relationships.hasNext() )
-        {
-            relationships.next();
+            for ( int i = 0; i < index - 1; i++ )
+            {
+                relsIterator.next();
+            }
+            relsIterator.next().delete();
+            while ( relsIterator.hasNext() )
+            {
+                relsIterator.next();
+            }
         }
     }
 

@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
@@ -66,10 +67,11 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             tx.commit();
         }
 
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
             NODE_IDS = new ArrayList<>();
-            for ( Node node : tx.getAllNodes() )
+            for ( Node node : allNodes )
             {
                 NODE_IDS.add( node.getId() );
             }

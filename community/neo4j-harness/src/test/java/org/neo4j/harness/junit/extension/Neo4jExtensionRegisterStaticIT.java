@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.Neo4j;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.server.HTTP;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +55,7 @@ class Neo4jExtensionRegisterStaticIT
         }
         try ( Transaction transaction = databaseService.beginTx() )
         {
-            assertThat( transaction.getAllNodes().stream().count() ).isEqualTo( repetitionInfo.getCurrentRepetition() );
+            assertThat( Iterables.count( transaction.getAllNodes() ) ).isEqualTo( repetitionInfo.getCurrentRepetition() );
         }
     }
 }

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.traversal.Paths
+import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
@@ -128,7 +129,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
     consume(runtimeResult)
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe 2
   }
 
@@ -155,7 +156,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual offset
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual offset
     )
 
     // then
@@ -163,7 +164,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -185,7 +186,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual (offset / batchSize * batchSize)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual (offset / batchSize * batchSize)
     )
 
     // then
@@ -193,7 +194,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -215,7 +216,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual 0
+      (tx, _) => Iterables.count(tx.getAllNodes) shouldEqual 0
     )
 
     // then
@@ -223,7 +224,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -244,7 +245,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual 0
+      (tx, _) => Iterables.count(tx.getAllNodes) shouldEqual 0
     )
 
     // then
@@ -252,7 +253,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe numberOfIterations
   }
 
@@ -277,7 +278,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
     )
 
     // then
@@ -285,7 +286,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
@@ -311,7 +312,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset / batchSize * batchSize)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset / batchSize * batchSize)
     )
 
     // then
@@ -319,7 +320,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
@@ -346,7 +347,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, offset)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
     )
 
     // then
@@ -354,7 +355,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, numberOfIterations)
   }
 
@@ -383,7 +384,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val stream = inputStreamWithSideEffectInNewTxn(
       inputValues(inputRows: _*).stream(),
-      (tx, offset) => tx.getAllNodes.stream().count() shouldEqual Math.pow(2, 2 * offset)
+      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, 2 * offset)
     )
 
     // then
@@ -391,7 +392,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     consume(runtimeResult)
 
-    val nodes = tx.getAllNodes.asScala.toList
+    val nodes = Iterables.asList(tx.getAllNodes)
     nodes.size shouldBe Math.pow(2, 2 * numberOfIterations)
   }
 
@@ -701,15 +702,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (externalTx, offset) => {
           offset match {
             case 0L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(1L, 1L)
-              parentVisible shouldEqual List(1L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
             case 1L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(2L, 1L)
-              parentVisible shouldEqual List(2L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
         }))
 
@@ -750,15 +745,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (externalTx, offset) => {
           offset match {
             case 0L =>
-              val externallyVisible = externalTx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(1L, 1L)
-              parentVisible shouldEqual List(1L, 1L)
+              checkExternalAndRuntimeRelationships(externalTx, runtimeTestSupport, 1L)
             case 1L =>
-              val externallyVisible = externalTx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllRelationships.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(2L, 1L)
-              parentVisible shouldEqual List(2L, 1L)
+              checkExternalAndRuntimeRelationships(externalTx, runtimeTestSupport, 2L)
           }
         }))
 
@@ -800,15 +789,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (externalTx, offset) => {
           offset match {
             case 0L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(1L, 1L)
-              parentVisible shouldEqual List(1L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
             case 1L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(2L, 1L)
-              parentVisible shouldEqual List(2L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
         }))
 
@@ -848,15 +831,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (externalTx, offset) => {
           offset match {
             case 0L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(1L, 1L)
-              parentVisible shouldEqual List(1L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
             case 1L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(2L, 1L)
-              parentVisible shouldEqual List(2L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
         }))
 
@@ -896,20 +873,48 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         (externalTx, offset) => {
           offset match {
             case 0L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(1L, 1L)
-              parentVisible shouldEqual List(1L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 1L)
             case 1L =>
-              val externallyVisible = externalTx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              val parentVisible = runtimeTestSupport.tx.getAllNodes.asScala.map(_.getProperty("prop")).toList
-              externallyVisible shouldEqual List(2L, 1L)
-              parentVisible shouldEqual List(2L, 1L)
+              checkExternalAndRuntimeNodes(externalTx, runtimeTestSupport, 2L)
           }
         }))
 
     consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
+  }
+
+  private def checkExternalAndRuntimeNodes(externalTx: InternalTransaction, runtimeTestSupport: RuntimeTestSupport[CONTEXT], firstItemVal: Long): Unit = {
+    val extAllNodes = externalTx.getAllNodes
+    try {
+      val runtimeAllNodes = runtimeTestSupport.tx.getAllNodes
+      try {
+        val externallyVisible = extAllNodes.asScala.map(_.getProperty("prop")).toList
+        val parentVisible = runtimeAllNodes.asScala.map(_.getProperty("prop")).toList
+        externallyVisible shouldEqual List(firstItemVal, 1L)
+        parentVisible shouldEqual List(firstItemVal, 1L)
+      } finally {
+        runtimeAllNodes.close()
+      }
+    } finally {
+      extAllNodes.close()
+    }
+  }
+
+  private def checkExternalAndRuntimeRelationships(externalTx: InternalTransaction, runtimeTestSupport: RuntimeTestSupport[CONTEXT], firstItemVal: Long): Unit = {
+    val extAllRels = externalTx.getAllRelationships
+    try {
+      val runtimeAllRels = runtimeTestSupport.tx.getAllRelationships
+      try {
+        val externallyVisible = extAllRels.asScala.map(_.getProperty("prop")).toList
+        val parentVisible = runtimeAllRels.asScala.map(_.getProperty("prop")).toList
+        externallyVisible shouldEqual List(firstItemVal, 1L)
+        parentVisible shouldEqual List(firstItemVal, 1L)
+      } finally {
+        runtimeAllRels.close()
+      }
+    } finally {
+      extAllRels.close()
+    }
   }
 }

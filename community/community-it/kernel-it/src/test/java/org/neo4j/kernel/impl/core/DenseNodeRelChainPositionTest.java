@@ -27,6 +27,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
@@ -70,12 +71,8 @@ class DenseNodeRelChainPositionTest
         try ( Transaction tx = db.beginTx() )
         {
             Node node1b = tx.getNodeById( node1.getId() );
-
-            Iterable<Relationship> rels = node1b.getRelationships( Direction.INCOMING );
-            assertEquals( 0, Iterables.count( rels ) );
-
-            Iterable<Relationship> rels2 = node1b.getRelationships( Direction.OUTGOING );
-            assertEquals( denseNodeThreshold, Iterables.count( rels2 ) );
+            assertEquals( 0, Iterables.count( node1b.getRelationships( Direction.INCOMING ) ) );
+            assertEquals( denseNodeThreshold, Iterables.count( node1b.getRelationships( Direction.OUTGOING ) ) );
         }
     }
 }

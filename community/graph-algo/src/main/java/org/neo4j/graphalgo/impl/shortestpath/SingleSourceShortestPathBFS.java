@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 /**
  * Breadth first search to find all shortest uniform paths from a node to all
@@ -247,7 +248,7 @@ public class SingleSourceShortestPathBFS implements
         // Follow all edges
         for ( RelationshipType relationshipType : relationShipTypes )
         {
-            for ( Relationship relationship : node.getRelationships( relationShipDirection, relationshipType ) )
+            Iterables.forEach( node.getRelationships( relationShipDirection, relationshipType ), relationship ->
             {
                 Node targetNode = relationship.getOtherNode( node );
                 // Are we going back into the already finished area?
@@ -259,7 +260,7 @@ public class SingleSourceShortestPathBFS implements
                     List<Relationship> targetPreds = predecessors.computeIfAbsent( targetNode, k -> new LinkedList<>() );
                     targetPreds.add( relationship );
                 }
-            }
+            } );
         }
         return true;
     }

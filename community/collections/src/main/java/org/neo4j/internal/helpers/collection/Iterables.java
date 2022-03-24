@@ -31,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -42,6 +43,11 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.Exceptions;
 
+/**
+ * Utility methods for processing iterables. Where possible, If the iterable implements
+ * {@link Resource}, it will be {@link Resource#close() closed} when the processing
+ * has been completed.
+ */
 public final class Iterables
 {
     private Iterables()
@@ -60,29 +66,41 @@ public final class Iterables
         return (ResourceIterable<T>) EmptyResourceIterable.EMPTY_RESOURCE_ITERABLE;
     }
 
+    /**
+     * Collect all the elements available in {@code iterable} and add them to the
+     * provided {@code collection}.
+     * <p>
+     * If the {@code iterable} implements {@link Resource} it will be
+     * {@link Resource#close() closed} in a {@code finally} block after all
+     * the items have been added.
+     *
+     * @param collection the collection to add items to.
+     * @param iterable the iterable from which items will be collected
+     * @param <T> the type of elements in {@code iterable}.
+     * @param <C> the type of the collection to add the items to.
+     * @return the {@code collection} that has been updated.
+     */
     public static <T, C extends Collection<T>> C addAll( C collection, Iterable<? extends T> iterable )
     {
-        Iterator<? extends T> iterator = iterable.iterator();
         try
         {
-            while ( iterator.hasNext() )
+            Iterator<? extends T> iterator = iterable.iterator();
+            try
             {
-                collection.add( iterator.next() );
+                while ( iterator.hasNext() )
+                {
+                    collection.add( iterator.next() );
+                }
+            }
+            finally
+            {
+
+                Iterators.tryCloseResource( iterator );
             }
         }
         finally
         {
-            if ( iterator instanceof AutoCloseable )
-            {
-                try
-                {
-                    ((AutoCloseable) iterator).close();
-                }
-                catch ( Exception e )
-                {
-                    // Ignore
-                }
-            }
+            tryCloseResource( iterable );
         }
 
         return collection;
@@ -106,7 +124,6 @@ public final class Iterables
     }
 
     @SafeVarargs
-    @SuppressWarnings( "unchecked" )
     public static <T, C extends T> Iterable<T> iterable( C... items )
     {
         return Arrays.asList( items );
@@ -194,28 +211,66 @@ public final class Iterables
         {
             return (ResourceIterable<T>) iterable;
         }
-        return () -> Iterators.asResourceIterator( iterable.iterator() );
-    }
-
-    public static String toString( Iterable<?> values, String separator )
-    {
-        Iterator<?> it = values.iterator();
-        StringBuilder sb = new StringBuilder();
-        while ( it.hasNext() )
+        return new AbstractResourceIterable<>()
         {
-            sb.append( it.next() );
-            if ( it.hasNext() )
+            @Override
+            protected ResourceIterator<T> newIterator()
             {
-                sb.append( separator );
+                return Iterators.asResourceIterator( iterable.iterator() );
             }
-        }
-        return sb.toString();
+
+            @Override
+            protected void onClosed()
+            {
+                tryCloseResource( iterable );
+            }
+        };
     }
 
     /**
      * Returns the given iterable's first element or {@code null} if no
      * element found.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the items have been joined.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the items have been joined.
      *
+     * @param values the {@link Iterable} to get elements from.
+     * @param separator the separator to use between the items in {@code values}.
+     * @return the joined string.
+     */
+    public static String toString( Iterable<?> values, String separator )
+    {
+        Iterator<?> it = values.iterator();
+        try
+        {
+            StringBuilder sb = new StringBuilder();
+            while ( it.hasNext() )
+            {
+                sb.append( it.next() );
+                if ( it.hasNext() )
+                {
+                    sb.append( separator );
+                }
+            }
+            return sb.toString();
+        }
+        finally
+        {
+            Iterators.tryCloseResource( it );
+            tryCloseResource( values );
+        }
+    }
+
+    /**
+     * Returns the given iterable's first element or {@code null} if no
+     * element found.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the first item has been retrieved, or failed to be retrieved.
+     * <p>
      * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
      * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
      * has been retrieved, or failed to be retrieved.
@@ -227,23 +282,22 @@ public final class Iterables
      */
     public static <T> T firstOrNull( Iterable<T> iterable )
     {
-        Iterator<T> iterator = iterable.iterator();
         try
         {
-            return Iterators.firstOrNull( iterator );
+            return Iterators.firstOrNull( iterable.iterator() );
         }
         finally
         {
-            if ( iterator instanceof Resource )
-            {
-                ((Resource) iterator).close();
-            }
+            tryCloseResource( iterable );
         }
     }
 
     /**
      * Returns the given iterable's first element. If no element is found a
      * {@link NoSuchElementException} is thrown.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the first item has been retrieved, or failed to be retrieved.
      *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
@@ -252,12 +306,22 @@ public final class Iterables
      */
     public static <T> T first( Iterable<T> iterable )
     {
-        return Iterators.first( iterable.iterator() );
+        try
+        {
+            return Iterators.first( iterable.iterator() );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
      * Returns the given iterable's last element. If no element is found a
      * {@link NoSuchElementException} is thrown.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the last item has been retrieved, or failed to be retrieved.
      *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
@@ -266,14 +330,24 @@ public final class Iterables
      */
     public static <T> T last( Iterable<T> iterable )
     {
-        return Iterators.last( iterable.iterator() );
+        try
+        {
+            return Iterators.last( iterable.iterator() );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
      * Returns the given iterable's single element or {@code null} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
-     *
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the single item has been retrieved, or failed to be retrieved.
+     * <p>
      * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
      * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
      * has been retrieved, or failed to be retrieved.
@@ -286,14 +360,24 @@ public final class Iterables
      */
     public static <T> T singleOrNull( Iterable<T> iterable )
     {
-        return Iterators.singleOrNull( iterable.iterator() );
+        try
+        {
+            return Iterators.singleOrNull( iterable.iterator() );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
      * Returns the given iterable's single element. If there are no elements
      * or more than one element in the iterable a {@link NoSuchElementException}
      * will be thrown.
-     *
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the single item has been retrieved, or failed to be retrieved.
+     * <p>
      * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
      * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
      * has been retrieved, or failed to be retrieved.
@@ -305,14 +389,24 @@ public final class Iterables
      */
     public static <T> T single( Iterable<T> iterable )
     {
-        return Iterators.single( iterable.iterator() );
+        try
+        {
+            return Iterators.single( iterable.iterator() );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
      * Returns the given iterable's single element or {@code itemIfNone} if no
      * element found. If there is more than one element in the iterable a
      * {@link NoSuchElementException} will be thrown.
-     *
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after the single item has been retrieved, or failed to be retrieved.
+     * <p>>
      * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
      * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
      * has been retrieved, or failed to be retrieved.
@@ -326,12 +420,25 @@ public final class Iterables
      */
     public static <T> T single( Iterable<T> iterable, T itemIfNone )
     {
-        return Iterators.single( iterable.iterator(), itemIfNone );
+        try
+        {
+            return Iterators.single( iterable.iterator(), itemIfNone );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
-     * Counts the number of items in the {@code iterator} by looping
-     * through it.
+     * Counts the number of items in the {@code iterable} by looping through it.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been counted.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the items have been counted.
+     *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
      * @return the number of items found in {@code iterable}.
@@ -343,6 +450,12 @@ public final class Iterables
 
     /**
      * Counts the number of filtered items in the {@code iterable} by looping through it.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been counted.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the items have been counted.
      *
      * @param <T> the type of items in the iterator.
      * @param iterable the {@link Iterable} to count items in.
@@ -351,22 +464,24 @@ public final class Iterables
      */
     public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
     {
-        Iterator<T> iterator = iterable.iterator();
         try
         {
-            return Iterators.count( iterator, filter );
+            return Iterators.count( iterable.iterator(), filter );
         }
         finally
         {
-            if ( iterator instanceof ResourceIterator )
-            {
-                ((ResourceIterator<?>) iterator).close();
-            }
+            tryCloseResource( iterable );
         }
     }
 
     /**
      * Creates a collection from an iterable.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been added.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after all the items have been added.
      *
      * @param iterable The iterable to create the collection from.
      * @param <T> The generic type of both the iterable and the collection.
@@ -377,13 +492,32 @@ public final class Iterables
         return addAll( new ArrayList<>(), iterable );
     }
 
-    public static <T> List<T> asList( Iterable<T> iterator )
+    /**
+     * Creates a list from an iterable.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been added.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after all the items have been added.
+     *
+     * @param iterable The iterable to create the list from.
+     * @param <T> The generic type of both the iterable and the list.
+     * @return a list containing all items from the iterable.
+     */
+    public static <T> List<T> asList( Iterable<T> iterable )
     {
-        return addAll( new ArrayList<>(), iterator );
+        return addAll( new ArrayList<>(), iterable );
     }
 
     /**
      * Creates a {@link Set} from an {@link Iterable}.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been added.
+     * <p>
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after all the items have been added.
      *
      * @param iterable The items to create the set from.
      * @param <T> The generic type of items.
@@ -396,6 +530,9 @@ public final class Iterables
 
     /**
      * Creates a {@link Set} from an {@link Iterable}.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been added.
      *
      * @param iterable The items to create the set from.
      * @param <T> The generic type of items.
@@ -403,7 +540,14 @@ public final class Iterables
      */
     public static <T> Set<T> asUniqueSet( Iterable<T> iterable )
     {
-        return Iterators.addToCollectionUnique( iterable, new HashSet<>() );
+        try
+        {
+            return Iterators.addToCollectionUnique( iterable, new HashSet<>() );
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     public static Iterable<Long> asIterable( final long... array )
@@ -424,7 +568,22 @@ public final class Iterables
 
     public static <T> ResourceIterable<T> resourceIterable( final Iterable<T> iterable )
     {
-        return () -> Iterators.resourceIterator( iterable.iterator(), Resource.EMPTY );
+        return new AbstractResourceIterable<>()
+        {
+            @Override
+            protected ResourceIterator<T> newIterator()
+            {
+                Iterator<T> iterator = iterable.iterator();
+                Resource resource = (iterator instanceof Resource) ? (Resource) iterator : Resource.EMPTY;
+                return Iterators.resourceIterator( iterator, resource );
+            }
+
+            @Override
+            protected void onClosed()
+            {
+                tryCloseResource( iterable );
+            }
+        };
     }
 
     public static <T> Iterable<T> option( final T item )
@@ -468,7 +627,32 @@ public final class Iterables
     public static <T> Stream<T> stream( Iterable<T> iterable, int characteristics )
     {
         Objects.requireNonNull( iterable );
-        return Iterators.stream( iterable.iterator(), characteristics );
+        return Iterators.stream( iterable.iterator(), characteristics ).onClose( () -> tryCloseResource( iterable ) );
+    }
+
+    /**
+     * Method for calling a lambda function on many objects. The first exception to be encountered will be
+     * thrown and subsequent processing of the remaining items will be aborted.
+     * <p>
+     * If the {@code iterable} implements {@link Resource}, then it will be closed in a {@code finally} block
+     * after all its items have been consumed.
+     *
+     * @param iterable iterable to iterate over
+     * @param consumer lambda function to call on each object passed
+     */
+    public static <V> void forEach( Iterable<V> iterable, Consumer<V> consumer )
+    {
+        try
+        {
+            for ( final var item : iterable )
+            {
+                consumer.accept( item );
+            }
+        }
+        finally
+        {
+            tryCloseResource( iterable );
+        }
     }
 
     /**
@@ -484,21 +668,41 @@ public final class Iterables
     @SuppressWarnings( "unchecked" )
     public static <T, E extends Exception> void safeForAll( ThrowingConsumer<T,E> consumer, Iterable<T> subjects ) throws E
     {
-        E exception = null;
-        for ( T instance : subjects )
+        try
         {
-            try
+            E exception = null;
+            for ( T instance : subjects )
             {
-                consumer.accept( instance );
+                try
+                {
+                    consumer.accept( instance );
+                }
+                catch ( Exception e )
+                {
+                    exception = Exceptions.chain( exception, (E) e );
+                }
             }
-            catch ( Exception e )
+            if ( exception != null )
             {
-                exception = Exceptions.chain( exception, (E) e );
+                throw exception;
             }
         }
-        if ( exception != null )
+        finally
         {
-            throw exception;
+            tryCloseResource( subjects );
+        }
+    }
+
+    /**
+     * Close the provided {@code iterable} if it implements {@link Resource}.
+     *
+     * @param iterable the iterable to check for closing
+     */
+    public static void tryCloseResource( Iterable<?> iterable )
+    {
+        if ( iterable instanceof Resource closeable )
+        {
+            closeable.close();
         }
     }
 
@@ -510,6 +714,12 @@ public final class Iterables
         public ResourceIterator<T> iterator()
         {
             return Iterators.emptyResourceIterator();
+        }
+
+        @Override
+        public void close()
+        {
+            // no-op
         }
     }
 }

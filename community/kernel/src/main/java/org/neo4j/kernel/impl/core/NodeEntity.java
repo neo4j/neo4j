@@ -39,6 +39,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.helpers.collection.AbstractResourceIterable;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
@@ -149,14 +150,14 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public ResourceIterable<Relationship> getRelationships( final Direction direction, RelationshipType... types )
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
+        int[] typeIds = relTypeIds( transaction.tokenRead(), types );
         return innerGetRelationships( transaction, direction, typeIds );
     }
 
     private ResourceIterable<Relationship> innerGetRelationships(
             KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        return () -> getRelationshipSelectionIterator( transaction, direction, typeIds );
+        return new RelationshipsIterable( transaction, getId(), direction, typeIds, this );
     }
 
     @Override
@@ -182,14 +183,13 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     public boolean hasRelationship( Direction direction, RelationshipType... types )
     {
         KernelTransaction transaction = internalTransaction.kernelTransaction();
-        int[] typeIds = relTypeIds( types, transaction.tokenRead() );
+        int[] typeIds = relTypeIds( transaction.tokenRead(), types );
         return innerHasRelationships( transaction, direction, typeIds );
     }
 
     private boolean innerHasRelationships( final KernelTransaction transaction, final Direction direction, int[] typeIds )
     {
-        try ( ResourceIterator<Relationship> iterator =
-                      getRelationshipSelectionIterator( transaction, direction, typeIds ) )
+        try ( ResourceIterator<Relationship> iterator = getRelationshipSelectionIterator( transaction, getId(), direction, typeIds, this ) )
         {
             return iterator.hasNext();
         }
@@ -198,17 +198,19 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
     @Override
     public Relationship getSingleRelationship( RelationshipType type, Direction dir )
     {
-        try ( ResourceIterator<Relationship> rels = getRelationships( dir, type ).iterator() )
+        KernelTransaction transaction = internalTransaction.kernelTransaction();
+        int[] typeIds = relTypeIds( transaction.tokenRead(), type );
+        try ( ResourceIterator<Relationship> relationships = getRelationshipSelectionIterator( transaction, getId(), dir, typeIds, this ) )
         {
-            if ( !rels.hasNext() )
+            if ( !relationships.hasNext() )
             {
                 return null;
             }
 
-            Relationship rel = rels.next();
-            while ( rels.hasNext() )
+            Relationship rel = relationships.next();
+            while ( relationships.hasNext() )
             {
-                Relationship other = rels.next();
+                Relationship other = relationships.next();
                 if ( !other.equals( rel ) )
                 {
                     throw new NotFoundException( "More than one relationship[" +
@@ -675,17 +677,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        switch ( direction )
-        {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes );
-        case INCOMING:
-            return Nodes.countIncoming( nodes );
-        case BOTH:
-            return Nodes.countAll( nodes );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> Nodes.countOutgoing( nodes );
+                    case INCOMING -> Nodes.countIncoming( nodes );
+                    case BOTH -> Nodes.countAll( nodes );
+                };
     }
 
     @Override
@@ -700,17 +697,12 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         NodeCursor nodes = transaction.ambientNodeCursor();
         singleNode( transaction, nodes );
-        switch ( direction )
-        {
-        case OUTGOING:
-            return Nodes.countOutgoing( nodes, typeId );
-        case INCOMING:
-            return Nodes.countIncoming( nodes, typeId );
-        case BOTH:
-            return Nodes.countAll( nodes, typeId );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> Nodes.countOutgoing( nodes, typeId );
+                    case INCOMING -> Nodes.countIncoming( nodes, typeId );
+                    case BOTH -> Nodes.countAll( nodes, typeId );
+                };
     }
 
     @Override
@@ -741,11 +733,36 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
         }
     }
 
-    private ResourceIterator<Relationship> getRelationshipSelectionIterator(
-            KernelTransaction transaction, Direction direction, int[] typeIds )
+    private static class RelationshipsIterable extends AbstractResourceIterable<Relationship>
+    {
+        private final KernelTransaction transaction;
+        private final long nodeId;
+        private final Direction direction;
+        private final int[] typeIds;
+        private final RelationshipFactory<Relationship> factory;
+
+        private RelationshipsIterable( KernelTransaction transaction, long nodeId, Direction direction, int[] typeIds,
+                                       RelationshipFactory<Relationship> factory )
+        {
+            this.transaction = transaction;
+            this.nodeId = nodeId;
+            this.direction = direction;
+            this.typeIds = typeIds;
+            this.factory = factory;
+        }
+
+        @Override
+        protected ResourceIterator<Relationship> newIterator()
+        {
+            return getRelationshipSelectionIterator( transaction, nodeId, direction, typeIds, factory );
+        }
+    }
+
+    private static ResourceIterator<Relationship> getRelationshipSelectionIterator(
+            KernelTransaction transaction, long nodeId, Direction direction, int[] typeIds, RelationshipFactory<Relationship> factory )
     {
         NodeCursor node = transaction.ambientNodeCursor();
-        transaction.dataRead().singleNode( getId(), node );
+        transaction.dataRead().singleNode( nodeId, node );
         if ( !node.next() )
         {
             throw new NotFoundException( format( "Node %d not found", nodeId ) );
@@ -753,20 +770,15 @@ public class NodeEntity implements Node, RelationshipFactory<Relationship>
 
         var cursorContext = transaction.cursorContext();
         var cursors = transaction.cursors();
-        switch ( direction )
-        {
-        case OUTGOING:
-            return outgoingIterator( cursors, node, typeIds, this, cursorContext );
-        case INCOMING:
-            return incomingIterator( cursors, node, typeIds, this, cursorContext );
-        case BOTH:
-            return allIterator( cursors, node, typeIds, this, cursorContext );
-        default:
-            throw new IllegalStateException( "Unknown direction " + direction );
-        }
+        return switch ( direction )
+                {
+                    case OUTGOING -> outgoingIterator( cursors, node, typeIds, factory, cursorContext );
+                    case INCOMING -> incomingIterator( cursors, node, typeIds, factory, cursorContext );
+                    case BOTH -> allIterator( cursors, node, typeIds, factory, cursorContext );
+                };
     }
 
-    private static int[] relTypeIds( RelationshipType[] types, TokenRead token )
+    private static int[] relTypeIds( TokenRead token, RelationshipType... types )
     {
         int[] ids = new int[types.length];
         int outIndex = 0;

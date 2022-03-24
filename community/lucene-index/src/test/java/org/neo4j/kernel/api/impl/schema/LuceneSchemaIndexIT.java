@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -56,7 +55,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
-import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider.UPDATE_IGNORE_STRATEGY;
 import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_TOKEN_LOOKUP;
@@ -240,9 +238,9 @@ class LuceneSchemaIndexIT
     private List<String> asFileInsidePartitionNames( ResourceIterator<Path> resources )
     {
         int testDirectoryPathLength = testDir.absolutePath().toString().length();
-        return asList( resources ).stream()
+        return resources.stream()
                 .map( file -> file.toAbsolutePath().toString().substring( testDirectoryPathLength ) )
-                .collect( Collectors.toList() );
+                .toList();
     }
 
     private void generateUpdates( LuceneIndexAccessor indexAccessor, int nodesToUpdate ) throws IndexEntryConflictException

@@ -54,7 +54,6 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -236,9 +235,7 @@ class InProcessServerBuilderIT
             GraphDatabaseService graphDatabaseService = neo4j.defaultDatabaseService();
             try ( Transaction tx = graphDatabaseService.beginTx() )
             {
-                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( tx.getAllNodes() );
-
-                assertTrue( Iterables.count( allNodes ) > 0 );
+                assertTrue( Iterables.count( tx.getAllNodes() ) > 0 );
 
                 // When: create another node
                 tx.createNode();

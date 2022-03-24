@@ -29,12 +29,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
@@ -176,13 +176,13 @@ class TestPath extends TraversalTestBase
     private void assertPathIsCorrect( Transaction transaction, Path path )
     {
         Node a = transaction.getNodeById( node( "A" ).getId() );
-        Relationship to1 = getFistRelationship( a );
+        Relationship to1 = getFirstRelationship( a );
         Node b = to1.getEndNode();
-        Relationship to2 = getFistRelationship( b );
+        Relationship to2 = getFirstRelationship( b );
         Node c = to2.getEndNode();
-        Relationship to3 = getFistRelationship( c );
+        Relationship to3 = getFirstRelationship( c );
         Node d = to3.getEndNode();
-        Relationship to4 = getFistRelationship( d );
+        Relationship to4 = getFirstRelationship( d );
         Node e = to4.getEndNode();
         assertEquals( (Integer) 4, (Integer) path.length() );
         assertEquals( a, path.startNode() );
@@ -196,13 +196,9 @@ class TestPath extends TraversalTestBase
         assertContainsInOrder( path.reverseRelationships(), to4, to3, to2, to1 );
     }
 
-    private static Relationship getFistRelationship( Node node )
+    private static Relationship getFirstRelationship( Node node )
     {
-        ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) node.getRelationships( Direction.OUTGOING );
-        try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
-        {
-            return iterator.next();
-        }
+        return Iterables.first( node.getRelationships( Direction.OUTGOING ) );
     }
 
     private static void markTracerToIgnoreDifferences( Transaction transaction )

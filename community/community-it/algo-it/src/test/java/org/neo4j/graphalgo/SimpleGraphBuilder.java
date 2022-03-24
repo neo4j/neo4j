@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 
@@ -64,10 +63,7 @@ public class SimpleGraphBuilder
             for ( Node node : nodes.values() )
             {
                 node = transaction.getNodeById( node.getId() );
-                for ( Relationship relationship : node.getRelationships() )
-                {
-                    relationship.delete();
-                }
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
             nodes.clear();
@@ -235,12 +231,11 @@ public class SimpleGraphBuilder
         {
             return null;
         }
-        ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( node1.getRelationships() );
-        try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
+
+        try ( ResourceIterable<Relationship> relationships = node1.getRelationships() )
         {
-            while ( resourceIterator.hasNext() )
+            for ( final var relationship : relationships )
             {
-                Relationship relationship = resourceIterator.next();
                 if ( relationship.getOtherNode( node1 ).equals( node2 ) )
                 {
                     return relationship;

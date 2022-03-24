@@ -29,10 +29,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.NestingResourceIterator;
+import org.neo4j.internal.helpers.collection.ResourceClosingIterator;
 
 public final class OrderedByTypeExpander extends StandardExpander.RegularExpander
 {
@@ -105,8 +106,8 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
             {
                 RelationshipType type = directedType.type();
                 Direction dir = directedType.direction();
-                Iterable<Relationship> relationshipsIterable = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( dir, type );
-                return Iterables.asResourceIterable( relationshipsIterable ).iterator();
+                ResourceIterable<Relationship> relationships = (dir == Direction.BOTH) ? node.getRelationships( type ) : node.getRelationships( dir, type );
+                return ResourceClosingIterator.fromResourceIterable( relationships );
             }
         };
     }

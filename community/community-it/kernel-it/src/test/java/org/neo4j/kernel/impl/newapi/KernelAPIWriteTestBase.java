@@ -127,7 +127,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     {
         Kernel kernel = testSupport.kernelToTest();
         KernelTransaction kernelTransaction = kernel.beginTransaction( KernelTransaction.Type.IMPLICIT, loginContext );
-        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, null, null, elementIdMapper );
+        new TransactionImpl( tokenHolders, contextFactory, availabilityGuard, engine, kernelTransaction, elementIdMapper );
         return kernelTransaction;
     }
 

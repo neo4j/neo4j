@@ -43,6 +43,7 @@ import java.util.concurrent.Future;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -1144,12 +1145,15 @@ public class TransactionIT extends ParameterizedTransactionEndpointsTestBase
         try ( Transaction transaction = graphdb.beginTx() )
         {
             long count = 0;
-            for ( Node node : transaction.getAllNodes() )
+            try ( ResourceIterable<Node> allNodes = transaction.getAllNodes() )
             {
-                Set<Label> nodeLabels = Iterables.asSet( node.getLabels() );
-                if ( nodeLabels.containsAll( givenLabels ) )
+                for ( Node node : allNodes )
                 {
-                    count++;
+                    Set<Label> nodeLabels = Iterables.asSet( node.getLabels() );
+                    if ( nodeLabels.containsAll( givenLabels ) )
+                    {
+                        count++;
+                    }
                 }
             }
             transaction.commit();

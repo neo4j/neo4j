@@ -24,7 +24,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,6 +33,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -137,8 +137,7 @@ public class FindRelationshipsIT
             tx.createNode().createRelationshipTo( tx.createNode(), OTHER_REL_TYPE );
             rel3 = node2.createRelationshipTo( node, REL_TYPE );
 
-            Iterable<Relationship> nodeRels = tx.findNode( label, "key", "value" ).getRelationships();
-            nodeRels.forEach( Relationship::delete );
+            Iterables.forEach( tx.findNode( label, "key", "value" ).getRelationships(), Relationship::delete );
 
             result = Iterators.asList( tx.findRelationships( REL_TYPE ) );
         }

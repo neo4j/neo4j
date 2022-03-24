@@ -19,6 +19,8 @@
  */
 package org.neo4j.dbms.systemgraph.versions;
 
+import java.util.stream.Stream;
+
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersion;
 import org.neo4j.dbms.database.TopologyGraphDbmsModel;
@@ -87,18 +89,10 @@ public abstract class KnownCommunityTopologyComponentVersion extends KnownSystem
 
     private boolean hasPrimaryAlias( Node node )
     {
-        boolean hasPrimary = false;
-
-        for ( Relationship relationship : node.getRelationships( TARGETS_RELATIONSHIP ) )
+        try ( Stream<Relationship> targets = node.getRelationships( TARGETS_RELATIONSHIP ).stream() )
         {
-            Node nameNode = relationship.getStartNode();
-            if ( nameNode.getProperty( PRIMARY_PROPERTY ).equals( true ) )
-            {
-                hasPrimary = true;
-            }
+            return targets.anyMatch( r -> r.getStartNode().getProperty( PRIMARY_PROPERTY ).equals( true ) );
         }
-
-        return hasPrimary;
     }
 
     /**

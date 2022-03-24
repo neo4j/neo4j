@@ -88,7 +88,7 @@ class TestConcurrentRelationshipChainLoadingIssue
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Iterables.count( tx.getNodeById( node.getId() ).getRelationships() );
+            count( tx.getNodeById( node.getId() ).getRelationships() );
         }
     }
 

@@ -63,6 +63,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Monitor;
@@ -328,19 +329,20 @@ class CsvInputBatchImportIT
         Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
                 new AutoCreatingHashMap<>( nested( nested( values( AtomicInteger.class ) ) ) );
-        Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
-        Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
+        Map<String,AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
+        Map<String,Map<String,Map<String,AtomicLong>>> expectedRelationshipCounts =
                 new AutoCreatingHashMap<>( nested( nested( values( AtomicLong.class ) ) ) );
         buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedNodePropertyVerifiers,
-                expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
+                             expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 
         // Do the verification
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( testDirectory.homePath() ).build();
         GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              ResourceIterable<Node> allNodes = tx.getAllNodes() )
         {
             // Verify nodes
-            for ( Node node : tx.getAllNodes() )
+            for ( Node node : allNodes )
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
@@ -362,24 +364,27 @@ class CsvInputBatchImportIT
             assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
-            for ( Relationship relationship : tx.getAllRelationships() )
+            try ( ResourceIterable<Relationship> allRelationships = tx.getAllRelationships() )
             {
-                String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
-                Map<String, Map<String, AtomicInteger>> inner = expectedRelationships.get( startNodeName );
-                String endNodeName = (String) relationship.getEndNode().getProperty( "name" );
-                Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
-                String type = relationship.getType().name();
-                int countAfterwards = innerInner.get( type ).decrementAndGet();
-                assertThat( countAfterwards ).isGreaterThanOrEqualTo( 0 );
-                if ( countAfterwards == 0 )
+                for ( Relationship relationship : allRelationships )
                 {
-                    innerInner.remove( type );
-                    if ( innerInner.isEmpty() )
+                    String startNodeName = (String) relationship.getStartNode().getProperty( "name" );
+                    Map<String,Map<String,AtomicInteger>> inner = expectedRelationships.get( startNodeName );
+                    String endNodeName = (String) relationship.getEndNode().getProperty( "name" );
+                    Map<String,AtomicInteger> innerInner = inner.get( endNodeName );
+                    String type = relationship.getType().name();
+                    int countAfterwards = innerInner.get( type ).decrementAndGet();
+                    assertThat( countAfterwards ).isGreaterThanOrEqualTo( 0 );
+                    if ( countAfterwards == 0 )
                     {
-                        inner.remove( endNodeName );
-                        if ( inner.isEmpty() )
+                        innerInner.remove( type );
+                        if ( innerInner.isEmpty() )
                         {
-                            expectedRelationships.remove( startNodeName );
+                            inner.remove( endNodeName );
+                            if ( inner.isEmpty() )
+                            {
+                                expectedRelationships.remove( startNodeName );
+                            }
                         }
                     }
                 }

@@ -68,6 +68,18 @@ public class ProcedureTransactionProvider implements ThrowingFunction<Context,Tr
         }
 
         @Override
+        public void registerCloseableResource( AutoCloseable closeableResource )
+        {
+            transaction.registerCloseableResource( closeableResource );
+        }
+
+        @Override
+        public void unregisterCloseableResource( AutoCloseable closeableResource )
+        {
+            transaction.unregisterCloseableResource( closeableResource );
+        }
+
+        @Override
         public void commit()
         {
             throw new UnsupportedOperationException( "Commit of ongoing transaction inside of procedure is unsupported." );

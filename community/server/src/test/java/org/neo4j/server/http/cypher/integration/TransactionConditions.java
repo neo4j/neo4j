@@ -31,8 +31,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -407,14 +407,7 @@ public final class TransactionConditions
     {
         try ( Transaction transaction = graphdb.beginTx() )
         {
-            long count = 0;
-            Iterator<Node> allNodes = transaction.getAllNodes().iterator();
-            while ( allNodes.hasNext() )
-            {
-                allNodes.next();
-                count++;
-            }
-            return count;
+            return Iterables.count( transaction.getAllNodes() );
         }
     }
 

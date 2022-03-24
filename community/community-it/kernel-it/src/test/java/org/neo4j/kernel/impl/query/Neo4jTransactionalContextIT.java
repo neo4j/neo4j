@@ -39,6 +39,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
@@ -120,7 +121,7 @@ class Neo4jTransactionalContextIT
     private void generatePageCacheHits( TransactionalContext ctx )
     {
         long previousCacheHits = getPageCacheHits( ctx );
-        ctx.transaction().getAllNodes().iterator().stream().count();
+        Iterables.count( ctx.transaction().getAllNodes() );
         long laterCacheHits = getPageCacheHits( ctx );
         assertThat( laterCacheHits ).as( "Assuming generatePageCacheHits to generate some page cache hits" ).isGreaterThan( previousCacheHits );
     }

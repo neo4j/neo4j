@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -198,10 +199,7 @@ class RelationshipGroupStoreTest
             node0.createRelationshipTo( node, MyRelTypes.TEST );
             node.createRelationshipTo( node2, MyRelTypes.TEST2 );
 
-            for ( Relationship rel : node.getRelationships() )
-            {
-                rel.delete();
-            }
+            Iterables.forEach( node.getRelationships(), Relationship::delete );
             node.delete();
             tx.commit();
         }

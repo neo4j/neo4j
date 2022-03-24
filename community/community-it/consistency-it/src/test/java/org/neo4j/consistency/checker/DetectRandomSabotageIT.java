@@ -65,6 +65,7 @@ import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordCursorTypes;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -357,7 +358,7 @@ public class DetectRandomSabotageIT
                 while ( singleRelationshipNodes.contains( nodeId ) || denseNodes.contains( nodeId ) );
                 nodeIds.remove( nodeId );
                 Node node = tx.getNodeById( nodeId );
-                node.getRelationships().forEach( Relationship::delete );
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
             tx.commit();

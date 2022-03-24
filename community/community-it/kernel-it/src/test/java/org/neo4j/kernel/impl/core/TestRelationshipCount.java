@@ -42,7 +42,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.IterableWrapper;
 import org.neo4j.internal.helpers.collection.Iterables;
@@ -205,11 +205,15 @@ public class TestRelationshipCount
         assertExpectedRelationshipTypes( expectedTypes, node, true );
 
         node = tx.getNodeById( node.getId() );
-        for ( Relationship r : node.getRelationships( RelType.TYPE1 ) )
+        try ( ResourceIterable<Relationship> types = node.getRelationships( RelType.TYPE1 ) )
         {
-            assertExpectedRelationshipTypes( expectedTypes, node, false );
-            r.delete();
+            for ( final var type : types )
+            {
+                assertExpectedRelationshipTypes( expectedTypes, node, false );
+                type.delete();
+            }
         }
+
         expectedTypes.remove( RelType.TYPE1.name() );
         assertExpectedRelationshipTypes( expectedTypes, node, true );
     }
@@ -301,15 +305,9 @@ public class TestRelationshipCount
             node2 = tx.getNodeById( node2.getId() );
         }
 
-        for ( Relationship rel : node1.getRelationships() )
-        {
-            rel.delete();
-        }
+        Iterables.forEach( node1.getRelationships(), Relationship::delete );
         node1.delete();
-        for ( Relationship rel : node2.getRelationships() )
-        {
-            rel.delete();
-        }
+        Iterables.forEach( node2.getRelationships(), Relationship::delete );
         node2.delete();
         newTransaction();
     }
@@ -500,15 +498,16 @@ public class TestRelationshipCount
         assertCounts( me, expectedCounts );
 
         // Clean up
-        for ( Relationship rel : me.getRelationships() )
+        var otherMe = me;
+        Iterables.forEach( me.getRelationships(), rel ->
         {
-            Node otherNode = rel.getOtherNode( me );
-            if ( !otherNode.equals( me ) )
+            Node otherNode = rel.getOtherNode( otherMe );
+            if ( !otherNode.equals( otherMe ) )
             {
                 otherNode.delete();
             }
             rel.delete();
-        }
+        } );
         me.delete();
     }
 
@@ -557,12 +556,10 @@ public class TestRelationshipCount
     {
         Relationship last = null;
         int counter = 0;
-        Iterable<Relationship> relationships = node.getRelationships( direction, type );
-        try ( ResourceIterator<Relationship> relationshipIterator = (ResourceIterator) relationships.iterator() )
+        try ( ResourceIterable<Relationship> relationships = node.getRelationships( direction, type ) )
         {
-            while ( relationshipIterator.hasNext() )
+            for ( final var rel : relationships )
             {
-                Relationship rel = relationshipIterator.next();
                 if ( isLoop( rel ) == (direction == Direction.BOTH) )
                 {
                     last = rel;

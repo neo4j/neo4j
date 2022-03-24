@@ -53,7 +53,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
@@ -382,16 +382,14 @@ public class ParallelBatchImporterTest
         // Read all nodes, relationships and properties ad verify against the input data.
         LongAdder propertyCount = new LongAdder();
         try ( InputIterator nodes = nodes( nodeRandomSeed, nodeCount, config.batchSize(), inputIdGenerator, groups, propertyCount ).iterator();
-            InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
-                config.batchSize(), inputIdGenerator, groups ,
-            propertyCount, new LongAdder() ).iterator();
-            ResourceIterator<Node> dbNodes = tx.getAllNodes().iterator() )
+              InputIterator relationships = relationships( relationshipRandomSeed, relationshipCount,
+                                                           config.batchSize(), inputIdGenerator, groups,
+                                                           propertyCount, new LongAdder() ).iterator();
+              ResourceIterable<Node> dbNodes = tx.getAllNodes() )
         {
-            // Nodes
             Map<String, Node> nodeByInputId = new HashMap<>( nodeCount );
-            while ( dbNodes.hasNext() )
+            for ( final var node : dbNodes )
             {
-                Node node = dbNodes.next();
                 String id = (String) node.getProperty( "id" );
                 assertNull( nodeByInputId.put( id, node ) );
             }
@@ -427,9 +425,12 @@ public class ParallelBatchImporterTest
             // Relationships
             chunk = relationships.newChunk();
             Map<String, Relationship> relationshipByName = new HashMap<>();
-            for ( Relationship relationship : tx.getAllRelationships() )
+            try ( ResourceIterable<Relationship> allRelationships = tx.getAllRelationships() )
             {
-                relationshipByName.put( (String) relationship.getProperty( "id" ), relationship );
+                for ( Relationship relationship : allRelationships )
+                {
+                    relationshipByName.put( (String) relationship.getProperty( "id" ), relationship );
+                }
             }
             int verifiedRelationships = 0;
             while ( relationships.next( chunk ) )

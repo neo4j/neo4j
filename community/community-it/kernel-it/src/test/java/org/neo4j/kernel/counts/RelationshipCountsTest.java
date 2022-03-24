@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -277,10 +278,7 @@ class RelationshipCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             foo = tx.getNodeById( foo.getId() );
-            for ( Relationship relationship : foo.getRelationships() )
-            {
-                relationship.delete();
-            }
+            Iterables.forEach( foo.getRelationships(), Relationship::delete );
             foo.delete();
 
             tx.commit();
@@ -325,10 +323,7 @@ class RelationshipCountsTest
             for ( Node node : nodes )
             {
                 node = tx.getNodeById( node.getId() );
-                for ( Relationship relationship : node.getRelationships() )
-                {
-                    relationship.delete();
-                }
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
 
@@ -369,11 +364,8 @@ class RelationshipCountsTest
         try ( Transaction tx = db.beginTx() )
         {
             foo = tx.getNodeById( foo.getId() );
-            for ( Relationship relationship : foo.getRelationships() )
-            {
-                relationship.delete();
-            }
-            foo.removeLabel( label("Foo"));
+            Iterables.forEach( foo.getRelationships(), Relationship::delete );
+            foo.removeLabel( label( "Foo" ) );
 
             tx.commit();
         }

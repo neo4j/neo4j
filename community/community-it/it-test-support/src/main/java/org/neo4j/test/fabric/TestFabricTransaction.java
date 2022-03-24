@@ -68,6 +68,18 @@ public class TestFabricTransaction implements InternalTransaction
     }
 
     @Override
+    public void registerCloseableResource( AutoCloseable closeableResource )
+    {
+        kernelInternalTransaction.registerCloseableResource( closeableResource );
+    }
+
+    @Override
+    public void unregisterCloseableResource( AutoCloseable closeableResource )
+    {
+        kernelInternalTransaction.unregisterCloseableResource( closeableResource );
+    }
+
+    @Override
     public Result execute( String query ) throws QueryExecutionException
     {
         return execute( query, Map.of() );

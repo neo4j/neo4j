@@ -32,6 +32,7 @@ import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.helpers.collection.Iterables;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,8 +56,8 @@ class TestMultiPruneEvaluators extends TraversalTestBase
     void testMaxDepthAndCustomPruneEvaluatorCombined()
     {
         Evaluator lessThanThreeRels =
-                path -> count( path.endNode().getRelationships( Direction.OUTGOING ).iterator() ) < 3 ?
-                        Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
+                path -> Iterables.count( path.endNode().getRelationships( Direction.OUTGOING ) ) < 3 ?
+                                  Evaluation.INCLUDE_AND_PRUNE : Evaluation.INCLUDE_AND_CONTINUE;
 
         Set<String> expectedNodes = new HashSet<>( asList( "a", "b", "c", "d", "e" ) );
         try ( Transaction tx = beginTx() )

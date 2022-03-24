@@ -115,7 +115,6 @@ class TestNeo4jApiExceptions
     @Test
     void shouldGiveNiceErrorWhenShutdownKernelApi()
     {
-        GraphDatabaseService graphDb = graph;
         Node node = tx.createNode();
         commit();
         managementService.shutdown();
@@ -126,7 +125,6 @@ class TestNeo4jApiExceptions
     @Test
     void shouldGiveNiceErrorWhenShutdownLegacy()
     {
-        GraphDatabaseService graphDb = graph;
         Node node = tx.createNode();
         commit();
         managementService.shutdown();

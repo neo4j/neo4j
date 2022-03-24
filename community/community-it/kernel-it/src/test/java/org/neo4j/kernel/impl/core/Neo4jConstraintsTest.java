@@ -25,12 +25,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class Neo4jConstraintsTest extends AbstractNeo4jTestCase
@@ -44,21 +46,20 @@ class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         {
             createNode();
         }
-        try ( Transaction transaction = getGraphDb().beginTx() )
+        try ( Transaction transaction = getGraphDb().beginTx();
+              ResourceIterable<Node> allNodes = transaction.getAllNodes() )
         {
-            for ( Node node : transaction.getAllNodes() )
+            for ( Node node : allNodes )
             {
-                for ( Relationship rel : node.getRelationships() )
-                {
-                    rel.delete();
-                }
+                Iterables.forEach( node.getRelationships(), Relationship::delete );
                 node.delete();
             }
             transaction.commit();
         }
-        try ( Transaction transaction = getGraphDb().beginTx() )
+        try ( Transaction transaction = getGraphDb().beginTx();
+              ResourceIterable<Node> allNodes = transaction.getAllNodes() )
         {
-            assertFalse( transaction.getAllNodes().iterator().hasNext() );
+            assertThat( allNodes ).hasSize( 0 );
             transaction.commit();
         }
     }

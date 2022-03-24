@@ -95,7 +95,12 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
     runtimeResult should beColumns("n")
       .withStatistics(labelsRemoved = 2 * nodeCount)
-    tx.getAllNodes.stream().filter(_.getLabels.iterator().asScala.nonEmpty).count() shouldBe 0
+    val stream = tx.getAllNodes.stream()
+    try {
+      stream.filter(_.getLabels.iterator().asScala.nonEmpty).count() shouldBe 0
+    } finally {
+      stream.close()
+    }
   }
 
   test("not return removed labels") {
