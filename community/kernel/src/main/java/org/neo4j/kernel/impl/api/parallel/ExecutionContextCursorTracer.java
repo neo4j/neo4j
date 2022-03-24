@@ -25,18 +25,6 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 
 public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
 {
-    private long pins;
-    private long unpins;
-    private long hits;
-    private long faults;
-    private long noFaults;
-    private long failedFaults;
-    private long bytesRead;
-    private long bytesWritten;
-    private long evictions;
-    private long evictionExceptions;
-    private long flushes;
-    private long merges;
     private volatile boolean completed;
 
     ExecutionContextCursorTracer( PageCacheTracer pageCacheTracer, String tag )
@@ -44,23 +32,16 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
         super( pageCacheTracer, tag );
     }
 
-    // We override report events here since we want to capture all the events accumulated in the tracer and another thread and make
-    // then available to consumer thread. That in ensued by waiting for completed flag by consumer thread.
     @Override
     public void reportEvents()
     {
-        pins = super.pins();
-        unpins = super.unpins();
-        hits = super.hits();
-        faults = super.faults();
-        noFaults = super.noFaults();
-        failedFaults = super.failedFaults();
-        bytesRead = super.bytesRead();
-        bytesWritten = super.bytesWritten();
-        evictions = super.evictions();
-        evictionExceptions = super.evictionExceptions();
-        flushes = super.flushes();
-        merges = super.merges();
+        throw new UnsupportedOperationException( "Please report events using merge snapshots." );
+    }
+
+    // We mark context as completed here since we want to capture all the events accumulated in the tracer for another consumer thread.
+    // That in ensued by waiting for completed flag by consumer thread.
+    public void complete()
+    {
         completed = true;
     }
 
@@ -76,77 +57,5 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer
     public boolean isCompleted()
     {
         return completed;
-    }
-
-    @Override
-    public long faults()
-    {
-        return faults;
-    }
-
-    @Override
-    public long pins()
-    {
-        return pins;
-    }
-
-    @Override
-    public long unpins()
-    {
-        return unpins;
-    }
-
-    @Override
-    public long hits()
-    {
-        return hits;
-    }
-
-    @Override
-    public long bytesRead()
-    {
-        return bytesRead;
-    }
-
-    @Override
-    public long evictions()
-    {
-        return evictions;
-    }
-
-    @Override
-    public long evictionExceptions()
-    {
-        return evictionExceptions;
-    }
-
-    @Override
-    public long bytesWritten()
-    {
-        return bytesWritten;
-    }
-
-    @Override
-    public long flushes()
-    {
-        return flushes;
-    }
-
-    @Override
-    public long merges()
-    {
-        return merges;
-    }
-
-    @Override
-    public long noFaults()
-    {
-        return noFaults;
-    }
-
-    @Override
-    public long failedFaults()
-    {
-        return failedFaults;
     }
 }

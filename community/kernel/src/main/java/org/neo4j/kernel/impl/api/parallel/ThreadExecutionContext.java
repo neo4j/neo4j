@@ -76,7 +76,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable
     public void complete()
     {
         closeAllUnchecked( contextRead, storageCursors );
-        context.getCursorTracer().reportEvents();
+        cursorTracer.complete();
     }
 
     @Override
