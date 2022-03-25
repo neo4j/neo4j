@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import java.util.List;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -36,6 +37,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -132,6 +134,22 @@ public class StubRead implements Read {
             int desiredNumberOfPartitions,
             CursorContext cursorContext,
             TokenPredicate query) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
+            throws IndexNotApplicableKernelException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries) {
         throw new UnsupportedOperationException();
     }
 
@@ -236,6 +254,24 @@ public class StubRead implements Read {
             int desiredNumberOfPartitions,
             CursorContext cursorContext,
             TokenPredicate query) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session,
+            PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
+            TokenPredicate query)
+            throws IndexNotApplicableKernelException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries) {
         throw new UnsupportedOperationException();
     }
 

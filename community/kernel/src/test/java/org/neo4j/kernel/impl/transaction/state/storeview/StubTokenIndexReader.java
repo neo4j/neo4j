@@ -77,6 +77,11 @@ public class StubTokenIndexReader implements TokenIndexReader {
         throw new UnsupportedOperationException("Stub implementation does not support this method.");
     }
 
+    @Override
+    public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
+        throw new UnsupportedOperationException("Stub implementation does not support this method.");
+    }
+
     private static class StubIndexProgressor implements IndexProgressor {
         private final IndexProgressor.EntityTokenClient client;
         private final Iterator<Long> entities;

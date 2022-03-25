@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -93,6 +94,11 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
+        return new NativePartitionedTokenScan((NativePartitionedTokenScan) leadingPartition, query);
     }
 
     private long highestEntityIdForToken(int tokenId, CursorContext cursorContext) throws IOException {
@@ -186,11 +192,20 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
         NativePartitionedTokenScan(int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
                 throws IOException {
             Preconditions.requirePositive(desiredNumberOfPartitions);
-            int tokenId = query.tokenId();
+            final var tokenId = query.tokenId();
             final var fromInclusive = new TokenScanKey(tokenId, rangeOf(range.fromInclusive()));
             final var toExclusive = new TokenScanKey(tokenId, rangeOf(range.toExclusive()));
             partitionEdges =
                     index.partitionedSeek(fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext);
+        }
+
+        NativePartitionedTokenScan(NativePartitionedTokenScan leadingPartition, TokenPredicate query) {
+            final var tokenId = query.tokenId();
+            final var leadingEdges = leadingPartition.partitionEdges;
+            partitionEdges = new ArrayList<>(leadingEdges.size());
+            for (final var leadingEdge : leadingEdges) {
+                partitionEdges.add(new TokenScanKey(tokenId, leadingEdge.idRange));
+            }
         }
 
         @Override

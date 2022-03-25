@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.parallel;
 
 import java.io.Closeable;
+import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -125,6 +126,23 @@ public class ThreadExecutionContextRead implements Read, Closeable {
     }
 
     @Override
+    public PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
+            throws KernelException {
+        return read.nodeLabelScan(session, leadingPartitionScan, query);
+    }
+
+    @Override
+    public List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
+            throws KernelException {
+        return read.nodeLabelScans(session, desiredNumberOfPartitions, cursorContext, queries);
+    }
+
+    @Override
     public void nodeLabelScan(
             TokenReadSession session,
             NodeLabelIndexCursor cursor,
@@ -211,6 +229,25 @@ public class ThreadExecutionContextRead implements Read, Closeable {
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
             throws KernelException {
         return read.relationshipTypeScan(session, desiredNumberOfPartitions, cursorContext, query);
+    }
+
+    @Override
+    public PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session,
+            PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
+            TokenPredicate query)
+            throws KernelException {
+        return read.relationshipTypeScan(session, leadingPartitionScan, query);
+    }
+
+    @Override
+    public List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
+            throws KernelException {
+        return read.relationshipTypeScans(session, desiredNumberOfPartitions, cursorContext, queries);
     }
 
     @Override

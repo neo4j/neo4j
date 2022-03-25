@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -187,6 +188,36 @@ public interface Read {
      */
     PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
+            throws KernelException;
+
+    /**
+     * Scan node label index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query
+     * @param leadingPartitionScan the {@link PartitionedScan} which defines the partitions this should follow
+     * @param query the query to run against index
+     * @return {@link PartitionedScan} over the query
+     */
+    PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
+            throws KernelException;
+
+    /**
+     * Scan node label index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @param queries the queries to run against index
+     * @return {@link PartitionedScan} for each query, following the partitioning of the first
+     */
+    List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
             throws KernelException;
 
     /**
@@ -423,6 +454,38 @@ public interface Read {
      */
     PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
             TokenReadSession session, int desiredNumberOfPartitions, CursorContext cursorContext, TokenPredicate query)
+            throws KernelException;
+
+    /**
+     * Scan relationship type index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query
+     * @param leadingPartitionScan the {@link PartitionedScan} which defines the partitions this should follow
+     * @param query the query to run against index
+     * @return {@link PartitionedScan} over the query
+     */
+    PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session,
+            PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
+            TokenPredicate query)
+            throws KernelException;
+
+    /**
+     * Scan relationship type index in partitions.
+     * NOTE! This is not thread-safe for transaction state.
+     *
+     * @param session {@link TokenReadSession} token read session to query
+     * @param desiredNumberOfPartitions the desired number of partitions for this scan
+     * @param cursorContext the underlying page cursor context for the thread doing the partitioning.
+     * @param queries the queries to run against index
+     * @return {@link PartitionedScan} for each query, following the partitioning of the first
+     */
+    List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
             throws KernelException;
 
     /**

@@ -40,8 +40,8 @@ record KeyPartitioning<KEY>(Layout<KEY, ?> layout) {
             final var split = keys.get(Math.round(pos) - 1);
             partitions.add(split);
         }
-        partitions.add(toExclusive);
 
+        partitions.add(toExclusive);
         return partitions;
     }
 }

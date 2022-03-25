@@ -62,6 +62,8 @@ public interface TokenIndexReader extends IndexReader {
 
     PartitionedTokenScan entityTokenScan(int desiredNumberOfPartitions, CursorContext context, TokenPredicate query);
 
+    PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query);
+
     TokenIndexReader EMPTY = new TokenIndexReader() {
         @Override
         public void query(
@@ -86,6 +88,11 @@ public interface TokenIndexReader extends IndexReader {
         @Override
         public PartitionedTokenScan entityTokenScan(
                 int desiredNumberOfPartitions, CursorContext context, TokenPredicate query) {
+            throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
+        }
+
+        @Override
+        public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
             throw new UnsupportedOperationException("EMPTY implementation does not support this method.");
         }
 

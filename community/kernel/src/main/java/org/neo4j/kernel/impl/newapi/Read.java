@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.newapi;
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -70,6 +72,7 @@ import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.util.Preconditions;
 
 abstract class Read
         implements TxStateHolder,
@@ -310,6 +313,33 @@ abstract class Read
     }
 
     @Override
+    public final PartitionedScan<NodeLabelIndexCursor> nodeLabelScan(
+            TokenReadSession session, PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan, TokenPredicate query)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        if (session.reference().schema().entityType() != EntityType.NODE) {
+            throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
+                    + session.reference().userDescription(ktx.tokenRead()));
+        }
+        return tokenIndexScan(session, leadingPartitionScan, query);
+    }
+
+    @Override
+    public final List<PartitionedScan<NodeLabelIndexCursor>> nodeLabelScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        if (session.reference().schema().entityType() != EntityType.NODE) {
+            throw new IndexNotApplicableKernelException("Node label index scan can not be performed on index: "
+                    + session.reference().userDescription(ktx.tokenRead()));
+        }
+        return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, queries);
+    }
+
+    @Override
     public final void nodeLabelScan(
             TokenReadSession session,
             NodeLabelIndexCursor cursor,
@@ -396,6 +426,35 @@ abstract class Read
                     + session.reference().userDescription(ktx.tokenRead()));
         }
         return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, query);
+    }
+
+    @Override
+    public final PartitionedScan<RelationshipTypeIndexCursor> relationshipTypeScan(
+            TokenReadSession session,
+            PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
+            TokenPredicate query)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
+            throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
+                    + session.reference().userDescription(ktx.tokenRead()));
+        }
+        return tokenIndexScan(session, leadingPartitionScan, query);
+    }
+
+    @Override
+    public final List<PartitionedScan<RelationshipTypeIndexCursor>> relationshipTypeScans(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        if (session.reference().schema().entityType() != EntityType.RELATIONSHIP) {
+            throw new IndexNotApplicableKernelException("Relationship type index scan can not be performed on index: "
+                    + session.reference().userDescription(ktx.tokenRead()));
+        }
+        return tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, queries);
     }
 
     @Override
@@ -492,6 +551,40 @@ abstract class Read
         final var defaultSession = (DefaultTokenReadSession) session;
         final var tokenScan = defaultSession.reader.entityTokenScan(desiredNumberOfPartitions, cursorContext, query);
         return new PartitionedTokenIndexCursorScan<>(this, query, tokenScan);
+    }
+
+    private <C extends Cursor> PartitionedScan<C> tokenIndexScan(
+            TokenReadSession session, PartitionedScan<C> leadingPartitionScan, TokenPredicate query)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        final var descriptor = session.reference();
+        if (!descriptor.getCapability().supportPartitionedScan(query)) {
+            throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
+                    + descriptor.userDescription(ktx.tokenRead()));
+        }
+
+        final var defaultSession = (DefaultTokenReadSession) session;
+        final var leadingTokenIndexCursorScan = (PartitionedTokenIndexCursorScan<C>) leadingPartitionScan;
+        final var tokenScan = defaultSession.reader.entityTokenScan(leadingTokenIndexCursorScan.getTokenScan(), query);
+        return new PartitionedTokenIndexCursorScan<>(this, query, tokenScan);
+    }
+
+    private <C extends Cursor> List<PartitionedScan<C>> tokenIndexScan(
+            TokenReadSession session,
+            int desiredNumberOfPartitions,
+            CursorContext cursorContext,
+            TokenPredicate... queries)
+            throws IndexNotApplicableKernelException {
+        ktx.assertOpen();
+        Preconditions.requireNonEmpty(queries);
+        final var scans = new ArrayList<PartitionedScan<C>>(queries.length);
+        final var leadingPartitionScan =
+                this.<C>tokenIndexScan(session, desiredNumberOfPartitions, cursorContext, queries[0]);
+        scans.add(leadingPartitionScan);
+        for (int i = 1; i < queries.length; i++) {
+            scans.add(tokenIndexScan(session, leadingPartitionScan, queries[i]));
+        }
+        return scans;
     }
 
     public abstract ValueIndexReader newValueIndexReader(IndexDescriptor index) throws IndexNotFoundKernelException;
