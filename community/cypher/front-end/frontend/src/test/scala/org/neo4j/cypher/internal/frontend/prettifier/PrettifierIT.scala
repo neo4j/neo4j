@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend
+package org.neo4j.cypher.internal.frontend.prettifier
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
@@ -227,6 +227,96 @@ class PrettifierIT extends CypherFunSuite {
 
     "MATCH (a)-[r:R|:Q]->(b)" ->
       "MATCH (a)-[r:R|:Q]->(b)",
+
+    """MATCH (c:Country { name: "Sweden" }) UsInG ScAn c:Country""" ->
+      """MATCH (c:Country {name: "Sweden"})
+        |  USING SCAN c:Country""".stripMargin,
+
+    """MATCH (c:Country)-[v:VISITED { year: 1950 }]->() UsInG ScAn v:VISITED""" ->
+      """MATCH (c:Country)-[v:VISITED {year: 1950}]->()
+        |  USING SCAN v:VISITED""".stripMargin,
+
+    """MATCH (n) UsInG ScAn n:Country UsInG Scan n:City WHERE n:Country oR n:City""" ->
+      """MATCH (n)
+        |  USING SCAN n:Country
+        |  USING SCAN n:City
+        |  WHERE n:Country OR n:City""".stripMargin,
+
+    """MATCH (p:Person)-[v:VISITED]->(c:Country) UsInG JoIn On v"""->
+      """MATCH (p:Person)-[v:VISITED]->(c:Country)
+        |  USING JOIN ON v""".stripMargin,
+
+  """MATCH (p:Person { born: 1950 })-[v:VISITED]->(c:Country { name: "Sweden"}) UsInG InDeX p:Person(born) UsInG InDex c:Country(name) USING JoIn On v"""->
+    """MATCH (p:Person {born: 1950})-[v:VISITED]->(c:Country {name: "Sweden"})
+      |  USING INDEX p:Person(born)
+      |  USING INDEX c:Country(name)
+      |  USING JOIN ON v""".stripMargin,
+
+  "MATCH (p:Person { born: 1950 }) OPTIONAL MATCH (p)-[:VISITED]->(c:Country) UsInG JoIn oN p RETURN *" ->
+    """MATCH (p:Person {born: 1950})
+      |OPTIONAL MATCH (p)-[:VISITED]->(c:Country)
+      |  USING JOIN ON p
+      |RETURN *""".stripMargin,
+
+    "MATCH (c:Country) UsIng iNdEx c:Country(name)" ->
+      """MATCH (c:Country)
+        |  USING INDEX c:Country(name)""".stripMargin,
+
+    "MATCH (c:Country)-[v:VISITED { year: 1972 } ]->() UsIng iNdEx v:VISITED(year)" ->
+      """MATCH (c:Country)-[v:VISITED {year: 1972}]->()
+        |  USING INDEX v:VISITED(year)""".stripMargin,
+
+    """MATCH (c:Country { name: "Sweden"})-[v:VISITED { year: 1972 } ]->() UsIng iNdEx c:Country(name) UsInG INDeX v:VISITED(year)""" ->
+      """MATCH (c:Country {name: "Sweden"})-[v:VISITED {year: 1972}]->()
+        |  USING INDEX c:Country(name)
+        |  USING INDEX v:VISITED(year)""".stripMargin,
+
+    """MATCH (c:Country) UsIng iNdEx c:Country(name) UsInG INDeX c:Country(year_formed) WHERE c.formed = 500 OR c.name StARtS WiTh "A"""" ->
+      """MATCH (c:Country)
+        |  USING INDEX c:Country(name)
+        |  USING INDEX c:Country(year_formed)
+        |  WHERE c.formed = 500 OR c.name STARTS WITH "A"""".stripMargin,
+
+    """MATCH (c:Country) UsInG RanGe INdEX c:Country(founded_year) WHERE c.founded_year > 1500""" ->
+      """MATCH (c:Country)
+        |  USING RANGE INDEX c:Country(founded_year)
+        |  WHERE c.founded_year > 1500""".stripMargin,
+
+    """MATCH (c:Country) UsInG RanGe INdEX c:Country(founded_year) WHERE 1500 < c.founded_year AND c.founded_year < 1700""" ->
+      """MATCH (c:Country)
+        |  USING RANGE INDEX c:Country(founded_year)
+        |  WHERE 1500 < c.founded_year AND c.founded_year < 1700""".stripMargin,
+
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name = "Sweden"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name = "Sweden"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name STaRTS wITH "Swe"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name STARTS WITH "Swe"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name EnDs WItH "eden"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name ENDS WITH "eden"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name COnTaIns "ede"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name CONTAINS "ede"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name =~ ".+eden?"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name =~ ".+eden?"""".stripMargin,
+
+    "MATCH (c:City) UsInG POiNt InDEX c:City(coordinates) WHERE point.distance(c.coordinates, $p1, $p2) < 1000" ->
+      """MATCH (c:City)
+        |  USING POINT INDEX c:City(coordinates)
+        |  WHERE point.distance(c.coordinates, $p1, $p2) < 1000""".stripMargin,
   )
 
   def indexCommandTests(): Seq[(String, String)] = Seq[(String, String)](
