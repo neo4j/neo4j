@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -39,11 +40,11 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
 
   private val aNode = NodePattern(Some(varFor("a")), None, None, None) _
   private val bNode = NodePattern(Some(varFor("b")), None, None, None) _
-  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.OUTGOING) _
+  private val rRel = RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.OUTGOING) _
   private val TYP: RelTypeName = RelTypeName("TYP") _
   private val dependencies = Set("a", "r", "b")
 
-  private val rRelWithType = rRel.copy(types = Seq(TYP)) _
+  private val rRelWithType = rRel.copy(labelExpression = Some(Leaf(TYP))) _
   private val planRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val planRelWithType =
@@ -80,7 +81,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   test("(a)-[r]->(b:Label)") {
     // Given
     val patternExpression =
-      createPatternExpression(aNode, rRel, bNode.copy(labelExpression = Some(labelAtom("Label")))(pos))
+      createPatternExpression(aNode, rRel, bNode.copy(labelExpression = Some(labelLeaf("Label")))(pos))
 
     // When
     val qg = asQueryGraph(patternExpression, dependencies, new AnonymousVariableNameGenerator)

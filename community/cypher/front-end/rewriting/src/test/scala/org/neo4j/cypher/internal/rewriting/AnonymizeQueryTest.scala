@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.Rewriter
 
 class AnonymizeQueryTest extends AnonymizerTestBase {
@@ -85,16 +84,8 @@ class AnonymizeQueryTest extends AnonymizerTestBase {
   }
 
   test("relationship type expression") {
-    val relationshipTypExpressionsImplemented = false
-
-    // This is to catch the eyes of relationship type expression implementers.
-    // When this test fails, keep only asserts in "else"-clause.
-    if (!relationshipTypExpressionsImplemented) {
-      assertThrows[SyntaxException](parseForRewriting("MATCH ()-[r:A&B]->() RETURN r"))
-    } else {
-      assertRewrite("MATCH ()-[r:A&(B|!C)]->() RETURN n", "MATCH ()-[Xr:xA&(xB|!xC)]->() RETURN Xr")
-      assertRewrite("MATCH ()-[r]->() WHERE r:A&(B|!C) RETURN r", "MATCH ()-[r]->() WHERE Xr:xA&(xB|!xC) RETURN Xr")
-    }
+    assertRewrite("MATCH ()-[r:A&(B|!C)]->() RETURN r", "MATCH ()-[Xr:xA&(xB|!xC)]->() RETURN Xr")
+    assertRewrite("MATCH ()-[r]->() WHERE r:A&(B|!C) RETURN r", "MATCH ()-[Xr]->() WHERE Xr:xA&(xB|!xC) RETURN Xr")
   }
 
   test("property key") {

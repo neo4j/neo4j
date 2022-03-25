@@ -34,13 +34,33 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     val pattern = NodePattern(
       Some(varFor("n")),
       Some(labelColonConjunction(
-        labelAtom("Foo"),
-        labelAtom("Bar")
+        labelLeaf("Foo"),
+        labelLeaf("Bar")
       )),
       Some(mapOf("prop" -> literalString("test"))),
       Some(greaterThan(prop("r", "otherProp"), literalInt(123)))
     )(pos)
 
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("(n:Foo:Bar:Baz)") {
+    val pattern = nodePat(
+      Some("n"),
+      Some(labelColonConjunction(labelColonConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz")))
+    )
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("(n:(Foo|Bar)&Baz)") {
+    val pattern =
+      nodePat(Some("n"), Some(labelConjunction(labelDisjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz"))))
+    patternStringifier(pattern) shouldEqual testName
+  }
+
+  test("(n:(Foo&Bar)|Baz)") {
+    val pattern =
+      nodePat(Some("n"), Some(labelDisjunction(labelConjunction(labelLeaf("Foo"), labelLeaf("Bar")), labelLeaf("Baz"))))
     patternStringifier(pattern) shouldEqual testName
   }
 
@@ -83,8 +103,8 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       None,
       Some(
         labelConjunction(
-          labelAtom("A"),
-          labelAtom("B")
+          labelLeaf("A"),
+          labelLeaf("B")
         )
       ),
       None,
@@ -99,8 +119,8 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       None,
       Some(
         labelConjunction(
-          labelNegation(labelAtom("A")),
-          labelAtom("B")
+          labelNegation(labelLeaf("A")),
+          labelLeaf("B")
         )
       ),
       None,
@@ -116,8 +136,8 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       Some(
         labelNegation(
           labelConjunction(
-            labelAtom("A"),
-            labelAtom("B")
+            labelLeaf("A"),
+            labelLeaf("B")
           )
         )
       ),
@@ -134,10 +154,10 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
       Some(
         labelConjunction(
           labelDisjunction(
-            labelAtom("A"),
-            labelAtom("A")
+            labelLeaf("A"),
+            labelLeaf("A")
           ),
-          labelAtom("B")
+          labelLeaf("B")
         )
       ),
       None,
@@ -147,19 +167,19 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
-  test("(:!!(A&B)|C&B)") {
+  test("(:!!(A&B)|(C&B))") {
     val pattern = NodePattern(
       None,
       Some(
         labelDisjunction(
           labelNegation(
             labelNegation(
-              labelConjunction(labelAtom("A"), labelAtom("B"))
+              labelConjunction(labelLeaf("A"), labelLeaf("B"))
             )
           ),
           labelConjunction(
-            labelAtom("C"),
-            labelAtom("B")
+            labelLeaf("C"),
+            labelLeaf("B")
           )
         )
       ),
@@ -170,7 +190,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
-  test("(:!!((A&B|C)&B))") {
+  test("(:!!(((A&B)|C)&B))") {
     val pattern = NodePattern(
       None,
       Some(
@@ -178,10 +198,10 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
           labelNegation(
             labelConjunction(
               labelDisjunction(
-                labelConjunction(labelAtom("A"), labelAtom("B")),
-                labelAtom("C")
+                labelConjunction(labelLeaf("A"), labelLeaf("B")),
+                labelLeaf("C")
               ),
-              labelAtom("B")
+              labelLeaf("B")
             )
           )
         )
@@ -196,7 +216,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
   test("-[r:Foo|Bar*1..5 {prop: 'test'} WHERE r.otherProp > 123]->") {
     val pattern = RelationshipPattern(
       Some(varFor("r")),
-      Seq(relTypeName("Foo"), relTypeName("Bar")),
+      Some(labelDisjunction(labelRelTypeLeaf("Foo"), labelRelTypeLeaf("Bar"))),
       Some(Some(range(Some(1), Some(5)))),
       Some(mapOf("prop" -> literalString("test"))),
       Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
@@ -206,10 +226,13 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
-  test("<-[r:Foo|Bar|Baz*]-") {
+  test("<-[r:Foo|(Bar|Baz)*]-") {
     val pattern = RelationshipPattern(
       Some(varFor("r")),
-      Seq(relTypeName("Foo"), relTypeName("Bar"), relTypeName("Baz")),
+      Some(labelDisjunction(
+        labelRelTypeLeaf("Foo"),
+        labelDisjunction(labelRelTypeLeaf("Bar"), labelRelTypeLeaf("Baz"))
+      )),
       Some(None),
       None,
       None,
@@ -222,7 +245,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
   test("-[{prop: 'test'}]-") {
     val pattern = RelationshipPattern(
       None,
-      Seq.empty,
+      None,
       None,
       Some(mapOf("prop" -> literalString("test"))),
       None,
@@ -236,7 +259,7 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
   test("-[WHERE false]-") {
     val pattern = RelationshipPattern(
       None,
-      Seq.empty,
+      None,
       None,
       None,
       Some(falseLiteral),

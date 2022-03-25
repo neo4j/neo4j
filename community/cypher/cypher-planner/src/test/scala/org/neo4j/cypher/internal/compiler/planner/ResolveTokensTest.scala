@@ -33,9 +33,11 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -162,7 +164,14 @@ class ResolveTokensTest extends CypherFunSuite {
               false,
               Pattern(Seq(EveryPath(RelationshipChain(
                 NodePattern(None, None, None, None),
-                RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
+                RelationshipPattern(
+                  None,
+                  Some(Leaf(relTypeToken: RelTypeName)),
+                  None,
+                  None,
+                  None,
+                  SemanticDirection.OUTGOING
+                ),
                 NodePattern(None, None, None, None)
               )))),
               Seq(),
@@ -190,7 +199,14 @@ class ResolveTokensTest extends CypherFunSuite {
               false,
               Pattern(Seq(EveryPath(RelationshipChain(
                 NodePattern(None, None, None, None),
-                RelationshipPattern(None, Seq(relTypeToken), None, None, None, SemanticDirection.OUTGOING, _),
+                RelationshipPattern(
+                  None,
+                  Some(Leaf(relTypeToken: RelTypeName)),
+                  None,
+                  None,
+                  None,
+                  SemanticDirection.OUTGOING
+                ),
                 NodePattern(None, None, None, None)
               )))),
               Seq(),

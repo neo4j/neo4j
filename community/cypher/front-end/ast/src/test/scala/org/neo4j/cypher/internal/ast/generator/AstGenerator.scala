@@ -299,6 +299,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExistsSubClause
@@ -317,6 +318,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -330,6 +332,7 @@ import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -350,6 +353,7 @@ import org.neo4j.cypher.internal.expressions.ProcedureOutput
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertySelector
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.ReduceScope
@@ -839,27 +843,31 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       )
     )
 
-  def _labelExpression: Gen[LabelExpression] = {
+  def _labelExpression(entityType: Option[EntityType]): Gen[LabelExpression] = {
 
     def _labelExpressionConjunction: Gen[LabelExpression.Conjunction] = for {
-      lhs <- _labelExpression
-      rhs <- _labelExpression
+      lhs <- _labelExpression(entityType)
+      rhs <- _labelExpression(entityType)
     } yield LabelExpression.Conjunction(lhs, rhs)(pos)
 
     def _labelExpressionDisjunction: Gen[LabelExpression.Disjunction] = for {
-      lhs <- _labelExpression
-      rhs <- _labelExpression
+      lhs <- _labelExpression(entityType)
+      rhs <- _labelExpression(entityType)
     } yield LabelExpression.Disjunction(lhs, rhs)(pos)
 
     frequency(
       5 -> oneOf[LabelExpression](
         lzy(LabelExpression.Wildcard()(pos)),
-        lzy(_labelName.map(LabelExpression.Label(_)(pos)))
+        lzy(entityType match {
+          case Some(NODE_TYPE)         => _labelName.map(Leaf(_))
+          case Some(RELATIONSHIP_TYPE) => _relTypeName.map(Leaf(_))
+          case None                    => _labelOrTypeName.map(Leaf(_))
+        })
       ),
       1 -> oneOf[LabelExpression](
         lzy(_labelExpressionConjunction),
         lzy(_labelExpressionDisjunction),
-        lzy(_labelExpression.map(LabelExpression.Negation(_)(pos)))
+        lzy(_labelExpression(entityType).map(LabelExpression.Negation(_)(pos)))
       )
     )
   }
@@ -869,13 +877,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _nodePattern: Gen[NodePattern] = for {
     variable <- option(_variable)
-    labelExpression <- option(_labelExpression)
+    labelExpression <- option(_labelExpression(Some(NODE_TYPE)))
     properties <- option(oneOf(_map, _parameter))
     predicate <- variable match {
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
       case None    => const(None)
     }
-  } yield NodePattern(variable, None, properties, predicate)(pos)
+  } yield NodePattern(variable, labelExpression, properties, predicate)(pos)
 
   def _range: Gen[Range] = for {
     lower <- option(_unsignedDecIntLit)
@@ -891,7 +899,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _relationshipPattern: Gen[RelationshipPattern] = for {
     variable <- option(_variable)
-    types <- zeroOrMore(_relTypeName)
+    labelExpression <- option(_labelExpression(Some(RELATIONSHIP_TYPE)))
     length <- option(option(_range))
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
@@ -899,7 +907,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       case None    => const(None)
       case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
     }
-  } yield RelationshipPattern(variable, types, length, properties, predicate, direction, legacyTypeSeparator = false)(pos)
+  } yield RelationshipPattern(variable, labelExpression, length, properties, predicate, direction)(pos)
 
   def _relationshipChain: Gen[RelationshipChain] = for {
     element <- _patternElement

@@ -28,7 +28,7 @@ import org.opencypher.tools.tck.api.Scenario
 
 abstract class BaseTCKTests extends BaseFeatureTest {
 
-  // these two should be empty on commit!
+  // these should be empty on commit!
   val categoryToRun = ""
   val featureToRun = ""
   val scenarioToRun = ""

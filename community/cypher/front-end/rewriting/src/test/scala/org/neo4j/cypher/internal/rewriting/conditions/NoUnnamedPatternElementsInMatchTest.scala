@@ -193,7 +193,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   }
 
   private def relationship(id: Option[Variable]): RelationshipPattern = {
-    RelationshipPattern(id, Seq.empty, None, None, None, SemanticDirection.OUTGOING) _
+    RelationshipPattern(id, None, None, None, None, SemanticDirection.OUTGOING) _
   }
 
   private def node(id: Option[Variable]): NodePattern = {

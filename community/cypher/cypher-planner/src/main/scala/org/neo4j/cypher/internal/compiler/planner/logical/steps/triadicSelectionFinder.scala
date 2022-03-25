@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LabelExpression.containsGpmSpecificRelType
+import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -223,14 +225,17 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator with Sele
         RelationshipsPattern(
           RelationshipChain(
             NodePattern(Some(Variable(predicateFrom)), None, None, None),
-            RelationshipPattern(Some(rel), predicateTypes, None, None, None, predicateDir, _),
+            RelationshipPattern(Some(rel), predicateTypes, None, None, None, predicateDir),
             NodePattern(Some(Variable(predicateTo)), None, None, None)
           )
         )
       )
-      if predicateFrom == from && predicateTo == to && predicateTypes == types && predicateDir == dir && !pattern.dependencies.contains(
-        rel
-      ) => true
+      if predicateFrom == from
+        && predicateTo == to
+        && predicateDir == dir
+        && !containsGpmSpecificRelType(predicateTypes)
+        && getRelTypes(predicateTypes) == types
+        && !pattern.dependencies.contains(rel) => true
     case _ => false
   }
 }

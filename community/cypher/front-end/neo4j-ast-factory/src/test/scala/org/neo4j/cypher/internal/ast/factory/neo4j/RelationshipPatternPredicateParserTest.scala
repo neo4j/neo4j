@@ -33,7 +33,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Seq.empty,
+        None,
         None,
         None,
         Some(greaterThan(prop("r", "prop"), literalInt(123))),
@@ -46,7 +46,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Seq(relTypeName("Foo"), relTypeName("Bar")),
+        Some(labelDisjunction(labelRelTypeLeaf("Foo"), labelRelTypeLeaf("Bar"))),
         Some(Some(range(Some(1), Some(5)))),
         Some(mapOf("prop" -> literalString("test"))),
         Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
@@ -59,7 +59,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Seq(relTypeName("R"), relTypeName("S"), relTypeName("T")),
+        Some(labelDisjunction(labelDisjunction(labelRelTypeLeaf("R"), labelRelTypeLeaf("S")), labelRelTypeLeaf("T"))),
         None,
         Some(mapOf("prop" -> literal(42))),
         Some(greaterThan(prop("r", "otherProp"), literalInt(123))),
@@ -72,7 +72,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("WHERE")),
-        Seq.empty,
+        None,
         None,
         None,
         Some(greaterThan(prop("WHERE", "prop"), literalInt(123))),
@@ -85,7 +85,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Seq(relTypeName("R")),
+        Some(labelRelTypeLeaf("R")),
         None,
         None,
         Some(greaterThan(prop("r", "prop"), literalInt(123))),
@@ -98,7 +98,7 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     parseRelationshipPatterns(testName) shouldBe Seq(
       RelationshipPattern(
         Some(varFor("r")),
-        Seq.empty,
+        None,
         None,
         Some(mapOf("prop" -> literal("test"))),
         Some(equals(prop("r", "otherProp"), literalInt(123))),

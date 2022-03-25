@@ -94,6 +94,7 @@ public class LiteralInterpreter
                 NULL,
                 NULL,
                 NULL,
+                NULL,
                 NULL> {
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
@@ -314,11 +315,10 @@ public class LiteralInterpreter
             boolean left,
             boolean right,
             Object v,
-            List<StringPos<NULL>> relTypes,
+            NULL labelExpression,
             NULL aNull,
             Object properties,
-            Object predicate,
-            boolean legacyTypeSeparator) {
+            Object predicate) {
         throw new UnsupportedOperationException("relationshipPattern is not a literal");
     }
 
@@ -1046,13 +1046,18 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL labelAtom(NULL p, String e) {
+    public NULL labelLeaf(NULL p, String e, NULL entityType) {
         throw new UnsupportedOperationException("labelAtom is not a literal");
     }
 
     @Override
     public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs) {
-        throw new UnsupportedOperationException("labelLegacyConjunction is not a literal");
+        throw new UnsupportedOperationException("labelColonConjunction is not a literal");
+    }
+
+    @Override
+    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs) {
+        throw new UnsupportedOperationException("labelColonDisjunction is not a literal");
     }
 
     @Override
@@ -1389,6 +1394,21 @@ public class LiteralInterpreter
 
     @Override
     public NULL inputPosition(int offset, int line, int column) {
+        return null;
+    }
+
+    @Override
+    public NULL nodeType() {
+        return null;
+    }
+
+    @Override
+    public NULL relationshipType() {
+        return null;
+    }
+
+    @Override
+    public NULL nodeOrRelationshipType() {
         return null;
     }
 

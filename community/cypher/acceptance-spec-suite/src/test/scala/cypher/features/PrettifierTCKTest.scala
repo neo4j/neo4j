@@ -80,19 +80,6 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "ExplainAcceptance": Scenario "Explanation of in-query procedure call"""",
     """Feature "ExplainAcceptance": Scenario "Explanation of query ending in unit subquery call"""",
 
-    // Relationship type expression not implemented yet
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "3"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "4"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "5"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "6"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "7"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "8"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "9"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "10"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "11"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "12"""",
-    """Feature "LabelExpressionAcceptance": Scenario "Semantics of relationship type expression on relationship in MATCH": Example "13"""",
-
     // Label expressions in RETURN AND WHERE clauses, and CASE expressions, is not yet implemented
     """Feature "LabelExpressionAcceptance": Scenario "Label expression in WHERE clause"""",
     """Feature "LabelExpressionAcceptance": Scenario "Label expression in RETURN clause"""",

@@ -33,7 +33,7 @@ class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestS
         namedPath = None,
         pattern = RelationshipsPattern(RelationshipChain(
           nodePat(Some("u")),
-          RelationshipPattern(Some(varFor("r")), List(relTypeName("FOLLOWS")), None, None, None, OUTGOING)(pos),
+          RelationshipPattern(Some(varFor("r")), Some(labelRelTypeLeaf("FOLLOWS")), None, None, None, OUTGOING)(pos),
           nodePat(Some("u2"))
         )(pos))(pos),
         predicate = Some(hasLabels("u2", "User")),
@@ -51,8 +51,8 @@ class ExpressionStringifierTest extends CypherFunSuite with AstConstructionTestS
         namedPath = None,
         pattern = RelationshipsPattern(RelationshipChain(
           nodePat(Some("u")),
-          RelationshipPattern(Some(varFor("r")), List(relTypeName("FOLLOWS")), None, None, None, OUTGOING)(pos),
-          nodePat(Some("u2"), Some(labelAtom("User")))
+          RelationshipPattern(Some(varFor("r")), Some(labelRelTypeLeaf("FOLLOWS")), None, None, None, OUTGOING)(pos),
+          nodePat(Some("u2"), Some(labelLeaf("User")))
         )(pos))(pos),
         predicate = None,
         projection = prop("u2", "id")

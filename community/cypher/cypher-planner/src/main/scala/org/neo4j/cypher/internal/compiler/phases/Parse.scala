@@ -42,5 +42,5 @@ case object Parse extends Phase[BaseContext, BaseState, BaseState] {
 
   override val phase = PARSING
 
-  override def postConditions = Set(BaseContains[Statement])
+  override def postConditions = Set(BaseContains[Statement], ValidSymbolicNamesInLabelExpressions)
 }

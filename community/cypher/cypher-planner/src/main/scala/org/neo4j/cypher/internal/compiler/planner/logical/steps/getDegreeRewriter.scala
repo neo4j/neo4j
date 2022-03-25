@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
+import org.neo4j.cypher.internal.expressions.LabelExpression.containsGpmSpecificRelType
+import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -136,10 +138,10 @@ object RelationshipsPatternSolvableByGetDegree {
     // (a)-[r:X|Y]->(b)
     case RelationshipsPattern(RelationshipChain(
         NodePattern(Some(node), None, None, None),
-        RelationshipPattern(Some(rel), types, None, None, None, dir, _),
+        RelationshipPattern(Some(rel), labelExpression, None, None, None, dir),
         NodePattern(Some(otherNode), None, None, None)
-      )) =>
-      Some((node, rel, otherNode, types, dir))
+      )) if !containsGpmSpecificRelType(labelExpression) =>
+      Some((node, rel, otherNode, getRelTypes(labelExpression), dir))
 
     case _ => None
   }

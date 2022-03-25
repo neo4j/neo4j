@@ -65,6 +65,75 @@ Feature: LabelExpressionAcceptance
       | (n:(A&B)&!(B&C))    | [(:A:B)]                                                 |
       | (n:!(A&%)&%)        | [(:B), (:C), (:B:C)]                                     |
 
+  Scenario Outline: Semantics of label expression in predicate on node
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (),
+             (:A),
+             (:B),
+             (:C),
+             (:A:B),
+             (:A:C),
+             (:B:C),
+             (:A:B:C)
+      """
+
+    When executing query:
+      """
+      MATCH (n) WHERE n:<labelExpression>
+      WITH n ORDER BY size(labels(n)), labels(n)
+      RETURN collect(n) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | labelExpression | result                                                   |
+      | A               | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | A&B             | [(:A:B), (:A:B:C)]                                       |
+      | A\|B            | [(:A), (:B), (:A:B), (:A:C), (:B:C), (:A:B:C)]           |
+      | !A              | [(), (:B), (:C), (:B:C)]                                 |
+      | !!A             | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | A&!A            | []                                                       |
+      | A\|!A           | [(), (:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)] |
+      | (A&B)&!(B&C)    | [(:A:B)]                                                 |
+
+  Scenario Outline: Semantics of label expression including wildcards in predicate on node
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (),
+             (:A),
+             (:B),
+             (:C),
+             (:A:B),
+             (:A:C),
+             (:B:C),
+             (:A:B:C)
+      """
+
+    When executing query:
+      """
+      MATCH (n) WHERE n:<labelExpression>
+      WITH n ORDER BY size(labels(n)), labels(n)
+      RETURN collect(n) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | labelExpression | result                                                   |
+      | %               | [(:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)]     |
+      | !%              | [()]                                                     |
+      | %\|!%           | [(), (:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)] |
+      | %&!%            | []                                                       |
+      | A&%             | [(:A), (:A:B), (:A:C), (:A:B:C)]                         |
+      | A\|%            | [(:A), (:B), (:C), (:A:B), (:A:C), (:B:C), (:A:B:C)]     |
+      | !(A&%)&%        | [(:B), (:C), (:B:C)]                                     |
+
   Scenario Outline: Semantics of relationship type expression on relationship in MATCH
     Given an empty graph
     And having executed:
@@ -85,7 +154,7 @@ Feature: LabelExpressionAcceptance
       | <result> |
     And no side effects
     Examples:
-      | relationshipTypeExpressionRelationship | result           |
+      | relationshipTypeExpressionRelationship  | result          |
       | [r]                                     | ['A', 'B', 'C'] |
       | [r:A]                                   | ['A']           |
       | [r:A\|B]                                | ['A', 'B']      |
@@ -99,7 +168,90 @@ Feature: LabelExpressionAcceptance
       | [r:%&!%]                                | []              |
       | [r:A&%]                                 | ['A']           |
       | [r:A\|%]                                | ['A', 'B', 'C'] |
-      | [r:!(A&%)&%)]                           | ['B', 'C']      |
+      | [r:!(A&%)&%]                            | ['B', 'C']      |
+
+  Scenario Outline: Semantics of relationship type expression in predicate on relationship
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A]->(),
+             ()-[:B]->(),
+             ()-[:C]->()
+      """
+
+    When executing query:
+      """
+      MATCH ()-[r]->() WHERE r:<relationshipTypeExpression>
+      WITH type(r) AS rType ORDER BY rType
+      RETURN collect(rType) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | relationshipTypeExpression | result          |
+      | A                          | ['A']           |
+      | A\|B                       | ['A', 'B']      |
+      | !A                         | ['B', 'C']      |
+      | !!A                        | ['A']           |
+      | A&!A                       | []              |
+      | A\|!A                      | ['A', 'B', 'C'] |
+
+  Scenario Outline: Semantics of relationship type expression including wildcards in predicate on relationship
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:A]->(),
+             ()-[:B]->(),
+             ()-[:C]->()
+      """
+
+    When executing query:
+      """
+      MATCH ()-[r]->() WHERE r:<relationshipTypeExpression>
+      WITH type(r) AS rType ORDER BY rType
+      RETURN collect(rType) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | relationshipTypeExpression | result          |
+      | %                          | ['A', 'B', 'C'] |
+      | !%                         | []              |
+      | %\|!%                      | ['A', 'B', 'C'] |
+      | %&!%                       | []              |
+      | A&%                        | ['A']           |
+      | A\|%                       | ['A', 'B', 'C'] |
+      | !(A&%)&%                   | ['B', 'C']      |
+
+  Scenario Outline: Semantics of relationship type/label expression on unknown entity type
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:B]->(:C)
+      """
+
+    When executing query:
+      """
+      MATCH (a)-[b]->(c)
+      UNWIND [a, b, c] as x
+      WITH x
+      WHERE x:<expression>
+      RETURN count(*) AS result
+      """
+    Then the result should be, in any order:
+      | result   |
+      | <result> |
+    And no side effects
+    Examples:
+      | expression | result |
+      | %          |      3 |
+      | A          |      1 |
+      | B          |      1 |
+      | A\|B       |      2 |
 
   Scenario: Repeating label in conjunction
     Given an empty graph

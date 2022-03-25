@@ -26,6 +26,14 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
+import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
@@ -36,10 +44,13 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInMatch
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedPatternElementsInPatternComprehension
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.getRelTypesToConsider
+import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates.overlaps
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -52,6 +63,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CypherType
+
+import scala.util.control.TailCalls
+import scala.util.control.TailCalls.TailRec
 
 case object RelationshipUniquenessPredicatesInMatchAndMerge extends StepSequencer.Condition
 
@@ -102,11 +116,11 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
       case _: ShortestPaths =>
         acc => SkipChildren(acc)
 
-      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, types, _, _, _, _, _), _) =>
+      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, labelExpression, _, _, _, _), _) =>
         acc => {
           val ident =
             optIdent.getOrElse(throw new IllegalStateException("This rewriter cannot work with unnamed patterns"))
-          TraverseChildren(acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength))
+          TraverseChildren(acc :+ UniqueRel(ident, labelExpression, patRel.isSingleLength))
         }
     }
 
@@ -142,11 +156,18 @@ case class AddUniquenessPredicates(anonymousVariableNameGenerator: AnonymousVari
       }
     }
 
-  case class UniqueRel(variable: LogicalVariable, types: Set[RelTypeName], singleLength: Boolean) {
+  case class UniqueRel(variable: LogicalVariable, labelExpression: Option[LabelExpression], singleLength: Boolean) {
     def name: String = variable.name
 
-    def isAlwaysDifferentFrom(other: UniqueRel): Boolean =
-      types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
+    def isAlwaysDifferentFrom(other: UniqueRel): Boolean = {
+      val relTypesToConsider =
+        getRelTypesToConsider(labelExpression).concat(getRelTypesToConsider(other.labelExpression)).distinct
+      val labelExpressionOverlaps = overlaps(relTypesToConsider, labelExpression)
+      labelExpressionOverlaps.isEmpty || (labelExpressionOverlaps intersect overlaps(
+        relTypesToConsider,
+        other.labelExpression
+      )).isEmpty
+    }
   }
 }
 
@@ -170,4 +191,38 @@ object AddUniquenessPredicates extends Step with ASTRewriterFactory {
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = AddUniquenessPredicates(anonymousVariableNameGenerator)
+
+  def evaluate(expression: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
+    expression match {
+      case Conjunction(lhs, rhs)                => and(lhs, rhs, relType)
+      case ColonConjunction(lhs, rhs)           => and(lhs, rhs, relType)
+      case Disjunction(lhs, rhs)                => or(lhs, rhs, relType)
+      case ColonDisjunction(lhs, rhs)           => or(lhs, rhs, relType)
+      case Negation(e)                          => TailCalls.tailcall(evaluate(e, relType)).map(value => !value)
+      case Wildcard()                           => TailCalls.done(true)
+      case Leaf(expressionRelType: RelTypeName) => TailCalls.done(expressionRelType == relType)
+      case x =>
+        throw new IllegalArgumentException(s"Unexpected label expression $x when evaluating relationship overlap")
+    }
+
+  def and(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
+    TailCalls.tailcall(evaluate(lhs, relType)).flatMap {
+      case true  => TailCalls.tailcall(evaluate(rhs, relType))
+      case false => TailCalls.done(false)
+    }
+
+  def or(lhs: LabelExpression, rhs: LabelExpression, relType: SymbolicName): TailRec[Boolean] =
+    TailCalls.tailcall(evaluate(lhs, relType)).flatMap {
+      case true  => TailCalls.done(true)
+      case false => TailCalls.tailcall(evaluate(rhs, relType))
+    }
+
+  def overlaps(relTypesToConsider: Seq[SymbolicName], labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {
+    relTypesToConsider.filter(relType => labelExpression.forall(le => evaluate(le, relType).result))
+  }
+
+  def getRelTypesToConsider(labelExpression: Option[LabelExpression]): Seq[SymbolicName] = {
+    // also add the arbitrary rel type "" to check for rel types which are not explicitly named (such as in -[r]-> or -[r:%]->)
+    labelExpression.map(_.flatten).getOrElse(Seq.empty) appended RelTypeName("")(InputPosition.NONE)
+  }
 }

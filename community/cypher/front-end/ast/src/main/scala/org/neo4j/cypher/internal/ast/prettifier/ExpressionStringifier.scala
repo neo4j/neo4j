@@ -51,9 +51,10 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Label
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
@@ -111,6 +112,7 @@ trait ExpressionStringifier {
   def backtick(in: String): String
   def quote(txt: String): String
   def escapePassword(password: Expression): String
+  def stringifyLabelExpression(le: LabelExpression): String
 }
 
 private class DefaultExpressionStringifier(
@@ -239,10 +241,7 @@ private class DefaultExpressionStringifier(
         s"${inner(ast)(arg)}$l"
 
       case lep: LabelExpressionPredicate =>
-        s"${inner(ast)(lep.entity)}:${stringify(lep.labelExpression)}"
-
-      case le: LabelExpression =>
-        stringifyLabelExpression(le)
+        s"${inner(ast)(lep.entity)}:${stringifyLabelExpression(lep.labelExpression)}"
 
       case AllIterablePredicate(scope, e) =>
         s"all${prettyScope(scope, e)}"
@@ -448,24 +447,51 @@ private class DefaultExpressionStringifier(
     case param: Parameter                                      => s"$$${ExpressionStringifier.backtick(param.name)}"
   }
 
-  private def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Disjunction => s"${stringifyLabelExpression3(le.lhs)}|${stringifyLabelExpression3(le.rhs)}"
-    case le              => s"${stringifyLabelExpression3(le)}"
+  override def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {
+    case le: Disjunction =>
+      s"${stringifyLabelExpressionInDisjunction(le.lhs)}|${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le: ColonDisjunction =>
+      s"${stringifyLabelExpressionInColonDisjunction(le.lhs)}|:${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le: Conjunction =>
+      s"${stringifyLabelExpressionInConjunction(le.lhs)}&${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le: ColonConjunction =>
+      s"${stringifyLabelExpressionInColonConjunction(le.lhs)}:${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le => s"${stringifyLabelExpressionHalfAtom(le)}"
   }
 
-  private def stringifyLabelExpression3(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Conjunction      => s"${stringifyLabelExpression2(le.lhs)}&${stringifyLabelExpression2(le.rhs)}"
-    case le: ColonConjunction => s"${stringifyLabelExpression2(le.lhs)}:${stringifyLabelExpression2(le.rhs)}"
-    case le                   => s"${stringifyLabelExpression2(le)}"
+  private def stringifyLabelExpressionInDisjunction(labelExpression: LabelExpression): String = labelExpression match {
+    case le: Disjunction =>
+      s"${stringifyLabelExpressionInDisjunction(le.lhs)}|${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le => s"${stringifyLabelExpressionHalfAtom(le)}"
   }
 
-  private def stringifyLabelExpression2(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Negation => s"!${stringifyLabelExpression2(le.e)}"
-    case le           => s"${stringifyLabelExpression1(le)}"
+  private def stringifyLabelExpressionInColonDisjunction(labelExpression: LabelExpression): String =
+    labelExpression match {
+      case le: ColonDisjunction =>
+        s"${stringifyLabelExpressionInColonDisjunction(le.lhs)}|:${stringifyLabelExpressionHalfAtom(le.rhs)}"
+      case le => s"${stringifyLabelExpressionHalfAtom(le)}"
+    }
+
+  private def stringifyLabelExpressionInConjunction(labelExpression: LabelExpression): String = labelExpression match {
+    case le: Conjunction =>
+      s"${stringifyLabelExpressionInConjunction(le.lhs)}&${stringifyLabelExpressionHalfAtom(le.rhs)}"
+    case le => s"${stringifyLabelExpressionHalfAtom(le)}"
   }
 
-  private def stringifyLabelExpression1(labelExpression: LabelExpression): String = labelExpression match {
-    case le: Label   => apply(le.label)
+  private def stringifyLabelExpressionInColonConjunction(labelExpression: LabelExpression): String =
+    labelExpression match {
+      case le: ColonConjunction =>
+        s"${stringifyLabelExpressionInColonConjunction(le.lhs)}:${stringifyLabelExpressionHalfAtom(le.rhs)}"
+      case le => s"${stringifyLabelExpressionHalfAtom(le)}"
+    }
+
+  private def stringifyLabelExpressionHalfAtom(labelExpression: LabelExpression): String = labelExpression match {
+    case le: Negation => s"!${stringifyLabelExpressionHalfAtom(le.e)}"
+    case le           => s"${stringifyLabelExpressionAtom(le)}"
+  }
+
+  private def stringifyLabelExpressionAtom(labelExpression: LabelExpression): String = labelExpression match {
+    case Leaf(name)  => apply(name)
     case _: Wildcard => s"%"
     case le          => s"(${stringifyLabelExpression(le)})"
   }

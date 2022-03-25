@@ -212,4 +212,12 @@ class normalizeMatchPredicatesTest extends CypherFunSuite with TestName {
   test("MATCH (n:%&(B|!%)) RETURN n") {
     assertRewrite("MATCH (n) WHERE size(labels(n)) > 0 AND (n:B OR NOT(size(labels(n)) > 0)) RETURN n")
   }
+
+  test("MATCH ()-[r:!A&!B]->() RETURN r") {
+    assertRewrite("MATCH ()-[r]->() WHERE NOT(r:A) AND NOT(r:B) RETURN r")
+  }
+
+  test("MATCH ()-[r:A|B|C]->() RETURN r") {
+    assertRewrite("MATCH ()-[r:A|B|C]->() RETURN r")
+  }
 }

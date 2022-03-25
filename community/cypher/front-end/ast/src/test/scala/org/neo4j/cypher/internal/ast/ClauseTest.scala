@@ -45,7 +45,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE n:N
     val `match` = Match(
       optional = false,
-      Pattern(Seq(EveryPath(nodePat(Some("n"), Some(labelAtom("N"))))))(pos),
+      Pattern(Seq(EveryPath(nodePat(Some("n"), Some(labelLeaf("N"))))))(pos),
       hints = Seq.empty,
       where = None
     )(pos)
@@ -100,7 +100,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       Pattern(Seq(EveryPath(
         RelationshipChain(
           nodePat(),
-          RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.BOTH)(pos),
+          RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.BOTH)(pos),
           nodePat()
         )(pos)
       )))(pos),
@@ -124,13 +124,13 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       Pattern(Seq(EveryPath(
         RelationshipChain(
           nodePat(),
-          RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, None, SemanticDirection.BOTH)(pos),
+          RelationshipPattern(Some(varFor("r")), None, None, None, None, SemanticDirection.BOTH)(pos),
           nodePat()
         )(pos)
       )))(pos),
       hints = Seq.empty,
       Some(Where(
-        labelExpressionPredicate("r", labelAtom("R"))
+        labelExpressionPredicate("r", labelLeaf("R"))
       )(pos))
     )(pos)
 
@@ -148,7 +148,9 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       Pattern(Seq(EveryPath(
         RelationshipChain(
           nodePat(),
-          RelationshipPattern(Some(varFor("r")), Seq(relTypeName("R")), None, None, None, SemanticDirection.BOTH)(pos),
+          RelationshipPattern(Some(varFor("r")), Some(labelRelTypeLeaf("R")), None, None, None, SemanticDirection.BOTH)(
+            pos
+          ),
           nodePat()
         )(pos)
       )))(pos),
@@ -172,7 +174,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
           nodePat(),
           RelationshipPattern(
             Some(varFor("r")),
-            Seq(relTypeName("R")),
+            Some(labelRelTypeLeaf("R")),
             None,
             Some(mapOfInt("prop" -> 42)),
             None,

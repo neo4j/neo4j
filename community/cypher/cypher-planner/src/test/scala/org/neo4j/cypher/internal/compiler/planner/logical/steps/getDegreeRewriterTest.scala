@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
+import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -502,7 +503,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       NodePattern(Some(from.map(varFor(_)).getOrElse(varFor("DEFAULT"))), None, None, None)(pos),
       RelationshipPattern(
         Some(varFor("r")),
-        relationships.map(r => RelTypeName(r)(pos)),
+        disjoinRelTypesToLabelExpression(relationships.map(r => RelTypeName(r)(pos))),
         None,
         None,
         None,

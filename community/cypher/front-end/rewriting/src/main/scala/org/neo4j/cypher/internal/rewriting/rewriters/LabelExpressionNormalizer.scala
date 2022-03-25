@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -35,45 +36,72 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 
+/**
+ * Rewrites relationship type/label expressions to HasLabel/HasType predicates that the rest of the query engine can understand.
+ * @param entityExpression expression to return the entity to check the label expression on
+ * @param entityType if used in a pattern, the type of the pattern, None otherwise (in a predicate)
+ */
 case class LabelExpressionNormalizer(entityExpression: Expression, entityType: Option[EntityType]) extends Rewriter {
 
   val instance: Rewriter = Rewriter.lift {
-    case c: LabelExpression.Conjunction => And(
-        c.lhs,
-        c.rhs
-      )(c.position)
-    case c: LabelExpression.ColonConjunction => And(
-        c.lhs,
-        c.rhs
-      )(c.position)
+    case labelExpression: LabelExpression => rewriteLabelExpression(labelExpression)
+  }
 
-    case d: LabelExpression.Disjunction => Or(
-        d.lhs,
-        d.rhs
-      )(d.position)
+  def rewriteLabelExpression(labelExpression: LabelExpression): Expression = labelExpression match {
+    case colonConjunction: LabelExpression.ColonConjunction =>
+      And(rewriteLabelExpression(colonConjunction.lhs), rewriteLabelExpression(colonConjunction.rhs))(
+        colonConjunction.position
+      )
 
-    case n: LabelExpression.Negation => Not(
-        n.e
-      )(n.position)
+    case conjunction: LabelExpression.Conjunction =>
+      And(rewriteLabelExpression(conjunction.lhs), rewriteLabelExpression(conjunction.rhs))(conjunction.position)
 
-    case n: LabelExpression.Wildcard =>
-      val size: Expression => FunctionInvocation = FunctionInvocation(FunctionName("size")(n.position), _)(n.position)
-      val labels: Expression => FunctionInvocation =
-        FunctionInvocation(FunctionName("labels")(n.position), _)(n.position)
-      val zero = SignedDecimalIntegerLiteral("0")(n.position)
+    case colonDisjunction: LabelExpression.ColonDisjunction =>
+      Or(rewriteLabelExpression(colonDisjunction.lhs), rewriteLabelExpression(colonDisjunction.rhs))(
+        colonDisjunction.position
+      )
 
-      GreaterThan(size(labels(copy(entityExpression))), zero)(n.position)
+    case disjunction: LabelExpression.Disjunction =>
+      Or(rewriteLabelExpression(disjunction.lhs), rewriteLabelExpression(disjunction.rhs))(disjunction.position)
 
-    case n: LabelExpression.Label =>
+    // in a node pattern
+    case Leaf(name: LabelName) =>
+      HasLabels(copy(entityExpression), Seq(name))(name.position)
+
+    // in a label expression predicate
+    case Leaf(name: LabelOrRelTypeName) =>
+      HasLabelsOrTypes(copy(entityExpression), Seq(name))(name.position)
+
+    // in a relationship pattern
+    case Leaf(name: RelTypeName) =>
+      HasTypes(copy(entityExpression), Seq(name))(name.position)
+
+    case leaf @ Leaf(_) =>
+      throw new IllegalArgumentException(
+        s"Unexpected non-implemented label expression leaf $leaf when rewriting label expressions"
+      )
+
+    case negation: LabelExpression.Negation =>
+      Not(rewriteLabelExpression(negation.e))(negation.position)
+
+    case wildcard: LabelExpression.Wildcard =>
       entityType match {
-        case Some(NODE_TYPE) => HasLabels(copy(entityExpression), Seq(LabelName(n.label.name)(n.position)))(n.position)
+        case None => throw new IllegalArgumentException("Unexpected label wildcard inside a predicate")
+        case Some(NODE_TYPE) =>
+          val entityWithNewVariables = copy(entityExpression)
+          val entityLabels: FunctionInvocation =
+            FunctionInvocation(FunctionName("labels")(wildcard.position), entityWithNewVariables)(wildcard.position)
+          val numberOfEntityLabels: FunctionInvocation =
+            FunctionInvocation(FunctionName("size")(wildcard.position), entityLabels)(wildcard.position)
+          val zero = SignedDecimalIntegerLiteral("0")(wildcard.position)
+          GreaterThan(numberOfEntityLabels, zero)(wildcard.position)
         case Some(RELATIONSHIP_TYPE) =>
-          HasTypes(copy(entityExpression), Seq(RelTypeName(n.label.name)(n.position)))(n.position)
-        case None =>
-          HasLabelsOrTypes(copy(entityExpression), Seq(LabelOrRelTypeName(n.label.name)(n.position)))(n.position)
+          // all relationships have a type
+          True()(wildcard.position)
       }
   }
 

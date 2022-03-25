@@ -49,10 +49,10 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
         labelExpression = Some(
           labelColonConjunction(
             labelColonConjunction(
-              labelAtom("A", (1, 4, 3)),
-              labelAtom("B", (1, 6, 5))
+              labelLeaf("A", (1, 4, 3)),
+              labelLeaf("B", (1, 6, 5))
             ),
-            labelAtom("C", (1, 8, 7))
+            labelLeaf("C", (1, 8, 7))
           )
         ),
         properties = Some(mapOf("prop" -> literalInt(42))),
@@ -76,7 +76,7 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName with J
     parseNodePatterns(testName).toSet shouldBe Set(
       NodePattern(
         Some(varFor("n")),
-        Some(labelAtom("A")),
+        Some(labelLeaf("A")),
         None,
         Some(greaterThanOrEqual(prop("n", "prop"), literalInt(123)))
       )(pos),

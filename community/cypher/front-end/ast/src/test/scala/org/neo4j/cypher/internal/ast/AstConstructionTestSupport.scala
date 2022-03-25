@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -91,6 +92,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
@@ -435,13 +437,25 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def labelDisjunction(lhs: LabelExpression, rhs: LabelExpression, position: InputPosition = pos): LabelExpression =
     LabelExpression.Disjunction(lhs, rhs)(position)
 
+  def labelColonDisjunction(
+    lhs: LabelExpression,
+    rhs: LabelExpression,
+    position: InputPosition = pos
+  ): LabelExpression = LabelExpression.ColonDisjunction(lhs, rhs)(position)
+
   def labelNegation(e: LabelExpression, position: InputPosition = pos): LabelExpression =
     LabelExpression.Negation(e)(position)
 
   def labelWildcard(position: InputPosition = pos): LabelExpression = LabelExpression.Wildcard()(position)
 
-  def labelAtom(name: String, position: InputPosition = pos): LabelExpression =
-    LabelExpression.Label(LabelName(name)(position))(position)
+  def labelLeaf(name: String, position: InputPosition = pos): LabelExpression =
+    Leaf(LabelName(name)(position))
+
+  def labelRelTypeLeaf(name: String, position: InputPosition = pos): LabelExpression =
+    Leaf(RelTypeName(name)(position))
+
+  def labelOrRelTypeLeaf(name: String, position: InputPosition = pos): LabelExpression =
+    Leaf(LabelOrRelTypeName(name)(position))
 
   def labelExpressionPredicate(v: String, labelExpression: LabelExpression): LabelExpressionPredicate =
     labelExpressionPredicate(varFor(v), labelExpression)
@@ -464,10 +478,24 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   ): NodePattern =
     NodePattern(name.map(Variable(_)(namePos)), labelExpression, properties, predicates)(position)
 
+  def relPat(
+    name: Option[String] = None,
+    labelExpression: Option[LabelExpression] = None,
+    length: Option[Option[Range]] = None,
+    properties: Option[Expression] = None,
+    predicates: Option[Expression] = None,
+    direction: SemanticDirection = OUTGOING,
+    namePos: InputPosition = pos,
+    position: InputPosition = pos
+  ): RelationshipPattern =
+    RelationshipPattern(name.map(Variable(_)(namePos)), labelExpression, length, properties, predicates, direction)(
+      position
+    )
+
   def patternExpression(nodeVar1: Variable, nodeVar2: Variable): PatternExpression =
     PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(nodeVar1), None, None, None)(pos),
-      RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
+      RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), None, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 

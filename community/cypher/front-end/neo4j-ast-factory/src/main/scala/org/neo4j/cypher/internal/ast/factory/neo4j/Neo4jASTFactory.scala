@@ -337,6 +337,7 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -397,6 +398,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.parser.javacc.EntityType
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -472,7 +474,8 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
       ActionResource,
       PrivilegeQualifier,
       SubqueryCall.InTransactionsParameters,
-      InputPosition
+      InputPosition,
+      EntityType
     ] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -743,11 +746,10 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     left: Boolean,
     right: Boolean,
     v: Variable,
-    relTypes: util.List[StringPos[InputPosition]],
+    labelExpression: LabelExpression,
     pathLength: Option[Range],
     properties: Expression,
-    predicate: Expression,
-    legacyTypeSeparator: Boolean
+    predicate: Expression
   ): RelationshipPattern = {
     val direction =
       if (left && !right) SemanticDirection.INCOMING
@@ -763,12 +765,11 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
     RelationshipPattern(
       Option(v),
-      relTypes.asScala.toList.map(sp => RelTypeName(sp.string)(sp.pos)),
+      Option(labelExpression),
       range,
       Option(properties),
       Option(predicate),
-      direction,
-      legacyTypeSeparator
+      direction
     )(p)
   }
 
@@ -2176,11 +2177,24 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
 
   override def labelWildcard(p: InputPosition): LabelExpression = LabelExpression.Wildcard()(p)
 
-  override def labelAtom(p: InputPosition, n: String): LabelExpression = LabelExpression.Label(LabelName(n)(p))(p)
+  override def labelLeaf(p: InputPosition, n: String, entityType: EntityType): LabelExpression = entityType match {
+    case EntityType.NODE                 => Leaf(LabelName(n)(p))
+    case EntityType.NODE_OR_RELATIONSHIP => Leaf(LabelOrRelTypeName(n)(p))
+    case EntityType.RELATIONSHIP         => Leaf(RelTypeName(n)(p))
+  }
 
   override def labelColonConjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
     LabelExpression.ColonConjunction(lhs, rhs)(p)
 
+  override def labelColonDisjunction(p: InputPosition, lhs: LabelExpression, rhs: LabelExpression): LabelExpression =
+    LabelExpression.ColonDisjunction(lhs, rhs)(p)
+
   override def labelExpressionPredicate(subject: Expression, exp: LabelExpression): Expression =
     LabelExpressionPredicate(subject, exp)(subject.position)
+
+  override def nodeType(): EntityType = EntityType.NODE
+
+  override def relationshipType(): EntityType = EntityType.RELATIONSHIP
+
+  override def nodeOrRelationshipType(): EntityType = EntityType.NODE_OR_RELATIONSHIP
 }

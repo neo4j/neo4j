@@ -63,7 +63,7 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
 
     val labelExpression =
       nodePattern.labelExpression
-        .map(le => s":${expr(le)}")
+        .map(le => s":${expr.stringifyLabelExpression(le)}")
 
     val body =
       concatenate(
@@ -89,12 +89,9 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
   override def apply(relationship: RelationshipPattern): String = {
     val variable = relationship.variable.map(expr(_))
 
-    val separator = if (relationship.legacyTypeSeparator) "|:" else "|"
-
-    val types =
-      Some(relationship.types)
-        .filter(_.nonEmpty)
-        .map(_.map(expr(_)).mkString(":", separator, ""))
+    val labelExpression =
+      relationship.labelExpression
+        .map(le => s":${expr.stringifyLabelExpression(le)}")
 
     val length = relationship.length match {
       case None              => None
@@ -105,7 +102,7 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
     val body = concatenate(
       " ",
       Seq(
-        concatenate("", Seq(variable, types, length)),
+        concatenate("", Seq(variable, labelExpression, length)),
         relationship.properties.map(expr(_)),
         relationship.predicate.map(stringifyPredicate)
       )

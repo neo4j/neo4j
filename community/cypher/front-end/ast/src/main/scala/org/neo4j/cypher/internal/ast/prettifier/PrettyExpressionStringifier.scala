@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.prettifier
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -86,4 +87,6 @@ private class PrettyExpressionStringifier(inner: ExpressionStringifier) extends 
   override def quote(txt: String): String = inner.quote(txt)
 
   override def escapePassword(password: Expression): String = inner.escapePassword(password)
+
+  override def stringifyLabelExpression(le: LabelExpression): String = inner.stringifyLabelExpression(le)
 }

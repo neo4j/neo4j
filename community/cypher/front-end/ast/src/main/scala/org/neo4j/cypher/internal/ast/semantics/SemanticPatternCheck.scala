@@ -18,13 +18,17 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -37,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -44,6 +49,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
@@ -145,7 +151,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
           case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
               SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _, _) => acc =>
+          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
               SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
           case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
         }
@@ -284,8 +290,19 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
-          checkLabelExpressions(ctx, x.labelExpression, x.position)
+          checkLabelExpressions(ctx, x.labelExpression)
     }
+
+  def legacyRelationshipDisjunctionError(sanitizedLabelExpression: String, isNode: Boolean = false): String = {
+    if (isNode) {
+      s"""Label expressions are not allowed to contain '|:'.
+         |If you want to express a disjunction of labels, please use `:$sanitizedLabelExpression` instead""".stripMargin
+    } else {
+      s"""The semantics of using colon in the separation of alternative relationship types in conjunction with
+         |the use of variable binding, inlined property predicates, or variable length is no longer supported.
+         |Please separate the relationships types using `:$sanitizedLabelExpression` instead.""".stripMargin
+    }
+  }
 
   private def check(ctx: SemanticContext, x: RelationshipPattern): SemanticCheck = {
     def checkNotUndirectedWhenCreating: SemanticCheck = {
@@ -311,27 +328,58 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       SemanticExpressionCheck.simple(x.properties) chain
         expectType(CTMap.covariant, x.properties)
 
-    def checkForLegacyTypeSeparator: SemanticCheck = x match {
-      case RelationshipPattern(variable, _, length, properties, predicate, _, true)
-        if (variable.isDefined && !variableIsGenerated(
-          variable.get
-        )) || length.isDefined || properties.isDefined || predicate.isDefined =>
+    val stringifier = ExpressionStringifier()
+
+    def checkForLegacyTypeSeparator: SemanticCheck = {
+      val maybeLabelExpression = x match {
+        // We will not complain about this particular case here because that is still allowed although deprecated.
+        case RelationshipPattern(variable, expression, None, None, None, _)
+          if !variable.exists(variable => AnonymousVariableNameGenerator.isNamed(variable.name)) &&
+            expression.forall(!_.containsGpmSpecificRelTypeExpression) => None
+        case RelationshipPattern(_, Some(labelExpression), _, _, _, _) => Some(labelExpression)
+        case _                                                         => None
+      }
+      val maybeOffendingLabelExpression = maybeLabelExpression.flatMap(_.folder.treeFindByClass[ColonDisjunction])
+      maybeOffendingLabelExpression.fold(SemanticCheckResult.success) { illegalColonDisjunction =>
+        val sanitizedLabelExpression = stringifier.stringifyLabelExpression(maybeLabelExpression.get
+          .replaceColonSyntax)
         error(
-          """The semantics of using colon in the separation of alternative relationship types in conjunction with
-            |the use of variable binding, inlined property predicates, or variable length is no longer supported.
-            |Please separate the relationships types using `:A|B|C` instead""".stripMargin,
-          x.position
+          legacyRelationshipDisjunctionError(sanitizedLabelExpression),
+          illegalColonDisjunction.position
         )
-      case _ =>
-        None
+      }
     }
+
+    def checkForQuantifiedLabelExpression: SemanticCheck = {
+      x match {
+        case RelationshipPattern(_, Some(labelExpression), Some(_), _, _, _)
+          if labelExpression.containsGpmSpecificRelTypeExpression =>
+          error(
+            """Variable length relationships must not use relationship type expressions.""".stripMargin,
+            labelExpression.position
+          )
+        case _ => SemanticCheckResult.success
+      }
+    }
+
+    def checkLabelExpressions(ctx: SemanticContext, labelExpression: Option[LabelExpression]): SemanticCheck =
+      labelExpression.foldSemanticCheck { labelExpression =>
+        when(ctx != SemanticContext.Match && labelExpression.containsGpmSpecificRelTypeExpression) {
+          error(
+            s"Relationship type expressions in patterns are not allowed in ${ctx.name}, but only in MATCH clause",
+            labelExpression.position
+          )
+        } chain
+          SemanticExpressionCheck.checkLabelExpression(Some(RELATIONSHIP_TYPE), labelExpression)
+      }
 
     checkNoVarLengthWhenUpdating chain
       checkForLegacyTypeSeparator chain
+      checkForQuantifiedLabelExpression chain
       checkNoParamMapsWhenMatching(x.properties, ctx) chain
       checkProperties chain
       checkValidPropertyKeyNamesInPattern(x.properties) chain
-      checkValidRelTypes(x.types, x.position) chain
+      checkLabelExpressions(ctx, x.labelExpression) chain
       checkNotUndirectedWhenCreating
   }
 
@@ -396,14 +444,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   private def checkLabelExpressions(
     ctx: SemanticContext,
-    labelExpression: Option[LabelExpression],
-    inputPosition: InputPosition
+    labelExpression: Option[LabelExpression]
   ): SemanticCheck =
     labelExpression.foldSemanticCheck { labelExpression =>
-      when(ctx != SemanticContext.Match && !labelExpression.isNonGpm) {
-        error(s"Label expressions are not allowed in ${ctx.name}, but only in MATCH clause", labelExpression.position)
+      when(ctx != SemanticContext.Match && labelExpression.containsGpmSpecificLabelExpression) {
+        error(
+          s"Label expressions in patterns are not allowed in ${ctx.name}, but only in MATCH clause",
+          labelExpression.position
+        )
       } chain
-        SemanticExpressionCheck.simple(labelExpression)
+        SemanticExpressionCheck.checkLabelExpression(Some(NODE_TYPE), labelExpression)
     }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems, position: InputPosition): SemanticCheck = {
@@ -421,21 +471,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
   }
 
-  def checkValidLabels(labelNames: Seq[LabelName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = labelNames.collectFirst {
-      case label if checkValidTokenName(label.name).nonEmpty =>
-        checkValidTokenName(label.name).get
-    }
-    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
-  }
+  def checkValidLabels(labelNames: Seq[SymbolicName], pos: InputPosition): SemanticCheck =
+    labelNames.view.flatMap {
+      case LabelName(name)   => checkValidTokenName(name)
+      case RelTypeName(name) => checkValidTokenName(name)
 
-  private def checkValidRelTypes(relTypeNames: Seq[RelTypeName], pos: InputPosition): SemanticCheck = {
-    val errorMessage = relTypeNames.collectFirst {
-      case relType if checkValidTokenName(relType.name).nonEmpty =>
-        checkValidTokenName(relType.name).get
-    }
-    if (errorMessage.nonEmpty) SemanticError(errorMessage.get, pos) else None
-  }
+      case LabelOrRelTypeName(name) => checkValidTokenName(name)
+      case _                        => None
+    }.headOption.map(message => SemanticError(message, pos))
 
   private def checkValidTokenName(name: String): Option[String] = {
     if (name == null || name.isEmpty || name.contains("\u0000")) {

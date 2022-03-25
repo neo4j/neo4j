@@ -24,11 +24,9 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Literal
-import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
@@ -292,18 +290,6 @@ trait UpdateGraph {
         val readProps = qgWithInfo.allKnownUnstablePropertiesFor(r)
         val types = qgWithInfo.allPossibleUnstableRelTypesFor(r)
         relationshipOverlap(types, readProps)
-      }
-    })
-  }
-
-  def createRelationshipOverlapHorizon(allRelPatternsRead: Set[RelationshipPattern]): Boolean = {
-    // CREATE () MATCH ()-->()
-    (allRelPatternsWrittenNonEmpty && allRelPatternsRead.nonEmpty) && allRelPatternsRead.exists(r => {
-      r.properties match {
-        case Some(MapExpression(items)) =>
-          val propKeyNames = items.map(_._1).toSet
-          relationshipOverlap(r.types.toSet, propKeyNames)
-        case _ => false
       }
     })
   }

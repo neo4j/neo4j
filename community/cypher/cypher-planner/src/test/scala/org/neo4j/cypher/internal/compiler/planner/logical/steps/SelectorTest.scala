@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -194,7 +193,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       NodePattern(Some(varFor("a")), None, None, None) _,
       RelationshipPattern(
         Some(varFor("  UNNAMED1")),
-        Seq.empty[RelTypeName],
+        None,
         None,
         None,
         None,

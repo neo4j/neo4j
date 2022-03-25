@@ -35,7 +35,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
 
   val n = NodePattern(Some(variable("n")), None, None, None)(pos)
   val x = expressions.NodePattern(Some(variable("x")), None, None, None)(pos)
-  val r = RelationshipPattern(None, Seq.empty, None, None, None, SemanticDirection.OUTGOING)(pos)
+  val r = RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING)(pos)
   val pattern = RelationshipsPattern(RelationshipChain(n, r, x)(pos))(pos)
   val property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)

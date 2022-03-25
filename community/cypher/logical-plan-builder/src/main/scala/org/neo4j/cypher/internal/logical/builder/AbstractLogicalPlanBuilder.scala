@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -469,7 +470,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             ), // labels, properties and predicates are not used at runtime
             RelationshipPattern(
               Some(varFor(p.relName)),
-              p.relTypes,
+              disjoinRelTypesToLabelExpression(p.relTypes),
               length,
               None, // properties are not used at runtime
               None,

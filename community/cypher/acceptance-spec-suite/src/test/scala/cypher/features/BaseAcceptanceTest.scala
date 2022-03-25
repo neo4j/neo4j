@@ -28,7 +28,7 @@ import org.opencypher.tools.tck.api.Scenario
 
 abstract class BaseAcceptanceTest extends BaseFeatureTest {
 
-  // these two should be empty on commit!
+  // these should be empty on commit!
   // Use a substring match, for example "UnwindAcceptance"
   val categoryToRun = ""
   val featureToRun = ""

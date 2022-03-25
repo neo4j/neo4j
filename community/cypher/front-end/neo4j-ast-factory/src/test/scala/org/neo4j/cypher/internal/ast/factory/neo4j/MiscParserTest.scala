@@ -149,11 +149,11 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
   test("should allow True and False as label name") {
     implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
-    parsing("(:True)") shouldGive NodePattern(None, Some(labelAtom("True")), None, None) _
-    parsing("(:False)") shouldGive NodePattern(None, Some(labelAtom("False")), None, None) _
+    parsing("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
+    parsing("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
 
-    parsing("(t:True)") shouldGive nodePat(name = Some("t"), labelExpression = Some(labelAtom("True")))
-    parsing("(f:False)") shouldGive nodePat(name = Some("f"), labelExpression = Some(labelAtom("False")))
+    parsing("(t:True)") shouldGive nodePat(name = Some("t"), labelExpression = Some(labelLeaf("True")))
+    parsing("(f:False)") shouldGive nodePat(name = Some("f"), labelExpression = Some(labelLeaf("False")))
   }
 
   test("-[:Person*1..2]-") {
@@ -161,7 +161,7 @@ class MiscParserTest extends JavaccParserAstTestBase[ASTNode] {
     yields {
       RelationshipPattern(
         None,
-        List(relTypeName("Person")),
+        Some(labelRelTypeLeaf("Person")),
         Some(Some(
           Range(
             Some(literalUnsignedInt(1)),

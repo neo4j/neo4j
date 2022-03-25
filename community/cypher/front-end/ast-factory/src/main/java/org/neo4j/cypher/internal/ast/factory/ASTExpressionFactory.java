@@ -40,7 +40,8 @@ public interface ASTExpressionFactory<
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
         MAP_PROJECTION_ITEM,
-        POS> {
+        POS,
+        ENTITY_TYPE> {
     VARIABLE newVariable(POS p, String name);
 
     PARAMETER newParameter(POS p, VARIABLE v, ParameterType type);
@@ -89,9 +90,11 @@ public interface ASTExpressionFactory<
 
     LABEL_EXPRESSION labelWildcard(POS p);
 
-    LABEL_EXPRESSION labelAtom(POS p, String e);
+    LABEL_EXPRESSION labelLeaf(POS p, String e, ENTITY_TYPE entityType);
 
     LABEL_EXPRESSION labelColonConjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
+
+    LABEL_EXPRESSION labelColonDisjunction(POS p, LABEL_EXPRESSION lhs, LABEL_EXPRESSION rhs);
 
     EXPRESSION labelExpressionPredicate(EXPRESSION subject, LABEL_EXPRESSION exp);
 
@@ -197,4 +200,10 @@ public interface ASTExpressionFactory<
     EXPRESSION caseExpression(POS p, EXPRESSION e, List<EXPRESSION> whens, List<EXPRESSION> thens, EXPRESSION elze);
 
     POS inputPosition(int offset, int line, int column);
+
+    ENTITY_TYPE nodeType();
+
+    ENTITY_TYPE relationshipType();
+
+    ENTITY_TYPE nodeOrRelationshipType();
 }

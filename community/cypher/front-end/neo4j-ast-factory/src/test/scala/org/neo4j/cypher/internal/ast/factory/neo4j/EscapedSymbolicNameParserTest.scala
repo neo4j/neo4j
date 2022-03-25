@@ -35,9 +35,9 @@ class EscapedSymbolicNameParserTest extends JavaccParserAstTestBase[ASTNode] {
   test("escaped label name") {
     implicit val parser: JavaccRule[NodePattern] = JavaccRule.NodePattern
 
-    parsing("(n:`Label`)") shouldGive nodePat(Some("n"), Some(labelAtom("Label")))
-    parsing("(n:`Label``123`)") shouldGive nodePat(Some("n"), Some(labelAtom("Label`123")))
-    parsing("(n:`````Label```)") shouldGive nodePat(Some("n"), Some(labelAtom("``Label`")))
+    parsing("(n:`Label`)") shouldGive nodePat(Some("n"), Some(labelLeaf("Label")))
+    parsing("(n:`Label``123`)") shouldGive nodePat(Some("n"), Some(labelLeaf("Label`123")))
+    parsing("(n:`````Label```)") shouldGive nodePat(Some("n"), Some(labelLeaf("``Label`")))
 
     assertFails("(n:`L`abel`)")
   }

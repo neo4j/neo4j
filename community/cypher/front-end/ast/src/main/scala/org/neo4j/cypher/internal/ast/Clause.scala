@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -69,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -253,18 +255,23 @@ trait SingleRelTypeCheck {
     }
   }
 
-  protected def checkRelTypes(rel: RelationshipPattern): SemanticCheck = {
-    if (rel.types.size != 1) {
-      if (rel.types.size > 1) {
-        SemanticError(s"A single relationship type must be specified for ${self.name}", rel.position)
-      } else {
-        SemanticError(
+  protected def checkRelTypes(rel: RelationshipPattern): SemanticCheck =
+    rel.labelExpression match {
+      case None => SemanticError(
           s"Exactly one relationship type must be specified for ${self.name}. Did you forget to prefix your relationship type with a ':'?",
           rel.position
         )
-      }
-    } else success
-  }
+      case Some(Leaf(RelTypeName(_))) => success
+      case Some(other) =>
+        val types = other.flatten.distinct
+        val (maybePlain, exampleString) =
+          if (types.size == 1) ("plain ", s"like `:${types.head.name}` ")
+          else ("", "")
+        SemanticError(
+          s"A single ${maybePlain}relationship type ${exampleString}must be specified for ${self.name}",
+          rel.position
+        )
+    }
 }
 
 object Match {
@@ -319,6 +326,7 @@ case class Match(
       val operatorDescription = hint match {
         case _: UsingIndexHint => "index"
         case _: UsingScanHint  => s"$typeName scan"
+        case _: UsingJoinHint  => "join"
       }
       val typePredicates = getLabelAndRelTypePredicates(variable).distinct
       val foundTypePredicatesDescription = typePredicates match {
@@ -435,7 +443,7 @@ case class Match(
             SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(
               collectPropertiesInPredicates(variable, _)
             ).getOrElse(Seq.empty[String]))
-        case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _, _) if variable == id =>
+        case RelationshipPattern(Some(Variable(id)), _, _, properties, predicate, _) if variable == id =>
           acc =>
             SkipChildren(acc ++ collectPropertiesInPropertyMap(properties) ++ predicate.map(
               collectPropertiesInPredicates(variable, _)
@@ -519,8 +527,8 @@ case class Match(
 
   private def getLabelAndRelTypePredicates(variable: String): Seq[String] = {
     val inlinedRelTypes = pattern.folder.fold(Seq.empty[String]) {
-      case RelationshipPattern(Some(Variable(id)), types, _, _, _, _, _) if variable == id =>
-        list => list ++ types.map(_.name)
+      case RelationshipPattern(Some(Variable(id)), Some(labelExpression), _, _, _, _) if variable == id =>
+        list => list ++ getLabelsFromLabelExpression(labelExpression)
     }
 
     val labelExpressionLabels: Seq[String] = pattern.folder.fold(Seq.empty[String]) {

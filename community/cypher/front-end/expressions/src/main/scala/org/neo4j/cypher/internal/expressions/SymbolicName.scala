@@ -31,12 +31,12 @@ case class ProcedureName(name: String)(val position: InputPosition) extends ASTN
 
 case class ProcedureOutput(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
-case class LabelName(name: String)(val position: InputPosition) extends SymbolicName
+case class LabelName(name: String)(val position: InputPosition) extends LabelExpressionLeafName
 
 case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicName
 
-case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicName
+case class RelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName
 
-case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends SymbolicName {
+case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName {
   def asLabelName: LabelName = LabelName(name)(position)
 }

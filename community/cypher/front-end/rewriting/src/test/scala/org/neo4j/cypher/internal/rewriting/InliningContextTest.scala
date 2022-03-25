@@ -71,7 +71,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
     val ctx = InliningContext(mapAtoN)
 
     val expr: RelationshipPattern =
-      RelationshipPattern(Some(identA), Seq(), None, None, None, SemanticDirection.OUTGOING) _
+      RelationshipPattern(Some(identA), None, None, None, None, SemanticDirection.OUTGOING) _
 
     expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }

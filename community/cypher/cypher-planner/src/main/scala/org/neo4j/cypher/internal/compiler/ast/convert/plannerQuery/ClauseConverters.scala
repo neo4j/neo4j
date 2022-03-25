@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.LabelExpression
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
-import org.neo4j.cypher.internal.expressions.LabelExpression.Label
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
@@ -135,8 +136,9 @@ object ClauseConverters {
 
   /**
    * Adds a clause to a PlannerQueryBuilder
-   * @param acc the PlannerQueryBuilder
-   * @param clause the clause to add.
+   *
+   * @param acc        the PlannerQueryBuilder
+   * @param clause     the clause to add.
    * @param nextClause the next clause, if there is any
    * @return the updated PlannerQueryBuilder
    */
@@ -376,7 +378,7 @@ object ClauseConverters {
 
   private def getLabelNameSeq(labelExpression: Option[LabelExpression]): Seq[LabelName] = {
     labelExpression match {
-      case Some(Label(labelName))           => Seq(labelName)
+      case Some(Leaf(labelName: LabelName)) => Seq(labelName)
       case Some(ColonConjunction(lhs, rhs)) => getLabelNameSeq(Some(lhs)) ++ getLabelNameSeq(Some(rhs))
       case None                             => Seq.empty
     }
@@ -401,6 +403,7 @@ object ClauseConverters {
   }
 
   private case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable)
+
   private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand = pattern match {
@@ -418,7 +421,7 @@ object ClauseConverters {
       // Semantic checking enforces types.size == 1
       case RelationshipChain(
           leftNode @ NodePattern(Some(leftVar), _, _, _),
-          RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _),
+          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName)), _, properties, _, direction),
           rightNode @ NodePattern(Some(rightVar), _, _, _)
         ) =>
         (
@@ -437,7 +440,7 @@ object ClauseConverters {
       // CREATE ()->[:R]->()-[:R]->...->()
       case RelationshipChain(
           left,
-          RelationshipPattern(Some(relVar), Seq(relType), _, properties, _, direction, _),
+          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName)), _, properties, _, direction),
           rightNode @ NodePattern(Some(rightVar), _, _, _)
         ) =>
         val (nodes, rels) = allCreatePatterns(left)

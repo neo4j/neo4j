@@ -86,12 +86,12 @@ class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
         namedPath = Some(varFor("p")),
         pattern = RelationshipsPattern(RelationshipChain(
           NodePattern(Some(varFor("n")), None, None, None)(pos),
-          RelationshipPattern(None, Seq.empty, None, None, None, OUTGOING)(pos),
+          RelationshipPattern(None, None, None, None, None, OUTGOING)(pos),
           NodePattern(None, None, None, None)(pos)
         )(pos))(pos),
         predicate = Some(LabelExpressionPredicate(
           function("last", function("nodes", varFor("p"))),
-          labelAtom("End")
+          labelOrRelTypeLeaf("End")
         )(pos)),
         projection = varFor("p")
       )(pos, Set.empty, "", "")

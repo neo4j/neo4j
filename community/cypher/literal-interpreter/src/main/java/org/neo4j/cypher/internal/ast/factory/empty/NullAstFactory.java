@@ -75,6 +75,7 @@ public class NullAstFactory
                 NULL,
                 NULL,
                 NULL,
+                NULL,
                 NULL> {
 
     @Override
@@ -198,12 +199,17 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL labelAtom(NULL p, String e) {
+    public NULL labelLeaf(NULL p, String e, NULL entityType) {
         return null;
     }
 
     @Override
     public NULL labelColonConjunction(NULL p, NULL lhs, NULL rhs) {
+        return null;
+    }
+
+    @Override
+    public NULL labelColonDisjunction(NULL p, NULL lhs, NULL rhs) {
         return null;
     }
 
@@ -647,11 +653,10 @@ public class NullAstFactory
             boolean left,
             boolean right,
             NULL v,
-            List<StringPos<NULL>> relTypes,
+            NULL labelExpressions,
             NULL aNull,
             NULL properties,
-            NULL predicate,
-            boolean legacyTypeSeparator) {
+            NULL predicate) {
         return null;
     }
 
@@ -1195,6 +1200,21 @@ public class NullAstFactory
 
     @Override
     public NULL showAliases(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL nodeType() {
+        return null;
+    }
+
+    @Override
+    public NULL relationshipType() {
+        return null;
+    }
+
+    @Override
+    public NULL nodeOrRelationshipType() {
         return null;
     }
 }

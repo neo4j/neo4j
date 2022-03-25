@@ -99,7 +99,8 @@ public class Cypher<STATEMENT,
                     PRIVILEGE_RESOURCE,
                     PRIVILEGE_QUALIFIER,
                     SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
-                    POS> {
+                    POS,
+                    ENTITY_TYPE> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -138,7 +139,8 @@ public class Cypher<STATEMENT,
                PRIVILEGE_RESOURCE,
                PRIVILEGE_QUALIFIER,
                SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
-               POS> astFactory;
+               POS,
+               ENTITY_TYPE> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -178,7 +180,8 @@ public class Cypher<STATEMENT,
                              PRIVILEGE_RESOURCE,
                              PRIVILEGE_QUALIFIER,
                              SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
-                             POS> astFactory,
+                             POS,
+                             ENTITY_TYPE> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -189,6 +192,21 @@ public class Cypher<STATEMENT,
     private POS pos( Token t )
     {
         return t != null ? astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn ) : null;
+    }
+
+    private ENTITY_TYPE nodeType()
+    {
+        return astFactory.nodeType();
+    }
+
+    private ENTITY_TYPE relationshipType()
+    {
+        return astFactory.relationshipType();
+    }
+
+    private ENTITY_TYPE nodeOrRelationshipType()
+    {
+        return astFactory.nodeOrRelationshipType();
     }
 
     private void assertValidType( Token t, String expected, String actual ) throws Exception
@@ -2098,6 +2116,7 @@ PATTERN EveryPathPattern() :
     REL_PATTERN r;
     List<REL_PATTERN> relationships = new ArrayList<>();
     List<NODE_PATTERN> nodes = new ArrayList<>();
+    labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
 }
 {
     n=NodePattern() { nodes.add( n ); }
@@ -2106,6 +2125,7 @@ PATTERN EveryPathPattern() :
         n=NodePattern() { nodes.add( n ); }
     )*
     {
+        labelExpressionStack.pop();
         return astFactory.everyPathPattern( nodes, relationships );
     }
 }
@@ -2116,6 +2136,7 @@ PATTERN EveryPathPatternNonEmpty() :
     REL_PATTERN r;
     List<REL_PATTERN> relationships = new ArrayList<>();
     List<NODE_PATTERN> nodes = new ArrayList<>();
+    labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
 }
 {
     n=NodePattern() { nodes.add( n ); }
@@ -2124,6 +2145,7 @@ PATTERN EveryPathPatternNonEmpty() :
         n=NodePattern() { nodes.add( n ); }
     )+
     {
+        labelExpressionStack.pop();
         return astFactory.everyPathPattern( nodes, relationships );
     }
 }
@@ -2139,8 +2161,8 @@ NODE_PATTERN NodePattern() :
 {
     t=<LPAREN>
     (
-        v=Variable() (labelExpression=LabelExpression())? [properties=Properties()] [<WHERE> predicate=Expression()]
-        | (labelExpression=LabelExpression())? [properties=Properties()]
+        v=Variable() (labelExpression=LabelExpression(astFactory.nodeType()))? [properties=Properties()] [<WHERE> predicate=Expression()]
+        | (labelExpression=LabelExpression(astFactory.nodeType()))? [properties=Properties()]
     )
     <RPAREN>
     {
@@ -2165,7 +2187,7 @@ EXPRESSION LabelExpressionPredicate(EXPRESSION subject) :
     LABEL_EXPRESSION exp = null;
 }
 {
-    exp=LabelExpression()
+    exp=LabelExpression(astFactory.nodeOrRelationshipType())
     {
         return astFactory.labelExpressionPredicate( subject, exp );
     }
@@ -2211,12 +2233,15 @@ EXPRESSION Properties() :
 
 REL_PATTERN RelationshipPattern() :
 {
+    if (token.next == null) {
+      token.next = token_source.getNextToken();
+    }
     Token firstToken = token.next;
     Token t;
     boolean left = false;
     boolean right = false;
     VARIABLE v = null;
-    List<StringPos<POS>> relTypes = new ArrayList<>();
+    LABEL_EXPRESSION labelExpression = null;
     boolean legacyTypeSeparator = false;
     PATH_LENGTH pathLength = null;
     EXPRESSION properties = null;
@@ -2225,13 +2250,7 @@ REL_PATTERN RelationshipPattern() :
 {
     ( LeftArrow() { left = true; })? ArrowLine()
     ( <LBRACKET> ( v=Variable() )?
-        ( ":" t=SymbolicNameString()
-            {
-                relTypes = new ArrayList<>();
-                relTypes.add(new StringPos<>( t.image,  pos( t ) ) );
-            }
-            ( <BAR> ( ":" {legacyTypeSeparator = true; })? t=SymbolicNameString() { relTypes.add( new StringPos<>( t.image,  pos( t ) ) ); })*
-        )?
+        ( labelExpression = LabelExpression(astFactory.relationshipType()) )?
         ( pathLength=PathLength() )?
         ( properties=Properties() )?
         ( <WHERE> predicate=Expression() )?
@@ -2239,7 +2258,7 @@ REL_PATTERN RelationshipPattern() :
     )?
     ArrowLine() ( RightArrow() { right = true; } )?
     {
-        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, relTypes, pathLength, properties, predicate, legacyTypeSeparator );
+        return astFactory.relationshipPattern( pos( firstToken ), left, right, v, labelExpression, pathLength, properties, predicate );
     }
 }
 
@@ -2292,73 +2311,81 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
 
 // LABEL EXPRESSIONS
 
-LABEL_EXPRESSION LabelExpression() :
+LABEL_EXPRESSION LabelExpression( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e;
 }
 {
     ":" (
             LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
-            e = LabelExpression4ExpectingBar()
+            e = LabelExpression4ExpectingBar(type)
             |
             LOOKAHEAD({ labelExpressionStack.isEmpty() || labelExpressionStack.peek() == ExpectBar.DO_NOT_EXPECT_BAR})
-            e = LabelExpression4()
+            e = LabelExpression4(type)
         )
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression4() :
+LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type ) :
 {
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression3() (
+    e=LabelExpression3(type) (
         LOOKAHEAD(2)
-        t=<BAR> temp=LabelExpression3()
-        { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
-    )*
-    {
-        return e;
-    }
-}
-
-LABEL_EXPRESSION LabelExpression4ExpectingBar() :
-{
-    Token t;
-    LABEL_EXPRESSION e;
-    LABEL_EXPRESSION temp;
-}
-{
-    e=LabelExpression3() (
-        LOOKAHEAD(
-            <BAR> LabelExpression3() <BAR>
+        t=<BAR>
+        (
+            ":" temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp ); }
+        |
+            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
         )
-        t=<BAR> temp=LabelExpression3()
-        { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
     )*
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression3() :
+LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type ) :
 {
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
 }
 {
-    e=LabelExpression2()
+    e=LabelExpression3(type) (
+        LOOKAHEAD(
+            <BAR> (":")? LabelExpression3() <BAR>
+        )
+        t=<BAR>
+        (
+            ":" temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp ); }
+        |
+            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression2(type)
     (
         LOOKAHEAD(2)
         (
-            t=<AMPERSAND> temp=LabelExpression2() { e = astFactory.labelConjunction( pos( t ), e, temp ); }
+            t=<AMPERSAND> temp=LabelExpression2(type) { e = astFactory.labelConjunction( pos( t ), e, temp ); }
         |
-            t=":" temp=LabelExpression2() { e = astFactory.labelColonConjunction( pos( t ), e, temp ); }
+            t=":" temp=LabelExpression2(type) { e = astFactory.labelColonConjunction( pos( t ), e, temp ); }
         )
     )*
     {
@@ -2366,22 +2393,22 @@ LABEL_EXPRESSION LabelExpression3() :
     }
 }
 
-LABEL_EXPRESSION LabelExpression2() :
+LABEL_EXPRESSION LabelExpression2( ENTITY_TYPE type ) :
 {
     Token t;
     LABEL_EXPRESSION e;
 }
 {
     (
-        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2() { e = astFactory.labelNegation( pos( t ), e ); }
-        | e=LabelExpression1()
+        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2(type) { e = astFactory.labelNegation( pos( t ), e ); }
+        | e=LabelExpression1(type)
     )
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression1() :
+LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e = null;
     String label = null;
@@ -2390,9 +2417,9 @@ LABEL_EXPRESSION LabelExpression1() :
 }
 {
     (
-        <LPAREN> e=LabelExpression4() <RPAREN>
+        <LPAREN> e=LabelExpression4(type) <RPAREN>
         | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ) ); }
-        | t=SymbolicNameString() { e = astFactory.labelAtom( pos ( t ), t.image ); }
+        | t=SymbolicNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type ); }
     )
     {
         labelExpressionStack.pop();
@@ -2673,7 +2700,11 @@ EXPRESSION Expression1() :
         | LOOKAHEAD( 3 ) e=SingleExpression()
         | LOOKAHEAD( NodePattern() RelationshipPattern() ) e=PatternExpression()
         | LOOKAHEAD( 2 ) e=ShortestPathExpression()
-        | <LPAREN> e=Expression() <RPAREN>
+        | <LPAREN>
+          { labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR); }
+          e=Expression()
+          { labelExpressionStack.pop(); }
+          <RPAREN>
         | LOOKAHEAD( (SymbolicNameString() <DOT> )* SymbolicNameString() <LPAREN> ) e=FunctionInvocation()
         | e=Variable()
     )

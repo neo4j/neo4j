@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.expressions.LabelExpression.containsGpmSpecificRelType
+import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
@@ -52,7 +54,13 @@ object PatternConverters {
         case _ =>
           throw new IllegalStateException("This should be caught during semantic checking")
       }
-      val reltypes = rel.types.map(_.name)
+      if (containsGpmSpecificRelType(rel.labelExpression)) {
+        // LabelExpressionsInPatternsNormalizer should have rewritten all GPM relationship type expressions to predicates
+        throw new IllegalStateException(
+          s"Relationship type expressions should be rewritten at this point but was ${rel.labelExpression}."
+        )
+      }
+      val relTypes = getRelTypes(rel.labelExpression).map(_.name)
       val relIteratorName = rel.variable.map(_.name)
       val (allowZeroLength, maxDepth) = rel.length match {
         case Some(Some(internal.expressions.Range(lower, max))) => (lower.exists(_.value == 0L), max.map(_.value.toInt))
@@ -63,7 +71,7 @@ object PatternConverters {
         pathName,
         leftName,
         rightName,
-        reltypes,
+        relTypes,
         rel.direction,
         allowZeroLength,
         maxDepth,
@@ -91,7 +99,7 @@ object PatternConverters {
     private def labels: Seq[KeyToken.Unresolved] =
       for {
         expression <- node.labelExpression.toSeq
-        _ = require(expression.isNonGpm)
+        _ = require(!expression.containsGpmSpecificLabelExpression)
         label <- expression.flatten
       } yield commands.values.KeyToken.Unresolved(label.name, commands.values.TokenType.Label)
 

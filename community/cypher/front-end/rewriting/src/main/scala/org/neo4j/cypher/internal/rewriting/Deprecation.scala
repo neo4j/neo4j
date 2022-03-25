@@ -59,7 +59,7 @@ object Deprecations {
         )
 
       // var-length binding
-      case p @ RelationshipPattern(Some(variable), _, Some(_), _, _, _, _) =>
+      case p @ RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
         Deprecation(
           None,
           Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))

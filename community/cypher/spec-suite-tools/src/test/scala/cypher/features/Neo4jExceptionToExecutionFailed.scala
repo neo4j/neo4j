@@ -267,7 +267,9 @@ object Neo4jExceptionToExecutionFailed {
     else if (msg.matches("Can't use non-deterministic \\(random\\) functions inside of aggregate functions\\."))
       NON_CONSTANT_EXPRESSION
     else if (
-      msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))\\")) ||
+      msg.matches(
+        semanticError("A single (plain )?relationship type (like :\\\\w+)?must be specified for ((CREATE)|(MERGE))\\")
+      ) ||
       msg.matches(semanticError("Exactly one relationship type must be specified for ((CREATE)|(MERGE))\\. " +
         "Did you forget to prefix your relationship type with a \\'\\:\\'\\?"))
     )

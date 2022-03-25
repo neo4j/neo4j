@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelExpression
+import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.expressions.LabelExpression.disjoinRelTypesToLabelExpression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
@@ -243,8 +245,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   def recreateLabelExpression(expression: Expression, variable: String): Option[LabelExpression] = expression match {
     case HasLabels(Variable(varName), labels) if variable == varName =>
       require(labels.size == 1) // We know there is only a single label here because AST rewriting
-      val labelName = labels.head
-      Some(LabelExpression.Label(labelName)(labelName.position))
+      Some(Leaf(labels.head))
 
     case ands @ Ands(predicates) =>
       recreateComposingLabelExpression(
@@ -276,10 +277,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       None
     } else {
       labelExpressions.map(_.get).foldLeft[Option[LabelExpression]](None) {
-        case (maybeLhs, rhs) => maybeLhs match {
-            case None      => Some(rhs)
-            case Some(lhs) => Some(combiner(lhs, rhs))
-          }
+        case (None, rhs)      => Some(rhs)
+        case (Some(lhs), rhs) => Some(combiner(lhs, rhs))
       }
     }
   }
@@ -356,7 +355,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     val rightNode = createNode(pattern.nodes._2)
     val relPattern = RelationshipPattern(
       Some(relName),
-      pattern.types,
+      disjoinRelTypesToLabelExpression(pattern.types),
       length = None,
       properties = None,
       predicate = None,

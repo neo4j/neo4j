@@ -73,9 +73,18 @@ public interface ASTFactory<
                 PRIVILEGE_RESOURCE,
                 PRIVILEGE_QUALIFIER,
                 SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
-                POS>
+                POS,
+                ENTITY_TYPE>
         extends ASTExpressionFactory<
-                EXPRESSION, LABEL_EXPRESSION, PARAMETER, PATTERN, VARIABLE, PROPERTY, MAP_PROJECTION_ITEM, POS> {
+                EXPRESSION,
+                LABEL_EXPRESSION,
+                PARAMETER,
+                PATTERN,
+                VARIABLE,
+                PROPERTY,
+                MAP_PROJECTION_ITEM,
+                POS,
+                ENTITY_TYPE> {
     final class NULL {
         private NULL() {
             throw new IllegalStateException("This class should not be instantiated, use `null` instead.");
@@ -205,11 +214,10 @@ public interface ASTFactory<
             boolean left,
             boolean right,
             VARIABLE v,
-            List<StringPos<POS>> relTypes,
+            LABEL_EXPRESSION labelExpression,
             PATH_LENGTH pathLength,
             EXPRESSION properties,
-            EXPRESSION predicate,
-            boolean legacyTypeSeparator);
+            EXPRESSION predicate);
 
     /**
      * Create a path-length object used to specify path lengths for variable length patterns.

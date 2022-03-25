@@ -423,7 +423,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val a = StableIdentifier("a", isIdStable = false)
     val pExp = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(pos),
-      RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
+      RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(None, None, None, None)(pos)
     )(pos))(pos))(Set.empty, "", "")
 
@@ -457,7 +457,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
         NodePattern(Some(varFor("a")), None, Some(MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)), None)(
           pos
         ),
-        RelationshipPattern(None, Seq.empty, None, None, None, BOTH)(pos),
+        RelationshipPattern(None, None, None, None, None, BOTH)(pos),
         NodePattern(None, None, None, None)(pos)
       )(pos))(pos),
       None,

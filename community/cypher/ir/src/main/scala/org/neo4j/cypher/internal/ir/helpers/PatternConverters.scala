@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.InvalidNodePattern
+import org.neo4j.cypher.internal.expressions.LabelExpression.getRelTypes
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -71,7 +72,7 @@ object PatternConverters {
         throw new IllegalArgumentException("Missing variable in relationship pattern")
       ).name
       val relationshipDirection = chain.relationship.direction
-      val relationshipTypes = chain.relationship.types
+      val relationshipTypes = getRelTypes(chain.relationship.labelExpression)
       val relationshipLength = chain.relationship.length.asPatternLength
 
       chain.element match {
