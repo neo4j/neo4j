@@ -31,11 +31,13 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.OverlappingDeletedLabels
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
@@ -43,6 +45,9 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.Predicate
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -61,6 +66,28 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(EagernessReason.Unknown)
+  }
+
+  test("no overlap when reading all labels and not setting any label") {
+    //... WITH a, labels(a) as myLabels SET a.prop=[]
+    val qg = QueryGraph(
+      argumentIds = Set("a"),
+      selections = Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+    )
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(setProperty("a", "prop", "[]")))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq()
+  }
+
+  test("overlap when reading all labels and removing a label") {
+    //... WITH a, labels(a) as myLabels REMOVE a:Label
+    val qg = QueryGraph(
+      argumentIds = Set("a"),
+      selections = Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+    )
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabel("a", "Label")))
+
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe Seq(OverlappingDeletedLabels(Vector("Label")))
   }
 
   test("overlap when reading and creating the same label") {

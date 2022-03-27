@@ -360,7 +360,7 @@ trait UpdateGraph {
 
     if (overlapWithKnownLabels.nonEmpty)
       Some(EagernessReason.OverlappingSetLabels(overlapWithKnownLabels.toSeq.map(_.name)))
-    else if (overlapWithLabelsFunction)
+    else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
       Some(EagernessReason.OverlappingSetLabels(Seq.empty))
     else
       None
@@ -420,9 +420,13 @@ trait UpdateGraph {
   }
 
   def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
-    val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
+    lazy val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
+    lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
+      case f: FunctionInvocation => f.function == Labels
+    }
 
     val overlappingLabels: Seq[LabelName] = removeLabelPatterns.collect {
+      case RemoveLabelPattern(_, labelsToRemove) if overlapWithLabelsFunction => labelsToRemove
       case RemoveLabelPattern(_, labelsToRemove) =>
         //does any other identifier match on the labels I am deleting?
         //MATCH (a:BAR)..(b) REMOVE b:BAR
