@@ -55,6 +55,7 @@ object SemanticCheck {
   def error(error: SemanticErrorDef): SemanticCheck = fromFunction(SemanticCheckResult.error(_, error))
 
   def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
+  def fromState(f: SemanticState => SemanticCheck): SemanticCheck = success.flatMap(res => f(res.state))
 
   def nestedCheck(check: => SemanticCheck): SemanticCheck = success.flatMap(_ => check)
 
