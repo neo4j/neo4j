@@ -72,7 +72,7 @@ trait SemanticAnalysisTooling {
     _.specifyType(expression, possibleTypes)
 
   def expectType(typeGen: TypeGenerator, expression: Expression): SemanticCheck =
-    (s: SemanticState) => expectType(typeGen(s), expression).run(s)
+    (s: SemanticState) => expectType(s, typeGen(s), expression)
 
   def expectType(possibleTypes: TypeSpec, opt: Option[Expression]): SemanticCheck =
     opt.foldSemanticCheck(expectType(possibleTypes, _))
@@ -82,14 +82,14 @@ trait SemanticAnalysisTooling {
     expression: Expression,
     messageGen: (String, String) => String
   ): SemanticCheck =
-    (s: SemanticState) => expectType(typeGen(s), expression, messageGen).run(s)
+    (s: SemanticState) => expectType(s, typeGen(s), expression, messageGen)
 
   def expectType[Exp <: Expression](possibleTypes: TypeSpec, expressions: Iterable[Exp]): SemanticCheck =
     (state: SemanticState) =>
       expressions.foldLeft(SemanticCheckResult.success(state)) {
         (r1: SemanticCheckResult, o: Exp) =>
           {
-            val r2 = expectType(possibleTypes, o).run(r1.state)
+            val r2 = expectType(r1.state, possibleTypes, o)
             SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
           }
       }
@@ -103,9 +103,25 @@ trait SemanticAnalysisTooling {
 
   def expectType(
     possibleTypes: => TypeSpec,
-    expression: Expression,
-    messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator
-  ): SemanticCheck = (s: SemanticState) => {
+                  expression: Expression,
+                ): SemanticCheck = (s: SemanticState) => {
+    expectType(s, possibleTypes, expression)
+  }
+
+  def expectType(
+                  possibleTypes: => TypeSpec,
+                  expression: Expression,
+                  messageGen: (String, String) => String
+                ): SemanticCheck = (s: SemanticState) => {
+    expectType(s, possibleTypes, expression, messageGen)
+  }
+
+  def expectType(
+                  s: SemanticState,
+                  possibleTypes: => TypeSpec,
+                  expression: Expression,
+                  messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator
+                ): SemanticCheckResult = {
     s.expectType(expression, possibleTypes) match {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(expression).specified.mkString(", ", " or ")
@@ -145,7 +161,7 @@ trait SemanticAnalysisTooling {
           accumulator
         case ((possibilities, r1), arg) =>
           val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
-          val r2 = expectType(argTypes, arg).run(r1.state)
+          val r2 = expectType(r1.state, argTypes, arg)
 
           val actualTypes = types(arg)(r2.state)
           val remainingPossibilities = possibilities.filter {
