@@ -282,4 +282,27 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     check(state0) shouldBe SemanticCheckResult(state3, Vector(error1, error3))
   }
+
+  test("SemanticCheck.nestedCheck should work") {
+    val error = SemanticError("some error", pos)
+    val check = SemanticCheck.nestedCheck {
+      SemanticCheck.error(error)
+    }
+
+    check.run(SemanticState.clean) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+  }
+
+  test("SemanticCheck.nestedCheck should not evaluate nested check during construction") {
+    val error = SemanticError("some error", pos)
+    val failingCheck = SemanticCheck.error(error)
+
+    val nested = SemanticCheck.nestedCheck {
+      fail("should not be called")
+      SemanticCheck.success
+    }
+
+    val check = failingCheck ifOkChain nested
+
+    check.run(SemanticState.clean) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+  }
 }

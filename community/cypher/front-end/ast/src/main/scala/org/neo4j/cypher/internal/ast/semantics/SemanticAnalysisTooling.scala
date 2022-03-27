@@ -41,19 +41,15 @@ trait SemanticAnalysisTooling {
                      f:A => SemanticCheck
   ): SemanticCheck = {
     traversable.foldLeft(SemanticCheck.success) {
-      (prevCheck, o: A) => prevCheck chain f(o)
+      (accCheck, o: A) => accCheck chain f(o)
     }
   }
 
-  def semanticCheck[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheck =
-    (state: SemanticState) =>
-      traversable.foldLeft(SemanticCheckResult.success(state)) {
-        (r1: SemanticCheckResult, o: A) =>
-          {
-            val r2 = o.semanticCheck.run(r1.state)
-            SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
-          }
-      }
+  def semanticCheck[A <: SemanticCheckable](traversable: IterableOnce[A]): SemanticCheck = {
+    traversable.iterator.foldLeft(SemanticCheck.success) {
+      (accCheck: SemanticCheck, o: A) => accCheck chain o.semanticCheck
+    }
+  }
 
   /** Runs `check` on `state`. Discards produced state, but retains produced errors */
   def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = (s: SemanticState) =>

@@ -56,6 +56,8 @@ object SemanticCheck {
 
   def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
 
+  def nestedCheck(check: => SemanticCheck): SemanticCheck = success.flatMap(_ => check)
+
   def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = {
     if (condition)
       check
@@ -80,7 +82,9 @@ object SemanticCheckResult {
   def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult =
     SemanticCheckResult(state, Vector(error))
 
-  def error(state: SemanticState, msg: String, position: InputPosition): SemanticCheckResult = error(state, SemanticError(msg, position))
+  def error(state: SemanticState, msg: String, position: InputPosition): SemanticCheckResult =
+    error(state, SemanticError(msg, position))
+
   def error(state: SemanticState, error: Option[SemanticErrorDef]): SemanticCheckResult =
     SemanticCheckResult(state, error.toVector)
 }
@@ -94,8 +98,8 @@ class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
 class TraversableOnceSemanticChecking[A](val traversable: IterableOnce[A]) extends AnyVal {
 
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = {
-    traversable.foldLeft(SemanticCheck.success) {
-      (prevCheck, o) => prevCheck chain check(o)
+    traversable.iterator.foldLeft(SemanticCheck.success) {
+      (accCheck, o) => accCheck chain check(o)
     }
   }
 }
