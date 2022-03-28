@@ -135,13 +135,43 @@ trait DeprecationTestSupport extends Suite with Matchers {
             val result = transaction.execute(s"$version EXPLAIN $query")
             val notifications: Iterable[Notification] = result.getNotifications()
             val hasNotification = notifications.exists(notification => matchesCode(notification, notificationCode, details: _*))
-            hasNotification should be(shouldContainNotification)
+            withClue(notifications) {
+              hasNotification should be(shouldContainNotification)
+            }
           } finally {
             transaction.rollback()
           }
         }
       })
     })
+  }
+
+  // this is hacky but we have no other way to probe the notification's status (`Status.Statement.FeatureDeprecationWarning`)
+  private def isDeprecation(notification: Notification): Boolean = notification.getTitle == "This feature is deprecated and will be removed in future versions."
+
+  def assertNoDeprecations(
+                             queries: Seq[String],
+                             versions: List[String] = supportedCypherVersions,
+                           ): Unit = {
+    queries.foreach(query =>
+      versions.foreach(version => {
+        withClue(s"Failed for query '$query' in version $version \n") {
+          val transaction = dbms.begin()
+          try {
+            val result = transaction.execute(s"$version EXPLAIN $query")
+            val deprecations = result.getNotifications().filter(isDeprecation)
+            withClue(
+              s"""Expected no notifications to be found but was:
+                 |${deprecations.map(_.getDescription).mkString("'", "', '", "'")}
+                 |""".stripMargin) {
+              deprecations shouldBe empty
+            }
+          } finally {
+            transaction.rollback()
+          }
+        }
+      })
+    )
   }
 
   private def matchesCode(notification: Notification, notificationCode: NotificationCode, details: NotificationDetail*): Boolean = {

@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
-import org.neo4j.cypher.internal.ast.UsingBtreeIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
@@ -224,7 +223,7 @@ object Deprecations {
     )
 
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
-      case e: Expression if isListCoercedToBoolean(semanticTable, e) =>
+      case e: Expression if isListCoercedToBoolean(semanticTable, e) && !e.isInstanceOf[PatternExpression] =>
         Deprecation(
           None,
           Some(DeprecatedCoercionOfListToBoolean(e.position))
