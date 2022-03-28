@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.AntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ArgumentTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.AssertSameNodeTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.BFSPruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CachePropertiesTxStateTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.CartesianProductProvidedOrderTestBase
@@ -46,7 +47,6 @@ import org.neo4j.cypher.internal.runtime.spec.tests.DeleteNodeTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeletePathTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DeleteRelationshipTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DirectedRelationshipByIdSeekTestBase
-import org.neo4j.cypher.internal.runtime.spec.tests.BFSPruningVarLengthExpandTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.DistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerLimitProfileRowsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.EagerTestBase
@@ -171,6 +171,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexEnds
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexScanConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipIndexSeekConcurrencyStressTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.stress.RelationshipTypeScanConcurrencyStressTestBase
+import org.neo4j.cypher.internal.util.test_helpers.TimeLimitedCypherTest
 
 object InterpretedSpecSuite {
   val SIZE_HINT = 200
@@ -273,7 +274,7 @@ class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, 
                                   with MergeProfileRowsTestBase[CommunityRuntimeContext]
                                   with NonParallelProfileRowsTestBase[CommunityRuntimeContext]
                                   with TransactionForeachProfileRowsTestBase[CommunityRuntimeContext]
-class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime) with TimeLimitedCypherTest
                                       with FullSupportMemoryManagementTestBase[CommunityRuntimeContext]
                                       with TransactionForeachMemoryManagementTestBase[CommunityRuntimeContext]
 class InterpretedMemoryManagementDisabledTest extends MemoryManagementDisabledTestBase(COMMUNITY.EDITION, InterpretedRuntime)
