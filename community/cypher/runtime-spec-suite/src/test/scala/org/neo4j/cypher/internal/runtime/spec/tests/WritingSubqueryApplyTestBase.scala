@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -51,11 +53,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies - with Argument on RHS") {
@@ -76,11 +79,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies - with aggregation on top of Apply and AllNodesScan on RHS") {
@@ -105,11 +109,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies - with aggregation on top of Apply and Argument on RHS") {
@@ -131,11 +136,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of join and AllNodesScan on RHS") {
@@ -161,11 +167,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of join and Argument on RHS") {
@@ -188,11 +195,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and AllNodesScan on RHS") {
@@ -219,11 +227,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of join - with aggregation on top of Apply and Argument on RHS") {
@@ -247,11 +256,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of union - with AllNodesScan on RHS") {
@@ -278,6 +288,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -292,7 +303,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of union - with Argument on RHS") {
@@ -315,11 +326,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.flatMap(node => Seq(node, node))
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and AllNodesScan on RHS") {
@@ -347,6 +359,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -361,7 +374,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of union - with aggregation on top of Apply and Argument on RHS") {
@@ -385,11 +398,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.length * 2
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of cartesian product - with AllNodesScan on RHS") {
@@ -416,6 +430,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -430,7 +445,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of cartesian product - with Argument on RHS") {
@@ -453,11 +468,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and AllNodesScan on RHS") {
@@ -485,6 +501,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -499,7 +516,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of cartesian product - with aggregation on top of Apply and Argument on RHS") {
@@ -523,11 +540,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of nested unions - with AllNodesScan on RHS") {
@@ -557,6 +575,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -571,7 +590,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of nested unions - with Argument on RHS") {
@@ -597,11 +616,12 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.flatMap(node => Seq(node, node, node))
 
     // then
-    runtimeResult should beColumns("x").withRows(singleColumn(expected))
+    runtimeResult should beColumns("x").withRows(singleColumn(expected)).withStatistics(nodesCreated = expected.length)
   }
 
   test("should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and AllNodesScan on RHS") {
@@ -632,6 +652,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
+    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -646,7 +667,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
     }.flatten.length
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
   }
 
   test("should handle RHS with R/W dependencies on top of nested unions - with aggregation on top of Apply and Argument on RHS") {
@@ -673,10 +694,137 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](edition: 
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
 
     val expected = nodes.length * 3
 
     // then
-    runtimeResult should beColumns("c").withSingleRow(expected)
+    runtimeResult should beColumns("c").withSingleRow(expected).withStatistics(nodesCreated = expected)
+  }
+
+  test("should handle node creation in nested apply") {
+    val sizeHint = 4
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery0 = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .create(createNode("a", "Label")) // 6
+      .apply(fromSubquery = true)
+      .|.create(createNode("a", "Label")) // 5
+      .|.apply(fromSubquery = true)
+      .|.|.create(createNode("a", "Label")) // 4
+      .|.|.apply(fromSubquery = true)
+      .|.|.|.create(createNode("a", "Label")) // 3
+      .|.|.|.apply(fromSubquery = true)
+      .|.|.|.|.create(createNode("a", "Label")) // 2
+    val logicalQuery = logicalQuery0
+      .|.|.|.|.apply(fromSubquery = true)
+      .|.|.|.|.|.create(createNode("a", "Label")) // 1
+      .|.|.|.|.|.argument("n")
+      .|.|.|.|.argument("n")
+      .|.|.|.argument("n")
+      .|.|.argument("n")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withStatistics(nodesCreated = 6 * sizeHint, labelsAdded = 6 * sizeHint)
+      .withRows(nodes.map(Array[Any](_)))
+  }
+
+  test("should handle nested apply and exhaustive limit") {
+    val sizeHint = 4
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .exhaustiveLimit(0)
+      .create(createNode("a", "Label"))
+      .apply(fromSubquery = true)
+      .|.exhaustiveLimit(0)
+      .|.create(createNode("a", "Label"))
+      .|.apply(fromSubquery = true)
+      .|.|.exhaustiveLimit(0)
+      .|.|.create(createNode("a", "Label")) // only here nodes will be created
+      .|.|.argument("n")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withStatistics(nodesCreated = sizeHint, labelsAdded = sizeHint)
+      .withNoRows()
+  }
+
+  test("should handle nested apply and unwind") {
+    val sizeHint = 4
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("xmax", "xmin")
+      .apply(fromSubquery = true)
+      .|.apply(fromSubquery = true)
+      .|.|.aggregation(Seq(), Seq("min(x) AS xmin"))
+      .|.|.create(createNodeWithProperties("anon_1", Seq("Label_2"), "{id: x}"))
+      .|.|.argument("x")
+      .|.apply(fromSubquery = true)
+      .|.|.aggregation(Seq(), Seq("max(x) AS xmax"))
+      .|.|.create(createNodeWithProperties("anon_0", Seq("Label"), "{id: x}"))
+      .|.|.argument("x")
+      .|.argument("x")
+      .unwind(s"range(0, ${sizeHint-1}) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("xmax", "xmin")
+      .withStatistics(nodesCreated = sizeHint * 2, propertiesSet = sizeHint * 2, labelsAdded = sizeHint * 2)
+      .withRows(rowCount(sizeHint))
+  }
+
+  test("should handle nested apply and exhaustive limit and skip") {
+    val sizeHint = 4
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .skip(sizeHint)
+      .exhaustiveLimit(add(literalInt(1), literalInt(2)))
+      .create(createNode("a", "Label")) // 3
+      .apply(fromSubquery = true)
+      .|.create(createNode("a", "Label")) // 2
+      .|.apply(fromSubquery = true)
+      .|.|.create(createNode("a", "Label")) // 1
+      .|.|.argument("n")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+
+    val runtimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+
+    // then
+    runtimeResult should beColumns("n")
+      .withStatistics(nodesCreated = 3 * sizeHint, labelsAdded = 3 * sizeHint)
+      .withNoRows
   }
 }
