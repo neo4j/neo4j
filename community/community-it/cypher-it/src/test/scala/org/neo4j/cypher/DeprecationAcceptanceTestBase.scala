@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
@@ -54,19 +53,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   }
 
   // OTHER DEPRECATIONS IN 4.X
-
-  test("deprecated binding variable length relationship") {
-    val query = "MATCH ()-[rs*]-() RETURN rs"
-    val detail = NotificationDetail.Factory.bindingVarLengthRelationship("rs")
-    assertNotificationInSupportedVersions(query, DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP, detail)
-  }
-
-  test("not deprecated binding variable length relationship") {
-    assertNoNotificationInSupportedVersions(
-      "MATCH p = ()-[*]-() RETURN relationships(p) AS rs",
-      DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
-    )
-  }
 
   test("deprecated coercion list to boolean") {
     val queries = Seq(

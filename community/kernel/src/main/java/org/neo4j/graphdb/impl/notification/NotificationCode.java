@@ -67,11 +67,8 @@ public enum NotificationCode {
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The query used a deprecated field from a procedure."),
-    DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "Binding relationships to a list in a variable length pattern is deprecated."),
+            "The query used a deprecated field from a procedure."
+    ),
     DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

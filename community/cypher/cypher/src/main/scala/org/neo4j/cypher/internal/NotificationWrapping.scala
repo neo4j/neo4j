@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.util.DeprecatedAmbiguousGroupingNotification
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
-import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
@@ -146,11 +145,6 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecatedField(procedure, field)
-      )
-    case DeprecatedVarLengthBindingNotification(pos, variable) =>
-      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(
-        pos.withOffset(offset).asInputPosition,
-        NotificationDetail.Factory.bindingVarLengthRelationship(variable)
       )
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(

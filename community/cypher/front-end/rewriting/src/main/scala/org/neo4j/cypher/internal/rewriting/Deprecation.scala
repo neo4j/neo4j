@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
-import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -56,13 +54,6 @@ object Deprecations {
         Deprecation(
           Some(Ref(f) -> renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f)),
           None
-        )
-
-      // var-length binding
-      case p @ RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
     }
 
