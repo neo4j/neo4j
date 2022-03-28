@@ -79,7 +79,6 @@ import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreatePattern
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
-import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -105,6 +104,7 @@ object Deprecations {
     f => f.copy(namespace = newNamespace, functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
+
     override val find: PartialFunction[Any, Deprecation] = {
 
       // old octal literal syntax
@@ -128,27 +128,20 @@ object Deprecations {
           None
         )
 
-      // var-length binding
-      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
-        )
-
       case i: ast.CreateIndexOldSyntax =>
         Deprecation(
           None,
           Some(DeprecatedCreateIndexSyntax(i.position))
         )
 
-        // CREATE BTREE INDEX ...
+      // CREATE BTREE INDEX ...
       case i: ast.CreateBtreeNodeIndex =>
         Deprecation(
           None,
           Some(DeprecatedBtreeIndexSyntax(i.position))
         )
 
-        // CREATE BTREE INDEX ...
+      // CREATE BTREE INDEX ...
       case i: ast.CreateBtreeRelationshipIndex =>
         Deprecation(
           None,

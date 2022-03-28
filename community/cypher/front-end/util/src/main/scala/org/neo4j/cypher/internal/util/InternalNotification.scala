@@ -31,8 +31,6 @@ case class UnboundedShortestPathNotification(position: InputPosition) extends In
 
 case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
 
-case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String) extends InternalNotification
-
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
 
 case class DeprecatedParameterSyntax(position: InputPosition) extends InternalNotification
