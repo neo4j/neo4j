@@ -77,6 +77,7 @@ import org.neo4j.cypher.internal.ast.ValidSyntax
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
@@ -88,6 +89,8 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
+import org.neo4j.cypher.internal.expressions.LiteralWriter
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -443,6 +446,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(NodeByIdSeek("node", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty), 333.0),
       planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN [1,32]")), Set("node")))
+
+    assertGood(
+      attach(NodeByIdSeek("node", ManySeekableArgs(AutoExtractedParameter("autolist_0", CTList(CTAny), ListOfLiteralWriter(Seq.empty))(pos)), Set.empty), 333.0),
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN $autolist_0")), Set("node")))
+
+    assertGood(
+      attach(NodeByIdSeek("node", ManySeekableArgs(AutoExtractedParameter("autoint_0", CTInteger, ListOfLiteralWriter(Seq.empty))(pos)), Set.empty), 333.0),
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) = $autoint_0")), Set("node")))
 
     assertGood(
       attach(NodeByIdSeek("  UNNAMED11", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty), 333.0),

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -241,6 +242,7 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMake
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
@@ -1169,6 +1171,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       pretty"IN ${exprs.map(asPrettyString(_)).mkPrettyString("[", ",", "]")}"
     case ManySeekableArgs(ListLiteral(exprs)) =>
       pretty"= ${asPrettyString(exprs.head)}"
+    case ManySeekableArgs(autoParam@AutoExtractedParameter(name, cypherType: ListType, _, _)) =>
+      pretty"IN ${asPrettyString(autoParam)}"
     case _ =>
       pretty"= ${asPrettyString(seekableArgs.expr)}"
   }
