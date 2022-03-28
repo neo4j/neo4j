@@ -154,12 +154,6 @@ public class OverriddenAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean shouldBoostAccessForProcedureWith( String[] allowed )
-    {
-        return false;
-    }
-
-    @Override
     public boolean allowsSetLabel( long labelId )
     {
         return wrapping.allowsSetLabel( labelId );

@@ -154,12 +154,6 @@ public class RestrictedAccessMode extends WrappedAccessMode
     }
 
     @Override
-    public boolean shouldBoostAccessForProcedureWith( String[] allowed )
-    {
-        return false;
-    }
-
-    @Override
     public boolean allowsSetLabel( long labelId )
     {
         return original.allowsSetLabel( labelId ) && wrapping.allowsSetLabel( labelId );

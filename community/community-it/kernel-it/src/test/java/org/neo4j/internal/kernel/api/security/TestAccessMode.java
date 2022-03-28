@@ -154,12 +154,6 @@ public class TestAccessMode implements AccessMode
     }
 
     @Override
-    public boolean shouldBoostAccessForProcedureWith( String[] allowed )
-    {
-        return false;
-    }
-
-    @Override
     public PermissionState allowsExecuteProcedure( int procedureId )
     {
         return PermissionState.EXPLICIT_GRANT;

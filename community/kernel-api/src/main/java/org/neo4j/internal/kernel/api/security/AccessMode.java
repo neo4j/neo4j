@@ -179,12 +179,6 @@ public interface AccessMode
         }
 
         @Override
-        public boolean shouldBoostAccessForProcedureWith( String[] allowed )
-        {
-            return procedureBoost;
-        }
-
-        @Override
         public PermissionState allowsExecuteProcedure( int procedureId )
         {
             return PermissionState.EXPLICIT_GRANT;
@@ -316,18 +310,6 @@ public interface AccessMode
     boolean allowsReadRelationshipProperty( RelTypeSupplier relType, int propertyKey );
 
     boolean allowsSeePropertyKeyToken( int propertyKey );
-
-    /**
-     * Determines whether this mode allows execution of a procedure with the parameter string array in its
-     * procedure annotation.
-     *
-     * @deprecated use {@link #allowsExecuteProcedure} and {@link #shouldBoostProcedure} instead
-     * @param allowed An array of strings that encodes permissions that allows the execution of a procedure
-     * @return {@code true} if this mode allows the execution of a procedure with the given parameter string array
-     * encoding permission
-     */
-    @Deprecated
-    boolean shouldBoostAccessForProcedureWith( String[] allowed );
 
     /**
      * Check if execution of a procedure is allowed
