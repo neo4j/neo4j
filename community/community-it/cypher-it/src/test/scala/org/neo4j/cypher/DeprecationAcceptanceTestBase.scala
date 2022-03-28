@@ -251,8 +251,38 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "EXPLAIN MATCH (n) WHERE [] RETURN TRUE",
       "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN TRUE",
       "EXPLAIN MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
+    )
+
+    assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+
+    assertNoNotificationInSupportedVersions("RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+  }
+
+  test("should not deprecate boolean coercion of pattern expressions") {
+    val queries = Seq(
       "EXPLAIN RETURN NOT ()--()",
       "EXPLAIN RETURN ()--() OR ()--()--()",
+      "EXPLAIN MATCH (n) WHERE (n)-[]->() RETURN n",
+      """
+      |EXPLAIN
+      |MATCH (a), (b)
+      |WITH a, b
+      |WHERE a.id = 0
+      |  AND (a)-[:T]->(b:Label1)
+      |  OR (a)-[:T*]->(b:Label2)
+      |RETURN DISTINCT b
+      """.stripMargin,
+      """
+        |EXPLAIN
+        |MATCH (a), (b)
+        |WITH a, b
+        |WHERE a.id = 0
+        |  AND exists((a)-[:T]->(b:Label1))
+        |  OR exists((a)-[:T*]->(b:Label2))
+        |RETURN DISTINCT b
+      """.stripMargin,
+      "EXPLAIN MATCH (n) WHERE NOT (n)-[:REL2]-() RETURN n",
+      "EXPLAIN MATCH (n) WHERE (n)-[:REL1]-() AND (n)-[:REL3]-() RETURN n",
       """
         |EXPLAIN
         |MATCH (actor:Actor)
@@ -272,9 +302,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         |""".stripMargin
     )
 
-    assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
-
-    assertNoNotificationInSupportedVersions("EXPLAIN RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+    assertNoDeprecations(queries)
   }
 
   // FUNCTIONALITY DEPRECATED IN 3.5, REMOVED IN 4.0
