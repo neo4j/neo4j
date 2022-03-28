@@ -71,6 +71,7 @@ import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.TokenWrite
 import org.neo4j.internal.kernel.api.Write
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
+import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
@@ -92,7 +93,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
-import org.neo4j.internal.kernel.api.security.AccessMode
 
 import java.net.URL
 
@@ -645,6 +645,8 @@ class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
   override def isTopLevelTx: Boolean = inner.isTopLevelTx
+
+  override def isOpen: Boolean = inner.isOpen
 
   override def close(): Unit = inner.close()
 

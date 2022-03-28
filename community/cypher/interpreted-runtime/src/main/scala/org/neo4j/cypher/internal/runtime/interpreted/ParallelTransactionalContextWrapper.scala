@@ -100,9 +100,11 @@ class ParallelTransactionalContextWrapper(
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
+  override def isOpen: Boolean = tc.kernelTransaction.isOpen
+
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s", this.getClass.getSimpleName, this)
+      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s thread=%s", this.getClass.getSimpleName, this, Thread.currentThread().getName)
     }
     kernelExecutionContext.complete()
     kernelExecutionContext.close()

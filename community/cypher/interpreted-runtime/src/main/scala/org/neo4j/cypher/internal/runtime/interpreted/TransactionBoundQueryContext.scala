@@ -480,7 +480,7 @@ private[internal] class TransactionBoundReadQueryContext(
     new DefaultValueMapper(transactionalContext.kernelTransactionalContext.transaction())
 
   override def createParallelQueryContext(): QueryContext = {
-    val newTransactionalContext = transactionalContext.createParallelTransactionalContext
+    val newTransactionalContext = transactionalContext.createParallelTransactionalContext()
 
     // Create a single-threaded copy of ResourceManager and attach it to the thread-safe resource manager
     val newResourceManager = new ResourceManager(resources.monitor, newTransactionalContext.memoryTracker)

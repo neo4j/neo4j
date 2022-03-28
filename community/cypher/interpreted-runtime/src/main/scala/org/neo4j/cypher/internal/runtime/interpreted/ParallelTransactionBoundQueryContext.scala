@@ -56,7 +56,9 @@ sealed class ParallelTransactionBoundQueryContext(
     with UnsupportedWriteQueryContext {
 
   override def close(): Unit = {
-    DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close()", this.getClass.getSimpleName)
+    if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
+      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close() thread=%s", this.getClass.getSimpleName, Thread.currentThread().getName)
+    }
     try {
       super.close()
     } finally {

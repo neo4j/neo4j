@@ -118,8 +118,12 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def isTopLevelTx: Boolean = tc.isTopLevelTx
 
+  override def isOpen: Boolean = tc.kernelTransaction.isOpen
+
   override def close(): Unit = {
-    DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s", this.getClass.getSimpleName, this)
+    if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
+      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s thread=%s", this.getClass.getSimpleName, this, Thread.currentThread().getName)
+    }
     tc.close()
   }
 
@@ -157,7 +161,11 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def createParallelTransactionalContext(): ParallelTransactionalContextWrapper = {
     require(threadSafeCursors != null)
-    new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
+    val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
+    if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
+      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.createParallelTransactionalContext(): %s thread=%s", this.getClass.getSimpleName, parallelContext, Thread.currentThread().getName)
+    }
+    parallelContext
   }
 
   override def elementIdMapper(): ElementIdMapper = tc.elementIdMapper()

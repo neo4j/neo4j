@@ -628,6 +628,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def isTopLevelTx: Boolean
 
+  def isOpen: Boolean
+
   def close(): Unit
 
   def rollback(): Unit
