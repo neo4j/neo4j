@@ -21,7 +21,6 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_CREATE_PROPERTY_EXISTENCE_CONSTRAINT_SYNTAX
@@ -146,16 +145,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated hex literal syntax") {
     assertNotificationInSupportedVersions("EXPLAIN RETURN 0X12B AS hex", DEPRECATED_HEX_LITERAL_SYNTAX)
-  }
-
-  test("deprecated binding variable length relationship") {
-    val query = "EXPLAIN MATCH ()-[rs*]-() RETURN rs"
-    val detail = NotificationDetail.Factory.bindingVarLengthRelationship("rs")
-    assertNotificationInSupportedVersions(query, DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP, detail)
-  }
-
-  test("not deprecated binding variable length relationship") {
-    assertNoNotificationInSupportedVersions("EXPLAIN MATCH p = ()-[*]-() RETURN relationships(p) AS rs", DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP)
   }
 
   test("deprecated pattern expression syntax") {

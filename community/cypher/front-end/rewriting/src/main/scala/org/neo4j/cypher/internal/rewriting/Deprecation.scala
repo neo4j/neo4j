@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
-import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -92,6 +91,7 @@ object Deprecations {
     f => f.copy(functionName = FunctionName(newName)(f.functionName.position))(f.position)
 
   case object syntacticallyDeprecatedFeaturesIn4_X extends SyntacticDeprecations {
+
     override val find: PartialFunction[Any, Deprecation] = {
 
       // old octal literal syntax
@@ -113,13 +113,6 @@ object Deprecations {
         Deprecation(
           Some(Ref(f) -> renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f)),
           None
-        )
-
-      // var-length binding
-      case p@RelationshipPattern(Some(variable), _, Some(_), _, _, _) =>
-        Deprecation(
-          None,
-          Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
 
       case i: ast.CreateIndexOldSyntax =>
