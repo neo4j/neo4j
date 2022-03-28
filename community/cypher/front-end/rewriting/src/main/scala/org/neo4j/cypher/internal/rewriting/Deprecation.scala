@@ -80,9 +80,9 @@ import org.neo4j.cypher.internal.util.DeprecatedSelfReferenceToVariableInCreateP
 import org.neo4j.cypher.internal.util.DeprecatedShowExistenceConstraintSyntax
 import org.neo4j.cypher.internal.util.DeprecatedShowSchemaSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.util.Ref
@@ -447,7 +447,7 @@ object Deprecations {
     }
 
     override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
-      case e: Expression if isListCoercedToBoolean(semanticTable, e) =>
+      case e: Expression if isListCoercedToBoolean(semanticTable, e) && !e.isInstanceOf[PatternExpression] =>
         Deprecation(
           None,
           Some(DeprecatedCoercionOfListToBoolean(e.position))

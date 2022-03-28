@@ -356,10 +356,38 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (n) WHERE [] RETURN TRUE",
       "MATCH (n) WHERE range(0, 10) RETURN TRUE",
       "MATCH (n) WHERE range(0, 10) RETURN range(0, 10)",
+    )
+
+    assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+
+    assertNoNotificationInSupportedVersions("RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+  }
+
+  test("should not deprecate boolean coercion of pattern expressions") {
+    val queries = Seq(
       "RETURN NOT ()--()",
       "RETURN ()--() OR ()--()--()",
+      "MATCH (n) WHERE (n)-[]->() RETURN n",
       """
-        |EXPLAIN
+      |MATCH (a), (b)
+      |WITH a, b
+      |WHERE a.id = 0
+      |  AND (a)-[:T]->(b:Label1)
+      |  OR (a)-[:T*]->(b:Label2)
+      |RETURN DISTINCT b
+      """.stripMargin,
+      """
+        |MATCH (a), (b)
+        |WITH a, b
+        |WHERE a.id = 0
+        |  AND exists((a)-[:T]->(b:Label1))
+        |  OR exists((a)-[:T*]->(b:Label2))
+        |RETURN DISTINCT b
+      """.stripMargin,
+      "MATCH (n) WHERE NOT (n)-[:REL2]-() RETURN n",
+      "MATCH (n) WHERE (n)-[:REL1]-() AND (n)-[:REL3]-() RETURN n",
+      "MATCH (n WHERE (n)--()) RETURN n",
+      """
         |MATCH (actor:Actor)
         |RETURN actor,
         |  CASE
@@ -369,17 +397,13 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         |  END AS accolade
         |""".stripMargin,
       """
-        |EXPLAIN
         |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
         |WITH movie, collect(actor) AS cast
         |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
         |RETURN movie
-        |""".stripMargin
+        |""".stripMargin,
     )
-
-    assertNotificationInSupportedVersions(queries, DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
-
-    assertNoNotificationInSupportedVersions("RETURN NOT TRUE", DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN)
+    assertNoDeprecations(queries)
   }
 
   test("should not allow referencing elements being created by the pattern within that same pattern") {

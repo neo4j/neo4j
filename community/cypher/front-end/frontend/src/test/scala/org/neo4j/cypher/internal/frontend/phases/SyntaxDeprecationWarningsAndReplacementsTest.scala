@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.rewriting.Deprecations.semanticallyDeprecatedFe
 import org.neo4j.cypher.internal.rewriting.Deprecations.syntacticallyDeprecatedFeaturesIn4_X
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
@@ -86,24 +85,14 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     check("WITH 1 AS foo WHERE exists(()--()) RETURN *") should equal(Set.empty)
   }
 
-  test("should only warn about coercion with a pattern expression in WHERE clause") {
-    check("WITH 1 AS foo WHERE ()--() RETURN *") should equal(Set(
-      DeprecatedCoercionOfListToBoolean(InputPosition(20, 1, 21))
-    ))
+  test("should not warn about coercion with a pattern expression in WHERE clause") {
+    check("WITH 1 AS foo WHERE ()--() RETURN *") should equal(Set.empty)
   }
 
-  test("should only warn about coercion with a pattern expression in boolean expression") {
-    check("RETURN NOT ()--()") should equal(Set(
-      DeprecatedCoercionOfListToBoolean(InputPosition(11, 1, 12))
-    ))
-    check("RETURN ()--() AND ()--()--()") should equal(Set(
-      DeprecatedCoercionOfListToBoolean(InputPosition(7, 1, 8)),
-      DeprecatedCoercionOfListToBoolean(InputPosition(18, 1, 19)),
-    ))
-    check("RETURN ()--() OR ()--()--()") should equal(Set(
-      DeprecatedCoercionOfListToBoolean(InputPosition(7, 1, 8)),
-      DeprecatedCoercionOfListToBoolean(InputPosition(17, 1, 18)),
-    ))
+  test("should not warn about coercion with a pattern expression in boolean expression") {
+    check("RETURN NOT ()--()") should equal(Set.empty)
+    check("RETURN ()--() AND ()--()--()") should equal(Set.empty)
+    check("RETURN ()--() OR ()--()--()") should equal(Set.empty)
   }
 
   test("should warn about exists() in both union branches") {
