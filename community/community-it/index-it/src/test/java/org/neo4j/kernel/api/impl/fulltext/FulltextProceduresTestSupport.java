@@ -78,6 +78,7 @@ class FulltextProceduresTestSupport
     static final Label LABEL = Label.label( "Label" );
     static final RelationshipType REL = RelationshipType.withName( "REL" );
     static final String PROP = "prop";
+    static final String PROP2 = "prop2";
     static final String EVENTUALLY_CONSISTENT_OPTIONS = "{`fulltext.eventually_consistent`: true}";
     static final String QUERY_NODES = "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\")";
     static final String QUERY_RELS = "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\")";
@@ -229,7 +230,7 @@ class FulltextProceduresTestSupport
 
     static List<Value> generateRandomNonStringValues()
     {
-        Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT;
+        Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT && v.valueGroup() != ValueGroup.TEXT_ARRAY;
         return generateRandomValues( nonString );
     }
 
@@ -268,6 +269,16 @@ class FulltextProceduresTestSupport
         awaitIndexesOnline();
     }
 
+    void createCompositeIndexAndWait( EntityUtil entityUtil )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            entityUtil.createCompositeIndex( tx );
+            tx.commit();
+        }
+        awaitIndexesOnline();
+    }
+
     static void createSimpleRelationshipIndex( Transaction tx )
     {
         tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP ) ) ).close();
@@ -282,7 +293,11 @@ class FulltextProceduresTestSupport
     {
         void createIndex( Transaction tx );
 
-        long createEntityWithProperty( Transaction tx, String propertyValue );
+        void createCompositeIndex( Transaction tx );
+
+        long createEntityWithProperty( Transaction tx, Object propertyValue );
+
+        long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value );
 
         long createEntity( Transaction tx );
 
@@ -319,10 +334,25 @@ class FulltextProceduresTestSupport
         }
 
         @Override
-        public long createEntityWithProperty( Transaction tx, String propertyValue )
+        public void createCompositeIndex( Transaction tx )
+        {
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_NODE_IDX_NAME, asNodeLabelStr( LABEL.name() ), asPropertiesStrList( PROP, PROP2 ) ) ).close();
+        }
+
+        @Override
+        public long createEntityWithProperty( Transaction tx, Object propertyValue )
         {
             Node node = tx.createNode( LABEL );
             node.setProperty( PROP, propertyValue );
+            return node.getId();
+        }
+
+        @Override
+        public long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value )
+        {
+            Node node = tx.createNode( LABEL );
+            node.setProperty( PROP, propertyValue );
+            node.setProperty( PROP2, property2Value );
             return node.getId();
         }
 
@@ -395,11 +425,27 @@ class FulltextProceduresTestSupport
         }
 
         @Override
-        public long createEntityWithProperty( Transaction tx, String propertyValue )
+        public void createCompositeIndex( Transaction tx )
+        {
+            tx.execute( format( FULLTEXT_CREATE, DEFAULT_REL_IDX_NAME, asRelationshipTypeStr( REL.name() ), asPropertiesStrList( PROP, PROP2 ) ) ).close();
+        }
+
+        @Override
+        public long createEntityWithProperty( Transaction tx, Object propertyValue )
         {
             Node node = tx.createNode();
             Relationship rel = node.createRelationshipTo( node, REL );
             rel.setProperty( PROP, propertyValue );
+            return rel.getId();
+        }
+
+        @Override
+        public long createEntityWithProperties( Transaction tx, Object propertyValue, Object property2Value )
+        {
+            Node node = tx.createNode();
+            Relationship rel = node.createRelationshipTo( node, REL );
+            rel.setProperty( PROP, propertyValue );
+            rel.setProperty( PROP2, property2Value );
             return rel.getId();
         }
 

@@ -92,7 +92,9 @@ public class FulltextIndexProvider extends IndexProvider
     {
         for ( final var value : values )
         {
-            if ( value != null && value.valueGroup().category() == ValueCategory.TEXT )
+            if ( value != null &&
+                 (value.valueGroup().category() == ValueCategory.TEXT ||
+                  value.valueGroup().category() == ValueCategory.TEXT_ARRAY) )
             {
                 return false;
             }

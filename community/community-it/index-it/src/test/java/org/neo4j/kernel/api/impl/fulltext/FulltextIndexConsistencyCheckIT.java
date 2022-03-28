@@ -79,6 +79,7 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -264,6 +265,83 @@ class FulltextIndexConsistencyCheckIT
     }
 
     @Test
+    void mustBeAbleToConsistencyCheckNodeIndexWithTextArrayProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.createNode( Label.label( "Label" ) ).setProperty( "prop", array( "value1", "value2" ) );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckNodeIndexWithEmptyTextArrayProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.createNode( Label.label( "Label" ) ).setProperty( "prop", new String[0] );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckNodeIndexWithEmptyTextProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.createNode( Label.label( "Label" ) ).setProperty( "prop", "" );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckNodeIndexWithMixOfTextAndTextArrayProperties() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            tx.createNode( Label.label( "Label" ) ).setProperty( "prop", "plainValue" );
+            tx.createNode( Label.label( "Label" ) ).setProperty( "prop", array( "value1", "value2" ) );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
     void mustBeAbleToConsistencyCheckRelationshipIndexWithOneRelationshipTypeAndOneProperty() throws Exception
     {
         GraphDatabaseService db = createDatabase();
@@ -371,6 +449,94 @@ class FulltextIndexConsistencyCheckIT
             n1.createRelationshipTo( n2, relType2 ).setProperty( "p1", "value" );
             n1.createRelationshipTo( n2, relType1 ).setProperty( "p2", "value" );
             n1.createRelationshipTo( n2, relType2 ).setProperty( "p2", "value" );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckRelationshipIndexWithTextArrayProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        RelationshipType relationshipType = RelationshipType.withName( "R1" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            Node node = tx.createNode();
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", array( "value1", "value2" ) );
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", array( "value1", "value2" ) );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckRelationshipIndexWithEmptyTextArrayProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        RelationshipType relationshipType = RelationshipType.withName( "R1" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            Node node = tx.createNode();
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", new String[0] );
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", new String[0] );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckRelationshipIndexWithEmptyTextProperty() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        RelationshipType relationshipType = RelationshipType.withName( "R1" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            Node node = tx.createNode();
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "" );
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "" );
+            tx.commit();
+        }
+        managementService.shutdown();
+        assertIsConsistent( checkConsistency() );
+    }
+
+    @Test
+    void mustBeAbleToConsistencyCheckRelationshipIndexWithMixOfTextAndTextArrayProperties() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        RelationshipType relationshipType = RelationshipType.withName( "R1" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "R1" ), asPropertiesStrList( "p1" ) ) ).close();
+            tx.commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            Node node = tx.createNode();
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", "plainValue" );
+            node.createRelationshipTo( node, relationshipType ).setProperty( "p1", array( "value1", "value2" ) );
             tx.commit();
         }
         managementService.shutdown();
@@ -536,6 +702,39 @@ class FulltextIndexConsistencyCheckIT
     }
 
     @Test
+    void mustDiscoverNodeWithTextArrayInStoreMissingFromIndex() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "nodes", asNodeLabelStr( "Label" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        IndexDescriptor indexDescriptor;
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            indexDescriptor = getFulltextIndexDescriptor( tx.schema().getIndexes() );
+            Node node = tx.createNode( Label.label( "Label" ) );
+            node.setProperty( "prop", array( "value1", "value2" ) );
+            nodeId = node.getId();
+            tx.commit();
+        }
+        IndexingService indexes = getIndexingService( db );
+        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
+        {
+            updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, Values.stringArray( "value1", "value2" ) ) );
+        }
+
+        managementService.shutdown();
+
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
+    @Test
     public void shouldNotReportNodesWithoutAllPropertiesInIndex() throws Exception
     {
         //Given
@@ -611,6 +810,40 @@ class FulltextIndexConsistencyCheckIT
         try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringValue( "value" ) ) );
+        }
+
+        managementService.shutdown();
+
+        ConsistencyCheckService.Result result = checkConsistency();
+        assertFalse( result.isSuccessful() );
+    }
+
+    @Test
+    void mustDiscoverRelationshipWithTextArrayInStoreMissingFromIndex() throws Exception
+    {
+        GraphDatabaseService db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.execute( format( FULLTEXT_CREATE, "rels", asRelationshipTypeStr( "REL" ), asPropertiesStrList( "prop" ) ) ).close();
+            tx.commit();
+        }
+        IndexDescriptor indexDescriptor;
+        long relId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            tx.schema().awaitIndexesOnline( 2, TimeUnit.MINUTES );
+            indexDescriptor = getFulltextIndexDescriptor( tx.schema().getIndexes() );
+            Node node = tx.createNode();
+            Relationship rel = node.createRelationshipTo( node, RelationshipType.withName( "REL" ) );
+            rel.setProperty( "prop", array( "value1", "value2" ) );
+            relId = rel.getId();
+            tx.commit();
+        }
+        IndexingService indexes = getIndexingService( db );
+        IndexProxy indexProxy = indexes.getIndexProxy( indexDescriptor );
+        try ( IndexUpdater updater = indexProxy.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
+        {
+            updater.process( IndexEntryUpdate.remove( relId, indexDescriptor, Values.stringArray( "value1", "value2" ) ) );
         }
 
         managementService.shutdown();

@@ -32,6 +32,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -94,7 +96,7 @@ public class LuceneFulltextDocumentStructure
             String propertyKey = propertyKeys[i];
             Value value = propertyValues[i];
             // Only match on entries that doesn't contain fields we don't expect
-            if ( value.valueGroup() != ValueGroup.TEXT )
+            if ( value.valueGroup() != ValueGroup.TEXT && value.valueGroup() != ValueGroup.TEXT_ARRAY )
             {
                 Query valueQuery = new ConstantScoreQuery(
                         new WildcardQuery( new Term( propertyKey, "*" ) ) );
@@ -139,11 +141,22 @@ public class LuceneFulltextDocumentStructure
             for ( String name : names )
             {
                 Value value = values[i++];
-                if ( value != null && value.valueGroup() == ValueGroup.TEXT )
+                if ( value != null )
                 {
-                    Field field = encodeValueField( name, value );
-                    document.add( field );
-                    nbrAddedValues++;
+                    if ( value.valueGroup() == ValueGroup.TEXT )
+                    {
+                        document.add( encodeValueField( name, value ) );
+                        nbrAddedValues++;
+                    }
+                    if ( value.valueGroup() == ValueGroup.TEXT_ARRAY )
+                    {
+                        var array = (TextArray) value;
+                        for ( AnyValue val : array )
+                        {
+                            document.add( encodeValueField( name, (Value) val ) );
+                        }
+                        nbrAddedValues++;
+                    }
                 }
             }
             return nbrAddedValues;

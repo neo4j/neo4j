@@ -180,6 +180,18 @@ class SchemaComplianceChecker implements AutoCloseable
         }
     }
 
+    static boolean valuesQualifiesForFulltextIndex( Value[] values )
+    {
+        for ( Value value : values )
+        {
+            if ( value.valueGroup() == ValueGroup.TEXT || value.valueGroup() == ValueGroup.TEXT_ARRAY )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private <ENTITY extends PrimitiveRecord> void checkMandatoryProperties( ENTITY entity, IntObjectMap<Value> seenProperties, long[] entityTokenIds,
             Function<ENTITY,ConsistencyReport.PrimitiveConsistencyReport> reporter )
     {
@@ -213,47 +225,26 @@ class SchemaComplianceChecker implements AutoCloseable
             return false;
         }
 
-        switch ( indexType )
-        {
-        case BTREE:
-        case RANGE:
-            return true;
-        case FULLTEXT:
-            for ( Value value : values )
-            {
-                if ( isValueSupportedByIndex( indexType, value ) )
+        return switch ( indexType )
                 {
-                    return true;
-                }
-            }
-            return false;
-        case POINT:
-        case TEXT:
-            // Neither point nor text index can be composite,
-            // so this is just a convenient way how to handle the array type
-            for ( Value value : values )
-            {
-                return isValueSupportedByIndex( indexType, value );
-            }
-        default:
-            return false;
-        }
+                    case BTREE, RANGE -> true;
+                    case FULLTEXT -> Arrays.stream( values ).anyMatch( value -> isValueSupportedByIndex( indexType, value ) );
+                    case POINT, TEXT ->
+                            // Neither point nor text index can be composite,
+                            Arrays.stream( values ).findFirst().filter( value -> isValueSupportedByIndex( indexType, value ) ).isPresent();
+                    default -> false;
+                };
     }
 
     static boolean isValueSupportedByIndex( IndexType indexType, Value value )
     {
-        switch ( indexType )
-        {
-        case BTREE:
-        case RANGE:
-            return true;
-        case TEXT:
-        case FULLTEXT:
-            return value.valueGroup() == ValueGroup.TEXT;
-        case POINT:
-            return value.valueGroup() == ValueGroup.GEOMETRY;
-        default:
-            return false;
-        }
+        return switch ( indexType )
+                {
+                    case BTREE, RANGE -> true;
+                    case TEXT -> value.valueGroup() == ValueGroup.TEXT;
+                    case FULLTEXT -> value.valueGroup() == ValueGroup.TEXT || value.valueGroup() == ValueGroup.TEXT_ARRAY;
+                    case POINT -> value.valueGroup() == ValueGroup.GEOMETRY;
+                    default -> false;
+                };
     }
 }
