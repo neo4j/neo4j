@@ -205,9 +205,14 @@ public interface NotificationDetail
             return createNotificationDetail( identifiers, "identifier", "identifiers" );
         }
 
-        public static NotificationDetail indexSeekOrScan( Set<String> labels )
+        public static NotificationDetail nodeIndexSeekOrScan( Set<String> labels )
         {
             return createNotificationDetail( labels, "indexed label", "indexed labels" );
+        }
+
+        public static NotificationDetail relationshipIndexSeekOrScan( Set<String> labels )
+        {
+            return createNotificationDetail( labels, "indexed relationship type", "indexed relationship types" );
         }
 
         public static NotificationDetail message( String name, String message )

@@ -104,6 +104,7 @@ class CypherQueryObfuscatorFactory {
     override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = fail()
     override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = fail()
     override def indexExistsForLabel(labelId: Int): Nothing = fail()
+    override def indexExistsForRelType(labelId: Int): Nothing = fail()
     override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = fail()
     override def canLookupNodesByLabel: Nothing = fail()
     override def canLookupRelationshipsByType: Nothing = fail()

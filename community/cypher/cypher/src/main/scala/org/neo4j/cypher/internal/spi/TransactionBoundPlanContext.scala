@@ -68,8 +68,8 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.logging.InternalLog
 import org.neo4j.values.storable.ValueCategory
 
-import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TransactionBoundPlanContext {
@@ -144,7 +144,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def rangeIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForRelType(relTypeId, schema.IndexType.RANGE)
+    indexesGetForRelType(relTypeId, Some(schema.IndexType.RANGE))
   }
 
   override def textIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -152,7 +152,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def textIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForRelType(relTypeId, schema.IndexType.TEXT)
+    indexesGetForRelType(relTypeId, Some(schema.IndexType.TEXT))
   }
 
   override def pointIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -160,7 +160,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   override def pointIndexesGetForRelType(relTypeId: Int): Iterator[IndexDescriptor] = {
-    indexesGetForRelType(relTypeId, schema.IndexType.POINT)
+    indexesGetForRelType(relTypeId, Some(schema.IndexType.POINT))
   }
 
   private def indexesGetForLabel(labelId: Int, indexType: Option[schema.IndexType]): Iterator[IndexDescriptor] = {
@@ -174,9 +174,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       .flatMap(getOnlineIndex)
   }
 
-  private def indexesGetForRelType(relTypeId: Int, indexType: schema.IndexType): Iterator[IndexDescriptor] = {
+  private def indexesGetForRelType(relTypeId: Int, indexType: Option[schema.IndexType]): Iterator[IndexDescriptor] = {
+    val selector: schema.IndexDescriptor => Boolean = indexType match {
+      case Some(it) => _.getIndexType == it
+      case None     => _ => true
+    }
+
     tc.schemaRead.getRelTypeIndexesNonLocking(relTypeId).asScala
-      .filter(_.getIndexType == indexType)
+      .filter(selector)
       .flatMap(getOnlineIndex)
   }
 
@@ -184,6 +189,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def indexExistsForLabel(labelId: Int): Boolean = {
     indexesGetForLabel(labelId, None).nonEmpty
+  }
+
+  override def indexExistsForRelType(relTypeId: Int): Boolean = {
+    indexesGetForRelType(relTypeId, None).nonEmpty
   }
 
   override def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = {

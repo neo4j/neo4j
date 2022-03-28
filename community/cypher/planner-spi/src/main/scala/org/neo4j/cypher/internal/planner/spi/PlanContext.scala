@@ -76,6 +76,11 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
   def indexExistsForLabel(labelId: Int): Boolean
 
   /**
+   * Checks if an index exists (general or unique) for a given label, without taking any schema locks.
+   */
+  def indexExistsForRelType(relTypeId: Int): Boolean
+
+  /**
    * Gets a TEXT index if it exists (general or unique) for a given label and properties, without taking any schema locks.
    */
   def textIndexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor]

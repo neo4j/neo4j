@@ -36,7 +36,9 @@ case class IndexHintUnfulfillableNotification(variableName: String, labelOrRelTy
 
 case class JoinHintUnfulfillableNotification(identified: Seq[String]) extends InternalNotification
 
-case class IndexLookupUnfulfillableNotification(labels: Set[String]) extends InternalNotification
+case class NodeIndexLookupUnfulfillableNotification(labels: Set[String]) extends InternalNotification
+
+case class RelationshipIndexLookupUnfulfillableNotification(labels: Set[String]) extends InternalNotification
 
 case object EagerLoadCsvNotification extends InternalNotification
 

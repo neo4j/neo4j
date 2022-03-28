@@ -105,6 +105,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def indexExistsForLabel(labelId: Int): Boolean =
     translateException(tokenNameLookup, inner.indexExistsForLabel(labelId))
 
+  override def indexExistsForRelType(relTypeId: Int): Boolean =
+    translateException(tokenNameLookup, inner.indexExistsForRelType(relTypeId))
+
   override def canLookupNodesByLabel: Boolean =
     translateException(tokenNameLookup, inner.canLookupNodesByLabel)
 

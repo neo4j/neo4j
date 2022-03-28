@@ -46,6 +46,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def indexExistsForLabel(labelId: Int): Boolean = ???
 
+  override def indexExistsForRelType(labelId: Int): Boolean = ???
+
   override def canLookupNodesByLabel: Boolean = ???
 
   override def canLookupRelationshipsByType: Boolean = ???

@@ -31,14 +31,15 @@ import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.ExperimentalFeatureNotification
 import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.MissingLabelNotification
 import org.neo4j.cypher.internal.compiler.MissingParametersNotification
 import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
 import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
+import org.neo4j.cypher.internal.compiler.NodeIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
+import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
 import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
@@ -89,8 +90,10 @@ object NotificationWrapping {
       NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
       NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
-    case IndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
+    case NodeIndexLookupUnfulfillableNotification(labels) =>
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.nodeIndexSeekOrScan(labels.asJava))
+    case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.relationshipIndexSeekOrScan(relTypes.asJava))
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -29,19 +30,29 @@ object DynamicPropertyNotifier {
 
   def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph, context: LogicalPlanningContext) = {
 
-    val indexedLabels = variables.flatMap { variable =>
+    val indexedLabelOrRelTypes = variables.flatMap { variable =>
       val labels = qg.selections.labelsOnNode(variable.name)
-      labels.filter(withIndex(_, context))
+      val relTypes = qg.inlinedRelTypes(variable.name) ++ qg.selections.typesOnRel(variable.name)
+
+      val indexedLabels = labels.filter(withNodeIndex(_, context))
+      val indexedRelTypes = relTypes.filter(withRelIndex(_, context))
+
+      indexedLabels ++ indexedRelTypes
     }
 
-    if (indexedLabels.nonEmpty) {
-      val indexedLabelNames = indexedLabels.map(_.name)
-      context.notificationLogger.log(notification(indexedLabelNames))
+    if (indexedLabelOrRelTypes.nonEmpty) {
+      val indexedLabelOrRelTypeNames: Set[String] = indexedLabelOrRelTypes.map(_.name)
+      context.notificationLogger.log(notification(indexedLabelOrRelTypeNames))
     }
   }
 
-  private def withIndex(labelName: LabelName, context: LogicalPlanningContext) = {
+  private def withNodeIndex(labelName: LabelName, context: LogicalPlanningContext): Boolean = {
     val maybeLabelId = context.semanticTable.id(labelName)
     maybeLabelId.fold(false)(context.planContext.indexExistsForLabel(_))
+  }
+
+  private def withRelIndex(relTypeName: RelTypeName, context: LogicalPlanningContext): Boolean = {
+    val maybeRelTypeId = context.semanticTable.id(relTypeName)
+    maybeRelTypeId.fold(false)(context.planContext.indexExistsForRelType(_))
   }
 }

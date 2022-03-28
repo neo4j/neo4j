@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
@@ -76,6 +77,17 @@ case class Selections private (predicates: Set[Predicate]) {
     predicates.foldLeft(Map.empty[String, Set[HasLabels]]) {
       case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), _))) =>
         acc.updated(name, acc.getOrElse(name, Set.empty) + hasLabels)
+      case (acc, _) => acc
+    }
+
+  /**
+   * The top level rel type predicates for each variable.
+   * That means if "r" -> hasTypes("r", "R") is returned, we can safely assume that r has the type R.
+   */
+  lazy val relTypePredicates: Map[String, Set[HasTypes]] =
+    predicates.foldLeft(Map.empty[String, Set[HasTypes]]) {
+      case (acc, Predicate(_, hasTypes@HasTypes(Variable(name), _))) =>
+        acc.updated(name, acc.getOrElse(name, Set.empty) + hasTypes)
       case (acc, _) => acc
     }
 
@@ -131,8 +143,13 @@ case class Selections private (predicates: Set[Predicate]) {
 
   def labelsOnNode(id: String): Set[LabelName] = labelInfo.getOrElse(id, Set.empty)
 
+  def typesOnRel(id: String): Set[RelTypeName] = relTypeInfo.getOrElse(id, Set.empty)
+
   lazy val labelInfo: Map[String, Set[LabelName]] =
     labelPredicates.view.mapValues(_.map(_.labels.head)).toMap
+
+  lazy val relTypeInfo: Map[String, Set[RelTypeName]] =
+    relTypePredicates.view.mapValues(_.map(_.types.head)).toMap
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )

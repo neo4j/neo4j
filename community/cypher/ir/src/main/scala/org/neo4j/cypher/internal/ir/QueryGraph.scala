@@ -237,12 +237,14 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
     label ++ labelOrType
   }
 
-  private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
-    val inlinedTypes = patternRelationships
+  def inlinedRelTypes(rel: String): Set[RelTypeName] = {
+    patternRelationships
       .find(_.name == rel)
       .toSet[PatternRelationship]
       .flatMap(_.types.toSet)
+  }
 
+  private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
     val whereClauseTypes = selections
       .allHasTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.types)
@@ -251,7 +253,7 @@ case class QueryGraph( // !!! If you change anything here, make sure to update t
       .allHasLabelsOrTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.labelsOrTypes).map(lblOrType => RelTypeName(lblOrType.name)(lblOrType.position))
 
-    inlinedTypes ++ whereClauseTypes ++ whereClauseLabelOrTypes
+    inlinedRelTypes(rel) ++ whereClauseTypes ++ whereClauseLabelOrTypes
   }
 
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =

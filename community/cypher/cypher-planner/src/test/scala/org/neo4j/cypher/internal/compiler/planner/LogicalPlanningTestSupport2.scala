@@ -313,6 +313,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         }
       }
 
+      override def indexExistsForRelType(relTypeId: Int): Boolean = {
+        val relTypeName = config.relTypesById(relTypeId)
+        config.indexes.keys.exists {
+          case IndexDef(IndexDefinition.EntityType.Relationship(`relTypeName`), _, _) => true
+          case _ => false
+        }
+      }
+
       override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
         semanticTable.resolvedPropertyKeyNames.get(propertyKeyName).map(_.id)
 

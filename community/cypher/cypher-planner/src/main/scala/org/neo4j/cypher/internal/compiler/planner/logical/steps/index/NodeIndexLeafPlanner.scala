@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.compiler.NodeIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -89,7 +89,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
   private def issueNotifications(result: Set[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
     if (result.isEmpty) {
       val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
-      DynamicPropertyNotifier.process(nonSolvable, IndexLookupUnfulfillableNotification, qg, context)
+      DynamicPropertyNotifier.process(nonSolvable, NodeIndexLookupUnfulfillableNotification, qg, context)
     }
   }
 
