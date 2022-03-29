@@ -128,7 +128,8 @@
     <opencypher.version>1.0.0-M16</opencypher.version>
     <caffeine.version>3.0.3</caffeine.version>
     <required.maven.version>3.6.3</required.maven.version>
-    <jackson.version>2.12.6</jackson.version>
+    <jackson.version>2.13.2</jackson.version>
+    <jackson-databind.version>2.13.2.2</jackson-databind.version>
     <amazon-sdk.version>1.11.1022</amazon-sdk.version>
     <guava.version>30.1.1-jre</guava.version>
     <awaitility.version>4.1.0</awaitility.version>
@@ -1400,7 +1401,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson.version}</version>
+        <version>${jackson-databind.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
