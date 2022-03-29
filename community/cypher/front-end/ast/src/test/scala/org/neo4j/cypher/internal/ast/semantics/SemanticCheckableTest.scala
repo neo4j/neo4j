@@ -324,4 +324,9 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     check.run(SemanticState.clean).errors shouldBe Vector(error1, error2)
   }
+
+  test("SemanticCheck.setState should work") {
+    val Right(state) = SemanticState.clean.declareVariable(varFor("x"), CTNode.invariant)
+    SemanticCheck.setState(state).run(SemanticState.clean) shouldBe SemanticCheckResult.success(state)
+  }
 }

@@ -91,4 +91,20 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     // Then
     checkResult.state.typeTable.get(varExpr).get.expected should be(Some(CTBoolean.covariant))
   }
+
+  test("withState should work") {
+    val initialState = SemanticState.clean
+    val Right(stateForCheck) = initialState.declareVariable(varFor("x"), CTNode.invariant)
+
+    val error = SemanticError("some error", pos)
+
+    val check = toTest.withState(stateForCheck) {
+      SemanticCheck.fromFunction { state =>
+        state shouldBe stateForCheck
+        SemanticCheckResult.error(stateForCheck, error)
+      }
+    }
+
+    check.run(initialState) shouldBe SemanticCheckResult.error(initialState, error)
+  }
 }

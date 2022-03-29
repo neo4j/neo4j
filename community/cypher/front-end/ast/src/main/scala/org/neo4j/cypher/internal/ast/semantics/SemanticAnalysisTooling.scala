@@ -52,8 +52,13 @@ trait SemanticAnalysisTooling {
   }
 
   /** Runs `check` on `state`. Discards produced state, but retains produced errors */
-  def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = (s: SemanticState) =>
-    check.run(state).copy(state = s)
+  def withState(state: SemanticState)(check: SemanticCheck): SemanticCheck = {
+    for {
+      original <- SemanticCheck.getState
+      _        <- SemanticCheck.setState(state)
+      checked  <- check
+    } yield SemanticCheckResult(original.state, checked.errors)
+  }
 
   def specifyType(
     typeGen: TypeGenerator,

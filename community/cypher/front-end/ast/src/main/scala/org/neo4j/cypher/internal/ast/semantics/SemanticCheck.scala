@@ -54,6 +54,9 @@ object SemanticCheck {
   val success: SemanticCheck = fromFunction(SemanticCheckResult.success)
   def error(error: SemanticErrorDef): SemanticCheck = fromFunction(SemanticCheckResult.error(_, error))
 
+  def getState: SemanticCheck = success
+  def setState(s: SemanticState): SemanticCheck = fromFunction(_ => SemanticCheckResult.success(s))
+
   def fromFunction(f: SemanticState => SemanticCheckResult): SemanticCheck = Leaf(f)
   def fromState(f: SemanticState => SemanticCheck): SemanticCheck = success.flatMap(res => f(res.state))
 
