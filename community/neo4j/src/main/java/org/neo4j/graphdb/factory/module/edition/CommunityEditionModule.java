@@ -48,6 +48,7 @@ import org.neo4j.dbms.database.SystemGraphInitializer;
 import org.neo4j.dbms.database.readonly.ReadOnlyDatabases;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
+import org.neo4j.dbms.identity.ServerIdentityFactory;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
@@ -109,7 +110,9 @@ public class CommunityEditionModule extends StandaloneEditionModule implements D
 
         globalDependencies.satisfyDependency( createAuthConfigProvider( globalModule ) );
 
-        identityModule = DefaultIdentityModule.fromGlobalModule( globalModule );
+        identityModule = tryResolveOrCreate( ServerIdentityFactory.class,
+                                             globalModule.getExternalDependencyResolver(),
+                                             DefaultIdentityModule::fromGlobalModule ).create( globalModule );
         globalDependencies.satisfyDependency( identityModule );
 
         connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );

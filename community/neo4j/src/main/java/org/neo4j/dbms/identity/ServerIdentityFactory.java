@@ -19,8 +19,10 @@
  */
 package org.neo4j.dbms.identity;
 
+import org.neo4j.graphdb.factory.module.GlobalModule;
+
 @FunctionalInterface
-public interface ServerIdentity
+public interface ServerIdentityFactory
 {
-    ServerId serverId();
+    ServerIdentity create( GlobalModule globalModule );
 }

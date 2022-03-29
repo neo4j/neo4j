@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.identity;
+package org.neo4j.kernel.database;
+
+import java.util.UUID;
 
 @FunctionalInterface
-public interface ServerIdentity
+public interface DatabaseUUIDGenerator
 {
-    ServerId serverId();
+    DatabaseUUIDGenerator DEFAULT = UUID::randomUUID;
+
+    UUID generateDatabaseUUID();
 }

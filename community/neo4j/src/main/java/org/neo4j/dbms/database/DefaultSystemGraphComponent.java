@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.database.DatabaseUUIDGenerator;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -64,12 +65,19 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
 {
     private final NormalizedDatabaseName defaultDbName;
     private final Clock clock;
+    private final DatabaseUUIDGenerator databaseIdGenerator;
 
     public DefaultSystemGraphComponent( Config config, Clock clock )
+    {
+        this( config, clock, DatabaseUUIDGenerator.DEFAULT );
+    }
+
+    protected DefaultSystemGraphComponent( Config config, Clock clock, DatabaseUUIDGenerator databaseIdGenerator )
     {
         super( config );
         this.defaultDbName = new NormalizedDatabaseName( config.get( GraphDatabaseSettings.default_database ) );
         this.clock = clock;
+        this.databaseIdGenerator = databaseIdGenerator;
     }
 
     @Override
@@ -96,8 +104,9 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     {
         try ( var tx = system.beginTx() )
         {
-            createDatabaseNode( tx, defaultDbName.name(), true, true, UUID.randomUUID() );
-            createDatabaseNode( tx, SYSTEM_DATABASE_NAME, false, false, NAMED_SYSTEM_DATABASE_ID.databaseId().uuid() );
+            createDatabaseNode( tx, defaultDbName.name(), true, true );
+            createDatabaseNode( tx, SYSTEM_DATABASE_NAME, false, false,
+                                NAMED_SYSTEM_DATABASE_ID.databaseId().uuid(), ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
             tx.commit();
         }
         catch ( ConstraintViolationException e )
@@ -189,7 +198,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                 }
                 else
                 {
-                    createDatabaseNode( tx, defaultDbName.name(), true, true, UUID.randomUUID() );
+                    createDatabaseNode( tx, defaultDbName.name(), true, true );
                 }
             }
             tx.commit();
@@ -208,9 +217,11 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         }
     }
 
-    protected Node createDatabaseNode( Transaction tx, String databaseName, boolean hosted, boolean defaultDb, UUID uuid )
+    protected Node createDatabaseNode( Transaction tx, String databaseName, boolean hosted, boolean defaultDb )
     {
-        return createDatabaseNode( tx, databaseName, hosted, defaultDb, uuid, ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
+        return createDatabaseNode( tx, databaseName, hosted, defaultDb,
+                                   databaseIdGenerator.generateDatabaseUUID(),
+                                   ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
     }
 
     private static Node createDatabaseNode( Transaction tx, String databaseName, boolean hosted, boolean defaultDb, UUID uuid, ZonedDateTime now )

@@ -22,10 +22,11 @@ package org.neo4j.dbms.identity;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.UUID;
 
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.logging.internal.NullLogService;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -35,6 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATA_DIR_NAME;
 
 @EphemeralTestDirectoryExtension
@@ -51,23 +54,29 @@ public class DefaultIdentityModuleTest
         var layout = Neo4jLayout.of( testDirectory.homePath() );
         var fs = testDirectory.getFileSystem();
         assertFalse( fs.fileExists( dataDir ) );
+        var globalModule = mock( GlobalModule.class );
+        when( globalModule.getNeo4jLayout() ).thenReturn( layout );
+        when( globalModule.getLogService() ).thenReturn( NullLogService.getInstance() );
+        when( globalModule.getFileSystem() ).thenReturn( fs );
+        var uuid = UUID.randomUUID();
 
         // when
-        var identityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var identityModule = new DefaultIdentityModule( globalModule, uuid );
 
         // then
         assertTrue( fs.fileExists( dataDir ) );
         assertTrue( fs.fileExists( layout.serverIdFile() ) );
         assertNotNull( identityModule.serverId() );
+        assertEquals( uuid, identityModule.serverId().uuid() );
 
         // when
-        var secondIdentityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var secondIdentityModule = new DefaultIdentityModule( globalModule, UUID.randomUUID() );
 
         // then
         assertEquals( identityModule.serverId(), secondIdentityModule.serverId() );
 
         fs.deleteRecursively( dataDir );
-        var thirdIdentityModule = new DefaultIdentityModule( NullLogService.getInstance(), fs, layout, EmptyMemoryTracker.INSTANCE );
+        var thirdIdentityModule = new DefaultIdentityModule( globalModule, UUID.randomUUID() );
 
         // then
         assertNotEquals( secondIdentityModule.serverId(), thirdIdentityModule.serverId() );

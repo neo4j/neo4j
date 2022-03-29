@@ -22,28 +22,26 @@ package org.neo4j.dbms.identity;
 import java.util.UUID;
 
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.MemoryTracker;
 
 public class DefaultIdentityModule extends AbstractIdentityModule
 {
     private final ServerId serverId;
 
-    public static DefaultIdentityModule fromGlobalModule( GlobalModule globalModule )
+    public static ServerIdentityFactory fromGlobalModule()
     {
-        return new DefaultIdentityModule( globalModule.getLogService(),
-                globalModule.getFileSystem(),
-                globalModule.getNeo4jLayout(),
-                globalModule.getOtherMemoryPool().getPoolMemoryTracker() );
+        return DefaultIdentityModule::new;
     }
 
-    DefaultIdentityModule( LogService logService, FileSystemAbstraction fs, Neo4jLayout layout, MemoryTracker memoryTracker )
+    private DefaultIdentityModule( GlobalModule globalModule )
     {
-        var log = logService.getInternalLog( getClass() );
-        var storage = createServerIdStorage( fs, layout.serverIdFile() );
-        this.serverId = readOrGenerate( storage, log, ServerId.class, ServerId::new, UUID::randomUUID );
+        this( globalModule, UUID.randomUUID() );
+    }
+
+    public DefaultIdentityModule( GlobalModule globalModule, UUID uuid )
+    {
+        var logService = globalModule.getLogService();
+        var storage = createServerIdStorage( globalModule.getFileSystem(), globalModule.getNeo4jLayout().serverIdFile() );
+        this.serverId = readOrGenerate( storage, logService.getInternalLog( getClass() ), ServerId.class, ServerId::new, () -> uuid );
         logService.getUserLog( getClass() ).info( "This instance is %s (%s)", serverId, serverId.uuid() );
     }
 
