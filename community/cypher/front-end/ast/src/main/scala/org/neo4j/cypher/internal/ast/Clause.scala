@@ -1126,7 +1126,7 @@ sealed trait ProjectionClause extends HorizonClause {
   override def semanticCheck: SemanticCheck =
     returnItems.semanticCheck
 
-  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = {
+  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = SemanticCheck.fromState {
     state: SemanticState =>
 
       def runChecks(scopeInUse: Scope): SemanticCheck = {
@@ -1145,7 +1145,7 @@ sealed trait ProjectionClause extends HorizonClause {
       val canSeePreviousScope =
         (!(returnItems.containsAggregate || distinct || isInstanceOf[Yield])) || returnItems.includeExisting
 
-      val result =
+      val check: SemanticCheck =
         if (specialScopeForSubClausesNeeded && canSeePreviousScope) {
           /*
            * We have `WITH ... WHERE` or `WITH ... ORDER BY` with no aggregation nor distinct meaning we can
@@ -1159,18 +1159,18 @@ sealed trait ProjectionClause extends HorizonClause {
            *       ...
            */
 
+          for {
           // Special scope for ORDER BY and WHERE (SKIP and LIMIT are also checked in isolated scopes)
-          val stateForSubClauses = state.newChildScope
-
-          val SemanticCheckResult(nextState, errors1) = runChecks(previousScope).run(stateForSubClauses)
-
+          _            <- SemanticCheck.setState(state.newChildScope)
+          checksResult <- runChecks(previousScope)
           // New sibling scope for the WITH/RETURN clause itself and onwards.
           // Re-declare projected variables in the new scope since the sub-scope is discarded
           // (We do not need to check warnOnAccessToRestrictedVariableInOrderByOrWhere here since that only applies when we have distinct or aggregation)
-          val returnState = nextState.popScope.newSiblingScope
-          val SemanticCheckResult(finalState, errors2) =
-            returnItems.declareVariables(state.currentScope.scope).run(returnState)
-          SemanticCheckResult(finalState, errors1 ++ errors2)
+          returnState  <- SemanticCheck.setState(checksResult.state.popScope.newSiblingScope)
+          finalResult  <- returnItems.declareVariables(state.currentScope.scope)
+        } yield {
+          SemanticCheckResult(finalResult.state, checksResult.errors ++ finalResult.errors)
+        }
         } else if (specialScopeForSubClausesNeeded) {
           /*
            *  We have `WITH ... WHERE` or `WITH ... ORDER BY` with an aggregation or a distinct meaning we cannot
@@ -1184,30 +1184,37 @@ sealed trait ProjectionClause extends HorizonClause {
            *        ...
            */
 
-          // Introduce a new sibling scope first, and then a new child scope from that one
-          // this child scope is used for errors only and will later be discarded.
-          val siblingState = state.newSiblingScope
-          val stateForSubClauses = siblingState.newChildScope
-          val SemanticCheckResult(nextState, errors1) = runChecks(siblingState.currentScope.scope).run(stateForSubClauses)
+        //Introduce a new sibling scope first, and then a new child scope from that one
+        //this child scope is used for errors only and will later be discarded.
+        val siblingState = state.newSiblingScope
+        val stateForSubClauses = siblingState.newChildScope
 
-          // By popping the scope we will discard the special scope used for subclauses
-          val returnState = nextState.popScope
-
+          for {
+          _            <- SemanticCheck.setState(stateForSubClauses)
+          checksResult <- runChecks(siblingState.currentScope.scope)
+          //By popping the scope we will discard the special scope used for subclauses
+          returnResult <- SemanticCheck.setState(checksResult.state.popScope)
           // Re-declare projected variables in the new scope since the sub-scope is discarded
-          val SemanticCheckResult(finalState, errors2) =
-            returnItems.declareVariables(returnState.currentScope.scope).run(returnState)
-          val niceErrors =
-            (errors1 ++ errors2).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
-          SemanticCheckResult(finalState, niceErrors)
-        } else {
-          val returnState = state.newSiblingScope
-          val SemanticCheckResult(finalState, errors) = runChecks(previousScope).run(returnState)
-          val niceErrors = errors.map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
-          SemanticCheckResult(finalState, niceErrors)
+          finalResult  <-
+            returnItems.declareVariables(returnResult.state.currentScope.scope)
+        } yield {
+          // Re-declare projected variables in the new scope since the sub-scope is discarded
+          val niceErrors = (checksResult.errors ++ finalResult.errors).map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
+          SemanticCheckResult(finalResult.state, niceErrors)
         }
+      } else {
+          for {
+          _ <- SemanticCheck.setState(state.newSiblingScope)
+          checksResult <- runChecks(previousScope)
+        } yield {
+          val niceErrors = checksResult.errors.map(warnOnAccessToRestrictedVariableInOrderByOrWhere(state.currentScope.symbolNames))
+          SemanticCheckResult(checksResult.state, niceErrors)
+
+        }
+      }
 
       (isReturn, outerScope) match {
-        case (true, Some(outer)) =>
+        case (true, Some(outer)) => check.map { result =>
           val outerScopeSymbolNames = outer.symbolNames
           val outputSymbolNames = result.state.currentScope.scope.symbolNames
           val alreadyDeclaredNames = outputSymbolNames.intersect(outerScopeSymbolNames)
@@ -1218,11 +1225,11 @@ sealed trait ProjectionClause extends HorizonClause {
           }
 
           SemanticCheckResult(result.state, result.errors ++ errors)
+        }
 
         case _ =>
-          result
+          check
       }
-
   }
 
   /**
