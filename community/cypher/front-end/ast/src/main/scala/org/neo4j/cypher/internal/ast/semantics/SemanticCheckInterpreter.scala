@@ -20,14 +20,15 @@ import scala.annotation.tailrec
 
 object SemanticCheckInterpreter {
 
-  def runCheck(check: SemanticCheck, initialState: SemanticState): SemanticCheckResult = {
-    run(SemanticCheckResult.success(initialState), List(ExecutableCheck(check)))(Vector.empty)
+  def runCheck(check: SemanticCheck, initialState: SemanticState, context: SemanticCheckContext): SemanticCheckResult = {
+    run(SemanticCheckResult.success(initialState), List(ExecutableCheck(check)))(context, Vector.empty)
   }
 
   @tailrec
   private def run(result: SemanticCheckResult,
                   checkStack: List[ExecutableCheck],
                  )(implicit
+                   context: SemanticCheckContext,
                    debugAnnotations: Vector[String]
   ): SemanticCheckResult = {
 
@@ -46,8 +47,11 @@ object SemanticCheckInterpreter {
           case SemanticCheck.FlatMap(check, func) =>
             run(result, ExecutableCheck(check) :: ExecutableCheck.FlatMap(func) :: checkStackTail)
 
+          case SemanticCheck.CheckFromContext(f) =>
+            run(result, ExecutableCheck(f(context)) :: checkStackTail)
+
           case SemanticCheck.Annotated(check, annotation) =>
-            run(result, addDebugPrints(check, checkStackTail))(debugAnnotations :+ annotation)
+            run(result, addDebugPrints(check, checkStackTail))(context, debugAnnotations :+ annotation)
         }
 
       case ExecutableCheck.Map(func) :: checkStackTail =>
@@ -57,7 +61,7 @@ object SemanticCheckInterpreter {
         run(result, ExecutableCheck(func(result)) :: checkStackTail)
 
       case ExecutableCheck.PopAnnotation :: checkStackTail =>
-        run(result, checkStackTail)(debugAnnotations.init)
+        run(result, checkStackTail)(context, debugAnnotations.init)
 
       case ExecutableCheck.PrintAnnotations :: checkStackTail =>
         printAnnotations(debugAnnotations)

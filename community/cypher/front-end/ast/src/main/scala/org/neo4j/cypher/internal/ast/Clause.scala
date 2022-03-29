@@ -318,7 +318,7 @@ case class Match(
     semantics.SemanticCheckResult(newState, Seq.empty)
   }
 
-  private def checkHints: SemanticCheck = { semanticState: SemanticState =>
+  private def checkHints: SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
     def getMissingEntityKindError(variable: String, labelOrRelTypeName: String, hint: Hint): String = {
       val isNode = semanticState.isNode(variable)
       val typeName = if (isNode) "label" else "relationship type"
@@ -402,7 +402,7 @@ case class Match(
       entityName: String,
       additionalInfo: String
     ): String = {
-      semanticState.errorMessageProvider.createMissingPropertyLabelHintError(
+      context.errorMessageProvider.createMissingPropertyLabelHintError(
         operatorDescription,
         hintPrettifier.asString(hint),
         missingThingDescription,

@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -289,7 +290,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
       SemanticCheck.error(error)
     }
 
-    check.run(SemanticState.clean) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
   }
 
   test("SemanticCheck.nestedCheck should not evaluate nested check during construction") {
@@ -303,7 +304,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     val check = failingCheck ifOkChain nested
 
-    check.run(SemanticState.clean) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult(SemanticState.clean, Vector(error))
   }
 
   test("SemanticCheck.fromState should work") {
@@ -322,11 +323,48 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
         declareVariable(varFor("x"), CTNode.invariant) chain
         checkFromState
 
-    check.run(SemanticState.clean).errors shouldBe Vector(error1, error2)
+    check.run(SemanticState.clean, SemanticCheckContext.default).errors shouldBe Vector(error1, error2)
   }
 
   test("SemanticCheck.setState should work") {
     val Right(state) = SemanticState.clean.declareVariable(varFor("x"), CTNode.invariant)
-    SemanticCheck.setState(state).run(SemanticState.clean) shouldBe SemanticCheckResult.success(state)
+    SemanticCheck.setState(state).run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult.success(state)
+  }
+
+  test("SemanticCheck.fromContext should use the correct context") {
+    val missingMsg = "missing"
+    val selfReferenceMsg = "self reference"
+
+    val check1 = SemanticCheck.fromContext { context =>
+      val msg = context.errorMessageProvider.createMissingPropertyLabelHintError(null, null, null, null, null, null, null)
+      SemanticCheck.error(SemanticError(msg, pos))
+    }
+
+    val check2 = SemanticCheck.fromContext { context =>
+      val msg = context.errorMessageProvider.createSelfReferenceError(null, null)
+      SemanticCheck.error(SemanticError(msg, pos))
+    }
+
+    val check = check1 chain check2
+
+    val context = new SemanticCheckContext {
+      override def errorMessageProvider: ErrorMessageProvider = new ErrorMessageProvider {
+        override def createMissingPropertyLabelHintError(operatorDescription: String,
+                                                         hintStringification: String,
+                                                         missingThingDescription: String,
+                                                         foundThingsDescription: String,
+                                                         entityDescription: String,
+                                                         entityName: String,
+                                                         additionalInfo: String): String = {
+          missingMsg
+        }
+
+        override def createSelfReferenceError(name: String, variableType: String): String = {
+          selfReferenceMsg
+        }
+      }
+    }
+
+    check.run(SemanticState.clean, context).errors.map(_.msg) shouldBe Seq(missingMsg, selfReferenceMsg)
   }
 }

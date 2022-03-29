@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.ast.Statement
 
 object SemanticChecker {
 
-  def check(statement: Statement, state: SemanticState = SemanticState.clean): SemanticCheckResult = {
-    val result = statement.semanticCheck.run(state)
+  def check(statement: Statement, state: SemanticState = SemanticState.clean, context: SemanticCheckContext = SemanticCheckContext.default): SemanticCheckResult = {
+    val result = statement.semanticCheck.run(state, context)
     val scopeTreeIssues = ScopeTreeVerifier.verify(result.state.scopeTree)
     if (scopeTreeIssues.nonEmpty)
       throw new IllegalStateException(scopeTreeIssues.mkString(s"\n"))

@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -178,7 +179,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
     }
 
     def planSystemProcedureCall(resolved: ResolvedCall, returns: Option[Return]): LogicalPlan = {
-      val SemanticCheckResult(_, errors) = resolved.semanticCheck.run(SemanticState.clean)
+      val SemanticCheckResult(_, errors) = resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
       errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
       val signature = resolved.signature
       val checkCredentialsExpired = !signature.allowExpiredCredentials

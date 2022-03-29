@@ -92,7 +92,6 @@ import org.neo4j.cypher.internal.util.attribution.Default
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.StatementConstants
@@ -685,8 +684,7 @@ class LogicalPlanGenerator(
     val semanticState = SemanticState(
       new ScopeLocation(Scope.empty.location(ScopeZipper)),
       state.semanticTable.types,
-      ASTAnnotationMap.empty,
-      MessageUtilProvider
+      ASTAnnotationMap.empty
     )
     for {
       expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))

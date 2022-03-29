@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.StateContainsSemanticTable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.rewriters.recordScopes
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 
 case object TokensResolved extends StepSequencer.Condition
@@ -40,9 +42,12 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val startState =
-      SemanticState.clean.withFeatures(features: _*).withErrorMessageProvider(context.errorMessageProvider)
+      SemanticState.clean.withFeatures(features: _*)
+    val checkContext = new SemanticCheckContext {
+      override def errorMessageProvider: ErrorMessageProvider = context.errorMessageProvider
+    }
 
-    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState)
+    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), startState, checkContext)
     if (warn) state.notifications.foreach(context.notificationLogger.log)
 
     context.errorHandler(errors)

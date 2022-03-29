@@ -105,6 +105,6 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
       }
     }
 
-    check.run(initialState) shouldBe SemanticCheckResult.error(initialState, error)
+    check.run(initialState, SemanticCheckContext.default) shouldBe SemanticCheckResult.error(initialState, error)
   }
 }
