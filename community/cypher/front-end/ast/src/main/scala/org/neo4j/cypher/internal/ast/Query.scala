@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
-import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.Symbol
@@ -309,46 +308,42 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     errors
   }
 
-  private def checkClauses(clauses: Seq[Clause], outerScope: Option[Scope]): SemanticCheck = (initialState: SemanticState) => {
+  private def checkClauses(clauses: Seq[Clause], outerScope: Option[Scope]): SemanticCheck = {
     val lastIndex = clauses.size - 1
-    clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(initialState)) {
-      case (lastResult, (clause, idx)) =>
-        val next = clause match {
-          case w: With if idx == 0 && lastResult.state.features(SemanticFeature.WithInitialQuerySignature) =>
-            checkHorizon(w, lastResult.state, None, lastResult.errors)
-          case c: HorizonClause =>
-            checkHorizon(c, lastResult.state, outerScope, lastResult.errors)
-          case _ =>
-            val checked = clause.semanticCheck.run(lastResult.state)
-            val errors = lastResult.errors ++ checked.errors
-            val resultState = clause match {
-              case _: UpdateClause if idx == lastIndex =>
-                checked.state.newSiblingScope
-              case cc: CallClause if cc.returnColumns.isEmpty && !cc.yieldAll && idx == lastIndex =>
-                checked.state.newSiblingScope
-              case _ =>
-                checked.state
-            }
-            SemanticCheckResult(resultState, errors)
+    clauses.zipWithIndex.foldSemanticCheck {
+      case (clause, idx) =>
+        val next = SemanticCheck.fromState { currentState =>
+          clause match {
+            case w: With if idx == 0 && currentState.features(SemanticFeature.WithInitialQuerySignature) =>
+              checkHorizon(w, None)
+            case c: HorizonClause =>
+              checkHorizon(c, outerScope)
+            case _ =>
+              clause.semanticCheck.map { checked =>
+                val resultState = clause match {
+                  case _: UpdateClause if idx == lastIndex =>
+                    checked.state.newSiblingScope
+                  case cc: CallClause if cc.returnColumns.isEmpty && !cc.yieldAll && idx == lastIndex =>
+                    checked.state.newSiblingScope
+                  case _ =>
+                    checked.state
+                }
+                checked.copy(state = resultState)
+              }
+          }
         }
 
-        next.copy(state = next.state.recordCurrentScope(clause))
+        next chain recordCurrentScope(clause)
     }
   }
 
-  private def checkHorizon(
-    clause: HorizonClause,
-    state: SemanticState,
-    outerScope: Option[Scope],
-    prevErrors: Seq[SemanticErrorDef]
-  ) = {
-    val closingResult = clause.semanticCheck.run(state)
-    val continuationResult =
-      clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope).run(closingResult.state)
-    semantics.SemanticCheckResult(
-      continuationResult.state,
-      prevErrors ++ closingResult.errors ++ continuationResult.errors
-    )
+  private def checkHorizon(clause: HorizonClause, outerScope: Option[Scope]): SemanticCheck = {
+    for {
+      closingResult      <- clause.semanticCheck
+      continuationResult <- clause.semanticCheckContinuation(closingResult.state.currentScope.scope, outerScope)
+    } yield {
+      semantics.SemanticCheckResult(continuationResult.state, closingResult.errors ++ continuationResult.errors)
+    }
   }
 
   private def checkInputDataStream(clauses: Seq[Clause]): SemanticCheck = (state: SemanticState) => {
