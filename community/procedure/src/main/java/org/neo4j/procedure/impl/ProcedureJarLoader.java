@@ -167,16 +167,18 @@ class ProcedureJarLoader
                             try
                             {
                                 Class<?> aClass = loader.loadClass( className );
-                                // We do getDeclaredMethods to trigger NoClassDefErrors, which loadClass above does
+                                // We do getDeclaredMethods and getDeclaredFields to trigger NoClassDefErrors, which loadClass above does
                                 // not do.
                                 // This way, even if some of the classes in a jar cannot be loaded, we still check
                                 // the others.
                                 aClass.getDeclaredMethods();
+                                aClass.getDeclaredFields();
                                 return aClass;
                             }
                             catch ( LinkageError | Exception e )
                             {
-                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), e.getMessage() );
+                                log.warn( "Failed to load `%s` from plugin jar `%s`: %s: %s", className,
+                                          jar.getFile(), e.getClass().getName(), e.getMessage() );
                             }
                         }
                     }
