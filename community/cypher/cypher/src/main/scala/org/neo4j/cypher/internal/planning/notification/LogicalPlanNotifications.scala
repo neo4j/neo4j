@@ -34,8 +34,7 @@ object LogicalPlanNotifications {
                             config: CypherPlannerConfiguration): Seq[InternalNotification] = {
     val notificationCheckers = Seq(
       checkForEagerLoadCsv,
-      checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold),
-      checkForSuboptimalIndexBehaviours(planContext))
+      checkForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
 
     notificationCheckers.flatMap(_ (logicalPlan))
   }

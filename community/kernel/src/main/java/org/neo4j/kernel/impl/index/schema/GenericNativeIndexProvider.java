@@ -226,8 +226,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
 
     private static class GenericIndexCapability implements IndexCapability
     {
-        private final IndexBehaviour[] behaviours = {IndexBehaviour.SLOW_CONTAINS};
-
         @Override
         public IndexOrderCapability orderCapability( ValueCategory... valueCategories )
         {
@@ -359,7 +357,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
         @Override
         public IndexBehaviour[] behaviours()
         {
-            return behaviours;
+            return BEHAVIOURS_NONE;
         }
     }
 }

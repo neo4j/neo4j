@@ -22,10 +22,6 @@ package org.neo4j.internal.schema;
 public enum IndexBehaviour
 {
     /**
-     * Highlights that CONTAINS and ENDS WITH isn't supported efficiently.
-     */
-    SLOW_CONTAINS,
-    /**
      * The index is <em>eventually consistent</em>, meaning it might not reflect newly committed changes.
      */
     EVENTUALLY_CONSISTENT,

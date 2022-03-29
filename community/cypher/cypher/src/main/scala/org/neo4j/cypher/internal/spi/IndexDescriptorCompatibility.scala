@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexBehaviour
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.SkipAndLimit
-import org.neo4j.cypher.internal.planner.spi.SlowContains
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundReadTokenContext
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.internal.schema
@@ -40,7 +39,6 @@ import scala.util.control.Exception.catching
 trait IndexDescriptorCompatibility {
   def kernelToCypher(behaviour: schema.IndexBehaviour): IndexBehaviour = {
     behaviour match {
-      case schema.IndexBehaviour.SLOW_CONTAINS => SlowContains
       case schema.IndexBehaviour.SKIP_AND_LIMIT => SkipAndLimit
       case schema.IndexBehaviour.EVENTUALLY_CONSISTENT => EventuallyConsistent
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for index behaviour: " + behaviour)
