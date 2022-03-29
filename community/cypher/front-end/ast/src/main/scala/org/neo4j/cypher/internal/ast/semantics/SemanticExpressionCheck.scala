@@ -151,7 +151,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   /**
    * Build a semantic check for the given expression and context.
    */
-  def check(ctx: SemanticContext, expression: Expression, parents: Seq[Expression] = Seq()): SemanticCheck =
+  def check(ctx: SemanticContext, expression: Expression, parents: Seq[Expression] = Seq()): SemanticCheck = SemanticCheck.nestedCheck {
     expression match {
 
       // ARITHMETICS
@@ -681,6 +681,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: Expression => semanticCheckFallback(ctx, x)
     }
+  }
 
   def getExpressionEntityType(s: SemanticState, entity: Expression): Option[EntityType] =
     s.expressionType(entity).actual match {
