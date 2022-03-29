@@ -392,6 +392,7 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
           commands.expressions.Literal(intValue(0))
         )
       case functions.Id => commands.expressions.IdFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case functions.ElementId => commands.expressions.ElementIdFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Keys => commands.expressions.KeysFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Labels => commands.expressions.LabelsFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Last =>

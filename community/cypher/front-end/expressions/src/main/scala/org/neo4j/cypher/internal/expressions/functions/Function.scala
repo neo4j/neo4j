@@ -55,6 +55,7 @@ object Function {
     Degrees,
     Distance,
     E,
+    ElementId,
     EndNode,
     Exists,
     Exp,

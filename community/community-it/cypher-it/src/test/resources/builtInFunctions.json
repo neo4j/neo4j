@@ -966,6 +966,56 @@
     "rolesBoostedExecution": []
   },
   {
+    "name": "elementId",
+    "category": "Scalar",
+    "description": "Returns the element id of a node.",
+    "signature": "elementId(input :: NODE?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: NODE?",
+        "type": "NODE?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
+    "name": "elementId",
+    "category": "Scalar",
+    "description": "Returns the element id of a relationship.",
+    "signature": "elementId(input :: RELATIONSHIP?) :: (STRING?)",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: RELATIONSHIP?",
+        "type": "RELATIONSHIP?"
+      }
+    ],
+    "returnDescription": "STRING?",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": []
+  },
+  {
     "name": "endNode",
     "category": "Scalar",
     "description": "Returns the end node of a relationship.",

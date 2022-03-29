@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -70,6 +71,7 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.math.RoundingMode.HALF_UP;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -990,6 +992,36 @@ public final class CypherFunctions
             throw new CypherTypeException( format( "Invalid input for function 'id()': Expected %s to be a node or relationship, but it was `%s`",
                                                    item, item.getTypeName() ) );
         }
+    }
+
+    public static TextValue elementId( AnyValue entity, ElementIdMapper idMapper )
+    {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
+        if ( entity instanceof VirtualNodeValue node )
+        {
+            return stringValue( idMapper.nodeElementId( node.id() ) );
+        }
+        else if ( entity instanceof VirtualRelationshipValue relationship )
+        {
+            return stringValue( idMapper.relationshipElementId( relationship.id() ) );
+        }
+
+        throw new CypherTypeException(
+            format( "Invalid input for function 'elementId()': Expected %s to be a node or relationship, but it was `%s`", entity, entity.getTypeName() )
+        );
+    }
+
+    public static TextValue nodeElementId( long id, ElementIdMapper idMapper )
+    {
+        assert id > NO_ID;
+        return Values.stringValue( idMapper.nodeElementId( id ) );
+    }
+
+    public static TextValue relationshipElementId( long id, ElementIdMapper idMapper )
+    {
+        assert id > NO_ID;
+        return Values.stringValue( idMapper.relationshipElementId( id ) );
     }
 
     public static ListValue labels( AnyValue item, DbAccess access, NodeCursor nodeCursor )

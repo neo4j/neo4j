@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.ElementId
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Max
@@ -286,6 +287,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def id(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Id.name)(pos))
+
+  def elementId(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(ElementId.name)(pos))
 
   def not(expression: Expression): Not = Not(expression)(pos)
 
