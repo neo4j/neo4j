@@ -23,6 +23,7 @@ import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.NamingStrategy;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
+import net.bytebuddy.implementation.FixedValue;
 import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.bytecode.StackManipulation;
 import net.bytebuddy.implementation.bytecode.assign.Assigner;
@@ -278,14 +279,7 @@ public class ProcedureJarLoaderTest
         // generate a class that is broken and would not normally compile
         DynamicType.Unloaded<Object> unloaded = new ByteBuddy()
                 // provide a name so that we can assert on it showing up in the log
-                .with( new NamingStrategy.AbstractBase()
-                {
-                    @Override
-                    protected String name( TypeDescription superClass )
-                    {
-                        return className;
-                    }
-                })
+                .with( oneNameStrategy( className ) )
                 .subclass( Object.class )
                 .defineMethod( "get", String.class )
                 .intercept(
@@ -305,7 +299,72 @@ public class ProcedureJarLoaderTest
         jarloader.loadProceduresFromDir( parentDir( jar ) );
 
         assertThat( logProvider ).containsMessages(
-                format( "Failed to load `%s` from plugin jar `%s`: %s", className, jar.getFile(), "Bad return type" ) );
+                format( "Failed to load `%s` from plugin jar `%s`", className, jar.getFile() ), "Bad return type" );
+    }
+
+    @Test
+    void shouldLogHelpfullyWhenJarContainsClassTriggeringNoClassDefErrorFromMethod() throws Exception
+    {
+        var notFoundClassName = "IAmNotHere";
+        var willNotBeFound = new ByteBuddy().with( oneNameStrategy( notFoundClassName ) ).subclass( Object.class ).make();
+
+        String brokenClassName = "BrokenProcedureClass";
+        // generate a class that is broken and would not normally compile
+        DynamicType.Unloaded<Object> unloaded = new ByteBuddy()
+                // provide a name so that we can assert on it showing up in the log
+                .with( oneNameStrategy( brokenClassName ) )
+                .subclass( Object.class )
+                .defineMethod( "get", willNotBeFound.getTypeDescription() )
+                .intercept( FixedValue.nullValue() )
+                .make();
+
+        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ).toFile() ).toURI().toURL();
+
+        var logProvider = new AssertableLogProvider( true );
+        var jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
+
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
+
+        assertThat( logProvider ).containsMessages(
+                format( "Failed to load `%s` from plugin jar `%s`", brokenClassName, jar.getFile() ), notFoundClassName, NoClassDefFoundError.class.getName() );
+    }
+
+    @Test
+    void shouldLogHelpfullyWhenJarContainsClassTriggeringNoClassDefErrorFromField() throws Exception
+    {
+        var notFoundClassName = "IAmNotHere";
+        var willNotBeFound = new ByteBuddy().with( oneNameStrategy( notFoundClassName ) ).subclass( Object.class ).make();
+
+        String brokenClassName = "BrokenProcedureClass";
+        // generate a class that is broken and would not normally compile
+        DynamicType.Unloaded<Object> unloaded = new ByteBuddy()
+                // provide a name so that we can assert on it showing up in the log
+                .with( oneNameStrategy( brokenClassName ) )
+                .subclass( Object.class )
+                .defineField( "service", willNotBeFound.getTypeDescription() )
+                .make();
+
+        URL jar = unloaded.toJar( testDirectory.createFile( new Random().nextInt() + ".jar" ).toFile() ).toURI().toURL();
+
+        var logProvider = new AssertableLogProvider( true );
+        var jarloader = new ProcedureJarLoader( procedureCompiler(), logProvider.getLog( ProcedureJarLoader.class ) );
+
+        jarloader.loadProceduresFromDir( parentDir( jar ) );
+
+        assertThat( logProvider ).containsMessages(
+                format( "Failed to load `%s` from plugin jar `%s`", brokenClassName, jar.getFile() ), notFoundClassName, NoClassDefFoundError.class.getName() );
+    }
+
+    private static NamingStrategy.AbstractBase oneNameStrategy( String className )
+    {
+        return new NamingStrategy.AbstractBase()
+        {
+            @Override
+            protected String name( TypeDescription superClass )
+            {
+                return className;
+            }
+        };
     }
 
     @Test
