@@ -280,7 +280,8 @@ public abstract class AbstractBoltStateMachine implements BoltStateMachine
         else
         {
             var transactionState = transactionManager().transactionStatus( connectionState.getCurrentTransactionId() );
-            return transactionState.value().equals( TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT );
+            return transactionState.value().equals( TransactionStatus.Value.IN_TRANSACTION_OPEN_STATEMENT ) ||
+                   transactionState.value().equals( TransactionStatus.Value.IN_TRANSACTION_NO_OPEN_STATEMENTS );
         }
     }
 
