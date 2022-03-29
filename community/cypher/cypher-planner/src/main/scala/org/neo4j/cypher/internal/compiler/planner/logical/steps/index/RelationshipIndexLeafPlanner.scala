@@ -38,17 +38,12 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
-import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
-import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
-import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
-import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -81,42 +76,13 @@ case class RelationshipIndexLeafPlanner(planProviders: Seq[RelationshipIndexPlan
       } yield plan
     }.toSet
 
-    issueNotifications(result, qg, context)
+    DynamicPropertyNotifier.issueNotifications(result, RelationshipIndexLookupUnfulfillableNotification, qg, RELATIONSHIP_TYPE, context)
 
     result
   }
-
-  private def issueNotifications(result: Set[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
-    if (result.isEmpty) {
-      val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
-      DynamicPropertyNotifier.process(nonSolvable, RelationshipIndexLookupUnfulfillableNotification, qg, context)
-    }
-  }
-
-  private def findNonSolvableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] = {
-    def isRelationship(variable: Variable) = context.semanticTable.isRelationship(variable)
-
-    predicates.flatMap {
-      // n['some' + n.prop] IN [ ... ]
-      case AsDynamicPropertyNonSeekable(nonSeekableId) if isRelationship(nonSeekableId) =>
-        Some(nonSeekableId)
-      // n['some' + n.prop] STARTS WITH "prefix%..."
-      case AsStringRangeNonSeekable(nonSeekableId) if isRelationship(nonSeekableId) =>
-        Some(nonSeekableId)
-      // n['some' + n.prop] <|<=|>|>= value
-      case AsValueRangeNonSeekable(nonSeekableId) if isRelationship(nonSeekableId) =>
-        Some(nonSeekableId)
-
-      case AsDynamicPropertyNonScannable(nonScannableId) if isRelationship(nonScannableId) =>
-        Some(nonScannableId)
-
-      case _ =>
-        None
-    }.toSet
-  }
 }
 
-  object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
+object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   case class RelationshipIndexMatch(
                                      variableName: String,

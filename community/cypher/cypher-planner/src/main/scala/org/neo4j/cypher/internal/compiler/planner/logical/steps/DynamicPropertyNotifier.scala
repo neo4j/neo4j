@@ -20,10 +20,19 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.expressions.EntityType
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
+import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
+import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.InternalNotification
 
 object DynamicPropertyNotifier {
@@ -54,5 +63,38 @@ object DynamicPropertyNotifier {
   private def withRelIndex(relTypeName: RelTypeName, context: LogicalPlanningContext): Boolean = {
     val maybeRelTypeId = context.semanticTable.id(relTypeName)
     maybeRelTypeId.fold(false)(context.planContext.indexExistsForRelType(_))
+  }
+
+  def findNonSolvableIdentifiers(predicates: Seq[Expression], expectedType: EntityType, context: LogicalPlanningContext): Set[Variable] = {
+    val isExpectedEntity = expectedType match {
+      case NODE_TYPE => (variable: Variable) => context.semanticTable.isNode (variable)
+      case RELATIONSHIP_TYPE => (variable: Variable) => context.semanticTable.isRelationship (variable)
+    }
+
+    predicates.flatMap {
+      // n['some' + n.prop] IN [ ... ]
+      case AsDynamicPropertyNonSeekable(nonSeekableId) if isExpectedEntity(nonSeekableId) =>
+        Some(nonSeekableId)
+      // n['some' + n.prop] STARTS WITH "prefix%..."
+      case AsStringRangeNonSeekable(nonSeekableId) if isExpectedEntity(nonSeekableId) =>
+        Some(nonSeekableId)
+      // n['some' + n.prop] < | <= | > | >= value
+      case AsValueRangeNonSeekable(nonSeekableId) if isExpectedEntity(nonSeekableId) =>
+        Some(nonSeekableId)
+
+      case AsDynamicPropertyNonScannable(nonScannableId) if isExpectedEntity(nonScannableId) =>
+        Some(nonScannableId)
+
+      case _ =>
+        None
+    }.toSet
+  }
+
+
+  def issueNotifications(result: Set[LogicalPlan], notification: Set[String] => InternalNotification, qg: QueryGraph, expectedType: EntityType, context: LogicalPlanningContext): Unit = {
+    if (result.isEmpty) {
+      val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, expectedType, context)
+      process(nonSolvable, notification, qg, context)
+    }
   }
 }

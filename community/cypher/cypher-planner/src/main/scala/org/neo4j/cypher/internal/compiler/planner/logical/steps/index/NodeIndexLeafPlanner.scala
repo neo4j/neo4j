@@ -43,10 +43,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
-import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonScannable
-import org.neo4j.cypher.internal.logical.plans.AsDynamicPropertyNonSeekable
-import org.neo4j.cypher.internal.logical.plans.AsStringRangeNonSeekable
-import org.neo4j.cypher.internal.logical.plans.AsValueRangeNonSeekable
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -81,38 +77,9 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
       } yield plan
     }.toSet
 
-    issueNotifications(result, qg, context)
+    DynamicPropertyNotifier.issueNotifications(result, NodeIndexLookupUnfulfillableNotification, qg, NODE_TYPE, context)
 
     result
-  }
-
-  private def issueNotifications(result: Set[LogicalPlan], qg: QueryGraph, context: LogicalPlanningContext): Unit = {
-    if (result.isEmpty) {
-      val nonSolvable = findNonSolvableIdentifiers(qg.selections.flatPredicates, context)
-      DynamicPropertyNotifier.process(nonSolvable, NodeIndexLookupUnfulfillableNotification, qg, context)
-    }
-  }
-
-  private def findNonSolvableIdentifiers(predicates: Seq[Expression], context: LogicalPlanningContext): Set[Variable] = {
-    def isNode(variable: Variable) = context.semanticTable.isNode(variable)
-
-    predicates.flatMap {
-      // n['some' + n.prop] IN [ ... ]
-      case AsDynamicPropertyNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
-        Some(nonSeekableId)
-      // n['some' + n.prop] STARTS WITH "prefix%..."
-      case AsStringRangeNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
-        Some(nonSeekableId)
-      // n['some' + n.prop] <|<=|>|>= value
-      case AsValueRangeNonSeekable(nonSeekableId) if isNode(nonSeekableId) =>
-        Some(nonSeekableId)
-
-      case AsDynamicPropertyNonScannable(nonScannableId) if isNode(nonScannableId) =>
-        Some(nonScannableId)
-
-      case _ =>
-        None
-    }.toSet
   }
 }
 
