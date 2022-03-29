@@ -197,14 +197,14 @@ public class StatementDeserializerTest
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
                 new Neo4jError( Status.Request.InvalidFormat,
-                        new DeserializationException( "Unable to deserialize request: Cannot deserialize instance of" +
-                                " `java.lang.String` out of START_ARRAY token\n at [Source: (ByteArrayInputStream); line: 1, " +
+                        new DeserializationException( "Unable to deserialize request: Cannot deserialize value of type" +
+                                " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: (ByteArrayInputStream); line: 1, " +
                                 "column: 36]" ) ) );
 
         assertYieldsErrors( "{ \"statements\" : [ { \"statement\" : \"stmt\", \"parameters\" : [\"AN ARRAY!!\"] } ] }",
                 new Neo4jError( Status.Request.InvalidFormat,
-                        new DeserializationException( "Unable to deserialize request: Cannot deserialize instance of" +
-                                " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` out of START_ARRAY token\n at " +
+                        new DeserializationException( "Unable to deserialize request: Cannot deserialize value of type" +
+                                " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` from Array value (token `JsonToken.START_ARRAY`)\n at " +
                                 "[Source: (ByteArrayInputStream); line: 1, column: 59]" ) ) );
     }
 

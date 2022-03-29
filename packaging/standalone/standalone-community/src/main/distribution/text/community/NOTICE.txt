@@ -64,12 +64,12 @@ Apache Software License, Version 2.0
   firebase
   forever-agent
   grpc
-  Jackson module: JAXB Annotations
+  Jackson module: Old JAXB Annotations (javax.xml.bind)
   Jackson-annotations
   Jackson-core
   jackson-databind
-  Jackson-JAXRS-base
-  Jackson-JAXRS-JSON
+  Jackson-JAXRS: base
+  Jackson-JAXRS: JSON
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
