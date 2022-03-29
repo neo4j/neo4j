@@ -25,11 +25,6 @@ org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::high_limit o
 org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::standard org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static final
 org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat public static
 org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat::values() org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat[] public static
-org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.DriverApi>
-org.neo4j.configuration.GraphDatabaseSettings.DriverApi::ASYNC org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final
-org.neo4j.configuration.GraphDatabaseSettings.DriverApi::RX org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static final
-org.neo4j.configuration.GraphDatabaseSettings.DriverApi::valueOf(java.lang.String) org.neo4j.configuration.GraphDatabaseSettings.DriverApi public static
-org.neo4j.configuration.GraphDatabaseSettings.DriverApi::values() org.neo4j.configuration.GraphDatabaseSettings.DriverApi[] public static
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final enum extends java.lang.Enum<org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel>
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel::INFO org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final
 org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel::OFF org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel public static final
@@ -168,7 +163,6 @@ org.neo4j.configuration.GraphDatabaseSettings::reconciler_minimum_backoff org.ne
 org.neo4j.configuration.GraphDatabaseSettings::record_format org.neo4j.graphdb.config.Setting<java.lang.String> public static final
 org.neo4j.configuration.GraphDatabaseSettings::record_format_created_db org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.DatabaseRecordFormat> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_default_router org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.RoutingMode> public static final
-org.neo4j.configuration.GraphDatabaseSettings::routing_driver_api org.neo4j.graphdb.config.Setting<org.neo4j.configuration.GraphDatabaseSettings.DriverApi> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_connect_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_connection_acquisition_timeout org.neo4j.graphdb.config.Setting<java.time.Duration> public static final
 org.neo4j.configuration.GraphDatabaseSettings::routing_driver_idle_time_before_connection_test org.neo4j.graphdb.config.Setting<java.time.Duration> public static final

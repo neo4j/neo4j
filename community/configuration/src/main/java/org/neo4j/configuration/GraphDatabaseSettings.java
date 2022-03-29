@@ -965,10 +965,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Duration> routing_driver_connect_timeout =
             newBuilder( "dbms.routing.driver.connection.connect_timeout", DURATION, ofSeconds( 5 ) ).build();
 
-    @Description( "Determines which driver API will be used. ASYNC must be used when the remote instance is 3.5" )
-    public static final Setting<DriverApi> routing_driver_api =
-            newBuilder( "dbms.routing.driver.api", ofEnum( DriverApi.class), DriverApi.RX ).build();
-
     /**
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default connector settings that you can pass to the builders.
@@ -983,12 +979,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration
         SINGLE,
         CORE,
         READ_REPLICA
-    }
-
-    public enum DriverApi
-    {
-        RX,
-        ASYNC
     }
 
     public enum RoutingMode
