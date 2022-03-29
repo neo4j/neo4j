@@ -21,13 +21,15 @@ import scala.annotation.tailrec
 object SemanticCheckInterpreter {
 
   def runCheck(check: SemanticCheck, initialState: SemanticState): SemanticCheckResult = {
-    run(SemanticCheckResult.success(initialState), List(ExecutableCheck(check)))
+    run(SemanticCheckResult.success(initialState), List(ExecutableCheck(check)))(Vector.empty)
   }
 
   @tailrec
   private def run(result: SemanticCheckResult,
                   checkStack: List[ExecutableCheck],
-                 ): SemanticCheckResult = {
+                 )(implicit
+                   debugAnnotations: Vector[String]
+  ): SemanticCheckResult = {
 
     checkStack match {
       case Nil =>
@@ -43,6 +45,9 @@ object SemanticCheckInterpreter {
 
           case SemanticCheck.FlatMap(check, func) =>
             run(result, ExecutableCheck(check) :: ExecutableCheck.FlatMap(func) :: checkStackTail)
+
+          case SemanticCheck.Annotated(check, annotation) =>
+            run(result, addDebugPrints(check, checkStackTail))(debugAnnotations :+ annotation)
         }
 
       case ExecutableCheck.Map(func) :: checkStackTail =>
@@ -50,7 +55,30 @@ object SemanticCheckInterpreter {
 
       case ExecutableCheck.FlatMap(func) :: checkStackTail =>
         run(result, ExecutableCheck(func(result)) :: checkStackTail)
+
+      case ExecutableCheck.PopAnnotation :: checkStackTail =>
+        run(result, checkStackTail)(debugAnnotations.init)
+
+      case ExecutableCheck.PrintAnnotations :: checkStackTail =>
+        printAnnotations(debugAnnotations)
+        run(result, checkStackTail)
     }
+  }
+
+  private def addDebugPrints(check: SemanticCheck, checkStack: List[ExecutableCheck]): List[ExecutableCheck] = {
+    ExecutableCheck.PrintAnnotations ::
+      ExecutableCheck(check) ::
+      ExecutableCheck.PopAnnotation ::
+      ExecutableCheck.PrintAnnotations ::
+      checkStack
+  }
+
+  private def printAnnotations(annotations: Vector[String]): Unit = {
+    println(s"Annotations stack:")
+    annotations.zipWithIndex.reverseIterator.foreach {
+      case (a, idx) => println(s"[$idx] $a")
+    }
+    println()
   }
 
   private sealed trait ExecutableCheck
@@ -60,5 +88,7 @@ object SemanticCheckInterpreter {
     final case class Map(f: SemanticCheckResult => SemanticCheckResult) extends ExecutableCheck
     final case class FlatMap(f: SemanticCheckResult => SemanticCheck) extends ExecutableCheck
     final case class Wrapper(check: SemanticCheck) extends ExecutableCheck
+    final case object PopAnnotation extends ExecutableCheck
+    final case object PrintAnnotations extends ExecutableCheck
   }
 }
