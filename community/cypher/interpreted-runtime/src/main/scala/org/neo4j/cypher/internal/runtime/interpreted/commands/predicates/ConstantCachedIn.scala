@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 /*
 This class is used for making the common <exp> IN <constant-expression> fast
@@ -120,22 +120,22 @@ class InCheckContainer(var checker: Checker) {
 }
 
 class ConcurrentLRUCache[K, V](maxSizePerThread: Int) extends InLRUCache[K, V] {
-  private val threadLocalCache = ThreadLocal.withInitial[ArrayBuffer[(K, V)]](() => new ArrayBuffer[(K, V)](maxSizePerThread))
+  private val threadLocalCache = ThreadLocal.withInitial[mutable.ArrayDeque[(K, V)]](() => new mutable.ArrayDeque[(K, V)](maxSizePerThread))
   override val maxSize: Int = maxSizePerThread
 
-  override def cache: ArrayBuffer[(K, V)] = threadLocalCache.get()
+  override def cache: mutable.ArrayDeque[(K, V)] = threadLocalCache.get()
 }
 
 class SingleThreadedLRUCache[K, V](override val maxSize: Int) extends InLRUCache[K, V] {
-  override val cache: ArrayBuffer[(K, V)] = new ArrayBuffer[(K, V)](maxSize)
+  override val cache: mutable.ArrayDeque[(K, V)] = new mutable.ArrayDeque[(K, V)](maxSize)
 }
 
 abstract class InLRUCache[K, V] {
   def maxSize: Int
-  def cache: ArrayBuffer[(K, V)]
+  def cache: mutable.ArrayDeque[(K, V)]
 
   def getOrElseUpdate(key: K, f: => V): V = {
-    val idx = cache.indexWhere(_._1 == key)
+    val idx = findIndex(key)
     val entry =
       if (idx == -1) {
         if (cache.size == maxSize) cache.remove(maxSize - 1)
@@ -143,7 +143,19 @@ abstract class InLRUCache[K, V] {
       } else {
         cache.remove(idx)
       }
-    cache.insert(0, entry)
+    cache.prepend(entry)
     entry._2
+  }
+
+  // Optimised version of ArrayDeque.indexWhere
+  private def findIndex(key: K): Int = {
+    var i = 0
+    while (i < cache.size) {
+      if (cache(i)._1 == key) {
+        return i
+      }
+      i += 1
+    }
+    -1
   }
 }
