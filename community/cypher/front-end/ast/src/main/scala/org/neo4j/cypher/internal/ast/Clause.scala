@@ -1247,11 +1247,8 @@ sealed trait ProjectionClause extends HorizonClause {
   }
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
-  private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
-    _ => skip.semanticCheck.run(SemanticState.clean).errors
-
-  private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
-    _ => limit.semanticCheck.run(SemanticState.clean).errors
+  private def checkSkip: SemanticCheck  = withState(SemanticState.clean)(skip.semanticCheck)
+  private def checkLimit: SemanticCheck = withState(SemanticState.clean)(limit.semanticCheck)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.containsAggregate
