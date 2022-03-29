@@ -30,15 +30,9 @@ import org.neo4j.values.VirtualValue;
 public abstract class VirtualRelationshipValue extends VirtualValue {
     public abstract long id();
 
-    public abstract String elementId();
-
     public abstract long startNodeId(Consumer<RelationshipVisitor> consumer);
 
-    public abstract String startNodeElementId(Consumer<RelationshipVisitor> consumer);
-
     public abstract long endNodeId(Consumer<RelationshipVisitor> consumer);
-
-    public abstract String endNodeElementId(Consumer<RelationshipVisitor> consumer);
 
     public final long otherNodeId(long node, Consumer<RelationshipVisitor> consumer) {
         long startNodeId = startNodeId(consumer);

@@ -55,7 +55,7 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     private RelationshipEntityWrappingValue(Relationship relationship) {
-        super(relationship.getId(), null, NO_ID, null, NO_ID, null);
+        super(relationship.getId(), NO_ID, NO_ID);
         this.relationship = relationship;
     }
 
@@ -162,11 +162,6 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public String elementId() {
-        return relationship.getElementId();
-    }
-
-    @Override
     public long startNodeId() {
         // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not
         // the case
@@ -176,22 +171,12 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
-    public String startNodeElementId() {
-        return startNode().elementId();
-    }
-
-    @Override
     public long endNodeId() {
         // Often a RelationshipEntityWrappingValue is initialized with the start/end node ids given, but if that's not
         // the case
         // Then use the other route of looking up the end node the slow way and getting its ID.
         long endNodeId = super.endNodeId();
         return endNodeId != NO_ID ? endNodeId : endNode().id();
-    }
-
-    @Override
-    public String endNodeElementId() {
-        return endNode().elementId();
     }
 
     @Override

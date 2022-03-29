@@ -24,7 +24,6 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.function.Consumer;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.ElementIdMapper;
 
 public class RelationshipReference extends VirtualRelationshipValue implements RelationshipVisitor {
     static final long NO_NODE = -1L;
@@ -32,22 +31,20 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipReference.class);
 
     private final long id;
-    private final ElementIdMapper elementIdMapper;
     private long startNode;
     private long endNode;
     private int type;
 
-    RelationshipReference(long id, ElementIdMapper elementIdMapper) {
-        this(id, elementIdMapper, NO_NODE, NO_NODE, NO_TYPE);
+    RelationshipReference(long id) {
+        this(id, NO_NODE, NO_NODE, NO_TYPE);
     }
 
-    RelationshipReference(long id, ElementIdMapper elementIdMapper, long startNode, long endNode) {
-        this(id, elementIdMapper, startNode, endNode, NO_TYPE);
+    RelationshipReference(long id, long startNode, long endNode) {
+        this(id, startNode, endNode, NO_TYPE);
     }
 
-    RelationshipReference(long id, ElementIdMapper elementIdMapper, long startNode, long endNode, int type) {
+    RelationshipReference(long id, long startNode, long endNode, int type) {
         this.id = id;
-        this.elementIdMapper = elementIdMapper;
         this.startNode = startNode;
         this.endNode = endNode;
         this.type = type;
@@ -62,31 +59,11 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     }
 
     @Override
-    public String startNodeElementId(Consumer<RelationshipVisitor> consumer) {
-        if (elementIdMapper == null) {
-            throw new UnsupportedOperationException(
-                    "This is tricky to implement for RelationshipReference because of the disconnected nature of it. "
-                            + "Didn't we want to get rid of this thing completely?");
-        }
-        return elementIdMapper.nodeElementId(startNode);
-    }
-
-    @Override
     public long endNodeId(Consumer<RelationshipVisitor> consumer) {
         if (endNode == NO_NODE) {
             consumer.accept(this);
         }
         return endNode;
-    }
-
-    @Override
-    public String endNodeElementId(Consumer<RelationshipVisitor> consumer) {
-        if (elementIdMapper == null) {
-            throw new UnsupportedOperationException(
-                    "This is tricky to implement for RelationshipReference because of the disconnected nature of it. "
-                            + "Didn't we want to get rid of this thing completely?");
-        }
-        return elementIdMapper.nodeElementId(endNode);
     }
 
     @Override
@@ -115,16 +92,6 @@ public class RelationshipReference extends VirtualRelationshipValue implements R
     @Override
     public long id() {
         return id;
-    }
-
-    @Override
-    public String elementId() {
-        if (elementIdMapper == null) {
-            throw new UnsupportedOperationException(
-                    "This is tricky to implement for RelationshipReference because of the disconnected nature of it. "
-                            + "Didn't we want to get rid of this thing completely?");
-        }
-        return elementIdMapper.relationshipElementId(id);
     }
 
     @Override

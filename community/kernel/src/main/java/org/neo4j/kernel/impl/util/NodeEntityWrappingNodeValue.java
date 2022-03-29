@@ -46,7 +46,7 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
     private volatile MapValue properties;
 
     NodeEntityWrappingNodeValue(Node node) {
-        super(node.getId(), null);
+        super(node.getId());
         this.node = node;
     }
 
@@ -116,11 +116,6 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
             }
         }
         return l;
-    }
-
-    @Override
-    public String elementId() {
-        return node.getElementId();
     }
 
     @Override

@@ -45,8 +45,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 public final class ValuePopulation {
-    private static final NodeValue MISSING_NODE =
-            VirtualValues.nodeValue(-1L, null, null, EMPTY_TEXT_ARRAY, EMPTY_MAP, false);
+    private static final NodeValue MISSING_NODE = VirtualValues.nodeValue(-1L, EMPTY_TEXT_ARRAY, EMPTY_MAP, false);
 
     private ValuePopulation() {
         throw new UnsupportedOperationException("Do not instantiate");
@@ -164,15 +163,11 @@ public final class ValuePopulation {
 
         if (!nodeCursor.next()) {
             // the node has probably been deleted, we still return it but just a bare id
-            return VirtualValues.nodeValue(id, null, dbAccess.elementIdMapper(), EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
+            return VirtualValues.nodeValue(id, EMPTY_TEXT_ARRAY, EMPTY_MAP, true);
         } else {
             nodeCursor.properties(propertyCursor);
             return VirtualValues.nodeValue(
-                    id,
-                    null,
-                    dbAccess.elementIdMapper(),
-                    labels(dbAccess, nodeCursor.labels()),
-                    properties(propertyCursor, dbAccess));
+                    id, labels(dbAccess, nodeCursor.labels()), properties(propertyCursor, dbAccess));
         }
     }
 
@@ -185,18 +180,14 @@ public final class ValuePopulation {
         dbAccess.singleRelationship(id, relCursor);
         if (!relCursor.next()) {
             // the relationship has probably been deleted, we still return it but just a bare id
-            return VirtualValues.relationshipValue(
-                    id, null, dbAccess.elementIdMapper(), MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
+            return VirtualValues.relationshipValue(id, MISSING_NODE, MISSING_NODE, EMPTY_STRING, EMPTY_MAP, true);
         } else {
-            VirtualNodeValue start =
-                    VirtualValues.node(relCursor.sourceNodeReference(), null, dbAccess.elementIdMapper());
-            VirtualNodeValue end =
-                    VirtualValues.node(relCursor.targetNodeReference(), null, dbAccess.elementIdMapper());
+            // Bolt doesn't require start and end node to be populated
+            VirtualNodeValue start = VirtualValues.node(relCursor.sourceNodeReference());
+            VirtualNodeValue end = VirtualValues.node(relCursor.targetNodeReference());
             relCursor.properties(propertyCursor);
             return VirtualValues.relationshipValue(
                     id,
-                    null,
-                    dbAccess.elementIdMapper(),
                     start,
                     end,
                     Values.stringValue(dbAccess.relationshipTypeName(relCursor.type())),

@@ -36,10 +36,10 @@ import org.neo4j.values.virtual.VirtualValues;
 
 class TruncatedQuerySnapshotTest {
     static final NodeValue NODE =
-            nodeValue(42, "n", null, Values.stringArray("Phone"), map("number", Values.stringValue("07303725xx")));
+            nodeValue(42, Values.stringArray("Phone"), map("number", Values.stringValue("07303725xx")));
 
     static final RelationshipValue RELATIONSHIP = relationshipValue(
-            100, "r", null, NODE, NODE, Values.stringValue("CALL"), map("duration", Values.stringValue("3 hours")));
+            100, NODE, NODE, Values.stringValue("CALL"), map("duration", Values.stringValue("3 hours")));
 
     @Test
     void shouldTruncateNode() {

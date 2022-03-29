@@ -1070,8 +1070,7 @@ private[internal] class TransactionBoundReadQueryContext(
       }
     }
 
-    override def getById(id: Long): VirtualNodeValue =
-      VirtualValues.node(id, null, transactionalContext.elementIdMapper())
+    override def getById(id: Long): VirtualNodeValue = VirtualValues.node(id)
 
     override def all: ClosingLongIterator = {
       val nodeCursor = allocateAndTraceNodeCursor()
@@ -1135,7 +1134,7 @@ private[internal] class TransactionBoundReadQueryContext(
 
     override def getById(id: Long): VirtualRelationshipValue =
       try {
-        VirtualValues.relationship(id, transactionalContext.elementIdMapper())
+        VirtualValues.relationship(id)
       } catch {
         case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
       }

@@ -118,7 +118,7 @@ class CoerceToTest extends CypherFunSuite {
 
   test("NODE") {
     testedTypes
-      .coerce(nodeValue(11L, "n", null, stringArray("L"), EMPTY_MAP))
+      .coerce(nodeValue(11L, stringArray("L"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTNode).unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss
@@ -130,10 +130,8 @@ class CoerceToTest extends CypherFunSuite {
     testedTypes
       .coerce(relationshipValue(
         11L,
-        "r",
-        null,
-        nodeValue(11L, "n1", null, stringArray("L"), EMPTY_MAP),
-        nodeValue(12L, "n2", null, stringArray("L"), EMPTY_MAP),
+        nodeValue(11L, stringArray("L"), EMPTY_MAP),
+        nodeValue(12L, stringArray("L"), EMPTY_MAP),
         stringValue("T"),
         EMPTY_MAP
       ))

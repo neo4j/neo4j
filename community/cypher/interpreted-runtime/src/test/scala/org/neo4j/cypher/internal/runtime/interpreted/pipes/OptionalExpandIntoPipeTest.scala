@@ -38,7 +38,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
-    val nodeValue = VirtualValues.nodeValue(10, "n", null, Values.stringArray(), VirtualValues.map(Array(), Array()))
+    val nodeValue = VirtualValues.nodeValue(10, Values.stringArray(), VirtualValues.map(Array(), Array()))
 
     val nodeCursor = new StubNodeCursor(false)
       .withNode(10).withNode(10).withDegree(25)
@@ -61,7 +61,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
-    val nodeValue = VirtualValues.nodeValue(10, "n", null, Values.stringArray(), VirtualValues.map(Array(), Array()))
+    val nodeValue = VirtualValues.nodeValue(10, Values.stringArray(), VirtualValues.map(Array(), Array()))
 
     val nodeCursor = new StubNodeCursor(false)
       .withNode(10).withNode(10).withDegree(25)

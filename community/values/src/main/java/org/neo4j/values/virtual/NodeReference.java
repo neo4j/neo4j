@@ -23,36 +23,14 @@ import static java.lang.String.format;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.ElementIdMapper;
 
 public class NodeReference extends VirtualNodeValue {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(NodeReference.class);
 
     private final long id;
-    private final String elementId;
-    private final ElementIdMapper elementIdMapper;
 
     NodeReference(long id) {
-        this(id, null, null);
-    }
-
-    NodeReference(long id, String elementId, ElementIdMapper elementIdMapper) {
         this.id = id;
-        this.elementId = elementId;
-        this.elementIdMapper = elementIdMapper;
-    }
-
-    @Override
-    public String elementId() {
-        if (elementId != null) {
-            return elementId;
-        }
-        if (elementIdMapper == null) {
-            throw new UnsupportedOperationException(
-                    "This is tricky to implement for NodeReference because of the disconnected nature of it. "
-                            + "Didn't we want to get rid of this thing completely?");
-        }
-        return elementIdMapper.nodeElementId(id);
     }
 
     @Override
@@ -78,10 +56,5 @@ public class NodeReference extends VirtualNodeValue {
     @Override
     public long estimatedHeapUsage() {
         return SHALLOW_SIZE;
-    }
-
-    @Override
-    ElementIdMapper elementIdMapper() {
-        return elementIdMapper;
     }
 }

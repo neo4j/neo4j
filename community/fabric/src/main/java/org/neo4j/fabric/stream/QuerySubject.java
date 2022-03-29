@@ -266,15 +266,12 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
         }
 
         private NodeValue withTaggedId(NodeValue nodeValue) {
-            return VirtualValues.nodeValue(
-                    tag(nodeValue.id()), nodeValue.elementId(), null, nodeValue.labels(), nodeValue.properties());
+            return VirtualValues.nodeValue(tag(nodeValue.id()), nodeValue.labels(), nodeValue.properties());
         }
 
         private RelationshipValue withTaggedId(RelationshipValue relationshipValue) {
             return VirtualValues.relationshipValue(
                     tag(relationshipValue.id()),
-                    relationshipValue.elementId(),
-                    null,
                     VirtualValues.node(tag(relationshipValue.startNodeId())),
                     VirtualValues.node(tag(relationshipValue.endNodeId())),
                     relationshipValue.type(),

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -115,34 +114,16 @@ public final class VirtualValues {
         return new NodeReference(id);
     }
 
-    public static NodeReference node(long id, String elementId, ElementIdMapper elementIdMapper) {
-        return new NodeReference(id, elementId, elementIdMapper);
-    }
-
     public static RelationshipReference relationship(long id) {
-        return new RelationshipReference(id, null);
+        return new RelationshipReference(id);
     }
 
     public static RelationshipReference relationship(long id, long startNode, long endNode) {
-        return new RelationshipReference(id, null, startNode, endNode);
+        return new RelationshipReference(id, startNode, endNode);
     }
 
     public static RelationshipReference relationship(long id, long startNode, long endNode, int type) {
-        return new RelationshipReference(id, null, startNode, endNode, type);
-    }
-
-    public static RelationshipReference relationship(long id, ElementIdMapper elementIdMapper) {
-        return new RelationshipReference(id, elementIdMapper);
-    }
-
-    public static RelationshipReference relationship(
-            long id, ElementIdMapper elementIdMapper, long startNode, long endNode) {
-        return new RelationshipReference(id, elementIdMapper, startNode, endNode);
-    }
-
-    public static RelationshipReference relationship(
-            long id, ElementIdMapper elementIdMapper, long startNode, long endNode, int type) {
-        return new RelationshipReference(id, elementIdMapper, startNode, endNode, type);
+        return new RelationshipReference(id, startNode, endNode, type);
     }
 
     public static PathReference pathReference(long[] nodes, long[] relationships) {
@@ -204,43 +185,26 @@ public final class VirtualValues {
         return new DirectPathValue(nodes, relationships, payloadSize);
     }
 
-    public static NodeValue nodeValue(
-            long id, String elementId, ElementIdMapper elementIdMapper, TextArray labels, MapValue properties) {
-        return new NodeValue.DirectNodeValue(id, elementId, elementIdMapper, labels, properties, false);
+    public static NodeValue nodeValue(long id, TextArray labels, MapValue properties) {
+        return new NodeValue.DirectNodeValue(id, labels, properties, false);
     }
 
-    public static NodeValue nodeValue(
-            long id,
-            String elementId,
-            ElementIdMapper elementIdMapper,
-            TextArray labels,
-            MapValue properties,
-            boolean isDeleted) {
-        return new NodeValue.DirectNodeValue(id, elementId, elementIdMapper, labels, properties, isDeleted);
+    public static NodeValue nodeValue(long id, TextArray labels, MapValue properties, boolean isDeleted) {
+        return new NodeValue.DirectNodeValue(id, labels, properties, isDeleted);
+    }
+
+    public static RelationshipValue relationshipValue(
+            long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties) {
+        return new RelationshipValue.DirectRelationshipValue(id, startNode, endNode, type, properties, false);
     }
 
     public static RelationshipValue relationshipValue(
             long id,
-            String elementId,
-            ElementIdMapper elementIdMapper,
-            VirtualNodeValue startNode,
-            VirtualNodeValue endNode,
-            TextValue type,
-            MapValue properties) {
-        return new RelationshipValue.DirectRelationshipValue(
-                id, elementId, elementIdMapper, startNode, endNode, type, properties, false);
-    }
-
-    public static RelationshipValue relationshipValue(
-            long id,
-            String elementId,
-            ElementIdMapper elementIdMapper,
             VirtualNodeValue startNode,
             VirtualNodeValue endNode,
             TextValue type,
             MapValue properties,
             boolean isDeleted) {
-        return new RelationshipValue.DirectRelationshipValue(
-                id, elementId, elementIdMapper, startNode, endNode, type, properties, isDeleted);
+        return new RelationshipValue.DirectRelationshipValue(id, startNode, endNode, type, properties, isDeleted);
     }
 }
