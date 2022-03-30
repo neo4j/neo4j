@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -40,6 +42,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.time.Duration.ofMinutes;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -53,6 +56,7 @@ class TimeBasedTaskSchedulerTest
     private TimeBasedTaskScheduler scheduler;
     private AtomicInteger counter;
     private Semaphore semaphore;
+    private AssertableLogProvider logProvider;
 
     @BeforeEach
     void setUp()
@@ -61,7 +65,8 @@ class TimeBasedTaskSchedulerTest
         FailedJobRunsStore failedJobRunsStore = new FailedJobRunsStore( 10 );
         var idGenerator = new AtomicLong();
         pools = new ThreadPoolManager( new ThreadGroup( "TestPool" ), clock, failedJobRunsStore, idGenerator::get );
-        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, idGenerator::get );
+        logProvider = new AssertableLogProvider();
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, idGenerator::get, logProvider.getLog( "test" ) );
         counter = new AtomicInteger();
         semaphore = new Semaphore( 0 );
     }
@@ -181,6 +186,23 @@ class TimeBasedTaskSchedulerTest
             scheduler.tick();
         }
         while ( !executionCountDown.await( 1, TimeUnit.MILLISECONDS ) );
+    }
+
+    @RepeatedTest( 10 )
+    void mustLogUnhandledUxceptions() throws Exception
+    {
+        Runnable runnable = () ->
+        {
+            semaphore.release();
+            throw new RuntimeException( "boom" );
+        };
+        var handle = scheduler.submit( Group.STORAGE_MAINTENANCE, runnable, 0, 0 );
+        clock.forward( 100, TimeUnit.NANOSECONDS );
+        scheduler.tick();
+        assertSemaphoreAcquire();
+
+        assertThatThrownBy( handle::waitTermination ).hasMessageContaining( "boom" );
+        LogAssertions.assertThat( logProvider ).containsMessages( "boom" );
     }
 
     @RepeatedTest( value = 100 )

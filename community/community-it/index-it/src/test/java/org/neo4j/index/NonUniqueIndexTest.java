@@ -36,6 +36,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -135,7 +137,7 @@ class NonUniqueIndexTest
 
     private static CentralJobScheduler newSlowJobScheduler()
     {
-        return new CentralJobScheduler( Clocks.nanoClock() )
+        return new CentralJobScheduler( Clocks.nanoClock(), NullLogProvider.getInstance() )
         {
             @Override
             public JobHandle<?> schedule( Group group, Runnable job )

@@ -30,6 +30,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.logging.InternalLog;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -50,15 +51,18 @@ final class TimeBasedTaskScheduler implements Runnable
     private final PriorityBlockingQueue<ScheduledJobHandle<?>> delayedTasks;
     private final ConcurrentLinkedQueue<ScheduledJobHandle<?>> canceledTasks;
     private final LongSupplier jobIdSupplier;
+    private final InternalLog log;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
 
-    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools, FailedJobRunsStore failedJobRunsStore, LongSupplier jobIdSupplier )
+    TimeBasedTaskScheduler( SystemNanoClock clock, ThreadPoolManager pools, FailedJobRunsStore failedJobRunsStore, LongSupplier jobIdSupplier,
+                            InternalLog log )
     {
         this.clock = clock;
         this.pools = pools;
         this.failedJobRunsStore = failedJobRunsStore;
         this.jobIdSupplier = jobIdSupplier;
+        this.log = log;
         delayedTasks = new PriorityBlockingQueue<>( 42, DEADLINE_COMPARATOR );
         canceledTasks = new ConcurrentLinkedQueue<>();
     }
@@ -80,16 +84,17 @@ final class TimeBasedTaskScheduler implements Runnable
         }
 
         ScheduledJobHandle<?> task = new ScheduledJobHandle<>( this,
-                group,
-                job,
-                nextDeadlineNanos,
-                reschedulingDelayNanos,
-                jobMonitoringParams,
-                clock.nanos(),
-                monitoredJobs,
-                failedJobRunsStore,
-                clock,
-                jobId );
+                                                               group,
+                                                               job,
+                                                               nextDeadlineNanos,
+                                                               reschedulingDelayNanos,
+                                                               jobMonitoringParams,
+                                                               clock.nanos(),
+                                                               monitoredJobs,
+                                                               failedJobRunsStore,
+                                                               clock,
+                                                               jobId,
+                                                               log );
 
         if ( jobMonitoringParams != JobMonitoringParams.NOT_MONITORED )
         {

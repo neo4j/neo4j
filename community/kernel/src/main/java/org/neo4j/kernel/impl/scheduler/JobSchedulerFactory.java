@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.scheduler;
 
+import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -31,7 +34,7 @@ public final class JobSchedulerFactory
 
     public static JobScheduler createScheduler()
     {
-        return createCentralScheduler( Clocks.nanoClock() );
+        return createCentralScheduler( Clocks.nanoClock(), NullLogProvider.getInstance() );
     }
 
     public static JobScheduler createInitialisedScheduler()
@@ -41,13 +44,18 @@ public final class JobSchedulerFactory
 
     public static JobScheduler createInitialisedScheduler( SystemNanoClock clock )
     {
-        CentralJobScheduler scheduler = createCentralScheduler( clock );
+        return createInitialisedScheduler( clock, NullLogProvider.getInstance() );
+    }
+
+    public static JobScheduler createInitialisedScheduler( SystemNanoClock clock, InternalLogProvider logProvider )
+    {
+        CentralJobScheduler scheduler = createCentralScheduler( clock, logProvider );
         scheduler.init();
         return scheduler;
     }
 
-    private static CentralJobScheduler createCentralScheduler( SystemNanoClock clock )
+    private static CentralJobScheduler createCentralScheduler( SystemNanoClock clock, InternalLogProvider logProvider )
     {
-        return new CentralJobScheduler( clock );
+        return new CentralJobScheduler( clock, logProvider );
     }
 }

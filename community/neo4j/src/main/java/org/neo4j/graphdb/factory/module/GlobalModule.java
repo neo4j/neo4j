@@ -347,7 +347,7 @@ public class GlobalModule
 
     private JobScheduler createJobScheduler()
     {
-        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock );
+        JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler( globalClock, logService.getInternalLogProvider() );
         jobScheduler.setParallelism( Group.INDEX_SAMPLING, globalConfig.get( GraphDatabaseInternalSettings.index_sampling_parallelism ) );
         jobScheduler.setParallelism( Group.INDEX_POPULATION, globalConfig.get( GraphDatabaseInternalSettings.index_population_parallelism ) );
         jobScheduler.setParallelism( Group.PAGE_CACHE_PRE_FETCHER, globalConfig.get( GraphDatabaseSettings.pagecache_scan_prefetch ) );

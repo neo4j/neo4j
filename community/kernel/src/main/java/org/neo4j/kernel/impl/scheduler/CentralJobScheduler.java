@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.impl.scheduler.ThreadPool.ThreadPoolParameters;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.scheduler.ActiveGroup;
 import org.neo4j.scheduler.CallableExecutor;
 import org.neo4j.scheduler.CallableExecutorService;
@@ -76,13 +77,14 @@ public class CentralJobScheduler extends LifecycleAdapter implements JobSchedule
         }
     }
 
-    protected CentralJobScheduler( SystemNanoClock clock )
+    protected CentralJobScheduler( SystemNanoClock clock, InternalLogProvider logProvider )
     {
         topLevelGroup = new TopLevelGroup();
         this.failedJobRunsStore = new FailedJobRunsStore( 100 );
         var jobIdCounter = new AtomicLong();
         pools = new ThreadPoolManager( topLevelGroup, clock, failedJobRunsStore, jobIdCounter::incrementAndGet );
-        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, jobIdCounter::incrementAndGet );
+        scheduler = new TimeBasedTaskScheduler( clock, pools, failedJobRunsStore, jobIdCounter::incrementAndGet,
+                                                logProvider.getLog( CentralJobScheduler.class ) );
         extraParameters = new ConcurrentHashMap<>();
 
         // The scheduler thread runs at slightly elevated priority for timeliness, and is started in init().

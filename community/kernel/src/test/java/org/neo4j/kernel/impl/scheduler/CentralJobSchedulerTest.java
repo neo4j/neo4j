@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.CallableExecutorService;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
@@ -65,7 +66,7 @@ class CentralJobSchedulerTest
 {
     private final AtomicInteger invocations = new AtomicInteger();
     private final LifeSupport life = new LifeSupport();
-    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler( Clocks.nanoClock() ) );
+    private final CentralJobScheduler scheduler = life.add( new CentralJobScheduler( Clocks.nanoClock(), NullLogProvider.getInstance() ) );
 
     private final Runnable countInvocationsJob = invocations::incrementAndGet;
 

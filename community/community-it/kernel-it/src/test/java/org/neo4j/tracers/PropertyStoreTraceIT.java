@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobMonitoringParams;
@@ -63,7 +65,7 @@ class PropertyStoreTraceIT
     {
         var dependencies = new Dependencies();
         // disabling periodic id buffers maintenance jobs
-        dependencies.satisfyDependency( new CentralJobScheduler( Clocks.nanoClock() )
+        dependencies.satisfyDependency( new CentralJobScheduler( Clocks.nanoClock(), NullLogProvider.getInstance() )
         {
             @Override
             public JobHandle<?> scheduleRecurring( Group group, JobMonitoringParams monitoredJobParams, Runnable runnable, long period, TimeUnit timeUnit )

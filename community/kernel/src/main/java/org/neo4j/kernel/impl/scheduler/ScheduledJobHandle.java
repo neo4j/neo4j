@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.FailedJobRun;
 import org.neo4j.scheduler.Group;
@@ -80,27 +81,30 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private final Runnable task;
     private final JobMonitoringParams jobMonitoringParams;
     private final long submittedMillis;
+    private final InternalLog log;
     private final long reschedulingDelayNanos;
     private final Set<ScheduledJobHandle<?>> monitoredJobs;
     private final FailedJobRunsStore failedJobRunsStore;
     private final long jobId;
-    private volatile JobHandle latestHandle;
+    private volatile JobHandle<?> latestHandle;
     private volatile Throwable lastException;
 
     ScheduledJobHandle( TimeBasedTaskScheduler scheduler,
-            Group group,
-            Runnable task,
-            long nextDeadlineNanos,
-            long reschedulingDelayNanos,
-            JobMonitoringParams jobMonitoringParams,
-            long submittedMillis,
-            Set<ScheduledJobHandle<?>> monitoredJobs,
-            FailedJobRunsStore failedJobRunsStore,
-            SystemNanoClock clock,
-            long jobId )
+                        Group group,
+                        Runnable task,
+                        long nextDeadlineNanos,
+                        long reschedulingDelayNanos,
+                        JobMonitoringParams jobMonitoringParams,
+                        long submittedMillis,
+                        Set<ScheduledJobHandle<?>> monitoredJobs,
+                        FailedJobRunsStore failedJobRunsStore,
+                        SystemNanoClock clock,
+                        long jobId,
+                        InternalLog log )
     {
         this.jobMonitoringParams = jobMonitoringParams;
         this.submittedMillis = submittedMillis;
+        this.log = log;
         this.state = new AtomicInteger();
         this.scheduler = scheduler;
         this.group = group;
@@ -166,7 +170,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     {
         monitoredJobs.remove( this );
         state.set( FAILED );
-        JobHandle handle = latestHandle;
+        var handle = latestHandle;
         if ( handle != null )
         {
             handle.cancel();
@@ -187,7 +191,7 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
         RuntimeException runtimeException = null;
         try
         {
-            JobHandle handleDelegate = this.latestHandle;
+            var handleDelegate = this.latestHandle;
             if ( handleDelegate != null )
             {
                 handleDelegate.waitTermination();
@@ -257,25 +261,21 @@ final class ScheduledJobHandle<T> implements JobHandle<T>
     private MonitoredJobInfo.State getStatus()
     {
         var state = this.state.get();
-        switch ( state )
-        {
-        case RUNNABLE:
-        case SUBMITTED:
-            return MonitoredJobInfo.State.SCHEDULED;
-        case EXECUTING:
-            // A job can be in failed state only for a glimpse between being marked
-            // as failed and being removed from monitored jobs immediately after that.
-            // Let's show such job as still executing as there is no point confusing
-            // users with this esoteric state.
-        case FAILED:
-            return MonitoredJobInfo.State.EXECUTING;
-        default:
-            throw new IllegalStateException( "Unexpected job state: " + state );
-        }
+        return switch ( state )
+                {
+                    case RUNNABLE, SUBMITTED -> MonitoredJobInfo.State.SCHEDULED;
+                    // A job can be in failed state only for a glimpse between being marked
+                    // as failed and being removed from monitored jobs immediately after that.
+                    // Let's show such job as still executing as there is no point confusing
+                    // users with this esoteric state.
+                    case EXECUTING, FAILED -> MonitoredJobInfo.State.EXECUTING;
+                    default -> throw new IllegalStateException( "Unexpected job state: " + state );
+                };
     }
 
     private void recordFailedRun( Instant executionStart, Instant failureTime, Throwable t )
     {
+        log.error( "Unhandled exception in job " + jobId + " from group " + group + " with params " + jobMonitoringParams, t );
         if ( jobMonitoringParams == JobMonitoringParams.NOT_MONITORED )
         {
             return;
