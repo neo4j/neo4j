@@ -114,10 +114,7 @@ public interface TopologyGraphDbmsModel
     String DATABASE_ACCESS_PROPERTY = "access";
     String DATABASE_DEFAULT_PROPERTY = "default";
     String DATABASE_UPDATE_ID_PROPERTY = "update_id";
-    String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";
-    String DATABASE_STORE_CREATION_TIME_PROPERTY = "store_creation_time";
     String DATABASE_STORE_RANDOM_ID_PROPERTY = "store_random_id";
-    String DATABASE_STORE_VERSION_PROPERTY = "store_version";
     String DATABASE_DESIGNATED_SEEDER_PROPERTY = "designated_seeder";
     String DATABASE_STORAGE_ENGINE_PROPERTY = "storage_engine";
     String DATABASE_STORE_FORMAT_NEW_DB_PROPERTY = "creation_store_format";
@@ -129,6 +126,13 @@ public interface TopologyGraphDbmsModel
     String DATABASE_STOPPED_AT_PROPERTY = "stopped_at";
     String DELETED_DATABASE_DUMP_DATA_PROPERTY = "dump_data";
     String DELETED_DATABASE_DELETED_AT_PROPERTY = "deleted_at";
+
+    @Deprecated
+    String DATABASE_INITIAL_SERVERS_PROPERTY = "initial_members";
+    @Deprecated
+    String DATABASE_STORE_CREATION_TIME_PROPERTY = "store_creation_time";
+    @Deprecated
+    String DATABASE_STORE_VERSION_PROPERTY = "store_version";
 
     Label DATABASE_NAME_LABEL = Label.label( "DatabaseName" );
     String DATABASE_NAME = DATABASE_NAME_LABEL.name();
