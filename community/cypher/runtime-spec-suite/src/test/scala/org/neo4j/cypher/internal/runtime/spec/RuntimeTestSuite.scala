@@ -73,6 +73,7 @@ import org.neo4j.values.virtual.ListValue
 import org.scalactic.Equality
 import org.scalactic.TolerantNumerics
 import org.scalactic.source.Position
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Tag
 import org.scalatest.matchers.MatchResult
@@ -114,10 +115,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   with BeforeAndAfterEach
   with Resolver {
 
-  private var managementService: DatabaseManagementService = _
-  private var graphDb: GraphDatabaseService = _
+  protected var managementService: DatabaseManagementService = _
+  protected var graphDb: GraphDatabaseService = _
   protected var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
-  private var kernel: Kernel = _
+  protected var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
   val logProvider: AssertableLogProvider = new AssertableLogProvider()
   val debugOptions: CypherDebugOptions = CypherDebugOptions.default
@@ -627,6 +628,47 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       case other => literal(other)
     }
   }
+}
+
+/**
+ * Used for the case when you want create the database once and run multiple test
+ * against that database. Useful for when a bigger database is required.
+ */
+abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+                                                           runtime: CypherRuntime[CONTEXT],
+                                                           workloadMode: Boolean = false) extends RuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
+                                                           with BeforeAndAfterAll {
+
+  override protected final def beforeEach(): Unit = {
+    DebugLog.beginTime()
+    logProvider.clear()
+    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
+    runtimeTestSupport.start()
+    runtimeTestSupport.startTx()
+  }
+  override protected final def afterEach(): Unit = {
+    runtimeTestSupport.stopTx()
+    DebugLog.log("")
+  }
+
+  override protected def beforeAll(): Unit = {
+
+    managementService = edition.newGraphManagementService()
+    graphDb = managementService.database(DEFAULT_DATABASE_NAME)
+    kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
+    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
+    runtimeTestSupport.start()
+    runtimeTestSupport.startTx()
+    createDatabase()
+    super.beforeAll()
+  }
+
+  override protected def afterAll(): Unit = {
+    shutdownDatabase()
+    super.afterAll()
+  }
+
+  protected def createDatabase(): Unit
 }
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
