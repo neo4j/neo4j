@@ -48,4 +48,11 @@ class ReplaceDeprecatedCypherSyntaxTest extends CypherFunSuite with AstConstruct
   test("should not rewrite test.timestamp()") {
     assertNotRewritten("RETURN test.timestamp() AS t")
   }
+
+  test("should rewrite legacy relationship type disjunction") {
+    assertRewritten(
+      "MATCH (a)-[:A|:B|:C]-() RETURN a",
+      "MATCH (a)-[:A|B|C]-() RETURN a"
+    )
+  }
 }

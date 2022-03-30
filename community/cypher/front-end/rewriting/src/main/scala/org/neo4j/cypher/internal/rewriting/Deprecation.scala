@@ -21,12 +21,16 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
+import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -54,6 +58,19 @@ object Deprecations {
         Deprecation(
           Some(Ref(f) -> renameFunctionTo("datetime").andThen(propertyOf("epochMillis"))(f)),
           None
+        )
+
+      // legacy type separator -[:A|:B]->
+      case rel @ RelationshipPattern(variable, Some(labelExpression), None, None, None, _)
+        // this restriction is necessary because in all other cases, this is an error
+        if variable.forall(variable => !AnonymousVariableNameGenerator.isNamed(variable.name)) &&
+          !labelExpression.containsGpmSpecificRelTypeExpression &&
+          labelExpression.folder.findAllByClass[ColonDisjunction].nonEmpty =>
+        Deprecation(
+          Some(Ref(rel) -> rel.copy(labelExpression = Some(labelExpression.replaceColonSyntax))(rel.position)),
+          Some(DeprecatedRelTypeSeparatorNotification(
+            labelExpression.folder.findAllByClass[ColonDisjunction].head.position
+          ))
         )
     }
 

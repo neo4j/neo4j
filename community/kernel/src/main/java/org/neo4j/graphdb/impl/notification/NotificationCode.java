@@ -67,8 +67,11 @@ public enum NotificationCode {
     DEPRECATED_PROCEDURE_RETURN_FIELD(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,
-            "The query used a deprecated field from a procedure."
-    ),
+            "The query used a deprecated field from a procedure."),
+    DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR(
+            SeverityLevel.WARNING,
+            Status.Statement.FeatureDeprecationWarning,
+            "The semantics of using colon in the separation of alternative relationship types will change in a future version."),
     DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

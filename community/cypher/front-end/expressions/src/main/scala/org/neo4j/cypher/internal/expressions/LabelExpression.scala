@@ -18,10 +18,12 @@ package org.neo4j.cypher.internal.expressions
 
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonConjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.ColonDisjunction
+import org.neo4j.cypher.internal.expressions.LabelExpression.Conjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Disjunction
 import org.neo4j.cypher.internal.expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.topDown
 
 /**
  * @param entity expression to evaluate to the entity we want to check
@@ -49,6 +51,12 @@ sealed trait LabelExpression extends ASTNode {
     case _: Leaf => false
     case _       => true
   }
+
+  def replaceColonSyntax: LabelExpression = this.endoRewrite(topDown({
+    case disj @ ColonDisjunction(lhs, rhs) => Disjunction(lhs, rhs)(disj.position)
+    case conj @ ColonConjunction(lhs, rhs) => Conjunction(lhs, rhs)(conj.position)
+    case expr                              => expr
+  }))
 
   def flatten: Seq[LabelExpressionLeafName]
 }

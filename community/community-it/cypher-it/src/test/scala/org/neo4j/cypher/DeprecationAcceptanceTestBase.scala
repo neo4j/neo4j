@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
+import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.scalatest.BeforeAndAfterAll
 
@@ -118,4 +119,14 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoDeprecations(queries)
   }
 
+  test("deprecated legacy reltype separator") {
+    val queries = Seq(
+      "MATCH (a)-[:A|:B|:C]-() RETURN a"
+    )
+
+    assertNotificationInLastMajorVersion(queries, DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR)
+
+    // clear caches of the rewritten queries to not keep notifications around
+    dbms.clearQueryCaches()
+  }
 }

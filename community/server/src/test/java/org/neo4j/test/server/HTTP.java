@@ -212,8 +212,7 @@ public final class HTTP {
             try {
                 return getStringHttpResponse(request);
             } catch (Exception e) {
-                if (e.getMessage() != null && e.getMessage().contains( "HTTP/1.1 header parser received no bytes" ) )
-                {
+                if (e.getMessage() != null && e.getMessage().contains("HTTP/1.1 header parser received no bytes")) {
                     // Retry once to avoid flakiness
                     try {
                         return getStringHttpResponse(request);
