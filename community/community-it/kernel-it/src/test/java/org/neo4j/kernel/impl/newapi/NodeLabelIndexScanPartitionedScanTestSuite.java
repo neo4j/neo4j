@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
 
 import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
 import org.junit.jupiter.api.Nested;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -59,29 +61,40 @@ abstract class NodeLabelIndexScanPartitionedScanTestSuite
 
         @Override
         Queries<TokenScanQuery> setupDatabase() {
-            final var numberOfLabels = 3;
-            final var numberOfNodes = 100_000;
+            final var numberOfNodes = 1L << 18;
 
-            final var labelIds = createTags(numberOfLabels, LABEL);
-            return createData(numberOfNodes, labelIds);
+            final var labelRanges = tokenRangesFromTokenId(LABEL, createTokenRanges(numberOfNodes));
+            return createData(numberOfNodes, labelRanges);
         }
 
         @Override
-        Queries<TokenScanQuery> createData(int numberOfNodes, List<Integer> labelIds) {
+        Queries<TokenScanQuery> createData(long numberOfNodes, SortedMap<Integer, List<Range>> labelRanges) {
             // given  a number of nodes to create
             final var nodesWithLabelId = new EntityIdsMatchingQuery<TokenScanQuery>();
             final var indexName = getTokenIndexName(EntityType.NODE);
+            labelRanges
+                    .keySet()
+                    .forEach(labelId ->
+                            nodesWithLabelId.getOrCreate(new TokenScanQuery(indexName, new TokenPredicate(labelId))));
+
             try (var tx = beginTx()) {
                 final var write = tx.dataWrite();
                 for (int i = 0; i < numberOfNodes; i++) {
                     // when   nodes are created
                     final var nodeId = write.nodeCreate();
-                    final var labelId = random.among(labelIds);
-                    if (write.nodeAddLabel(nodeId, labelId)) {
-                        // when   and tracked against a query
-                        nodesWithLabelId
-                                .getOrCreate(new TokenScanQuery(indexName, new TokenPredicate(labelId)))
-                                .add(nodeId);
+                    final var nodeCreated = i;
+                    final var potentialLabelIds = labelRanges.entrySet().stream()
+                            .filter(entry -> entry.getValue().stream().anyMatch(range -> range.contains(nodeCreated)))
+                            .mapToInt(Map.Entry::getKey)
+                            .toArray();
+                    if (potentialLabelIds.length > 0) {
+                        final var labelId = random.among(potentialLabelIds);
+                        if (write.nodeAddLabel(nodeId, labelId)) {
+                            // when   and tracked against a query
+                            nodesWithLabelId
+                                    .getOrCreate(new TokenScanQuery(indexName, new TokenPredicate(labelId)))
+                                    .add(nodeId);
+                        }
                     }
                 }
 
@@ -90,12 +103,12 @@ abstract class NodeLabelIndexScanPartitionedScanTestSuite
                 throw new AssertionError("failed to create database", e);
             }
 
-            var numberOfCreatedNodes = 0;
-            for (final var entry : nodesWithLabelId) {
-                numberOfCreatedNodes += entry.getValue().size();
+            try (var tx = beginTx()) {
+                // then   and the number created should be equal to what was asked
+                assertThat(tx.dataRead().nodesGetCount()).as("nodes created").isEqualTo(numberOfNodes);
+            } catch (Exception e) {
+                throw new AssertionError("failed to count number of nodes", e);
             }
-            // then   and the number created should be equal to what was asked
-            assertThat(numberOfCreatedNodes).as("nodes created").isEqualTo(numberOfNodes);
 
             return new Queries<>(nodesWithLabelId);
         }

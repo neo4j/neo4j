@@ -22,15 +22,16 @@ package org.neo4j.kernel.impl.newapi;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
+import org.apache.commons.collections4.map.ListOrderedMap;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
@@ -112,7 +113,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             // then   IndexNotApplicableKernelException should be thrown
             softly.assertThatThrownBy(
                             () -> factory.getEntityTypeComplimentFactory()
-                                    .partitionedScan(tx, query, factory.getSession(tx, query), Integer.MAX_VALUE),
+                                    .partitionedScan(
+                                            tx, factory.getSession(tx, query.indexName()), Integer.MAX_VALUE, query),
                             "should throw with mismatched entity type seek/scan method, and given index session")
                     .isInstanceOf(IndexNotApplicableKernelException.class)
                     .hasMessageContaining("can not be performed on index");
@@ -127,7 +129,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             // when   partitioned scan constructed
             // then   IllegalArgumentException should be thrown
             softly.assertThatThrownBy(
-                            () -> factory.partitionedScan(tx, getFirstValidQuery(), desiredNumberOfPartitions),
+                            () -> factory.partitionedScan(tx, desiredNumberOfPartitions, getFirstValidQuery()),
                             "desired number of partitions must be positive")
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContainingAll("Expected positive", "value");
@@ -146,7 +148,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             // when   partitioned scan constructed
             // then   IllegalStateException should be thrown
             softly.assertThatThrownBy(
-                            () -> factory.partitionedScan(tx, getFirstValidQuery(), Integer.MAX_VALUE),
+                            () -> factory.partitionedScan(tx, Integer.MAX_VALUE, getFirstValidQuery()),
                             "should throw on construction of scan, with transaction state")
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
@@ -165,7 +167,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                 // when   partitioned scan constructed
                 // then   IndexNotApplicableKernelException should be thrown
                 softly.assertThatThrownBy(
-                                () -> factory.partitionedScan(tx, query, Integer.MAX_VALUE),
+                                () -> factory.partitionedScan(tx, Integer.MAX_VALUE, query),
                                 "should throw with an invalid query")
                         .isInstanceOf(IndexNotApplicableKernelException.class)
                         .hasMessageContaining("This index does not support partitioned scan for this query");
@@ -187,7 +189,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     final var query = entry.getKey();
                     // given  an empty database
                     // when   scanning
-                    final var scan = factory.partitionedScan(tx, query, Integer.MAX_VALUE);
+                    final var scan = factory.partitionedScan(tx, Integer.MAX_VALUE, query);
                     while (scan.reservePartition(
                             entities, tx.cursorContext(), tx.securityContext().mode())) {
                         // then   no data should be found, and should not throw
@@ -228,7 +230,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
                     // given  a database with entries
                     // when   partitioning the scan
-                    final var scan = factory.partitionedScan(tx, query, maxNumberOfPartitions);
+                    final var scan = factory.partitionedScan(tx, maxNumberOfPartitions, query);
 
                     // then   the number of partitions can be less, but no more than the max number of partitions
                     softly.assertThat(scan.getNumberOfPartitions())
@@ -261,24 +263,25 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             singleThreadedCheck(Integer.MAX_VALUE);
         }
 
-        @ParameterizedTest(name = "numberOfPartitions={0}")
+        @ParameterizedTest(name = "desiredNumberOfPartitions={0}")
         @MethodSource("rangeFromOneToMaxPartitions")
         final void shouldScanAllEntriesWithGivenNumberOfPartitionsSingleThreaded(int desiredNumberOfPartitions)
                 throws KernelException {
             singleThreadedCheck(desiredNumberOfPartitions);
         }
 
-        @ParameterizedTest(name = "numberOfPartitions={0}")
+        @ParameterizedTest(name = "desiredNumberOfPartitions={0}")
         @MethodSource("rangeFromOneToMaxPartitions")
         final void shouldScanMultiplePartitionsInParallelWithSameNumberOfThreads(int desiredNumberOfPartitions)
                 throws KernelException {
             multiThreadedCheck(desiredNumberOfPartitions, desiredNumberOfPartitions);
         }
 
-        @ParameterizedTest(name = "numberOfThreads={0}")
+        @ParameterizedTest(name = "desiredNumberOfThreads={0}")
         @MethodSource("rangeFromOneToMaxPartitions")
-        final void shouldScanMultiplePartitionsInParallelWithFewerThreads(int numberOfThreads) throws KernelException {
-            multiThreadedCheck(maxNumberOfPartitions, numberOfThreads);
+        final void shouldScanMultiplePartitionsInParallelWithFewerThreads(int desiredNumberOfTheads)
+                throws KernelException {
+            multiThreadedCheck(maxNumberOfPartitions, desiredNumberOfTheads);
         }
 
         private void singleThreadedCheck(int desiredNumberOfPartitions) throws KernelException {
@@ -290,7 +293,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
                     // given  a database with entries
                     // when   partitioning the scan
-                    final var scan = factory.partitionedScan(tx, query, desiredNumberOfPartitions);
+                    final var scan = factory.partitionedScan(tx, desiredNumberOfPartitions, query);
 
                     // then   the number of partitions can be less, but no more than the desired number of partitions
                     softly.assertThat(scan.getNumberOfPartitions())
@@ -328,7 +331,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
                     // given  a database with entries
                     // when   partitioning the scan
-                    final var scan = factory.partitionedScan(tx, query, desiredNumberOfPartitions);
+                    final var scan = factory.partitionedScan(tx, desiredNumberOfPartitions, query);
 
                     // then   the number of partitions can be less, but no more than the desired number of partitions
                     softly.assertThat(scan.getNumberOfPartitions())
@@ -378,7 +381,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             }
         }
 
-        private IntStream rangeFromOneToMaxPartitions() {
+        protected IntStream rangeFromOneToMaxPartitions() {
             return IntStream.rangeClosed(1, maxNumberOfPartitions);
         }
     }
@@ -427,7 +430,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             for (final var query : queries) {
                 maxNumberOfPartitions = Math.max(
                         maxNumberOfPartitions,
-                        factory.partitionedScan(tx, query, Integer.MAX_VALUE).getNumberOfPartitions());
+                        factory.partitionedScan(tx, Integer.MAX_VALUE, query).getNumberOfPartitions());
             }
             return maxNumberOfPartitions;
         } catch (Exception e) {
@@ -452,7 +455,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
     protected static final class EntityIdsMatchingQuery<QUERY extends Query<?>>
             implements Iterable<Map.Entry<QUERY, Set<Long>>> {
-        private final Map<QUERY, Set<Long>> matches = new HashMap<>();
+        private final Map<QUERY, Set<Long>> matches = new ListOrderedMap<>();
 
         static <QUERY extends Query<?>>
                 Collector<QUERY, EntityIdsMatchingQuery<QUERY>, EntityIdsMatchingQuery<QUERY>> collector() {
@@ -485,8 +488,56 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         }
     }
 
+    protected record Range(long min, long max) {
+        boolean contains(long value) {
+            return min <= value && value < max;
+        }
+
+        long quantile(long n, long q) {
+            assumeThat(n).as("given numbered quantile, is a valid quantile").isBetween(0L, q);
+            return min + n * (max - min) / q;
+        }
+
+        long random(Random random) {
+            return random.nextLong(min, max);
+        }
+
+        long randomBetweenQuantiles(Random random, long n, long m, long q) {
+            return createSane(quantile(n, q), quantile(m, q)).random(random);
+        }
+
+        static Range createSane(long x, long y) {
+            return x < y ? new Range(x, y) : new Range(y, x);
+        }
+
+        static Range union(Range lhs, Range rhs) {
+            if (lhs == null) {
+                return rhs;
+            }
+            if (rhs == null) {
+                return lhs;
+            }
+            return new Range(Math.min(lhs.min, rhs.min), Math.max(lhs.max, rhs.max));
+        }
+
+        static boolean strictlyLessThan(Range lhs, Range rhs) {
+            return lhs.min <= lhs.max && rhs.min <= rhs.max && lhs.max <= rhs.min;
+        }
+    }
+
+    protected final <TAG> int createTag(Tags.Suppliers.Supplier<TAG> tag) {
+        final int tagId;
+        try (var tx = beginTx()) {
+            tagId = tag.getId(tx);
+            tx.commit();
+        } catch (KernelException e) {
+            throw new AssertionError(String.format("failed to create %ss in database", tag.name()), e);
+        }
+        return tagId;
+    }
+
     protected final <TAG> List<Integer> createTags(int numberOfTags, Tags.Suppliers.Supplier<TAG> tag) {
-        List<Integer> tagIds;
+        final List<Integer> tagIds;
         try (var tx = beginTx()) {
             tagIds = tag.getIds(tx, numberOfTags);
             tx.commit();

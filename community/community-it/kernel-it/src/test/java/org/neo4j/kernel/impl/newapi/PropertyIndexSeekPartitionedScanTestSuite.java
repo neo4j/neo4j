@@ -211,9 +211,7 @@ abstract class PropertyIndexSeekPartitionedScanTestSuite<CURSOR extends Cursor>
 
         @Override
         public int hashCode() {
-            var result = Objects.hash(indexName);
-            result = 31 * result + Arrays.hashCode(queries);
-            return result;
+            return 31 * Objects.hash(indexName) + Arrays.hashCode(queries);
         }
 
         @Override

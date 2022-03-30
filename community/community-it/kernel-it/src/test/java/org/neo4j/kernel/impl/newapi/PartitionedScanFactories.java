@@ -24,6 +24,7 @@ import static org.neo4j.test.Tags.Suppliers.UUID.PROPERTY_KEY;
 import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -35,6 +36,7 @@ import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
+import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -52,19 +54,19 @@ class PartitionedScanFactories {
     abstract static class PartitionedScanFactory<QUERY extends Query<?>, SESSION, CURSOR extends Cursor> {
         abstract PartitionedScanFactory<QUERY, SESSION, ? extends Cursor> getEntityTypeComplimentFactory();
 
-        abstract SESSION getSession(KernelTransaction tx, QUERY query) throws KernelException;
+        abstract SESSION getSession(KernelTransaction tx, String indexName) throws KernelException;
 
         abstract CursorWithContext<CURSOR> getCursor(CursorFactory cursors);
 
         abstract long getEntityReference(CURSOR cursor);
 
         abstract PartitionedScan<CURSOR> partitionedScan(
-                KernelTransaction tx, QUERY query, SESSION session, int desiredNumberOfPartitions)
+                KernelTransaction tx, SESSION session, int desiredNumberOfPartitions, QUERY query)
                 throws KernelException;
 
-        final PartitionedScan<CURSOR> partitionedScan(KernelTransaction tx, QUERY query, int desiredNumberOfPartitions)
+        final PartitionedScan<CURSOR> partitionedScan(KernelTransaction tx, int desiredNumberOfPartitions, QUERY query)
                 throws KernelException {
-            return partitionedScan(tx, query, getSession(tx, query), desiredNumberOfPartitions);
+            return partitionedScan(tx, getSession(tx, query.indexName()), desiredNumberOfPartitions, query);
         }
 
         final String name() {
@@ -74,9 +76,37 @@ class PartitionedScanFactories {
 
     abstract static class TokenIndex<CURSOR extends Cursor>
             extends PartitionedScanFactory<TokenScanQuery, TokenReadSession, CURSOR> {
+        abstract PartitionedScan<CURSOR> partitionedScan(
+                KernelTransaction tx,
+                TokenReadSession session,
+                PartitionedScan<CURSOR> leadingPartitionScan,
+                TokenScanQuery query)
+                throws KernelException;
+
+        abstract List<PartitionedScan<CURSOR>> partitionedScans(
+                KernelTransaction tx,
+                TokenReadSession session,
+                int desiredNumberOfPartitions,
+                List<TokenScanQuery> queries)
+                throws KernelException;
+
+        protected final PartitionedScan<CURSOR> partitionedScan(
+                KernelTransaction tx, PartitionedScan<CURSOR> leadingPartitionScan, TokenScanQuery query)
+                throws KernelException {
+            return partitionedScan(tx, getSession(tx, query.indexName()), leadingPartitionScan, query);
+        }
+
+        protected final List<PartitionedScan<CURSOR>> partitionedScans(
+                KernelTransaction tx, int desiredNumberOfPartitions, List<TokenScanQuery> queries)
+                throws KernelException {
+            assert queries.stream().map(TokenScanQuery::indexName).distinct().count()
+                    == 1; // assert all are on same index
+            return partitionedScans(tx, getSession(tx, queries.get(0).indexName()), desiredNumberOfPartitions, queries);
+        }
+
         @Override
-        protected final TokenReadSession getSession(KernelTransaction tx, TokenScanQuery query) throws KernelException {
-            final var index = tx.schemaRead().indexGetForName(query.indexName());
+        protected final TokenReadSession getSession(KernelTransaction tx, String indexName) throws KernelException {
+            final var index = tx.schemaRead().indexGetForName(indexName);
             return tx.dataRead().tokenReadSession(index);
         }
     }
@@ -94,9 +124,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<NodeLabelIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                TokenScanQuery tokenScanQuery,
                 TokenReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                TokenScanQuery tokenScanQuery)
                 throws KernelException {
             return tx.dataRead()
                     .nodeLabelScan(
@@ -111,6 +141,31 @@ class PartitionedScanFactories {
         @Override
         long getEntityReference(NodeLabelIndexCursor cursor) {
             return cursor.nodeReference();
+        }
+
+        @Override
+        PartitionedScan<NodeLabelIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                TokenReadSession session,
+                PartitionedScan<NodeLabelIndexCursor> leadingPartitionScan,
+                TokenScanQuery query)
+                throws KernelException {
+            return tx.dataRead().nodeLabelScan(session, leadingPartitionScan, query.get());
+        }
+
+        @Override
+        List<PartitionedScan<NodeLabelIndexCursor>> partitionedScans(
+                KernelTransaction tx,
+                TokenReadSession session,
+                int desiredNumberOfPartitions,
+                List<TokenScanQuery> queries)
+                throws KernelException {
+            return tx.dataRead()
+                    .nodeLabelScans(
+                            session,
+                            desiredNumberOfPartitions,
+                            CursorContext.NULL_CONTEXT,
+                            queries.stream().map(TokenScanQuery::get).toArray(TokenPredicate[]::new));
         }
     }
 
@@ -127,9 +182,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<RelationshipTypeIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                TokenScanQuery tokenScanQuery,
                 TokenReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                TokenScanQuery tokenScanQuery)
                 throws KernelException {
             return tx.dataRead()
                     .relationshipTypeScan(
@@ -144,6 +199,31 @@ class PartitionedScanFactories {
         @Override
         long getEntityReference(RelationshipTypeIndexCursor cursor) {
             return cursor.relationshipReference();
+        }
+
+        @Override
+        PartitionedScan<RelationshipTypeIndexCursor> partitionedScan(
+                KernelTransaction tx,
+                TokenReadSession session,
+                PartitionedScan<RelationshipTypeIndexCursor> leadingPartitionScan,
+                TokenScanQuery query)
+                throws KernelException {
+            return tx.dataRead().relationshipTypeScan(session, leadingPartitionScan, query.get());
+        }
+
+        @Override
+        List<PartitionedScan<RelationshipTypeIndexCursor>> partitionedScans(
+                KernelTransaction tx,
+                TokenReadSession session,
+                int desiredNumberOfPartitions,
+                List<TokenScanQuery> queries)
+                throws KernelException {
+            return tx.dataRead()
+                    .relationshipTypeScans(
+                            session,
+                            desiredNumberOfPartitions,
+                            CursorContext.NULL_CONTEXT,
+                            queries.stream().map(TokenScanQuery::get).toArray(TokenPredicate[]::new));
         }
     }
 
@@ -167,8 +247,8 @@ class PartitionedScanFactories {
         }
 
         @Override
-        protected final IndexReadSession getSession(KernelTransaction tx, QUERY query) throws KernelException {
-            final var index = tx.schemaRead().indexGetForName(query.indexName());
+        protected final IndexReadSession getSession(KernelTransaction tx, String indexName) throws KernelException {
+            final var index = tx.schemaRead().indexGetForName(indexName);
             return tx.dataRead().indexReadSession(index);
         }
 
@@ -194,9 +274,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<NodeValueIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                PropertyKeySeekQuery propertyKeySeekQuery,
                 IndexReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                PropertyKeySeekQuery propertyKeySeekQuery)
                 throws KernelException {
             return tx.dataRead()
                     .nodeIndexSeek(
@@ -237,9 +317,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<NodeValueIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                PropertyKeyScanQuery propertyKeyScanQuery,
                 IndexReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                PropertyKeyScanQuery propertyKeyScanQuery)
                 throws KernelException {
             return tx.dataRead().nodeIndexScan(session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT);
         }
@@ -279,9 +359,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<RelationshipValueIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                PropertyKeySeekQuery propertyKeySeekQuery,
                 IndexReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                PropertyKeySeekQuery propertyKeySeekQuery)
                 throws KernelException {
             return tx.dataRead()
                     .relationshipIndexSeek(
@@ -323,9 +403,9 @@ class PartitionedScanFactories {
         @Override
         PartitionedScan<RelationshipValueIndexCursor> partitionedScan(
                 KernelTransaction tx,
-                PropertyKeyScanQuery propertyKeyScanQuery,
                 IndexReadSession session,
-                int desiredNumberOfPartitions)
+                int desiredNumberOfPartitions,
+                PropertyKeyScanQuery propertyKeyScanQuery)
                 throws KernelException {
             return tx.dataRead().relationshipIndexScan(session, desiredNumberOfPartitions, QueryContext.NULL_CONTEXT);
         }
