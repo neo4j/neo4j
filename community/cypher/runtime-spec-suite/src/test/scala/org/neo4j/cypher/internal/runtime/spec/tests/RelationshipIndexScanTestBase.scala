@@ -36,7 +36,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should directed scan all relationships of an index with a property") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -49,7 +49,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -61,7 +61,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should undirected scan all relationships of an index with a property") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -74,7 +74,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -89,7 +89,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should directed scan all relationship of an index with multiple properties") {
     val rels = given {
-      relationshipIndex("R", "prop1", "prop2")
+      relationshipIndex(IndexType.RANGE, "R", "prop1", "prop2")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -106,7 +106,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop1,prop2)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop1,prop2)]->(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -122,7 +122,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should undirected scan all relationship of an index with multiple properties") {
     val rels = given {
-      relationshipIndex("R", "prop1", "prop2")
+      relationshipIndex(IndexType.RANGE, "R", "prop1", "prop2")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -139,7 +139,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
-      .relationshipIndexOperator("(x)-[r:R(prop1,prop2)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop1,prop2)]-(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -160,7 +160,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties in directed scan") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -175,7 +175,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "foo")
       .projection("cacheR[r.prop] AS foo")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", _ => GetValue, indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -189,7 +189,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties in undirected scan") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -204,7 +204,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "foo")
       .projection("cacheR[r.prop] AS foo")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", _ => GetValue, indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -219,7 +219,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle directed scan on the RHS of an Apply") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -233,7 +233,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -249,7 +249,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected scan on the RHS of an Apply") {
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -263,7 +263,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -280,7 +280,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle directed scan and cartesian product") {
     val size = Math.sqrt(sizeHint).intValue()
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(size)
       rels.zipWithIndex.foreach {
@@ -294,8 +294,8 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2")
       .cartesianProduct()
-      .|.relationshipIndexOperator("(x2)-[r2:R(prop)]->(y2)", indexType = IndexType.BTREE)
-      .relationshipIndexOperator("(x1)-[r1:R(prop)]->(y1)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x2)-[r2:R(prop)]->(y2)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator("(x1)-[r1:R(prop)]->(y1)", indexType = IndexType.RANGE)
       .build()
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -309,7 +309,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle undirected scan and cartesian product") {
     val size = Math.sqrt(sizeHint).intValue()
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(size)
       rels.zipWithIndex.foreach {
@@ -323,8 +323,8 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2")
       .cartesianProduct()
-      .|.relationshipIndexOperator("(x2)-[r2:R(prop)]-(y2)", indexType = IndexType.BTREE)
-      .relationshipIndexOperator("(x1)-[r1:R(prop)]-(y1)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x2)-[r2:R(prop)]-(y2)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator("(x1)-[r1:R(prop)]-(y1)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -338,7 +338,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("aggregation and limit on top of directed scan") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -354,7 +354,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(*) AS c"))
       .limit(limit)
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -366,7 +366,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("aggregation and limit on top of undirected scan") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -382,7 +382,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(*) AS c"))
       .limit(limit)
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -394,7 +394,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("limit and directed scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -410,7 +410,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.prop AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"), indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -424,7 +424,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("limit and undirected scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -440,7 +440,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.prop AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"), indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -454,7 +454,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("limit on top of apply with directed scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -470,7 +470,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.prop AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]->(y)", argumentIds = Set("i"), indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -484,7 +484,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("limit on top of apply with undirected scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5)//these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -500,7 +500,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.prop AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(prop)]-(y)", argumentIds = Set("i"), indexType = IndexType.RANGE)
       .input(variables = Seq("i"))
       .build()
 
@@ -514,7 +514,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle undirected and continuation") {
     val size = 100
     val rels = given {
-      relationshipIndex("R", "prop")
+      relationshipIndex(IndexType.RANGE, "R", "prop")
       val (_, rels) = circleGraph(size)
       rels.zipWithIndex.foreach {
         case(r, i) => r.setProperty("prop", i)
@@ -527,7 +527,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
-      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(n)-[r:R(prop)]-(m)", indexType = IndexType.RANGE)
       .build(readOnly = false)
 
     // then

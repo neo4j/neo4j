@@ -43,7 +43,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d cartesian points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
@@ -55,7 +55,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .projection("n.location.x AS location")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -65,7 +65,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d cartesian points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
@@ -77,7 +77,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .projection("n.location.x AS location")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", "{x: 2.0, y: 2.0, z: 2.0, crs: 'cartesian-3d'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -87,7 +87,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d geographic points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
       }, "Place")
@@ -99,7 +99,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .projection("n.location.longitude AS location")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", "{longitude: 10.0, latitude: 0.0, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -109,7 +109,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d geographic points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
       }, "Place")
@@ -122,7 +122,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
                               "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
         "{longitude: 10.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -133,7 +133,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
@@ -147,7 +147,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}",
                               "{x: 2.0, y: 2.0, crs: 'cartesian'}",
                               getValue = GetValue,
-                              indexType = IndexType.BTREE)
+                              indexType = IndexType.POINT)
       .build()
 
     //then
@@ -160,7 +160,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox on the north-western hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -174,7 +174,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 50, latitude: 50, crs: 'wgs-84'}", "{longitude: 60, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -190,7 +190,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox on the north-eastern hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -204,7 +204,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: -60, latitude: 50, crs: 'wgs-84'}", "{longitude: -50, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -220,7 +220,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox on the south-western hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -234,7 +234,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 50, latitude: -60, crs: 'wgs-84'}", "{longitude: 60, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -250,7 +250,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox on the south-eastern hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -264,7 +264,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: -60, latitude: -60, crs: 'wgs-84'}", "{longitude: -50, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -280,7 +280,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox crossing the dateline") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -294,7 +294,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 170, latitude: 50, crs: 'wgs-84'}", "{longitude: -170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -309,7 +309,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox crossing the equator") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -323,7 +323,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 5, latitude: -10, crs: 'wgs-84'}", "{longitude: 10, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -338,7 +338,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox crossing the dateline and the equator") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -352,7 +352,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 170, latitude: -10, crs: 'wgs-84'}", "{longitude: -170, latitude: 10, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -367,7 +367,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox with lowerLeft east of upperRight on the north-western hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -381,7 +381,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 20, latitude: 50, crs: 'wgs-84'}", "{longitude: 10, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -396,7 +396,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -410,7 +410,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: -10, latitude: 50, crs: 'wgs-84'}", "{longitude: -20, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -425,7 +425,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -439,7 +439,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 20, latitude: -60, crs: 'wgs-84'}", "{longitude: 10, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -454,7 +454,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -468,7 +468,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: -10, latitude: -60, crs: 'wgs-84'}", "{longitude: -20, latitude: -50, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -483,7 +483,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -497,7 +497,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: -170, latitude: 50, crs: 'wgs-84'}", "{longitude: 170, latitude: 60, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -512,7 +512,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("bbox with lowerLeft north of upperRight is empty") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -526,7 +526,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 10, latitude: 50, crs: 'wgs-84'}", "{longitude: 20, latitude: 40, crs: 'wgs-84'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -536,7 +536,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle 3D bbox") {
     val nodes = given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case _ =>
           val longitude = 180 - Random.nextInt(361)
@@ -551,7 +551,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{longitude: 50, latitude: 50, height: 100, crs: 'wgs-84-3d'}", "{longitude: 60, latitude: 60, height: 200, crs: 'wgs-84-3d'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then
@@ -570,7 +570,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should ignore non-points and points with different CRS") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(100, {
         case i => Map("location" -> i)
       }, "Place")
@@ -594,7 +594,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
       .projection("n.location.x AS location")
       .pointBoundingBoxNodeIndexSeekExpr("n", "Place", "location",
         "{x: 0.0, y: 0.0, crs: 'cartesian'}", "{x: 2.0, y: 2.0, crs: 'cartesian'}",
-        indexType = IndexType.BTREE)
+        indexType = IndexType.POINT)
       .build()
 
     //then

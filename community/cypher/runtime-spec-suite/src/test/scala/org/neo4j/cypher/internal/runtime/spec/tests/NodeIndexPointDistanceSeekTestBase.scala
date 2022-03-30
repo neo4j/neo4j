@@ -40,7 +40,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d cartesian points (inclusively)") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
@@ -51,7 +51,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.BTREE, inclusive = true)
+                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.POINT, inclusive = true)
       .build()
 
     //then
@@ -61,7 +61,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d cartesian points (non-inclusively)") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
@@ -72,7 +72,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.BTREE, inclusive = false)
+                              "{x: 0.0, y: 0.0, crs: 'cartesian'}", 2, indexType = IndexType.POINT, inclusive = false)
       .build()
 
     //then
@@ -82,7 +82,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d cartesian points (inclusively)") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
@@ -93,7 +93,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.BTREE, inclusive = true)
+                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.POINT, inclusive = true)
       .build()
 
     //then
@@ -103,7 +103,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d cartesian points (non-inclusively)") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN_3D, i, 0, 0))
       }, "Place")
@@ -114,7 +114,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.x AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.BTREE, inclusive = false)
+                              "{x: 0.0, y: 0.0, z: 0.0, crs: 'cartesian-3d'}", 2, indexType = IndexType.POINT, inclusive = false)
       .build()
 
     //then
@@ -124,7 +124,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 2d geographic points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS_84, i % 180, 0))
       }, "Place")
@@ -137,7 +137,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.longitude AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, indexType = IndexType.BTREE, inclusive = true)
+                              "{longitude: 0.0, latitude: 0.0, crs: 'wgs-84'}", d, indexType = IndexType.POINT, inclusive = true)
       .build()
 
     //then
@@ -147,7 +147,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should seek 3d geographic points") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(180, {
         case i => Map("location" -> pointValue(WGS_84_3D, i % 180, 0, 0))
       }, "Place")
@@ -160,7 +160,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("location")
       .projection("n.location.longitude AS location")
       .pointDistanceNodeIndexSeek("n", "Place", "location",
-                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, indexType = IndexType.BTREE, inclusive = true)
+                              "{longitude: 0.0, latitude: 0.0, height: 0.0, crs: 'wgs-84-3d'}", d, indexType = IndexType.POINT, inclusive = true)
       .build()
 
     //then
@@ -171,7 +171,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache properties") {
     given {
-      nodeIndex("Place", "location")
+      nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(sizeHint, {
         case i => Map("location" -> pointValue(CARTESIAN, i, 0))
       }, "Place")
@@ -184,7 +184,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
       .pointDistanceNodeIndexSeek("n", "Place", "location",
                               "{x: 0.0, y: 0.0, crs: 'cartesian'}",
                               2,
-                              indexType = IndexType.BTREE,
+                              indexType = IndexType.POINT,
                               inclusive = true,
                               getValue = GetValue)
       .build()

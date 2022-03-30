@@ -35,7 +35,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should be case sensitive for CONTAINS with indexes") {
     given {
-      nodeIndex("Label", "text")
+      nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("text" -> "CASE")
         case i if i % 2 == 1 => Map("text" -> "case")
@@ -46,7 +46,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -56,9 +56,10 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("text").withRows(singleColumn(expected))
   }
 
-  test("should be case sensitive for CONTAINS with unique indexes") {
+  // Right no we have no indexes that supports uniqueness constraints and contains
+  ignore("should be case sensitive for CONTAINS with unique indexes") {
     given {
-      uniqueIndex("Label", "text")
+      uniqueNodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("text" -> s"CASE$i")
         case i if i % 2 == 1 => Map("text" -> s"case$i")
@@ -69,7 +70,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS 'as')", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -81,7 +82,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle null input") {
     given {
-      nodeIndex("Label", "text")
+      nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("text" -> "CASE")
         case i if i % 2 == 1 => Map("text" -> "case")
@@ -92,7 +93,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS ???)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS ???)", paramExpr = Some(nullLiteral), indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -103,7 +104,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle non-text input") {
     given {
-      nodeIndex("Label", "text")
+      nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i if i % 2 == 0 => Map("text" -> "CASE")
         case i if i % 2 == 1 => Map("text" -> "case")
@@ -114,16 +115,17 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS 1337)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS 1337)", indexType = IndexType.TEXT)
       .build()
 
     //then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
-  test("should cache properties") {
+  // Right now we have no index that supports contains and providing values
+  ignore("should cache properties") {
     val nodes = given {
-      nodeIndex("Label", "text")
+      nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i => Map("text" -> i.toString)
       }, "Label")
@@ -134,7 +136,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS '1')", _ => GetValue, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS '1')", _ => GetValue, indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -144,9 +146,10 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 
-  test("should cache properties with a unique index") {
+  // Right now we have no index that supports contains and providing values
+  ignore("should cache properties with a unique index") {
     val nodes = given {
-      uniqueIndex("Label", "text")
+      uniqueNodeIndex(IndexType.RANGE, "Label", "text")
       nodePropertyGraph(sizeHint, {
         case i => Map("text" -> i.toString)
       }, "Label")
@@ -156,7 +159,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "text")
       .projection("cache[x.text] AS text")
-      .nodeIndexOperator("x:Label(text CONTAINS '1')", _ => GetValue, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(text CONTAINS '1')", _ => GetValue, indexType = IndexType.RANGE)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

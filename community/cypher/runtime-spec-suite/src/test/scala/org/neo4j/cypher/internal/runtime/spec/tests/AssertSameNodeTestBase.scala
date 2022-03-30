@@ -406,8 +406,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
       val logicalQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
         .assertSameNode("x")
-        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
-        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
+        .|.nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
+        .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
         .build(readOnly = false)
 
       val runtimeResult = execute(logicalQuery, runtime)
@@ -429,8 +429,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop1 = 21, prop2 = '21')", unique = true, indexType = IndexType.BTREE)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:L(prop1 = 21, prop2 = '21')", unique = true, indexType = IndexType.RANGE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
     //then
@@ -450,8 +450,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop3 = 20, prop4 = '20')", unique = true, indexType = IndexType.BTREE)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:L(prop3 = 20, prop4 = '20')", unique = true, indexType = IndexType.RANGE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = '20')", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -474,8 +474,8 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .assertSameNode("x")
-      .|.nodeIndexOperator("x:L(prop3 = 21, prop4 = '21')", unique = true, indexType = IndexType.BTREE)
-      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:L(prop3 = 21, prop4 = '21')", unique = true, indexType = IndexType.RANGE)
+      .nodeIndexOperator("x:L(prop1 = 20, prop2 = 20)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
     //then

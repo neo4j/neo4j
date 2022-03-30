@@ -21,16 +21,12 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.RandomValues
-import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.storable.ValueCategory
-import org.neo4j.values.storable.ValueGroup
 import org.neo4j.values.storable.ValueType
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.scalatest.TestSuiteMixin
 
-import java.lang.System.lineSeparator
 import scala.util.Random
 
 trait RandomValuesTestSupport extends TestSuiteMixin with TestSuite {
@@ -38,31 +34,32 @@ trait RandomValuesTestSupport extends TestSuiteMixin with TestSuite {
 
   private val initialSeed = Random.nextLong()
 
+  val random = new Random(initialSeed)
   val randomValues: RandomValues = {
-    RandomValues.create(new java.util.Random(initialSeed))
+    RandomValues.create(new java.util.Random(initialSeed), randomValuesConfiguration())
   }
 
-  private val _propertyValueTypes: Array[ValueType] = {
-    val propertyTypeCategories = Set(ValueCategory.TEXT, ValueCategory.NUMBER, ValueCategory.BOOLEAN, ValueCategory.TEMPORAL)
-    ValueType.values().filter(v => propertyTypeCategories.contains(v.valueGroup.category()) && v != ValueType.CHAR)
+  def randomValuesConfiguration(): RandomValues.Configuration = {
+    new RandomValues.Default {
+      override def maxCodePoint(): Int = 10000 // Because characters outside BMP have inconsistent or non-deterministic ordering
+      override def minCodePoint(): Int = Character.MIN_CODE_POINT
+    }
   }
 
-  val stringValueTypes: Array[ValueType] = {
-    ValueType.values().filter(v => v.valueClass == classOf[TextValue])
-  }
-
-  val numericValueTypes: Array[ValueType] = {
-    ValueType.values().filter(v => v.valueGroup == ValueGroup.NUMBER)
-  }
-
-  def propertyValueTypes: Array[ValueType] = _propertyValueTypes
-  def randomPropertyType(): ValueType = randomValues.among(propertyValueTypes)
   def randomValue(valueType: ValueType): Value = randomValues.nextValueOfType(valueType)
   def randomValues(size: Int, valueTypes: ValueType*): Array[Value] = randomValues.nextValuesOfTypes(size, valueTypes:_*)
   def randomAmong[T](values: Seq[T]): T = values(randomValues.nextInt(values.size))
-  def randomPropertyValue(): Value = randomValues.nextValueOfTypes(propertyValueTypes:_*)
+  def shuffle[T](values: Seq[T]): Seq[T] = random.shuffle(values)
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
-    withClue(s"Initial Random Seed: $initialSeed${lineSeparator()}")(super.withFixture(test))
+    withClue(
+      s"""
+         |${classOf[RandomValuesTestSupport].getSimpleName} test failed with initial seed:
+         |private val initialSeed = ${initialSeed}L
+         |
+         |""".stripMargin
+    ) {
+      super.withFixture(test)
+    }
   }
 }

@@ -247,6 +247,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
     case true => trueLiteral
     case false => falseLiteral
+    case other =>
+      throw new RuntimeException(s"Unexpected type ${other.getClass.getName} ($other)")
   }
 
   def returnLit(items: (Any, String)*): Return =

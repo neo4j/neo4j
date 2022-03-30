@@ -24,62 +24,79 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.cypher.internal.runtime.spec.tests.index.PropertyIndexTestSupport
+import org.neo4j.internal.schema.IndexQuery.IndexQueryType.EXISTS
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.ValueCategory
+
+import scala.collection.mutable
 
 abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
-                                                             edition: Edition[CONTEXT],
-                                                             runtime: CypherRuntime[CONTEXT],
-                                                             sizeHint: Int
-                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+  with PropertyIndexTestSupport[CONTEXT]
+  with RandomValuesTestSupport
+{
 
-  test("should scan all nodes of an index with a property") {
+  testWithIndex(_.supports(EXISTS), "should scan all nodes of an index with a property") { index =>
+    val propertyType = randomAmong(index.querySupport(EXISTS))
     val nodes = given {
-      nodeIndex("Honey", "calories")
+      nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> i)
+        case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
       }, "Honey")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(calories)", indexType = index.indexType)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ _.hasProperty("calories") }
+    val expected = nodes.filter(_.hasProperty("calories"))
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
-  test("should scan all nodes of a unique index with a property") {
+  testWithIndex(_.supportsUniqueness(EXISTS), "should scan all nodes of a unique index with a property") { index =>
+    val propertyType = randomAmong(index.querySupport(EXISTS))
     val nodes = given {
-      uniqueIndex("Honey", "calories")
+      uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
+      val seen = mutable.Set.empty[Value]
       nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> i)
+        case i if i % 10 == 0 =>
+          val value = randomValue(propertyType)
+          if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
       }, "Honey")
     }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(calories)", indexType = index.indexType)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ _.hasProperty("calories") }
+    val expected = nodes.filter(_.hasProperty("calories"))
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
-  test("should scan all nodes of an index with multiple properties") {
+  testWithIndex(
+    _.supportsComposite(EXISTS, ValueCategory.NUMBER, ValueCategory.NUMBER),
+    "should scan all nodes of an index with multiple properties"
+  ) { index =>
     val nodes = given {
-      nodeIndex("Honey", "calories", "taste")
+      nodeIndex(index.indexType, "Honey", "calories", "taste")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
         case i if i % 10 == 0 => Map("calories" -> i, "taste" -> i)
@@ -90,22 +107,23 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(calories,taste)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(calories,taste)", indexType = index.indexType)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter{ n => n.hasProperty("calories") && n.hasProperty("taste") }
+    val expected = nodes.filter(n => n.hasProperty("calories") && n.hasProperty("taste"))
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
-  test("should cache properties") {
+  testWithIndex(_.supportsValues(EXISTS),"should cache properties") { index =>
+    val propertyType = randomAmong(index.provideValueSupport(EXISTS))
     val nodes = given {
-      nodeIndex("Honey", "calories")
+      nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> i)
+        case i if i % 10 == 0 => Map("calories" -> randomValue(propertyType).asObject())
       }, "Honey")
     }
 
@@ -113,22 +131,28 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
       .projection("cache[x.calories] AS calories")
-      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = index.indexType)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val expected = nodes.collect {
+      case n if n.hasProperty("calories") => Array(n, n.getProperty("calories"))
+    }
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 
-  test("should cache properties with a unique index") {
+  testWithIndex(_.supportsUniqueness(EXISTS), "should cache properties with a unique index") { index =>
+    val propertyType = randomAmong(index.provideValueSupport(EXISTS))
     val nodes = given {
-      uniqueIndex("Honey", "calories")
+      uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
+      val seen = mutable.Set.empty[Value]
       nodePropertyGraph(sizeHint, {
-        case i if i % 10 == 0 => Map("calories" -> i)
+        case i if i % 10 == 0 =>
+          val value = randomValue(propertyType)
+          if (seen.add(value)) Map("calories" -> value.asObject()) else Map.empty
       }, "Honey")
     }
 
@@ -136,13 +160,15 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "calories")
       .projection("cache[x.calories] AS calories")
-      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Honey(calories)", _ => GetValue, indexType = index.indexType)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    val expected = nodes.collect{
+      case n if n.hasProperty("calories") => Array(n, n.getProperty("calories"))
+    }
     runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 }

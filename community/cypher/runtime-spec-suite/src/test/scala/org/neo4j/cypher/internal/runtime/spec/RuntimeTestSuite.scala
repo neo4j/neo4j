@@ -67,6 +67,8 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
 import org.scalactic.Equality
 import org.scalactic.TolerantNumerics
@@ -605,13 +607,23 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     def resolve(function: FunctionInvocation): Expression = {
       if (function.needsToBeResolved) ResolvedFunctionInvocation(functionSignature)(function).coerceArguments else function
     }
-    value match {
+    val valueToConvert = value match {
+      case neo4jValue: Value => neo4jValue.asObject()
+      case other => other
+    }
+    valueToConvert match {
       case date: ChronoLocalDate => resolve(function("date", literalString(date.format(DateTimeFormatter.ISO_LOCAL_DATE))))
       case dateTime: ChronoLocalDateTime[_] => resolve(function("localdatetime", literalString(dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))))
       case time: LocalTime => resolve(function("localtime", literalString(time.format(DateTimeFormatter.ISO_LOCAL_TIME))))
       case duration: DurationValue => resolve(function("duration", literalString(duration.prettyPrint())))
       case offsetTime: OffsetTime => resolve(function("time", literalString(offsetTime.format(DateTimeFormatter.ISO_OFFSET_TIME))))
       case dateTime: ChronoZonedDateTime[_] => resolve(function("datetime", literalString(dateTime.format(DateTimeFormatter.ISO_ZONED_DATE_TIME))))
+      case point: PointValue =>
+        val coordExpr = point.coordinate().toSeq.zip(Seq("x", "y", "z"))
+          .map { case (value, key) => key -> literal(value) }
+        val crsExpr = "crs" -> literal(point.getCRS.getType)
+        resolve(function("point", mapOf((coordExpr :+ crsExpr):_*)))
+      case array: Array[_] => listOf(array.map(toExpression):_*)
       case other => literal(other)
     }
   }

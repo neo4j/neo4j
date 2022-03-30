@@ -35,7 +35,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should be case sensitive for CONTAINS with directed index scan") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -47,7 +47,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'as')]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'as')]->(y)", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -59,7 +59,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should be case sensitive for CONTAINS with undirected index scan") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -71,7 +71,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'as')]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'as')]-(y)", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -84,7 +84,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle null input with direction") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -96,7 +96,11 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS ???)]->(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
+      .relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS ???)]->(y)",
+        paramExpr = Some(nullLiteral),
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -107,7 +111,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle null input with no direction") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -119,7 +123,11 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("r.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS ???)]-(y)", paramExpr = Some(nullLiteral), indexType = IndexType.BTREE)
+      .relationshipIndexOperator(
+        "(x)-[r:R(text CONTAINS ???)]-(y)",
+        paramExpr = Some(nullLiteral),
+        indexType = IndexType.TEXT
+      )
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -130,7 +138,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("directed scan should handle non-text input") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -142,7 +150,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]->(y)", indexType = IndexType.TEXT)
       .build()
 
     //then
@@ -151,7 +159,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected scan should handle non-text input") {
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -163,16 +171,17 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("text")
       .projection("x.text AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 1337)]-(y)", indexType = IndexType.TEXT)
       .build()
 
     //then
     execute(logicalQuery, runtime) should beColumns("text").withNoRows()
   }
 
-  test("directed scan should cache properties") {
+  // We have no index that supports this query at the moment
+  ignore("directed scan should cache properties") {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -185,7 +194,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", _ => GetValue, indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", _ => GetValue, indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -195,9 +204,10 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 
-  test("undirected scan should cache properties") {
+  // We have no index that supports this query at the moment
+  ignore("undirected scan should cache properties") {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -209,7 +219,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "text")
       .projection("cacheR[r.text] AS text")
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", _ => GetValue, indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", _ => GetValue, indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -228,7 +238,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle directed scan on the RHS of an Apply") {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -240,7 +250,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]->(y)", indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 
@@ -256,7 +266,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected scan on the RHS of an Apply") {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -268,7 +278,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "r", "y")
       .apply()
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS '1')]-(y)", indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 
@@ -285,7 +295,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle directed scan and cartesian product") {
     val size = Math.sqrt(sizeHint).intValue()
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -297,8 +307,8 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2")
       .cartesianProduct()
-      .|.relationshipIndexOperator("(x2)-[r2:R(text CONTAINS '2')]->(y2)", indexType = IndexType.BTREE)
-      .relationshipIndexOperator("(x1)-[r1:R(text CONTAINS '1')]->(y1)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x2)-[r2:R(text CONTAINS '2')]->(y2)", indexType = IndexType.TEXT)
+      .relationshipIndexOperator("(x1)-[r1:R(text CONTAINS '1')]->(y1)", indexType = IndexType.TEXT)
       .build()
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -311,7 +321,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected scan and cartesian product") {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) => r.setProperty("text", i.toString)
@@ -323,8 +333,8 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r1", "r2")
       .cartesianProduct()
-      .|.relationshipIndexOperator("(x2)-[r2:R(text CONTAINS '2')]-(y2)", indexType = IndexType.BTREE)
-      .relationshipIndexOperator("(x1)-[r1:R(text CONTAINS '1')]-(y1)", indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x2)-[r2:R(text CONTAINS '2')]-(y2)", indexType = IndexType.TEXT)
+      .relationshipIndexOperator("(x1)-[r1:R(text CONTAINS '1')]-(y1)", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -338,7 +348,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("aggregation and limit on top of directed scan") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -352,7 +362,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(*) AS c"))
       .limit(limit)
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -364,7 +374,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("aggregation and limit on top of undirected scan") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -378,7 +388,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(*) AS c"))
       .limit(limit)
-      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", indexType = IndexType.TEXT)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -390,7 +400,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("limit and directed scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -404,7 +414,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.text AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 
@@ -418,7 +428,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("limit and undirected scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -432,7 +442,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.projection("r.text AS value")
       .|.limit(limit)
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 
@@ -446,7 +456,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("limit on top of apply with directed scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -460,7 +470,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.text AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]->(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 
@@ -474,7 +484,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   test("limit on top of apply with undirected scan on the RHS of an apply") {
     // given
     given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, _) => r.setProperty("text", "value")
@@ -488,7 +498,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
       .limit(limit)
       .apply()
       .|.projection("r.text AS value")
-      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.BTREE)
+      .|.relationshipIndexOperator("(x)-[r:R(text CONTAINS 'alu')]-(y)", argumentIds = Set("i"), indexType = IndexType.TEXT)
       .input(variables = Seq("i"))
       .build()
 

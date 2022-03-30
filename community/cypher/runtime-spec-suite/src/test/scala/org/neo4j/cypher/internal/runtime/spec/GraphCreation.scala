@@ -524,6 +524,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeIndex(indexType: IndexType, label: String, properties: String*): Unit = {
+    runtimeTestSupport.restartTx()
     try {
       var creator = runtimeTestSupport.tx.schema().indexFor(Label.label(label)).withIndexType(indexType)
       properties.foreach(p => creator = creator.on(p))
@@ -531,17 +532,6 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     } finally {
       runtimeTestSupport.restartTx()
     }
-    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-  }
-
-  /**
-   * Creates a b-tree index and restarts the transaction. This should be called before any data creation operation.
-   */
-  def nodeIndexWithProvider(indexProvider: String, label: String, properties: String*): Unit = {
-    runtimeTestSupport.restartTx()
-    val query = s"CREATE BTREE INDEX FOR (n:$label) ON (${properties.map(p => s"n.`$p`").mkString(",")}) OPTIONS {indexProvider: '$indexProvider'}"
-    runtimeTestSupport.tx.execute(query)
-    runtimeTestSupport.restartTx()
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
@@ -590,12 +580,25 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
   }
 
+  def uniqueNodeIndex(indexType: IndexType, label: String, properties: String*): Unit = {
+    runtimeTestSupport.restartTx()
+    try {
+      val creator = runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(indexType)
+      properties
+        .foldLeft(creator) { case (acc, prop) => acc.assertPropertyIsUnique(prop) }
+        .create()
+    } finally {
+      runtimeTestSupport.restartTx()
+    }
+    runtimeTestSupport.tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+  }
+
   /**
-   * Creates a (b-tree backed) node key constraint and restarts the transaction. This should be called before any data creation operation.
+   * Creates a node key constraint and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeKey(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.BTREE)) {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)) {
         case (acc, prop) => acc.assertPropertyIsNodeKey(prop)
       }
       creator.create()

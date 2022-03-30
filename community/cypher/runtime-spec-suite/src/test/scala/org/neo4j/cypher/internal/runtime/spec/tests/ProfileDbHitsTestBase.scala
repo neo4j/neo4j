@@ -45,9 +45,9 @@ import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
-import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.kernel.api.KernelTransaction
 
 abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
@@ -1014,7 +1014,7 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Language(difficulty = 0, usefulness = 0)", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator(s"x:Language(difficulty = 0, usefulness = 0)", unique = true, indexType = IndexType.RANGE)
       .build(readOnly = false)
 
     val result = profile(logicalQuery, runtime)
