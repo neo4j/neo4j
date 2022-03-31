@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend
+package org.neo4j.cypher.internal.frontend.prettifier
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
@@ -74,7 +74,35 @@ class JavaCCPrettifierIT extends CypherFunSuite {
     "alter alias alias if exists set database target database" -> "ALTER ALIAS alias IF EXISTS SET DATABASE TARGET database",
     "alter alias alias set database target database" -> "ALTER ALIAS alias SET DATABASE TARGET database",
     "drop alias alias for database" -> "DROP ALIAS alias FOR DATABASE",
-    "drop alias alias if exists for database" -> "DROP ALIAS alias IF EXISTS FOR DATABASE"
+    "drop alias alias if exists for database" -> "DROP ALIAS alias IF EXISTS FOR DATABASE",
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name = "Sweden"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name = "Sweden"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name EnDs WItH "eden"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name ENDS WITH "eden"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name COnTaIns "ede"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name CONTAINS "ede"""".stripMargin,
+
+    """MATCH (c:Country) UsIng TexT iNdEx c:Country(name) WHERE c.name =~ ".+eden?"""" ->
+      """MATCH (c:Country)
+        |  USING TEXT INDEX c:Country(name)
+        |  WHERE c.name =~ ".+eden?"""".stripMargin,
+
+    "MATCH (c:Country) UsIng BtRee iNdEx c:Country(name)" ->
+      """MATCH (c:Country)
+        |  USING BTREE INDEX c:Country(name)""".stripMargin,
+
+    "MATCH (c:Country)-[v:VISITED { year: 1972 } ]->() UsIng BtRee iNdEx v:VISITED(year)" ->
+      """MATCH (c:Country)-[v:VISITED {year: 1972}]->()
+        |  USING BTREE INDEX v:VISITED(year)""".stripMargin
   ) ++
   (
     Seq(
