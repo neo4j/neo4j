@@ -62,6 +62,12 @@ public interface StoreVersion
 
     String formatFamilyName();
 
+    /**
+     * Some formats we just keep track of to be able to migrate from them.
+     * A format that is only for migration is not supported to run a database on, and does not have support in all tools.
+     */
+    boolean onlyForMigration();
+
     /*
      * The following two methods encode and decode a string that is presumably
      * the store version into a long via Latin1 encoding. This leaves room for

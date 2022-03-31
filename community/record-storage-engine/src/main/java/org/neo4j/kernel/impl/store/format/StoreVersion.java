@@ -24,22 +24,24 @@ package org.neo4j.kernel.impl.store.format;
  */
 public enum StoreVersion
 {
-    STANDARD_V4_3( "SF4.3.0", "4.3.0" ),
-    STANDARD_V5_0( "SF5.0.0", "5.0.0" ),
+    STANDARD_V4_3( "SF4.3.0", "4.3.0", true ),
+    STANDARD_V5_0( "SF5.0.0", "5.0.0", false ),
 
-    ALIGNED_V4_3( "AF4.3.0", "4.3.0" ),
-    ALIGNED_V5_0( "AF5.0.0", "5.0.0" ),
+    ALIGNED_V4_3( "AF4.3.0", "4.3.0", true ),
+    ALIGNED_V5_0( "AF5.0.0", "5.0.0", false ),
 
-    HIGH_LIMIT_V4_3( "HL4.3.0", "4.3.0" ),
-    HIGH_LIMIT_V5_0( "HL5.0.0", "5.0.0" );
+    HIGH_LIMIT_V4_3( "HL4.3.0", "4.3.0", true ),
+    HIGH_LIMIT_V5_0( "HL5.0.0", "5.0.0", false );
 
     private final String versionString;
     private final String introductionVersion;
+    private final boolean onlyForMigration;
 
-    StoreVersion( String versionString, String introductionVersion )
+    StoreVersion( String versionString, String introductionVersion, boolean onlyForMigration )
     {
         this.versionString = versionString;
         this.introductionVersion = introductionVersion;
+        this.onlyForMigration = onlyForMigration;
     }
 
     public String versionString()
@@ -50,5 +52,10 @@ public enum StoreVersion
     public String introductionVersion()
     {
         return introductionVersion;
+    }
+
+    public boolean onlyForMigration()
+    {
+        return onlyForMigration;
     }
 }

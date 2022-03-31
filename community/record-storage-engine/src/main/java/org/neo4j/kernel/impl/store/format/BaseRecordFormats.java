@@ -39,18 +39,19 @@ public abstract class BaseRecordFormats implements RecordFormats
 {
     private final int majorFormatVersion;
     private final int minorFormatVersion;
+    private final boolean onlyForMigration;
     private final Capability[] capabilities;
     private final String storeVersion;
     private final String introductionVersion;
 
-    protected BaseRecordFormats( String storeVersion, String introductionVersion, int majorFormatVersion, int minorFormatVersion,
-            Capability... capabilities )
+    protected BaseRecordFormats( StoreVersion storeVersion, int majorFormatVersion, int minorFormatVersion, Capability... capabilities )
     {
-        this.storeVersion = storeVersion;
+        this.storeVersion = storeVersion.versionString();
+        this.onlyForMigration = storeVersion.onlyForMigration();
         this.majorFormatVersion = majorFormatVersion;
         this.minorFormatVersion = minorFormatVersion;
         this.capabilities = capabilities;
-        this.introductionVersion = introductionVersion;
+        this.introductionVersion = storeVersion.introductionVersion();
     }
 
     @Override
@@ -81,6 +82,12 @@ public abstract class BaseRecordFormats implements RecordFormats
     public RecordFormat<MetaDataRecord> metaData()
     {
         return new MetaDataRecordFormat();
+    }
+
+    @Override
+    public boolean onlyForMigration()
+    {
+        return onlyForMigration;
     }
 
     @Override

@@ -90,6 +90,12 @@ public class RecordStoreVersion implements StoreVersion
     }
 
     @Override
+    public boolean onlyForMigration()
+    {
+        return format.onlyForMigration();
+    }
+
+    @Override
     public String toString()
     {
         return "RecordStoreVersion{" + "format=" + format + '}';

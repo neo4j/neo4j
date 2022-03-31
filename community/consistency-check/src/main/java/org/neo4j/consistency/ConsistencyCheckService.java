@@ -25,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
@@ -43,6 +44,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -65,6 +67,8 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Long.max;
@@ -251,10 +255,13 @@ public class ConsistencyCheckService
             }
             Path reportDir = this.reportDir != null ? this.reportDir : defaultReportDir( config );
 
+            config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
+
             // assert recovered
             var storageEngineFactory = StorageEngineFactory.selectStorageEngine( fileSystem, layout, pageCache ).orElseThrow();
-            assertRecovered( layout, config, fileSystem, memoryTracker );
-            config.set( GraphDatabaseSettings.pagecache_warmup_enabled, false );
+            assertRecovered( layout, pageCache, storageEngineFactory, config, fileSystem, memoryTracker );
+
+            assertSupportedFormat( config, pageCache, storageEngineFactory );
 
             // instantiate the inconsistencies report logging
             var outLog = logProvider.getLog( getClass() );
@@ -316,6 +323,23 @@ public class ConsistencyCheckService
         }
     }
 
+    private void assertSupportedFormat( Config config, PageCache pageCache, StorageEngineFactory storageEngineFactory )
+    {
+        StoreVersionCheck storeVersionCheck =
+                storageEngineFactory.versionCheck( fileSystem, layout, config, pageCache, new SimpleLogService( logProvider ), contextFactory );
+
+        try ( var cursorContext = contextFactory.create( "consistencyCheck" ) )
+        {
+            String storeVersion = storeVersionCheck.storeVersion( cursorContext ).orElseThrow( () -> new RuntimeException( "No store version found" ) );
+            StoreVersion version = storageEngineFactory.versionInformation( storeVersion );
+            if ( version.onlyForMigration() )
+            {
+                throw new IllegalStateException( "The store must be upgraded or migrated to a supported version before it is possible to " +
+                                                 "check consistency" );
+            }
+        }
+    }
+
     /**
      * Starts a tiny page cache just to ask the store about rough number of entities in it. Based on that the storage can then decide
      * what the optimal amount of available off-heap memory should be when running the consistency check.
@@ -360,12 +384,14 @@ public class ConsistencyCheckService
         return consistent;
     }
 
-    private static void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
+    private static void assertRecovered( DatabaseLayout databaseLayout, PageCache pageCache, StorageEngineFactory storageEngineFactory,
+            Config config, FileSystemAbstraction fileSystem, MemoryTracker memoryTracker )
             throws ConsistencyCheckIncompleteException
     {
         try
         {
-            if ( isRecoveryRequired( fileSystem, databaseLayout, config, memoryTracker ) )
+            if ( isRecoveryRequired( fileSystem, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty(), memoryTracker,
+                    DatabaseTracers.EMPTY ) )
             {
                 throw new IllegalStateException(
                         joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",

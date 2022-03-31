@@ -62,8 +62,8 @@ public class PageAlignedV5_0 extends BaseRecordFormats
 
     private PageAlignedV5_0()
     {
-        super( ALIGNED_V5_0.versionString(), ALIGNED_V5_0.introductionVersion(), 1, 1,
-                FormatFamily.aligned.formatCapability() );
+        super( ALIGNED_V5_0, 1, 1,
+               FormatFamily.aligned.formatCapability() );
     }
 
     @Override

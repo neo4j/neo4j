@@ -179,4 +179,10 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     {
         return this.getClass().getName();
     }
+
+    @Override
+    public boolean onlyForMigration()
+    {
+        return actual.onlyForMigration();
+    }
 }

@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -35,15 +34,17 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
 
+import static org.neo4j.kernel.impl.store.format.StoreVersion.STANDARD_V4_3;
+
 public class StandardV4_3 extends BaseRecordFormats
 {
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V4_3.versionString();
+    public static final String STORE_VERSION = STANDARD_V4_3.versionString();
     public static final RecordFormats RECORD_FORMATS = new StandardV4_3();
     public static final String NAME = FormatFamily.standard.name() + "V4_3";
 
     public StandardV4_3()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V4_3.introductionVersion(), 0, 1,
+        super( STANDARD_V4_3, 0, 1,
                 FormatFamily.standard.formatCapability(), Index44Compatibility.INSTANCE );
     }
 

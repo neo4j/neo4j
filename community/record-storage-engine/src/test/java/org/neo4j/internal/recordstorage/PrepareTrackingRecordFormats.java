@@ -178,6 +178,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         return getClass().getName();
     }
 
+    @Override
+    public boolean onlyForMigration()
+    {
+        return actual.onlyForMigration();
+    }
+
     public static class PrepareTrackingRecordFormat<RECORD extends AbstractBaseRecord> implements RecordFormat<RECORD>
     {
         private final RecordFormat<RECORD> actual;

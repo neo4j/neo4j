@@ -149,4 +149,10 @@ public interface RecordFormats
     {
         return false;
     }
+
+    /**
+     * Some formats we just keep track of to be able to migrate from them.
+     * A format that is only for migration is not supported to run a database on, and does not have support in all tools.
+     */
+    boolean onlyForMigration();
 }
