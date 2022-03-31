@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Ands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.CoercedPredicate
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Not
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.PropertyExists
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -143,18 +141,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
 
   override def rewrite(f: Expression => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f), operatorId = operatorId))
 
-  private def propertyExistsExpander(name: String) = new KernelPredicate[Entity] {
-    override def test(t: Entity): Boolean = {
-      t.hasProperty(name)
-    }
-  }
-
-  private def propertyNotExistsExpander(name: String) = new KernelPredicate[Entity] {
-    override def test(t: Entity): Boolean = {
-      !t.hasProperty(name)
-    }
-  }
-
   private def cypherPositivePredicatesAsExpander(incomingCtx: ReadableRow,
                                                  variableOffset: Int,
                                                  predicate: Predicate,
@@ -187,19 +173,9 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                                predicate: Predicate,
                                                relVariableOffset: Int,
                                                state: QueryState): Expander = {
-    findPredicate(predicate) match {
-      case PropertyExists(_, propertyKey) =>
-        currentExpander.addRelationshipFilter(
-          if (all) propertyExistsExpander(propertyKey.name)
-          else propertyNotExistsExpander(propertyKey.name))
-      case Not(PropertyExists(_, propertyKey)) =>
-        currentExpander.addRelationshipFilter(
-          if (all) propertyNotExistsExpander(propertyKey.name)
-          else propertyExistsExpander(propertyKey.name))
-      case _ => currentExpander.addRelationshipFilter(
-        if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-        else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state))
-    }
+    currentExpander.addRelationshipFilter(
+      if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
+      else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state))
   }
 
   //TODO we shouldn't do this matching at runtime but instead figure this out in planning
@@ -210,17 +186,10 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                        relVariableOffset: Int,
                                        currentNodePredicates: Seq[KernelPredicate[Entity]],
                                        state: QueryState): (Expander, Seq[KernelPredicate[Entity]]) = {
-    val filter = findPredicate(predicate) match {
-      case PropertyExists(_, propertyKey) =>
-        if (all) propertyExistsExpander(propertyKey.name)
-        else propertyNotExistsExpander(propertyKey.name)
-      case Not(PropertyExists(_, propertyKey)) =>
-        if (all) propertyNotExistsExpander(propertyKey.name)
-        else propertyExistsExpander(propertyKey.name)
-      case _ =>
-        if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-        else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
-    }
+    val filter =
+      if (all) cypherPositivePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
+      else cypherNegativePredicatesAsExpander(ctx, relVariableOffset, predicate, state)
+
     (currentExpander.addNodeFilter(filter), currentNodePredicates :+ filter)
   }
 

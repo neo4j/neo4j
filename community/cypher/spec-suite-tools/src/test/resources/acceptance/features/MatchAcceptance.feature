@@ -298,38 +298,23 @@ Feature: MatchAcceptance
       | 1    | 2    |
     And no side effects
 
-  Scenario: Should handle EXISTS on node property when node is null
+  Scenario: Should handle simple IS NULL on node property when node is null
     Given an empty graph
     And having executed:
       """
-      CREATE (:TestNode)
+      CREATE (:LBL1)
       """
     When executing query:
       """
-      MATCH (t:TestNode)
-      OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
-      RETURN t, a.Status as s, exists(a.Status) as e
+      OPTIONAL MATCH (o:LBL1)-[]->(p)
+      WITH p
+      OPTIONAL MATCH (p)
+      WHERE p.prop2 IS NULL
+      RETURN p
       """
     Then the result should be, in any order:
-      | t           | s    | e    |
-      | (:TestNode) | null | null |
-    And no side effects
-
-  Scenario: Should handle NOT EXISTS on node property when node is null
-    Given an empty graph
-    And having executed:
-        """
-        CREATE (:TestNode)
-        """
-    When executing query:
-        """
-        MATCH (t:TestNode)
-        OPTIONAL MATCH (t)-[:LINKED]-(a:AnotherNode)
-        RETURN t, SUM(CASE WHEN NOT EXISTS(a.Status) OR COALESCE(a.Status, 'Complete') <> 'Complete' THEN 1 ELSE 0 END) AS PendingCount
-        """
-    Then the result should be, in any order:
-      | t           | PendingCount |
-      | (:TestNode) | 0            |
+      | p    |
+      | null |
     And no side effects
 
   Scenario: Should handle simple IS NOT NULL on node property when node is null

@@ -17,36 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
-
-  /*
-  Test asserts that unsafe rewrite is not performed.
-  Because IS NULL & IS NOT NULL are binary operators, whereas Exists is ternary, this rewrite is only safe when the node is not nullable.
-  Nullability information is not yet available at time of AST rewriting:
-     >          MATCH (n) WHERE n.foo IS NOT NULL RETURN n
-     >          MATCH (n) WHERE exists(n.foo)     RETURN n
-     > OPTIONAL MATCH (n) WHERE n.foo IS NOT NULL RETURN n
-     > OPTIONAL MATCH (n) WHERE exists(n.foo)     RETURN n     <---- unsafe
-   In the OPTIONAL MATCH case when n is null:
-     > n IS NOT NULL  ==>  false
-     > exists(n.foo)  ==>  null
-       > null.foo     == null
-       > exists(null) == null
-  */
-  test("a.prop IS NOT NULL should not be rewritten to: exists(a.prop)") {
-    val input = isNotNull(prop("a", "prop"))
-
-    normalizeSargablePredicates(input) should equal(input)
-  }
-
-  test("exists(a.prop) is not rewritten") {
-    val input = Exists.asInvocation(prop("a", "prop"))(pos)
-
-    normalizeSargablePredicates(input) should equal(input)
-  }
 
   test("NOT x < y rewritten to: x >= y") {
     val input = not(lessThan(varFor("x"), varFor("y")))

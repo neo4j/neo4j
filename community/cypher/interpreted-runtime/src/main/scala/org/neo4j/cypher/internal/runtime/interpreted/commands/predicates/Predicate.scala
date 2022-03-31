@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ReadableRow
-import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeHasProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedNodeProperty
@@ -33,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Abstra
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AbstractCachedRelationshipProperty
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -163,43 +161,6 @@ case class True() extends Predicate {
   override def rewrite(f: Expression => Expression): Expression = f(this)
   override def arguments: Seq[Expression] = Seq.empty
   override def children: Seq[AstNode[_]] = Seq.empty
-}
-
-case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
-  override def isMatch(ctx: ReadableRow, state: QueryState): Option[Boolean] = variable(ctx, state) match {
-    case pc: VirtualNodeValue =>
-      Some(propertyKey.getOptId(state.query).exists(
-        (propertyKeyId: Int) =>
-          state.query.nodeReadOps.hasProperty(pc.id, propertyKeyId, state.cursors.nodeCursor, state.cursors.propertyCursor)))
-
-    case pc: VirtualRelationshipValue =>
-      Some(propertyKey.getOptId(state.query).exists(
-        (propertyKeyId: Int) =>
-          state.query.relationshipReadOps.hasProperty(pc.id, propertyKeyId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)))
-
-    case IsMap(map) =>
-      Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
-
-    case IsNoValue() => None
-    case _ =>
-      variable match {
-        // resolve parameter name to value if possible/needed
-        case p: ParameterFromSlot if state.params.length > p.offset =>
-          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + state.params(p.offset) + " to be a node, relationship or map")
-        case _ =>
-          throw new CypherTypeException("Invalid input for function 'exists()': Expected " + variable + " to be a node, relationship or map")
-      }
-  }
-
-  override def toString: String = s"hasProp($variable.${propertyKey.name})"
-
-  override def containsIsNull = false
-
-  override def rewrite(f: Expression => Expression): Expression = f(PropertyExists(variable.rewrite(f), propertyKey.rewrite(f)))
-
-  override def arguments: Seq[Expression] = Seq(variable)
-
-  override def children: Seq[AstNode[_]] = Seq(variable, propertyKey)
 }
 
 abstract class CachedNodePropertyExists(cp: AbstractCachedProperty) extends Predicate {

@@ -93,11 +93,6 @@ public enum NotificationCode
             "B-tree indexes are deprecated, partially replaced by text indexes and will be fully replaced later on. " +
                     "For now, b-tree indexes are still the correct alternative to use."
     ),
-    DEPRECATED_PROPERTY_EXISTENCE_SYNTAX(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "The property existence syntax `... exists(variable.property)` is deprecated, please use `variable.property IS NOT NULL` instead"
-    ),
     DEPRECATED_OCTAL_LITERAL_SYNTAX(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

@@ -31,8 +31,6 @@ case class DeprecatedVarLengthBindingNotification(position: InputPosition, varia
 
 case class DeprecatedBtreeIndexSyntax(position: InputPosition) extends InternalNotification
 
-case class DeprecatedPropertyExistenceSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedRepeatedRelVarInPatternExpression(position: InputPosition, relName: String) extends InternalNotification
 
 case class DeprecatedOctalLiteralSyntax(position: InputPosition) extends InternalNotification

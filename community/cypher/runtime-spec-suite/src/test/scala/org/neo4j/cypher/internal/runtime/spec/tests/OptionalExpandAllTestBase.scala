@@ -966,7 +966,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
-      .projection("exists(n.t) AS res")
+      .projection("n.t IS NOT NULL AS res")
       .optionalExpandAll("(n)-->(m)")
       .optionalExpandAll("(x)--(n)")
       .allNodeScan("x")
@@ -975,7 +975,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("res").withSingleRow(null)
+    runtimeResult should beColumns("res").withSingleRow(false)
   }
 
   test("should be able to check label existence on null node without errors") {

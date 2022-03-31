@@ -1043,7 +1043,7 @@
   {
     "name": "exists",
     "category": "Predicate",
-    "description": "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map.",
+    "description": "Returns true if a match for the pattern exists in the graph.",
     "signature": "exists(input :: ANY?) :: (BOOLEAN?)",
     "isBuiltIn": true,
     "argumentDescription": [

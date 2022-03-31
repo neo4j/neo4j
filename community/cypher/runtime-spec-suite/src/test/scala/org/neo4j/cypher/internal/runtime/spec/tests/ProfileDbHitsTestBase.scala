@@ -81,13 +81,13 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "n:Label", costOfLabelCheck)
   }
 
-  test("PropertyExists on top of AllNodesScan") {
+  test("IS NOT NULL on top of AllNodesScan") {
     val cost = if (canReuseAllNodesScanLookup) costOfPropertyExists - 1 else costOfPropertyExists
-    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "exists(n.prop)", cost)
+    hasLabelOnTopOfLeaf(_.allNodeScan("n"), expression = "n.prop IS NOT NULL", cost)
   }
 
-  test("PropertyExists on top of LabelScan") {
-    hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "exists(n.prop)", costOfPropertyExists)
+  test("IS NOT NULL on top of LabelScan") {
+    hasLabelOnTopOfLeaf(_.nodeByLabelScan("n", "Label"), expression = "n.prop IS NOT NULL", costOfPropertyExists)
   }
 
   private def hasLabelOnTopOfLeaf(leaf: LogicalQueryBuilder => LogicalQueryBuilder, expression: String, expressionPerRowCost: Long) = {

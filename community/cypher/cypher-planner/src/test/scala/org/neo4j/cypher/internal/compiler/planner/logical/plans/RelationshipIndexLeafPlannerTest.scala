@@ -107,8 +107,6 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
     val mPropEqualsXProp = Equals(mProp, xProp)(pos)
     val mPropIsNotNull = isNotNull(mProp)
     val oPropIsNotNull = isNotNull(oProp)
-    val oPropExists = exists(oProp)
-    val oFooExists = exists(oFoo)
     val oFooEqualsLit6 = equals(oFoo, lit6)
     val oBarEqualsLit42 = equals(oBar, lit42)
     val oAaaEqualsLit42 = equals(oAaa, lit42)
@@ -133,8 +131,6 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
         mPropEqualsXProp,
         mPropIsNotNull,
         oPropIsNotNull,
-        oPropExists,
-        oFooExists,
         oFooEqualsLit6,
         oBarEqualsLit42,
         oAaaEqualsLit42,
@@ -199,9 +195,9 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
         DirectedRelationshipIndexEndsWithScan("n", "n1", "n2", relationshipTypeToken, IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // ..several..
         DirectedRelationshipIndexScan("n", "n1", "n2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        // oPropIsNotNull, oPropExists
+        // oPropIsNotNull
         DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        // oFooExists, oFooEqualsLit6, oBarEqualsLit42,
+        // oFooEqualsLit6, oBarEqualsLit42,
         DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(fooToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(barToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         DirectedRelationshipIndexScan("o", "o1", "o2", relationshipTypeToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(bbbToken, DoNotGetValue, RELATIONSHIP_TYPE), IndexedProperty(cccToken, DoNotGetValue, RELATIONSHIP_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),

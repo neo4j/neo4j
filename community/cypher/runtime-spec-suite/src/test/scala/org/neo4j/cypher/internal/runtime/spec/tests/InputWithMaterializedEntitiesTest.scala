@@ -89,7 +89,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name")
       .projection("n.name AS name")
-      .filter("EXISTS (n.name)")
+      .filter("n.name IS NOT NULL")
       .input(variables = Seq("n"))
       .build()
 
@@ -112,7 +112,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](edit
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("active")
       .projection("r.active AS active")
-      .filter("EXISTS (r.active)")
+      .filter("r.active IS NOT NULL")
       .input(variables = Seq("r"))
       .build()
 

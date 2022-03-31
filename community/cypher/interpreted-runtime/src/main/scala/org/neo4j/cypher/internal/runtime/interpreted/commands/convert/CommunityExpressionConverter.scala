@@ -366,19 +366,10 @@ case class CommunityExpressionConverter(tokenContext: ReadTokenContext, anonymou
         .RelationshipEndPoints(self.toCommandExpression(id, invocation.arguments.head), start = false)
       case Exists =>
         invocation.arguments.head match {
-          case property: ASTCachedProperty if property.entityType == NODE_TYPE =>
-            commands.predicates.CachedNodePropertyExists(self.toCommandExpression(id, property))
-          case property: ASTCachedProperty if property.entityType == RELATIONSHIP_TYPE =>
-            commands.predicates.CachedRelationshipPropertyExists(self.toCommandExpression(id, property))
-          case property: LogicalProperty =>
-            val propertyKey = getPropertyKey(property.propertyKey)
-            commands.predicates.PropertyExists(self.toCommandExpression(id, property.map), propertyKey)
           case expression: internal.expressions.PatternExpression =>
             self.toCommandPredicate(id, expression)
           case expression: pipes.NestedPipeCollectExpression =>
             self.toCommandPredicate(id, expression)
-          case e: internal.expressions.ContainerIndex =>
-            commands.expressions.ContainerIndexExists(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
           case _: NestedPlanExpression =>
             throw new InternalException("should have been rewritten away")
         }

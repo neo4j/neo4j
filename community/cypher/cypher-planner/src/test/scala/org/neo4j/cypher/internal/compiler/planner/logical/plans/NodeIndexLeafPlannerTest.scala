@@ -97,8 +97,6 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
     val mPropEqualsXProp = Equals(mProp, xProp)(pos)
     val mPropIsNotNull = isNotNull(mProp)
     val oPropIsNotNull = isNotNull(oProp)
-    val oPropExists = exists(oProp)
-    val oFooExists = exists(oFoo)
     val oFooEqualsLit6 = equals(oFoo, lit6)
     val oBarEqualsLit42 = equals(oBar, lit42)
     val oAaaEqualsLit42 = equals(oAaa, lit42)
@@ -132,8 +130,6 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         mPropEqualsXProp,
         mPropIsNotNull,
         oPropIsNotNull,
-        oPropExists,
-        oFooExists,
         oFooEqualsLit6,
         oBarEqualsLit42,
         oAaaEqualsLit42,
@@ -202,9 +198,9 @@ class NodeIndexLeafPlannerTest  extends CypherFunSuite with LogicalPlanningTestS
         NodeIndexEndsWithScan("n", labelToken, IndexedProperty(propToken, DoNotGetValue, NODE_TYPE), litFoo, Set("x"), IndexOrderNone, IndexType.TEXT),
         // ..several..
         NodeIndexScan("n", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        // oPropIsNotNull, oPropExists
+        // oPropIsNotNull
         NodeIndexScan("o", labelToken, Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
-        // oFooExists, oFooEqualsLit6, oBarEqualsLit42,
+        // oFooEqualsLit6, oBarEqualsLit42,
         NodeIndexScan("o", labelToken, Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexScan("o", labelToken, Seq(IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE), IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE), IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)), Set("x"), IndexOrderNone, IndexType.RANGE),

@@ -24,7 +24,7 @@ case object Exists extends Function {
   def name = "exists"
   override val signatures = Vector(
     TypeSignature(this, CTAny, CTBoolean,
-      "Returns true if a match for the pattern exists in the graph, or if the specified property exists in the node, relationship or map.",
+      "Returns true if a match for the pattern exists in the graph.",
       Category.PREDICATE)
   )
 }

@@ -101,11 +101,14 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTAny.covariant, invocation.arguments.head) chain
             (invocation.arguments.head match {
-              case _: Property => None
               case _: PatternExpression => None
-              case _: ContainerIndex => None
+              case _: Property | _: ContainerIndex =>
+                Some(SemanticError(
+                  "The property existence syntax `... exists(variable.property)` is no longer supported. Please use `variable.property IS NOT NULL` instead.",
+                  invocation.position
+                ))
               case e =>
-                Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position))
+                Some(SemanticError(s"Argument to ${invocation.name}(...) is not a pattern", e.position))
             })
         } chain specifyType(CTBoolean, invocation)
 

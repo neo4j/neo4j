@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -93,18 +92,6 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     check("RETURN NOT ()--()") should equal(Set.empty)
     check("RETURN ()--() AND ()--()--()") should equal(Set.empty)
     check("RETURN ()--() OR ()--()--()") should equal(Set.empty)
-  }
-
-  test("should warn about exists() in both union branches") {
-    val q = """MATCH (n:Label) WHERE exists(n.prop) RETURN n
-              |UNION
-              |MATCH (n:OtherLabel) WHERE exists(n.prop) RETURN n
-              |""".stripMargin
-
-    check(q) shouldBe Set(
-      DeprecatedPropertyExistenceSyntax(InputPosition(22, 1, 23)),
-      DeprecatedPropertyExistenceSyntax(InputPosition(79, 3, 28))
-    )
   }
 
   private val plannerName = new PlannerName {

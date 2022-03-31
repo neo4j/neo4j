@@ -28,7 +28,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITER
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
@@ -200,43 +199,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
         |""".stripMargin
     )
     assertNoNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
-  }
-
-  test("deprecated property existence syntax") {
-    val queries = Seq(
-      // On node
-      "MATCH (n) WHERE EXISTS(n.prop) RETURN n",
-
-      // On node with not
-      "MATCH (n) WHERE NOT EXISTS(n.prop) RETURN n",
-
-      // On relationship
-      "MATCH ()-[r]-() WITH r WHERE EXISTS(r.prop) RETURN r.prop",
-
-      // On map key
-      "WITH {key:'blah'} as map RETURN EXISTS(map.key)",
-
-      // On map notation in WHERE
-      "MATCH (n) WHERE EXISTS(n['prop']) RETURN n",
-
-      // On map notation in WHERE with NOT
-      "MATCH (n) WHERE NOT EXISTS(n['prop']) RETURN n",
-
-      // On map notation in RETURN
-      "MATCH (n) RETURN EXISTS(n['prop'])"
-    )
-
-    assertNotificationInSupportedVersions(queries, DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
-  }
-
-  test("exists on paths should not be deprecated") {
-    assertNoNotificationInSupportedVersions("MATCH (n) WHERE EXISTS( (n)-[:REL]->() ) RETURN count(n)", DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
-  }
-
-  test("exists subclause should not be deprecated") {
-    // Note: Exists subclause was introduced in Neo4j 4.0
-    assertNoNotificationInSupportedVersions_4_X("MATCH (n) WHERE EXISTS { MATCH (n)-[]->() } RETURN n.prop",
-      DEPRECATED_PROPERTY_EXISTENCE_SYNTAX)
   }
 
   test("deprecated coercion list to boolean") {

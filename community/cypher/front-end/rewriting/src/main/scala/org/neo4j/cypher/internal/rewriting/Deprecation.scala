@@ -20,19 +20,11 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.expressions.And
-import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Or
-import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -47,10 +39,8 @@ import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -141,12 +131,6 @@ object Deprecations {
           Some(DeprecatedBtreeIndexSyntax(c.position))
         )
 
-      case e@Exists(_: Property | _: ContainerIndex) =>
-        Deprecation(
-          None,
-          Some(DeprecatedPropertyExistenceSyntax(e.position))
-        )
-
       case i: ast.ShowIndexesClause if i.indexType == ast.BtreeIndexes =>
         Deprecation(
           None,
@@ -173,41 +157,6 @@ object Deprecations {
         case _ => false
       }
       case _ => false
-    }
-
-    override def findWithContext(statement: ast.Statement): Set[Deprecation] = {
-      def findExistsToIsNotNullReplacements(astNode: ASTNode): Set[Deprecation] = {
-        astNode.folder.treeFold[Set[Deprecation]](Set.empty) {
-          case _: ast.Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
-            acc => TraverseChildren(acc)
-
-          case e@Exists(p@(_: Property | _: ContainerIndex)) =>
-            val deprecation = Deprecation(
-              Some(Ref(e) -> IsNotNull(p)(e.position)),
-              None
-            )
-            acc => SkipChildren(acc + deprecation)
-
-          case _ =>
-            acc => SkipChildren(acc)
-        }
-      }
-
-      val replacementsFromExistsToIsNotNull = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
-        case w: ast.Where =>
-          val deprecations = findExistsToIsNotNullReplacements(w)
-          acc => SkipChildren(acc ++ deprecations)
-
-        case n: NodePattern =>
-          val deprecations = n.predicate.fold(Set.empty[Deprecation])(findExistsToIsNotNullReplacements)
-          acc => SkipChildren(acc ++ deprecations)
-
-        case p: PatternComprehension =>
-          val deprecations = p.predicate.fold(Set.empty[Deprecation])(findExistsToIsNotNullReplacements)
-          acc => TraverseChildren(acc ++ deprecations)
-      }
-
-      replacementsFromExistsToIsNotNull
     }
   }
 

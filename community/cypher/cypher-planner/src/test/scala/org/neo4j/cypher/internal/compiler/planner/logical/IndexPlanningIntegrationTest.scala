@@ -1002,9 +1002,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should plan index usage for node pattern with exists() predicate") {
+  test("should plan index usage for node pattern with IS NOT NULL predicate") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
-    val plan = cfg.plan("MATCH (a:Label WHERE exists(a.prop)) RETURN a, a.prop").stripProduceResults
+    val plan = cfg.plan("MATCH (a:Label WHERE a.prop IS NOT NULL) RETURN a, a.prop").stripProduceResults
 
     plan shouldBe cfg.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
@@ -1012,9 +1012,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should plan index usage for a pattern comprehension with exists() predicate") {
+  test("should plan index usage for a pattern comprehension with IS NOT NULL predicate") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
-    val plan = cfg.plan("RETURN [ (a:Label)-[r]->(b) WHERE exists(a.prop) | [a, a.prop] ] AS result ").stripProduceResults
+    val plan = cfg.plan("RETURN [ (a:Label)-[r]->(b) WHERE a.prop IS NOT NULL | [a, a.prop] ] AS result ").stripProduceResults
 
     plan shouldBe cfg.subPlanBuilder()
       .rollUpApply("result", "anon_0")
@@ -1025,9 +1025,9 @@ class IndexPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .build()
   }
 
-  test("should plan index usage for a pattern comprehension with exists() predicate inside a node pattern") {
+  test("should plan index usage for a pattern comprehension with IS NOT NULL predicate inside a node pattern") {
     val cfg = plannerConfigForRangeIndexOnLabelPropTests()
-    val plan = cfg.plan("RETURN [ (a:Label WHERE exists(a.prop))-[r]->(b) | [a, a.prop] ] AS result ").stripProduceResults
+    val plan = cfg.plan("RETURN [ (a:Label WHERE a.prop IS NOT NULL)-[r]->(b) | [a, a.prop] ] AS result ").stripProduceResults
 
     plan shouldBe cfg.subPlanBuilder()
       .rollUpApply("result", "anon_0")

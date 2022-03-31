@@ -51,7 +51,6 @@ import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPropertyExistenceSyntax
 import org.neo4j.cypher.internal.util.DeprecatedRepeatedRelVarInPatternExpression
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
 import org.neo4j.cypher.internal.util.InputPosition
@@ -118,9 +117,7 @@ object NotificationWrapping {
       NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedBtreeIndexSyntax(pos) =>
       NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedPropertyExistenceSyntax(pos) =>
-      NotificationCode.DEPRECATED_PROPERTY_EXISTENCE_SYNTAX.notification(pos.withOffset(offset).asInputPosition)
-    case ProcedureWarningNotification(pos, name, warning) =>
+   case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
     case ExperimentalFeatureNotification(msg) =>
       NotificationCode.EXPERIMENTAL_FEATURE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.message("PARALLEL", msg))

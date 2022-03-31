@@ -160,7 +160,6 @@ object IndexCompatiblePredicatesProvider {
           compatibleIndexTypes = Set(IndexType.Point))
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
-      // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate@AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
         IndexCompatiblePredicate(scannable.ident, scannable.property, predicate, ExistenceQueryExpression(), CTAny, predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate), dependencies = Set.empty, compatibleIndexTypes = Set(IndexType.Range)).convertToScannable
