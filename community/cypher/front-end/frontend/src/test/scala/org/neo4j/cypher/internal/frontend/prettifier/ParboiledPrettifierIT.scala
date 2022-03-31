@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend
+package org.neo4j.cypher.internal.frontend.prettifier
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -188,7 +188,31 @@ class ParboiledPrettifierIT extends CypherFunSuite {
       """FOREACH ( n IN [1, 2, 3] |
         |  CREATE ({key: n})
         |  CREATE ({foreignKey: n})
-        |)""".stripMargin
+        |)""".stripMargin,
+
+    """MATCH (c:Country { name: "Sweden" }) UsInG ScAn c:Country""" ->
+      """MATCH (c:Country {name: "Sweden"})
+        |  USING SCAN c:Country""".stripMargin,
+
+    """MATCH (c:Country)-[v:VISITED { year: 1950 }]->() UsInG ScAn v:VISITED""" ->
+      """MATCH (c:Country)-[v:VISITED {year: 1950}]->()
+        |  USING SCAN v:VISITED""".stripMargin,
+
+    """MATCH (n) UsInG ScAn n:Country UsInG Scan n:City WHERE n:Country oR n:City""" ->
+      """MATCH (n)
+        |  USING SCAN n:Country
+        |  USING SCAN n:City
+        |  WHERE n:Country OR n:City""".stripMargin,
+
+    """MATCH (p:Person)-[v:VISITED]->(c:Country) UsInG JoIn On v"""->
+      """MATCH (p:Person)-[v:VISITED]->(c:Country)
+        |  USING JOIN ON v""".stripMargin,
+
+    "MATCH (p:Person { born: 1950 }) OPTIONAL MATCH (p)-[:VISITED]->(c:Country) UsInG JoIn oN p RETURN *" ->
+      """MATCH (p:Person {born: 1950})
+        |OPTIONAL MATCH (p)-[:VISITED]->(c:Country)
+        |  USING JOIN ON p
+        |RETURN *""".stripMargin
   )
 
   def schemaTests(): Seq[(String, String)] = Seq[(String, String)](

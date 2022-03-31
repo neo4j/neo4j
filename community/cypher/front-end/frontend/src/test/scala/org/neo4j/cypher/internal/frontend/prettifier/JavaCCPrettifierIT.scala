@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend
+package org.neo4j.cypher.internal.frontend.prettifier
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
