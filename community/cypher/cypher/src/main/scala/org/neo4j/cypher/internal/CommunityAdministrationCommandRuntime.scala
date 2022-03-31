@@ -254,33 +254,10 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Non-administration commands that are allowed on system database, e.g. SHOW PROCEDURES
     case AllowedNonAdministrationCommands(statement) => _ =>
-      val updatedStatement = statement.rewrite(new Rewriter {
-        override def apply(v: AnyRef): AnyRef = instance(v)
-
-        private val instance = bottomUp(Rewriter.lift {
-          case s@SingleQuery(clauses) => s.copy(clauses = rewriteClauses(clauses.toList, List()))(s.position)
-        })
-
-        @tailrec
-        // Remove internally added YIELD and RETURN for TERMINATE TRANSACTION
-        // as the command does not allow those clauses and otherwise will fail to parse
-        // No risk of throwing away any WHERE clauses, as those are not allowed either
-        private def rewriteClauses(clauses: List[Clause], rewrittenClause: List[Clause]): List[Clause] = clauses match {
-          // Terminate transaction command with only a YIELD (don't think this case exists but to be on the safe side)
-          case (terminateClause: TerminateTransactionsClause) :: (_: Yield) :: Nil =>
-            rewrittenClause :+ terminateClause
-          // Terminate transaction command with YIELD and RETURN
-          case (terminateClause: TerminateTransactionsClause) :: (_: Yield) :: (_: Return) :: Nil =>
-            rewrittenClause :+ terminateClause
-          case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
-          case Nil => rewrittenClause
-        }
-      }).asInstanceOf[Statement]
-
       SystemCommandExecutionPlan("AllowedNonAdministrationCommand",
         normalExecutionEngine,
         securityAuthorizationHandler,
-        QueryRenderer.render(updatedStatement),
+        QueryRenderer.render(statement),
         MapValue.EMPTY,
         // If we have a non admin command executing in the system database, forbid it to make reads / writes
         // from the system graph. This is to prevent queries such as SHOW PROCEDURES YIELD * RETURN ()--()

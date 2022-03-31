@@ -733,15 +733,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
   test("Should only terminate given transactions once") {
     // GIVEN
-    createUser()
-    createUser(username2)
-    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
-    val matchQuery = "MATCH (n) RETURN n"
     val latch = new DoubleLatch(3)
-    val tx1 = ThreadedTransaction(latch)
-    tx1.execute(username, password, threading, unwindQuery)
-    val tx2 = ThreadedTransaction(latch)
-    tx2.execute(username2, password, threading, matchQuery)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
     latch.startAndWaitForAllToStart()
 
     try {
@@ -883,6 +876,284 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
 
       // THEN
       result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with YIELD *") {
+    // GIVEN
+    val latch = new DoubleLatch(3)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val result = execute(s"TERMINATE TRANSACTIONS '$unwindTransactionId', '$matchTransactionId' YIELD *").toList
+
+      // THEN
+      val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
+      sortedRes should be(List(
+        Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username),
+        Map("message" -> "Transaction terminated.", "transactionId" -> matchTransactionId, "username" -> username2)
+      ).sortBy(m => m("transactionId")))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate system transaction with YIELD *") {
+    def getTransactionId: String = {
+      val result = execute(
+        s"""SHOW TRANSACTIONS
+           |WHERE database = '$SYSTEM_DATABASE_NAME' AND username = '$username'
+           |""".stripMargin)
+
+      if (result.isEmpty) throw new RuntimeException(s"No queries found for user '$username' on database '$SYSTEM_DATABASE_NAME'")
+
+      result.columnAs[String]("transactionId").next
+    }
+
+    // GIVEN
+    createUser()
+    val latch = new DoubleLatch(2)
+    val tx = ThreadedTransaction(latch, SYSTEM_DATABASE_NAME)
+    tx.execute(username, password, threading, "SHOW DATABASES")
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val systemTransactionId = getTransactionId
+      val result = execute(s"TERMINATE TRANSACTION '$systemTransactionId' YIELD *").toList
+
+      // THEN
+      result should be(List(Map("message" -> "Transaction terminated.", "transactionId" -> systemTransactionId, "username" -> username)))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transaction with specific YIELD") {
+    // GIVEN
+    createUser()
+    val unwindQuery = "UNWIND [1,2,3] AS x RETURN x"
+    val latch = new DoubleLatch(2, true)
+    val tx = ThreadedTransaction(latch)
+    tx.execute(username, password, threading, unwindQuery)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val result = execute(s"TERMINATE TRANSACTION '$unwindTransactionId' YIELD message").toList
+
+      // THEN
+      result should be(List(Map("message" -> "Transaction terminated.")))
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with YIELD * and WHERE") {
+    // GIVEN
+    val latch = new DoubleLatch(3)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD * WHERE username = '$username'").toList
+
+      // THEN
+      result should be(List(
+        Map("message" -> "Transaction terminated.", "transactionId" -> unwindTransactionId, "username" -> username)
+      ))
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with specific YIELD and WHERE") {
+    // GIVEN
+    val latch = new DoubleLatch(3)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username'").toList
+
+      // THEN
+      result should be(List(
+        Map("message" -> "Transaction terminated.", "username" -> username)
+      ))
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with YIELD, WHERE and RETURN") {
+    // GIVEN
+    val latch = new DoubleLatch(3)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val result = execute(s"TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' YIELD message, username WHERE username = '$username' RETURN message").toList
+
+      // THEN
+      result should be(List(
+        Map("message" -> "Transaction terminated.")
+      ))
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with full yield") {
+    // GIVEN
+    val latch = new DoubleLatch(4)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    val createQuery = "UNWIND [1,2,3] AS x CREATE (:Label {prop: x}) RETURN x"
+    val tx = ThreadedTransaction(latch)
+    tx.execute(username, password, threading, createQuery)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val createTransactionId = getTransactionIdExecutingQuery(createQuery)
+      val result = execute(
+        s"""TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId'
+           |YIELD transactionId AS txId, username
+           |ORDER BY txId SKIP 1 LIMIT 5
+           |WHERE username = '$username'
+           |RETURN txId""".stripMargin).toList
+
+      // THEN
+      result should have size 1
+      result.head("txId") should (be(unwindTransactionId) or be(createTransactionId)) // we don't know which query will get skipped
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with multiple ORDER BY") {
+    // GIVEN
+    val latch = new DoubleLatch(4)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    val createQuery = "UNWIND [1,2,3] AS x CREATE (:Label {prop: x}) RETURN x"
+    val tx = ThreadedTransaction(latch)
+    tx.execute(username, password, threading, createQuery)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val createTransactionId = getTransactionIdExecutingQuery(createQuery)
+      val result = execute(
+        s"""TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId'
+           |YIELD *
+           |ORDER BY transactionId DESC
+           |RETURN transactionId, username
+           |ORDER BY username DESC""".stripMargin)
+      val planDescr = result.executionPlanDescription()
+
+      // THEN
+      planDescr should includeSomewhere.aPlan("Sort").containingArgument("transactionId DESC")
+      planDescr should includeSomewhere.aPlan("Sort").containingArgument("username DESC")
+      result.toList should be(List(
+        Map("transactionId" -> matchTransactionId, "username" -> username2),
+        Map("transactionId" -> unwindTransactionId, "username" -> username),
+        Map("transactionId" -> createTransactionId, "username" -> username)
+      ).sortBy(m => m("transactionId")).sortBy(m => m("username")).reverse) // order expected by txId DESC, username DESC
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("Should terminate transactions with double aggregation") {
+    // GIVEN
+    val latch = new DoubleLatch(3)
+    val (unwindQuery, matchQuery) = setupTwoUsersAndOneTransactionEach(latch)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      // WHEN: the query is rewritten to include WITH (splitting the aggregation)
+      selectDatabase(DEFAULT_DATABASE_NAME)
+      val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
+      val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
+      val result = execute(
+        s"""TERMINATE TRANSACTIONS '$unwindTransactionId', '$matchTransactionId'
+           |YIELD transactionId
+           |RETURN size(collect(transactionId)) AS numTx""".stripMargin).toList
+
+      // THEN
+      result should be(List(Map("numTx" -> 2)))
+      // Check that either the transactions are gone or at least marked as terminated,
+      // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
+      execute(s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
+    } finally {
+      latch.finishAndWaitForAllToFinish()
+    }
+  }
+
+  test("should fail to terminate transaction with WHERE without YIELD") {
+    // GIVEN
+    createUser()
+    val query = "UNWIND [1,2,3] AS x RETURN x"
+    val latch = new DoubleLatch(2, true)
+    val tx = ThreadedTransaction(latch)
+    tx.execute(username, password, threading, query)
+    latch.startAndWaitForAllToStart()
+
+    try {
+      val txId = getTransactionIdExecutingQuery(query)
+
+      // WHEN
+      val exception = the[SyntaxException] thrownBy {
+        execute(s"TERMINATE TRANSACTION '$txId' WHERE NOT isEmpty(username)")
+      }
+
+      // THEN
+      exception.getMessage should startWith("`WHERE` is not allowed by itself, please use `TERMINATE TRANSACTION ... YIELD ... WHERE ...` instead")
+
+      val res = execute(s"SHOW TRANSACTION '$txId'").toList
+      res should have size 1
+      res.head("status") should be("Running")
     } finally {
       latch.finishAndWaitForAllToFinish()
     }

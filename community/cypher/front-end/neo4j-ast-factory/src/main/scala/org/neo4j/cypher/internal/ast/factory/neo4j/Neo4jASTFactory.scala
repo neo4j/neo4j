@@ -1169,9 +1169,9 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     ShowTransactionsClause.apply(scalaIds, Option(where), hasYield)(p)
   }
 
-  override def terminateTransactionsClause(p: InputPosition, ids: SimpleEither[util.List[String], Parameter]): Clause = {
+  override def terminateTransactionsClause(p: InputPosition, ids: SimpleEither[util.List[String], Parameter], where: Where, hasYield: Boolean): Clause = {
     val scalaIds = ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
-    TerminateTransactionsClause(scalaIds)(p)
+    TerminateTransactionsClause(scalaIds, hasYield, Option(where).map(_.position))(p)
   }
 
   // Schema Commands
@@ -1688,7 +1688,7 @@ class Neo4jASTFactory(query: String, anonymousVariableNameGenerator: AnonymousVa
     if (yieldExpr != null) {
       ShowDatabase(scope, Some(Left((yieldExpr, Option(returnWithoutGraph)))))(p)
     } else {
-      ShowDatabase(scope, Option(where).map(e => Right(where)))(p)
+      ShowDatabase(scope, Option(where).map(e => Right(e)))(p)
     }
   }
 

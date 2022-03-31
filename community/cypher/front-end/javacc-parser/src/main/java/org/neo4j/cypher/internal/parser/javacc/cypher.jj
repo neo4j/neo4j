@@ -3722,15 +3722,35 @@ STATEMENT TerminateTransactions( Token start, USE_CLAUSE useClause ):
     List<String> ids = new ArrayList<>();
     PARAMETER param = null;
     SimpleEither<List<String>, PARAMETER> idEither = SimpleEither.left(ids);
+
+    WHERE where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
 }
 {
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
-        (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); }) |
-        (param=Parameter( ParameterType.ANY ) { idEither=SimpleEither.right(param); })
+        (ids=TransactionIdStringList() { idEither=SimpleEither.left(ids); })
+        | (param=Parameter( ParameterType.ANY ) { idEither=SimpleEither.right(param); })
+    )?
+    (
+        ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
+        | where=WhereClause()
     )?
     {
-        clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither ) );
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, true ) );
+            clauses.add( yieldClause );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.terminateTransactionsClause( pos( start ), idEither, where, false ) );
+        }
         return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }

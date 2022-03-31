@@ -414,7 +414,7 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL terminateTransactionsClause( NULL p, SimpleEither<List<String>, Object> ids )
+    public NULL terminateTransactionsClause( NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield )
     {
         throw new UnsupportedOperationException( "terminateTransactionsClause is not a literal" );
     }

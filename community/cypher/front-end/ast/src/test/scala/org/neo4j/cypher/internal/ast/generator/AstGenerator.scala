@@ -1295,13 +1295,19 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   }
 
   def _terminateTransactions: Gen[Query] = for {
-    idList <- zeroOrMore(string)
-    param  <- _parameter
-    ids    <- oneOf(Left(idList), Right(param))
-    use    <- option(_use)
+    idList  <- zeroOrMore(string)
+    param   <- _parameter
+    ids     <- oneOf(Left(idList), Right(param))
+    yields  <- option(_yield)
+    returns <- option(_return)
+    use     <- option(_use)
   } yield {
-    val terminateClause = Seq(TerminateTransactionsClause(ids)(pos))
-    val fullClauses = use.map(u => u +: terminateClause).getOrElse(terminateClause)
+    val terminateClauses = (yields, returns) match {
+      case (Some(y), Some(r)) => Seq(TerminateTransactionsClause(ids, hasYield = true, None)(pos), y, r)
+      case (Some(y), None)    => Seq(TerminateTransactionsClause(ids, hasYield = true, None)(pos), y)
+      case _                  => Seq(TerminateTransactionsClause(ids, hasYield = false, None)(pos))
+    }
+    val fullClauses = use.map(u => u +: terminateClauses).getOrElse(terminateClauses)
     Query(SingleQuery(fullClauses)(pos))(pos)
   }
 

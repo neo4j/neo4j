@@ -731,7 +731,7 @@ object ShowTransactionsClause {
   }
 }
 
-case class TerminateTransactionsClause(unfilteredColumns: DefaultOrAllShowColumns, ids: Either[List[String], Parameter])
+case class TerminateTransactionsClause(unfilteredColumns: DefaultOrAllShowColumns, ids: Either[List[String], Parameter], hasYield: Boolean, wherePos: Option[InputPosition])
                             (val position: InputPosition) extends CommandClause with CommandClauseAllowedOnSystem {
   override def name: String = "TERMINATE TRANSACTIONS"
 
@@ -740,6 +740,8 @@ case class TerminateTransactionsClause(unfilteredColumns: DefaultOrAllShowColumn
     case Right(_) => false // parameter list length needs to be checked at runtime
   }) {
     error("Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`", position)
+  } chain when(wherePos.isDefined) {
+    error("`WHERE` is not allowed by itself, please use `TERMINATE TRANSACTION ... YIELD ... WHERE ...` instead", wherePos.get)
   } chain super.semanticCheck
 
   override def where: Option[Where] = None
@@ -747,14 +749,15 @@ case class TerminateTransactionsClause(unfilteredColumns: DefaultOrAllShowColumn
 }
 
 object TerminateTransactionsClause {
-  def apply(ids: Either[List[String], Parameter])(position: InputPosition): TerminateTransactionsClause = {
+  def apply(ids: Either[List[String], Parameter], hasYield: Boolean, wherePos: Option[InputPosition])(position: InputPosition): TerminateTransactionsClause = {
+    // All columns are currently default
     val columns = List(
       ShowColumn("transactionId")(position),
       ShowColumn("username")(position),
       ShowColumn("message")(position)
     )
 
-    TerminateTransactionsClause(DefaultOrAllShowColumns(useAllColumns = true, columns, columns), ids)(position)
+    TerminateTransactionsClause(DefaultOrAllShowColumns(useAllColumns = hasYield, columns, columns), ids, hasYield, wherePos)(position)
   }
 }
 

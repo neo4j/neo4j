@@ -802,7 +802,7 @@ public class NullAstFactory implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL terminateTransactionsClause( NULL p, SimpleEither<List<String>,NULL> ids )
+    public NULL terminateTransactionsClause( NULL p, SimpleEither<List<String>,NULL> ids, NULL where, boolean hasYield )
     {
         return null;
     }

@@ -1309,6 +1309,28 @@ class PrettifierIT extends CypherFunSuite {
 
     "terminate \ntransaction\n 'db1-transaction-123'" ->
       """TERMINATE TRANSACTIONS "db1-transaction-123"""",
+
+    "terminate transaction 'db1-transaction-123'  YIELD *" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD *""".stripMargin,
+
+    "terminate transaction 'db1-transaction-123'  YIELD * Return DISTINCT database" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD *
+        |RETURN DISTINCT database""".stripMargin,
+
+    "terminate transaction 'db1-transaction-123' YIELD * where database = 'neo4j' Return *" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD *
+        |  WHERE database = "neo4j"
+        |RETURN *""".stripMargin,
+
+    "terminate transaction 'db1-transaction-123' yield currentQueryId order by currentQueryId skip 1 limit 1" ->
+      """TERMINATE TRANSACTIONS "db1-transaction-123"
+        |YIELD currentQueryId
+        |  ORDER BY currentQueryId ASCENDING
+        |  SKIP 1
+        |  LIMIT 1""".stripMargin,
   )
 
   def administrationTests(): Seq[(String, String)] = Seq[(String, String)](
