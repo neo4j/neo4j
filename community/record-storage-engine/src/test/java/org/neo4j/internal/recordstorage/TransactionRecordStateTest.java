@@ -1656,7 +1656,7 @@ class TransactionRecordStateTest
     @SuppressWarnings( "InfiniteLoopStatement" )
     private static CommandsToApply readFromChannel( StoreCursors storeCursors, ReadableLogChannel channel ) throws IOException
     {
-        CommandReader reader = LogCommandSerializationV4_2.INSTANCE;
+        CommandReader reader = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
         List<StorageCommand> commands = new ArrayList<>();
         try
         {

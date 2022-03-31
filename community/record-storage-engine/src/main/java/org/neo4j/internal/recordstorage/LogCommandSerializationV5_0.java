@@ -22,8 +22,10 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
@@ -40,7 +42,9 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.values.storable.Value;
 
+import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.util.Bits.bitFlag;
 import static org.neo4j.util.Bits.bitFlags;
 
@@ -238,6 +242,19 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
         schemaRecord.setCreated( createdInTx );
 
         return schemaRecord;
+    }
+
+    static SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
+    {
+        Map<String,Value> ruleMap = readStringValueMap( channel );
+        try
+        {
+            return unmapifySchemaRule( id, ruleMap );
+        }
+        catch ( MalformedSchemaRuleException e )
+        {
+            throw new IOException( "Failed to create a schema rule from string-value map: " + ruleMap, e );
+        }
     }
 
     @Override

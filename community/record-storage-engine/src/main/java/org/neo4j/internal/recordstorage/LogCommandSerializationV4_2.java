@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaRuleMapifier;
 import org.neo4j.io.fs.ReadableChannel;
@@ -61,7 +60,6 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.util.Bits.bitFlag;
 import static org.neo4j.util.Bits.bitFlags;
 
@@ -337,7 +335,8 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
         SchemaRule schemaRule = null;
         if ( hasSchemaRule )
         {
-            schemaRule = readSchemaRule( id, channel );
+            // Read the values but don't try to make a schema rule out of them because we won't support all values anymore
+            readStringValueMap( channel );
         }
         return new Command.SchemaRuleCommand( this, before, after, schemaRule );
     }
@@ -369,19 +368,6 @@ class LogCommandSerializationV4_2 extends LogCommandSerialization
             schemaRecord.clear();
         }
         return schemaRecord;
-    }
-
-    static SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
-    {
-        Map<String,Value> ruleMap = readStringValueMap( channel );
-        try
-        {
-            return unmapifySchemaRule( id, ruleMap );
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            throw new IOException( "Failed to create a schema rule from string-value map: " + ruleMap, e );
-        }
     }
 
     static Map<String,Value> readStringValueMap( ReadableChannel channel ) throws IOException

@@ -70,7 +70,7 @@ class SchemaRuleCommandTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private NeoStoreTransactionApplierFactory storeApplier;
     private final IndexTransactionApplierFactory indexApplier = new IndexTransactionApplierFactory( indexUpdateListener );
-    private final LogCommandSerialization serialization = LogCommandSerializationV4_2.INSTANCE;
+    private final LogCommandSerialization serialization = RecordStorageCommandReaderFactory.LATEST_LOG_SERIALIZATION;
     private final IndexDescriptor rule = IndexPrototype.forSchema( SchemaDescriptors.forLabel( labelId, propertyKey ) ).withName( "index" ).materialise( id );
 
     @BeforeEach
