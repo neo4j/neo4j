@@ -208,6 +208,7 @@ public abstract class AbstractEditionModule
                                         globalModule.getJobScheduler(),
                                         globalModule.getGlobalConfig(),
                                         new CursorContextFactory( globalModule.getTracers().getPageCacheTracer(), EMPTY ) )
+                                   .withLogService( globalModule.getLogService() )
                                    .build() );
     }
 }

@@ -50,19 +50,31 @@ class HeapBufferedIds implements BufferedIds
                 break;
             }
 
-            queue.remove();
-            for ( var idBuffer : entry.idBuffers )
+            try
             {
-                visitor.startType( idBuffer.idTypeOrdinal() );
-                var ids = idBuffer.ids().iterator();
-                while ( ids.hasNext() )
+                queue.remove();
+                for ( var idBuffer : entry.idBuffers )
                 {
-                    visitor.id( ids.next() );
+                    visitor.startType( idBuffer.idTypeOrdinal() );
+                    try
+                    {
+                        var ids = idBuffer.ids().iterator();
+                        while ( ids.hasNext() )
+                        {
+                            visitor.id( ids.next() );
+                        }
+                    }
+                    finally
+                    {
+                        visitor.endType();
+                    }
                 }
-                visitor.endType();
             }
-            visitor.endChunk();
-            IOUtils.closeAll( entry.idBuffers );
+            finally
+            {
+                visitor.endChunk();
+                IOUtils.closeAll( entry.idBuffers );
+            }
         }
     }
 

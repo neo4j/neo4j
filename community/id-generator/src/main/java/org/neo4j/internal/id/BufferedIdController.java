@@ -27,6 +27,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
@@ -47,15 +49,17 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     private final JobScheduler scheduler;
     private final CursorContextFactory contextFactory;
     private final String databaseName;
+    private final InternalLog log;
     private JobHandle<?> jobHandle;
 
     public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler, CursorContextFactory contextFactory,
-            String databaseName )
+                                 String databaseName, LogService logService )
     {
         this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
         this.contextFactory = contextFactory;
         this.databaseName = databaseName;
+        this.log = logService.getInternalLog( BufferedIdController.class );
     }
 
     @Override
@@ -95,6 +99,10 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
         try ( var cursorContext = contextFactory.create( BUFFERED_ID_CONTROLLER ) )
         {
             bufferingIdGeneratorFactory.maintenance( cursorContext );
+        }
+        catch ( Throwable t )
+        {
+            log.error( "Exception when performing id maintenance", t );
         }
     }
 

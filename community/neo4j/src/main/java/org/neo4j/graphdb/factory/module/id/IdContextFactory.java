@@ -27,6 +27,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
 public class IdContextFactory
@@ -35,14 +36,17 @@ public class IdContextFactory
     private final Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
     private final CursorContextFactory contextFactory;
+    private final LogService logService;
 
     IdContextFactory( JobScheduler jobScheduler, Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider,
-            Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, CursorContextFactory contextFactory )
+                      Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, CursorContextFactory contextFactory,
+                      LogService logService )
     {
         this.jobScheduler = jobScheduler;
         this.idFactoryProvider = idFactoryProvider;
         this.factoryWrapper = factoryWrapper;
         this.contextFactory = contextFactory;
+        this.logService = logService;
     }
 
     public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId )
@@ -56,7 +60,7 @@ public class IdContextFactory
         IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( namedDatabaseId );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( idGeneratorFactory );
         BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler, contextFactory,
-                namedDatabaseId.name() );
+                namedDatabaseId.name(), logService );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
     }
 
@@ -66,8 +70,9 @@ public class IdContextFactory
     }
 
     private static BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory, JobScheduler scheduler,
-            CursorContextFactory contextFactory, String databaseName )
+                                                                    CursorContextFactory contextFactory, String databaseName,
+                                                                    LogService logService )
     {
-        return new BufferedIdController( idGeneratorFactory, scheduler, contextFactory, databaseName );
+        return new BufferedIdController( idGeneratorFactory, scheduler, contextFactory, databaseName, logService );
     }
 }

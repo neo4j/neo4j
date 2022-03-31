@@ -163,25 +163,42 @@ class DiskBufferedIds implements BufferedIds
                 break;
             }
 
-            var numIdTypes = segment.getInt();
-            for ( var t = 0; t < numIdTypes; t++ )
-            {
-                var idTypeOrdinal = segment.getInt();
-                visitor.startType( idTypeOrdinal );
-                var numIds = segment.getInt();
-                for ( var i = 0; i < numIds; i++ )
-                {
-                    var id = segment.getLong();
-                    visitor.id( id );
-                }
-                visitor.endType();
-            }
-            visitor.endChunk();
+            processChunk( visitor, segment );
             readPosition = checkRotate( readPosition, segment.position(), segmentId ->
             {
                 fs.deleteFile( segmentName( segmentId - 1 ) );
                 return openSegmentForReading( segmentId );
             } );
+        }
+    }
+
+    private void processChunk( BufferedIdVisitor visitor, ReadAheadChannel<StoreChannel> segment ) throws IOException
+    {
+        try
+        {
+            var numIdTypes = segment.getInt();
+            for ( var t = 0; t < numIdTypes; t++ )
+            {
+                var idTypeOrdinal = segment.getInt();
+                visitor.startType( idTypeOrdinal );
+                try
+                {
+                    var numIds = segment.getInt();
+                    for ( var i = 0; i < numIds; i++ )
+                    {
+                        var id = segment.getLong();
+                        visitor.id( id );
+                    }
+                }
+                finally
+                {
+                    visitor.endType();
+                }
+            }
+        }
+        finally
+        {
+            visitor.endChunk();
         }
     }
 

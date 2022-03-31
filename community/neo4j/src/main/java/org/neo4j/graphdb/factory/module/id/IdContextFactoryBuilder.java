@@ -28,6 +28,8 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.logging.internal.LogService;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
@@ -42,6 +44,7 @@ public final class IdContextFactoryBuilder
     private Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
     private Config config;
     private CursorContextFactory contextFactory;
+    private LogService logService = NullLogService.getInstance();
 
     private IdContextFactoryBuilder()
     {
@@ -70,6 +73,12 @@ public final class IdContextFactoryBuilder
         return this;
     }
 
+    public IdContextFactoryBuilder withLogService( LogService logService )
+    {
+        this.logService = logService;
+        return this;
+    }
+
     public IdContextFactory build()
     {
         if ( idGeneratorFactoryProvider == null )
@@ -83,7 +92,7 @@ public final class IdContextFactoryBuilder
         {
             factoryWrapper = identity();
         }
-        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper, contextFactory );
+        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, factoryWrapper, contextFactory, logService );
     }
 
     public static Function<NamedDatabaseId,IdGeneratorFactory> defaultIdGeneratorFactoryProvider( FileSystemAbstraction fs, Config config )

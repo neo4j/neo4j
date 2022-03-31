@@ -30,6 +30,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -73,7 +75,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
         }
     };
 
-    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new HashMap<>();
+    private final Map<IdType, BufferingIdGenerator> overriddenIdGenerators = new ConcurrentHashMap<>();
     private FileSystemAbstraction fs;
     private Path bufferBasePath;
     private Config config;
@@ -219,9 +221,19 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
     @Override
     public void shutdown() throws Exception
     {
-        IOUtils.closeAllUnchecked( bufferQueue );
-        overriddenIdGenerators.clear();
-        idTypeMapping.clear();
+        bufferReadLock.lock();
+        bufferWriteLock.lock();
+        try
+        {
+            IOUtils.closeAllUnchecked( bufferQueue );
+            overriddenIdGenerators.clear();
+            idTypeMapping.clear();
+        }
+        finally
+        {
+            bufferWriteLock.unlock();
+            bufferReadLock.unlock();
+        }
     }
 
     record IdBuffer(int idTypeOrdinal, HeapTrackingLongArrayList ids) implements AutoCloseable
@@ -275,7 +287,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
 
     private static class IdTypeMapping
     {
-        private final List<IdType> idTypes = new ArrayList<>();
+        private final List<IdType> idTypes = new CopyOnWriteArrayList<>();
 
         int map( IdType idType )
         {
