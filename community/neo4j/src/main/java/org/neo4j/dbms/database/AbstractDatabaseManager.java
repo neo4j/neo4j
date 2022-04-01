@@ -54,18 +54,16 @@ public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extend
     protected final InternalLog log;
     protected final boolean manageDatabasesOnStartAndStop;
     protected final Config config;
-    protected final DatabaseContextFactory<DB> databaseContextFactory;
 
     private final DatabaseIdRepository.Caching databaseIdRepository;
 
-    protected AbstractDatabaseManager( GlobalModule globalModule, DatabaseContextFactory<DB> databaseContextFactory, boolean manageDatabasesOnStartAndStop )
+    protected AbstractDatabaseManager( GlobalModule globalModule, boolean manageDatabasesOnStartAndStop )
     {
         this.log = globalModule.getLogService().getInternalLogProvider().getLog( getClass() );
         this.externalDependencyResolver = globalModule.getExternalDependencyResolver();
         this.config = globalModule.getGlobalConfig();
         this.manageDatabasesOnStartAndStop = manageDatabasesOnStartAndStop;
         this.databaseMap = new ConcurrentHashMap<>();
-        this.databaseContextFactory = databaseContextFactory;
         this.databaseIdRepository = createDatabaseIdRepository( globalModule );
     }
 

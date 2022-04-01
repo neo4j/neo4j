@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -62,5 +63,11 @@ public class StandaloneDatabaseContext implements DatabaseContext
     public Throwable failureCause()
     {
         return failureCause;
+    }
+
+    @Override
+    public GraphDatabaseSettings.Mode mode()
+    {
+        return GraphDatabaseSettings.Mode.SINGLE;
     }
 }

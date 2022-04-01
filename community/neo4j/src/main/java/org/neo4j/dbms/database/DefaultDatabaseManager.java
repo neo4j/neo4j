@@ -31,9 +31,12 @@ import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID
 
 public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
+    private DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory;
+
     public DefaultDatabaseManager( GlobalModule globalModule, DatabaseContextFactory<StandaloneDatabaseContext> databaseContextFactory )
     {
-        super( globalModule, databaseContextFactory, true );
+        super( globalModule, true );
+        this.databaseContextFactory = databaseContextFactory;
     }
 
     @Override
@@ -69,7 +72,7 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
         requireNonNull( namedDatabaseId );
         log.info( "Creating '%s'.", namedDatabaseId );
         checkDatabaseLimit( namedDatabaseId );
-        StandaloneDatabaseContext databaseContext = databaseContextFactory.create( namedDatabaseId, DatabaseOptions.EMPTY );
+        StandaloneDatabaseContext databaseContext = databaseContextFactory.create( namedDatabaseId, DatabaseOptions.SINGLE );
         databaseMap.put( namedDatabaseId, databaseContext );
         return databaseContext;
     }
