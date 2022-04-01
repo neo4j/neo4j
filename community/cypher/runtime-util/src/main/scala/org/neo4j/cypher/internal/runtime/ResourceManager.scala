@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.runtime.SingleThreadedResourcePool.SHALLOW_SIZE
 import org.neo4j.internal.helpers.Exceptions
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.CloseListener
-import org.neo4j.internal.kernel.api.CursorFactory
-import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray
@@ -92,31 +90,6 @@ object ResourceMonitor {
     def untrace(resource: AutoCloseablePlus): Unit = {}
     def close(resource: AutoCloseablePlus): Unit = {}
   }
-}
-
-/**
- * Used by LoadCsvPeriodicCommitObserver to close all cursors in a cursor pool
- * and set new cursor factory and context.
- *
- * It would first closeCursors() that belongs to a transaction before committing,
- * and after beginning a new transaction, set a new factory and context bound to that new transaction.
- * The new factory and context will be used the next time cursors need to be allocated.
- */
-trait ResourceManagedCursorPool extends AutoCloseablePlus {
-  /**
-   * Close all cursors that are cached in the pool
-   */
-  def closeCursors(): Unit
-
-  /**
-   * Set a new cursor factory and context, that will be used the next time a cursor needs to be
-   * allocated.
-   *
-   * NOTE: This will not affect cursors that are already cached in the pool or in-flight.
-   *       If the previous cursor context is no longer valid these cursors need to be closed
-   *       separately.
-   */
-  def setCursorFactoryAndContext(cursorFactory: CursorFactory, cursorContext: CursorContext): Unit
 }
 
 trait ResourcePool {
