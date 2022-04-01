@@ -75,6 +75,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -262,6 +263,9 @@ object CardinalityCostModel {
     case _: AllNodesScan
     => 1.2
 
+    case e: OptionalExpand if e.mode == ExpandInto
+    => EXPAND_INTO_COST
+
     case e: Expand if e.mode == ExpandInto
     => EXPAND_INTO_COST
 
@@ -269,7 +273,8 @@ object CardinalityCostModel {
     => EXPAND_INTO_COST
 
     case _: Expand |
-         _: VarExpand
+         _: VarExpand |
+         _: OptionalExpand
     => 1.5
 
     case _: NodeUniqueIndexSeek |
