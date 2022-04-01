@@ -561,7 +561,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.expandInto("(n0)-[anon_0]-(anon_1)")
+      .|.expandInto("(n0)-[anon_0]-(n2)")
       .|.filterExpression(propEquality("n2", "prop", 42), assertIsNode("n1"))
       .|.nodeIndexOperator("n2:L0(prop)", indexOrder = IndexOrderNone, argumentIds = Set("n0", "n1"), indexType = IndexType.RANGE)
       .cartesianProduct()
