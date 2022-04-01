@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell;
 
+import java.util.Optional;
+
 import org.neo4j.shell.exception.CommandException;
 
 /**
@@ -40,6 +42,8 @@ public interface Connector
     void connect( ConnectionConfig connectionConfig ) throws CommandException;
 
     void connect( String user, String password, String database ) throws CommandException;
+
+    void impersonate( String impersonatedUser ) throws CommandException;
 
     /**
      * Reconnect to the database, requires an open connection that does not have an open transaction.
@@ -66,4 +70,6 @@ public interface Connector
     String username();
 
     String driverUrl();
+
+    Optional<String> impersonatedUser();
 }

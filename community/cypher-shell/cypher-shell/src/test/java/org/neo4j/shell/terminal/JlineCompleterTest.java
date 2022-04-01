@@ -52,7 +52,8 @@ class JlineCompleterTest
     private final LineReader lineReader = mock( LineReader.class );
     private final List<String> allCommands = List.of(
             ":begin", ":commit", ":connect", ":disconnect", ":exit", ":help",
-            ":history", ":log", ":param", ":params", ":rollback", ":source", ":use"
+            ":history", ":log", ":param", ":params", ":rollback", ":source", ":use",
+            ":impersonate"
     );
 
     @BeforeEach

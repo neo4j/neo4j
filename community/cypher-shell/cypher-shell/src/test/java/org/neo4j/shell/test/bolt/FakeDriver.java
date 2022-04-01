@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.test.bolt;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 import org.neo4j.driver.Driver;
@@ -34,6 +36,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 public class FakeDriver implements Driver
 {
+    public List<SessionConfig> sessionConfigs = new LinkedList<>();
+
     @Override
     public boolean isEncrypted()
     {
@@ -49,6 +53,7 @@ public class FakeDriver implements Driver
     @Override
     public Session session( SessionConfig sessionConfig )
     {
+        sessionConfigs.add( sessionConfig );
         return new FakeSession();
     }
 

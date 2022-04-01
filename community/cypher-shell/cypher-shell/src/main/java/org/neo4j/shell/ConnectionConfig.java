@@ -19,8 +19,11 @@
  */
 package org.neo4j.shell;
 
+import java.util.Optional;
+
 import org.neo4j.shell.cli.Encryption;
 
+@SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
 public record ConnectionConfig( String scheme,
                                 String host,
                                 int port,
@@ -28,11 +31,34 @@ public record ConnectionConfig( String scheme,
                                 String password,
                                 Encryption encryption,
                                 String database,
-                                Environment environment )
+                                Environment environment,
+                                Optional<String> impersonatedUser )
 {
     public static final String USERNAME_ENV_VAR = "NEO4J_USERNAME";
     public static final String PASSWORD_ENV_VAR = "NEO4J_PASSWORD";
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
+
+    public static ConnectionConfig connectionConfig( String scheme,
+                                                     String host,
+                                                     int port,
+                                                     String username,
+                                                     String password,
+                                                     Encryption encryption,
+                                                     String database,
+                                                     Environment environment,
+                                                     Optional<String> impersonatedUser )
+    {
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR ),
+                                     fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR ),
+                                     encryption,
+                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
+                                     environment,
+                                     impersonatedUser
+        );
+    }
 
     public static ConnectionConfig connectionConfig( String scheme,
                                                      String host,
@@ -49,7 +75,10 @@ public record ConnectionConfig( String scheme,
                                      fallbackToEnvVariable( environment, username, USERNAME_ENV_VAR ),
                                      fallbackToEnvVariable( environment, password, PASSWORD_ENV_VAR ),
                                      encryption,
-                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ), environment );
+                                     fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
+                                     environment,
+                                     Optional.empty()
+        );
     }
 
     /**
@@ -79,7 +108,8 @@ public record ConnectionConfig( String scheme,
                                      password,
                                      encryption,
                                      database,
-                                     environment );
+                                     environment,
+                                     impersonatedUser );
     }
 
     public ConnectionConfig withUsernameAndPassword( String username, String password )
@@ -91,7 +121,8 @@ public record ConnectionConfig( String scheme,
                                      password,
                                      encryption,
                                      database,
-                                     environment );
+                                     environment,
+                                     impersonatedUser );
     }
 
     public ConnectionConfig withUsernameAndPasswordAndDatabase( String username, String password, String database )
@@ -103,7 +134,8 @@ public record ConnectionConfig( String scheme,
                                      password,
                                      encryption,
                                      fallbackToEnvVariable( environment, database, DATABASE_ENV_VAR ),
-                                     environment );
+                                     environment,
+                                     impersonatedUser );
     }
 
     public ConnectionConfig withScheme( String scheme )
@@ -115,6 +147,20 @@ public record ConnectionConfig( String scheme,
                                      password,
                                      encryption,
                                      database,
-                                     environment );
+                                     environment,
+                                     impersonatedUser );
+    }
+
+    public ConnectionConfig withImpersonatedUser( String impersonatedUser )
+    {
+        return new ConnectionConfig( scheme,
+                                     host,
+                                     port,
+                                     username,
+                                     password,
+                                     encryption,
+                                     database,
+                                     environment,
+                                     Optional.ofNullable( impersonatedUser ) );
     }
 }

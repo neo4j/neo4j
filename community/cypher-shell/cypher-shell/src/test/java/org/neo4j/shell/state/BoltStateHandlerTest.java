@@ -25,6 +25,7 @@ import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Optional;
 
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.AuthToken;
@@ -648,6 +649,30 @@ class BoltStateHandlerTest
         boltStateHandler.beginTransaction();
         assertThrows( ClientException.class, boltStateHandler::rollbackTransaction );
         assertFalse( boltStateHandler.isTransactionOpen() );
+    }
+
+    @Test
+    void noImpersonation() throws CommandException
+    {
+        var fakeDriver = new FakeDriver();
+
+        BoltStateHandler handler = new BoltStateHandler( ( s, authToken, config ) -> fakeDriver, false );
+        handler.connect( config );
+
+        assertEquals( 1, fakeDriver.sessionConfigs.size() );
+        assertEquals( Optional.empty(), fakeDriver.sessionConfigs.get( 0 ).impersonatedUser() );
+    }
+
+    @Test
+    void impersonation() throws CommandException
+    {
+        var fakeDriver = new FakeDriver();
+
+        BoltStateHandler handler = new BoltStateHandler( ( s, authToken, config ) -> fakeDriver, false );
+        handler.connect( config.withImpersonatedUser( "emil" ) );
+
+        assertEquals( 1, fakeDriver.sessionConfigs.size() );
+        assertEquals( Optional.of( "emil" ), fakeDriver.sessionConfigs.get( 0 ).impersonatedUser() );
     }
 
     private static Driver stubResultSummaryInAnOpenSession( Result resultMock, Session sessionMock, String version )

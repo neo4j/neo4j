@@ -124,6 +124,13 @@ public class CliArgHelper
         {
             cliArgs.setUsername( user, cliArgs.getUsername() );
         }
+
+        String impersonatedUser = ns.getString( "impersonate" );
+        if ( impersonatedUser != null )
+        {
+            cliArgs.setImpersonatedUser( impersonatedUser );
+        }
+
         String pass = ns.getString( "password" );
         if ( !pass.isEmpty() )
         {
@@ -231,6 +238,8 @@ public class CliArgHelper
         connGroup.addArgument( "-u", "--username" )
                  .setDefault( "" )
                  .help( "username to connect as. Can also be specified using environment variable " + ConnectionConfig.USERNAME_ENV_VAR );
+        connGroup.addArgument( "--impersonate" )
+                 .help( "user to impersonate." );
         connGroup.addArgument( "-p", "--password" )
                  .setDefault( "" )
                  .help( "password to connect with. Can also be specified using environment variable " + ConnectionConfig.PASSWORD_ENV_VAR );

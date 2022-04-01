@@ -58,6 +58,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.neo4j.shell.ConnectionConfig.connectionConfig;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
@@ -943,6 +944,99 @@ class MainIntegrationTest
                 .assertThatOutput( containsString( expected ) );
     }
 
+    @Test
+    void shouldImpersonate() throws Exception
+    {
+        assumeAtLeastVersion( "4.4.0" );
+
+        // Setup impersonated user and role
+        runInSystemDb( shell -> {
+            createOrReplaceUser( shell, "impersonate_me", "123", false );
+            shell.execute( cypher( "CREATE OR REPLACE ROLE restricted AS COPY OF reader;" ) );
+            shell.execute( cypher( "DENY READ {secretProp} ON GRAPHS * TO restricted;" ) );
+            shell.execute( cypher( "GRANT ROLE restricted TO impersonate_me;" ) );
+        } );
+
+        // Setup data
+        runInDb( DEFAULT_DEFAULT_DB_NAME, shell -> {
+            shell.execute( cypher( "MERGE (n:ImpersonationTest { secretProp: 'hello', otherProp: 'hi' });" ) );
+        } );
+
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--impersonate", "impersonate_me", "--format", "verbose" )
+                .userInputLines(
+                        ":impersonate",
+                        ":impersonate impersonate_me",
+                        ":impersonate " + USER,
+                        ":impersonate impersonate_me",
+                        "MATCH (n:ImpersonationTest) RETURN n;",
+                        ":exit"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "as user neo4j impersonating impersonate_me" ),
+                        containsString( """
+                                neo4j(impersonate_me)@neo4j> :impersonate
+                                neo4j@neo4j> :impersonate impersonate_me
+                                neo4j(impersonate_me)@neo4j> :impersonate neo4j
+                                neo4j@neo4j> :impersonate impersonate_me
+                                neo4j(impersonate_me)@neo4j> MATCH (n:ImpersonationTest) RETURN n;
+                                +----------------------------------------+
+                                | n                                      |
+                                +----------------------------------------+
+                                | (:ImpersonationTest {otherProp: "hi"}) |
+                                +----------------------------------------+
+                                """ ),
+                        endsWithInteractiveExit
+                );
+    }
+
+    @Test
+    void shouldDenyImpersonate() throws Exception
+    {
+        assumeAtLeastVersion( "4.4.0" );
+
+        // Setup impersonated user and role
+        runInSystemDb( shell -> {
+            createOrReplaceUser( shell, "impersonate_me", "123", false );
+            createOrReplaceUser( shell, "alice", "abc", false );
+            shell.execute( cypher( "CREATE OR REPLACE ROLE restricted AS COPY OF reader;" ) );
+            shell.execute( cypher( "DENY READ {secretProp} ON GRAPHS * TO restricted;" ) );
+            shell.execute( cypher( "GRANT ROLE restricted TO impersonate_me;" ) );
+            shell.execute( cypher( "DENY IMPERSONATE (alice) ON DBMS TO restricted;" ) );
+        } );
+
+        // Setup data
+        runInDb( DEFAULT_DEFAULT_DB_NAME, shell -> {
+            shell.execute( cypher( "MERGE (n:ImpersonationTest { secretProp: 'hello', otherProp: 'hi' });" ) );
+        } );
+
+        buildTest()
+                .args( "-u alice -p abc --format verbose" )
+                .userInputLines(
+                        ":impersonate impersonate_me",
+                        "MATCH (n:ImpersonationTest) RETURN n;",
+                        ":exit"
+                )
+                .run()
+                .assertSuccess( false )
+                .assertThatErrorOutput( containsString( "Cannot impersonate user 'impersonate_me'" ) )
+                .assertThatOutput(
+                        containsString( """
+                                alice@neo4j> :impersonate impersonate_me
+                                Disconnected> MATCH (n:ImpersonationTest) RETURN n;
+                                Disconnected> :exit
+                                """ ),
+                        endsWithInteractiveExit
+                );
+    }
+
+    private static CypherStatement cypher( String cypher )
+    {
+        return CypherStatement.complete( cypher );
+    }
+
     private void assertUserCanConnectAndRunQuery( String user, String password ) throws Exception
     {
         buildTest().addArgs( "-u", user, "-p", password, "--format", "plain", "return 42 as x;" ).run().assertSuccess();
@@ -967,6 +1061,14 @@ class MainIntegrationTest
         } );
     }
 
+    private void runInDb( String database, ThrowingConsumer<CypherShell, Exception> consumer )
+    {
+        runInDbAndReturn( database, shell -> {
+            consumer.accept( shell );
+            return null;
+        } );
+    }
+
     private <T> T runInDbAndReturn( String database, ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
     {
         CypherShell shell = null;
@@ -976,7 +1078,7 @@ class MainIntegrationTest
             var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, false, 100 ) );
             var parameters = ParameterService.create( boltHandler );
             shell = new CypherShell( new StringLinePrinter(), boltHandler, printer, parameters );
-            shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database, new Environment() ) );
+            shell.connect( connectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database, new Environment() ) );
             return systemDbConsumer.apply( shell );
         }
         catch ( Exception e )

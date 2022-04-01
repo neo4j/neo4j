@@ -213,6 +213,12 @@ public class AnsiFormattedText
         return this;
     }
 
+    public AnsiFormattedText orange( String s )
+    {
+        pieces.add( new AnsiFormattedString( YELLOW, attributes, s ) );
+        return this;
+    }
+
     /**
      * Set color to default. Note that this has no effect on strings already in the text.
      *

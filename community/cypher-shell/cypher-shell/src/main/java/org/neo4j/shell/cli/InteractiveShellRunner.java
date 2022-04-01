@@ -214,20 +214,19 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
 
     private AnsiFormattedText getPrePrompt( String databaseName )
     {
-        AnsiFormattedText prePrompt = AnsiFormattedText.s().bold();
+        final var prompt = new AnsiFormattedText();
 
         if ( connector.isConnected() )
         {
-            prePrompt
-                    .append( connector.username() )
-                    .append( "@" )
-                    .append( databaseName );
+            prompt.bold( connector.username() );
+            connector.impersonatedUser().ifPresent( impersonated -> prompt.append( "(" ).bold( impersonated ).append( ")" ) );
+            prompt.bold( "@" + databaseName );
         }
         else
         {
-            prePrompt.append( "Disconnected" );
+            prompt.append( "Disconnected" );
         }
-        return prePrompt;
+        return prompt;
     }
 
     private static String getErrorPrompt( String errorCode )

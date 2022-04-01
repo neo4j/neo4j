@@ -240,6 +240,20 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
+    public void impersonate( String impersonatedUser ) throws CommandException
+    {
+        if ( isTransactionOpen() )
+        {
+            throw new CommandException( "There is an open transaction. You need to close it before starting impersonation." );
+        }
+        if ( isConnected() )
+        {
+            disconnect();
+        }
+        connect( connectionConfig.withImpersonatedUser( impersonatedUser ) );
+    }
+
+    @Override
     public void reconnect() throws CommandException
     {
         if ( !isConnected() )
@@ -263,7 +277,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             throw new CommandException( "Already connected" );
         }
-        this.connectionConfig = incomingConfig;
+        this.connectionConfig = clean( incomingConfig );
         final AuthToken authToken = AuthTokens.basic( connectionConfig.username(), connectionConfig.password() );
         try
         {
@@ -335,6 +349,8 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         {
             builder.withBookmarks( bookmarkForDBToConnectTo );
         }
+
+        impersonatedUser().ifPresent( builder::withImpersonatedUser );
 
         session = driver.session( builder.build() );
 
@@ -433,6 +449,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     public String driverUrl()
     {
         return connectionConfig != null ? connectionConfig.driverUrl() : "";
+    }
+
+    @Override
+    public Optional<String> impersonatedUser()
+    {
+        return Optional.ofNullable( connectionConfig ).flatMap( ConnectionConfig::impersonatedUser );
     }
 
     @Override
@@ -649,5 +671,14 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         }
 
         return Logging.javaUtilLogging( level );
+    }
+
+    private static ConnectionConfig clean( ConnectionConfig config )
+    {
+        if ( config.impersonatedUser().filter( i -> i.equals( config.username() ) ).isPresent() )
+        {
+            return config.withImpersonatedUser( null );
+        }
+        return config;
     }
 }

@@ -31,6 +31,7 @@ import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
+@SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
 public class CliArgs
 {
     static final String DEFAULT_SCHEME = "neo4j";
@@ -42,11 +43,11 @@ public class CliArgs
     private String host = DEFAULT_HOST;
     private int port = DEFAULT_PORT;
     private String username = "";
+    private Optional<String> impersonatedUser = Optional.empty();
     private String password = "";
     private String databaseName = ABSENT_DB_NAME;
     private FailBehavior failBehavior = FailBehavior.FAIL_FAST;
     private Format format = Format.AUTO;
-    @SuppressWarnings( "OptionalUsedAsFieldOrParameterType" )
     private Optional<String> cypher = Optional.empty();
     private Encryption encryption = Encryption.DEFAULT;
     private boolean nonInteractive;
@@ -82,6 +83,11 @@ public class CliArgs
     public void setUsername( String primary, String fallback )
     {
         username = primary == null ? fallback : primary;
+    }
+
+    public void setImpersonatedUser( String impersonatedUser )
+    {
+        this.impersonatedUser = Optional.ofNullable( impersonatedUser );
     }
 
     /**
@@ -293,7 +299,8 @@ public class CliArgs
                                                   getPassword(),
                                                   getEncryption(),
                                                   getDatabase(),
-                                                  new Environment() );
+                                                  new Environment(),
+                                                  impersonatedUser );
     }
 
     public File getHistoryFile()

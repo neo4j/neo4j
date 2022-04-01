@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.shell.commands;
+
+import java.util.List;
+
+import org.neo4j.shell.CypherShell;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.exception.ExitException;
+import org.neo4j.shell.printer.Printer;
+
+/**
+ * Impersonate user
+ */
+public record Impersonate( CypherShell shell, Printer printer ) implements Command
+{
+    @Override
+    public void execute( final List<String> args ) throws ExitException, CommandException
+    {
+        requireArgumentCount( args, 0, 1 );
+        shell.impersonate( args.isEmpty() ? null : args.get( 0 ) );
+    }
+
+    public static class Factory implements Command.Factory
+    {
+        @Override
+        public Metadata metadata()
+        {
+            var help = "Enable user impersonation.";
+            var usage = " <user to impersonate>, or without arguments to reset impersonation";
+            return new Metadata( ":impersonate", "Impersonate user", usage, help, List.of() );
+        }
+
+        @Override
+        public Command executor( Arguments args )
+        {
+            return new Impersonate( args.cypherShell(), args.printer() );
+        }
+    }
+}

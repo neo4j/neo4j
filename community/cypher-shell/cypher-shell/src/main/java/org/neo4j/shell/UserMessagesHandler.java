@@ -20,28 +20,33 @@
 package org.neo4j.shell;
 
 import org.neo4j.shell.printer.AnsiFormattedText;
-import org.neo4j.shell.util.Version;
-import org.neo4j.shell.util.Versions;
 
-public record UserMessagesHandler(Connector connector)
+import static org.neo4j.shell.util.Versions.version;
+
+public record UserMessagesHandler( Connector connector )
 {
     public String getWelcomeMessage()
     {
-        String neo4j = "Neo4j";
+        final var message = AnsiFormattedText.from( "Connected to Neo4j" );
+
         String protocolVersion = connector.getProtocolVersion();
         if ( !protocolVersion.isEmpty() )
         {
-            Version version = Versions.version( protocolVersion );
-            neo4j += " using Bolt protocol version " + version.major() + "." + version.minor();
+            message.append( " using Bolt protocol version " + version( protocolVersion ).majorMinorString());
         }
-        AnsiFormattedText welcomeMessage = AnsiFormattedText.from( "Connected to " + neo4j + " at " ).bold( connector.driverUrl() );
+
+        message.append( " at " ).bold( connector.driverUrl() );
 
         if ( !connector.username().isEmpty() )
         {
-            welcomeMessage = welcomeMessage.append( " as user " ).bold( connector.username() );
+            message.append( " as user " ).bold( connector.username() );
         }
 
-        return welcomeMessage
+        connector.impersonatedUser().ifPresent( impersonated ->
+                message.orange( " impersonating " ).bold( impersonated )
+        );
+
+        return message
                 .append( ".\nType " ).bold( ":help" )
                 .append( " for a list of available commands or " )
                 .bold( ":exit" ).append( " to exit the shell." )

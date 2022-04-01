@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.driver.exceptions.ClientException;
@@ -408,6 +409,19 @@ class InteractiveShellRunnerTest
     }
 
     @Test
+    void testImpersonationPrompt()
+    {
+        // given
+        var runner = runner( lines( "return 40;" ) );
+        when( connector.impersonatedUser() ).thenReturn( Optional.of( "emil" ) );
+        when( txHandler.isTransactionOpen() ).thenReturn( false );
+        runner.runUntilEnd();
+
+        // when
+        assertThat( out.toString(), equalTo( "myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n" ) );
+    }
+
+    @Test
     void multilineRequiresNewLineOrSemicolonToEnd()
     {
         // given
@@ -431,10 +445,12 @@ class InteractiveShellRunnerTest
         runner.runUntilEnd();
 
         // then
-        verify( printer ).printIfVerbose( """
-                                                 Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
-                                                 Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
-                                                 Note that Cypher queries must end with a @|BOLD semicolon.|@""" );
+        verify( printer ).printIfVerbose(
+            """
+                 Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
+                 Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
+                 Note that Cypher queries must end with a @|BOLD semicolon.|@"""
+        );
         verify( printer ).printIfVerbose( "\nBye!" );
     }
 

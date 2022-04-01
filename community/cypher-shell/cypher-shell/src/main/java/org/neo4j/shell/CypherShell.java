@@ -153,6 +153,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
+    public void impersonate( String impersonatedUser ) throws CommandException
+    {
+        boltStateHandler.impersonate( impersonatedUser );
+    }
+
+    @Override
     public void reconnect() throws CommandException
     {
         boltStateHandler.reconnect();
@@ -180,6 +186,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     public String driverUrl()
     {
         return boltStateHandler.driverUrl();
+    }
+
+    @Override
+    public Optional<String> impersonatedUser()
+    {
+        return boltStateHandler.impersonatedUser();
     }
 
     @Override

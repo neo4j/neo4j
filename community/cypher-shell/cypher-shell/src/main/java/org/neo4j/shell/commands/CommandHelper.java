@@ -86,7 +86,8 @@ public class CommandHelper
             entry( Rollback.class, new Rollback.Factory() ),
             entry( Source.class, new Source.Factory() ),
             entry( Use.class, new Use.Factory() ),
-            entry( Log.class, new Log.Factory() )
+            entry( Log.class, new Log.Factory() ),
+            entry( Impersonate.class, new Impersonate.Factory() )
         );
 
         private static final Map<String, Command.Factory> factoryByName = buildFactoryByName();

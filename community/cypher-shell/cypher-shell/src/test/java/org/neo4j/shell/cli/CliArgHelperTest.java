@@ -305,4 +305,12 @@ class CliArgHelperTest extends LocaleDependentTestBase
         var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "-file", "foo" ) );
         assertThat( exception.getMessage(), containsString( "Unrecognized argument '-file', did you mean --file?" ) );
     }
+
+    @Test
+    void impersonation()
+    {
+        CliArgs arguments = CliArgHelper.parse( "--impersonate", "some-user" );
+        assertNotNull( arguments );
+        assertEquals( Optional.of( "some-user" ), arguments.connectionConfig().impersonatedUser() );
+    }
 }
