@@ -692,7 +692,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         assertEquals( 2, statistics.cpuTimeMillis() );
         assertEquals( 13, statistics.estimatedHeapMemory() );
         assertEquals( 14, statistics.usedNativeMemory() );
-        assertEquals( 0, statistics.heapAllocatedBytes() );
+        assertEquals( -1, statistics.heapAllocatedBytes() );
         assertEquals( 1, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 4, statistics.totalTransactionPageCacheHits() );
         statistics.addWaitingTime( 1 );
@@ -706,7 +706,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase
         assertEquals( 4, statistics.cpuTimeMillis() );
         assertEquals( 0, statistics.estimatedHeapMemory() );
         assertEquals( 0, statistics.usedNativeMemory() );
-        assertEquals( 0, statistics.heapAllocatedBytes() );
+        assertEquals( -1, statistics.heapAllocatedBytes() );
         assertEquals( 2, statistics.totalTransactionPageCacheFaults() );
         assertEquals( 6, statistics.totalTransactionPageCacheHits() );
         assertEquals( 0, statistics.getWaitingTimeNanos( 0 ) );

@@ -37,14 +37,18 @@ import org.neo4j.test.DoubleLatch
 import org.neo4j.test.NamedFunction
 import org.neo4j.test.extension.Threading
 import org.neo4j.values.storable.DurationValue
-import org.scalatest.concurrent.Eventually.eventually
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.Seconds
+import org.scalatest.time.Span
 
 import java.util
 
-class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport {
+class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite with GraphDatabaseTestSupport with Eventually {
   private val username = "foo"
   private val username2 = "bar"
   private val password = "secret"
+
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = scaled(Span(15, Seconds)), interval = scaled(Span(3, Seconds)))
 
   private val threading: Threading = new Threading()
 
@@ -373,7 +377,8 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     result should have size 2
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     assertCorrectFullMap(sortedRes.head, "neo4j-transaction-", "", "SHOW TRANSACTIONS YIELD *")
-    assertCorrectFullMap(sortedRes(1), "system-transaction-", username, userQuery, database = SYSTEM_DATABASE_NAME, planner = "administration", runtime = "system")
+    assertCorrectFullMap(sortedRes(1), "system-transaction-", username, userQuery, database = SYSTEM_DATABASE_NAME, planner = "administration",
+      runtime = "system", queryAllocatedBytesIsNull = true) // we don't track queryAllocatedBytes for system queries
   }
 
   test("Should show given transactions with YIELD *") {
@@ -537,14 +542,21 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     val user2Id = getTransactionIdExecutingQuery(user2Query)
 
     // WHEN
-    val result = execute("SHOW TRANSACTIONS YIELD transactionId, currentQuery, runtime, username WHERE runtime = 'interpreted' AND username <> '' RETURN transactionId, currentQuery").toList
+    val result = execute(
+      """
+        |SHOW TRANSACTIONS
+        |YIELD transactionId, currentQuery, runtime, username
+        |WHERE runtime = 'interpreted'
+        |AND username <> ''
+        |RETURN transactionId, left(currentQuery, 5) AS shortQuery"""
+        .stripMargin).toList
     latch.finishAndWaitForAllToFinish()
 
     // THEN
     val sortedRes = result.sortBy(m => m("transactionId").asInstanceOf[String]) // To get stable order to assert correct result
     sortedRes should be(List(
-      Map("transactionId" -> user1Id, "currentQuery" -> user1Query),
-      Map("transactionId" -> user2Id, "currentQuery" -> user2Query)
+      Map("transactionId" -> user1Id, "shortQuery" -> user1Query.substring(0, 5)),
+      Map("transactionId" -> user2Id, "shortQuery" -> user2Query.substring(0, 5))
     ).sortBy(m => m("transactionId")))
   }
 
@@ -1165,7 +1177,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
                                       transactionId: String,
                                       username: String,
                                       query: String,
-                                      database: String = DEFAULT_DATABASE_NAME) = {
+                                      database: String = DEFAULT_DATABASE_NAME,
+                                      numColumns: Int = 10) = {
+    resultMap.keys.size should be(numColumns)
     resultMap("database") should be(database)
     resultMap("transactionId").asInstanceOf[String] should startWith(transactionId) // not stable on system database, differs among things between running the test on its own and the whole class
     resultMap("currentQueryId").asInstanceOf[String] should startWith("query-") // not stable, differs among things between running the test on its own and the whole class
@@ -1173,7 +1187,6 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("currentQuery") should be(query)
     // Default values:
     resultMap("status") should be("Running")
-    resultMap("allocatedBytes") should be(0L)
     resultMap("connectionId") should be("")
     resultMap("clientAddress") should be("")
     // Don't check exact values:
@@ -1187,8 +1200,9 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
                                    query: String,
                                    database: String = DEFAULT_DATABASE_NAME,
                                    planner: String = "idp",
-                                   runtime: String = "interpreted") = {
-    assertCorrectDefaultMap(resultMap, transactionId, username, query, database)
+                                   runtime: String = "interpreted",
+                                   queryAllocatedBytesIsNull: Boolean = false) = {
+    assertCorrectDefaultMap(resultMap, transactionId, username, query, database, numColumns = 39)
     resultMap("planner") should be(planner)
     resultMap("runtime") should be(runtime)
     // Default values:
@@ -1198,18 +1212,37 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     resultMap("protocol") should be("embedded")
     resultMap("metaData") should be(Map())
     resultMap("requestUri") should be("")
+    resultMap("currentQueryStatus") should be("running")
     resultMap("statusDetails") should be("")
     resultMap("resourceInformation") should be(Map())
+    val currentQueryAllocatedBytes = resultMap("currentQueryAllocatedBytes")
+    if (queryAllocatedBytesIsNull) currentQueryAllocatedBytes should be(null)
+    else {
+      currentQueryAllocatedBytes.isInstanceOf[Long] should be(true)
+      (currentQueryAllocatedBytes.asInstanceOf[Long] > 0L) should be(true)
+    }
     resultMap("allocatedDirectBytes") should be(0L)
     resultMap("initializationStackTrace") should be("")
     // Don't check exact values:
+    resultMap("currentQueryStartTime").isInstanceOf[String] should be(true) // This is a timestamp
+    resultMap("currentQueryElapsedTime").isInstanceOf[DurationValue] should be(true)
     resultMap("estimatedUsedHeapMemory").isInstanceOf[Long] should be(true)
     resultMap("activeLockCount").isInstanceOf[Long] should be(true)
+    resultMap("currentQueryActiveLockCount").isInstanceOf[Long] should be(true)
     resultMap("pageHits").isInstanceOf[Long] should be(true)
     resultMap("pageFaults").isInstanceOf[Long] should be(true)
-    resultMap("cpuTime").isInstanceOf[DurationValue] should be(true)
+    resultMap("currentQueryPageHits").isInstanceOf[Long] should be(true)
+    resultMap("currentQueryPageFaults").isInstanceOf[Long] should be(true)
+    val cpuTime = resultMap("cpuTime")
+    (cpuTime == null || cpuTime.isInstanceOf[DurationValue]) should be(true)
     resultMap("waitTime").isInstanceOf[DurationValue] should be(true)
-    resultMap("idleTime").isInstanceOf[DurationValue] should be(true)
+    val idleTime = resultMap("idleTime")
+    (idleTime == null || idleTime.isInstanceOf[DurationValue]) should be(true)
+    val currentQueryCpuTime = resultMap("currentQueryCpuTime")
+    (currentQueryCpuTime == null || currentQueryCpuTime.isInstanceOf[DurationValue]) should be(true)
+    resultMap("currentQueryWaitTime").isInstanceOf[DurationValue] should be(true)
+    val currentQueryIdleTime = resultMap("currentQueryIdleTime")
+    (currentQueryIdleTime == null || currentQueryIdleTime.isInstanceOf[DurationValue]) should be(true)
   }
 
   /* Sets up one query for _username_ on neo4j.

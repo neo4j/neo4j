@@ -87,6 +87,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -180,7 +181,7 @@ class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1L ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertNull( statusResult.allocatedBytes );
         assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
         assertEquals( 0L, statusResult.pageHits );
         assertEquals( 0L, statusResult.pageFaults );
@@ -206,7 +207,7 @@ class TransactionStatusResultTest
         assertEquals( Long.valueOf( 1 ), statusResult.cpuTimeMillis );
         assertEquals( 0L, statusResult.waitTimeMillis );
         assertEquals( Long.valueOf( 1809 ), statusResult.idleTimeMillis );
-        assertEquals( Long.valueOf( 0 ), statusResult.allocatedBytes );
+        assertNull( statusResult.allocatedBytes );
         assertEquals( Long.valueOf( 0 ), statusResult.allocatedDirectBytes );
         assertEquals( 0, statusResult.pageHits );
         assertEquals( 0, statusResult.pageFaults );

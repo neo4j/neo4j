@@ -1322,7 +1322,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         long heapAllocatedBytes()
         {
-            return heapAllocation.allocatedBytes( transactionThreadId ) - heapAllocatedBytesWhenQueryStarted;
+            long allocatedBytes = heapAllocation.allocatedBytes( transactionThreadId );
+            return (allocatedBytes < 0) ? -1 : allocatedBytes - heapAllocatedBytesWhenQueryStarted;
         }
 
         /**
@@ -1347,8 +1348,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
          */
         public long cpuTimeMillis()
         {
-            long cpuTimeNanos = cpuClock.cpuTimeNanos( transactionThreadId ) - cpuTimeNanosWhenQueryStarted;
-            return NANOSECONDS.toMillis( cpuTimeNanos );
+            long cpuTimeNanos = cpuClock.cpuTimeNanos( transactionThreadId );
+            return (cpuTimeNanos < 0) ? -1 : NANOSECONDS.toMillis( cpuTimeNanos - cpuTimeNanosWhenQueryStarted );
         }
 
         /**

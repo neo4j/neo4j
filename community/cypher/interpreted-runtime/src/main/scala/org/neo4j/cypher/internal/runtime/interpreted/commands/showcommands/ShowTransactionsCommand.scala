@@ -32,17 +32,20 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_TRANSACTION
 import org.neo4j.internal.kernel.api.security.UserSegment
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.query.QuerySnapshot
+import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.lang
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import java.util
+import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
@@ -85,15 +88,31 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
 
     val zoneId = getConfiguredTimeZone(ctx)
     val rows = askedForTransactions.map {
+
       case (transaction: KernelTransactionHandle, querySnapshot: util.Optional[QuerySnapshot], dbName: String) =>
+
+        def getLongOrNull(long: lang.Long) = long match {
+          case l: lang.Long => Values.longValue(l)
+          case _ => Values.NO_VALUE
+        }
+
+        def getDurationOrNullFromMillis(long: lang.Long) = long match {
+          case l: java.lang.Long => Values.durationValue(Duration.ofMillis(l))
+          case _ => Values.NO_VALUE
+        }
+
+        def getDurationOrNullFromMicro(long: lang.Long) = long match {
+          case l: java.lang.Long => Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(l)))
+          case _ => Values.NO_VALUE
+        }
+
         val statistic = transaction.transactionStatistic
         val clientInfo = transaction.clientInfo
 
         val txId = TransactionId(dbName, transaction.getUserTransactionId).toString
         val username = transaction.subject.executingUser()
         val startTime = formatTime( transaction.startTime(), zoneId )
-        val elapsedTimeMillis = Duration.ofMillis(statistic.getElapsedTimeMillis)
-        val allocatedBytes = statistic.getHeapAllocatedBytes
+        val elapsedTime = getDurationOrNullFromMillis(statistic.getElapsedTimeMillis)
         val (currentQueryId, currentQuery) = if (querySnapshot.isPresent) {
           val snapshot = querySnapshot.get
           val currentQueryId = QueryId(snapshot.internalQueryId).toString
@@ -124,9 +143,7 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
           // The status of the transaction (terminated, blocked, closing or running)
           "status" -> Values.stringValue(status),
           // The time elapsed
-          "elapsedTime" -> Values.durationValue(elapsedTimeMillis),
-          // The bytes allocated by the transaction
-          "allocatedBytes" -> Values.longValue(allocatedBytes)
+          "elapsedTime" -> elapsedTime
         )
         if (verbose) {
           def getMapValue(m: util.Map[String, AnyRef]) = {
@@ -136,11 +153,12 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
             VirtualValues.map(keys, vals)
           }
 
-          val (outerTransactionId, parameters, planner, runtime, indexes) = if ( querySnapshot.isPresent ) {
+          val (outerTransactionId, parameters, planner, runtime, indexes, queryStartTime, queryStatus, queryActiveLockCount,
+          queryElapsedTime, queryCpuTime, queryWaitTime, queryIdleTime, queryAllocatedBytes, queryPageHits, queryPageFaults) = if (querySnapshot.isPresent) {
             val query = querySnapshot.get
             val queryTransactionId = TransactionId(dbName, query.transactionId).toString
             val outerTransactionId = if (queryTransactionId == txId) EMPTY else queryTransactionId
-            val parameters = query.obfuscatedQueryParameters().orElse( MapValue.EMPTY )
+            val parameters = query.obfuscatedQueryParameters().orElse(MapValue.EMPTY)
             val planner = query.planner
             val runtime = query.runtime
             val indexes = VirtualValues.list(query.indexes.asScala.toList.map(m => {
@@ -149,19 +167,36 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
               val vals: Array[AnyValue] = scalaMap.values.map(Values.stringValue).toArray
               VirtualValues.map(keys, vals)
             }): _*)
-            (outerTransactionId, parameters, planner, runtime, indexes)
-          } else (EMPTY, MapValue.EMPTY, EMPTY, EMPTY, VirtualValues.EMPTY_LIST)
+
+            val queryStartTime = formatTime(query.startTimestampMillis, zoneId)
+            val queryStatus = query.status
+            val queryActiveLockCount = Values.longValue(query.activeLockCount)
+            val queryElapsedTime = getDurationOrNullFromMicro(query.elapsedTimeMicros)
+            val optionalCpuTime = query.cpuTimeMicros
+            val queryCpuTime = if (optionalCpuTime.isPresent) getDurationOrNullFromMicro(optionalCpuTime.getAsLong) else Values.NO_VALUE
+            val queryWaitTime = Values.durationValue(Duration.ofMillis(TimeUnit.MICROSECONDS.toMillis(query.waitTimeMicros)))
+            val optionalIdleTime = query.idleTimeMicros
+            val queryIdleTime = if (optionalIdleTime.isPresent) getDurationOrNullFromMicro(optionalIdleTime.getAsLong) else Values.NO_VALUE
+            val queryBytes = query.allocatedBytes
+            val queryAllocatedBytes = if (queryBytes == HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED) Values.NO_VALUE else getLongOrNull(queryBytes)
+            val queryPageHits = Values.longValue(query.pageHits)
+            val queryPageFaults = Values.longValue(query.pageFaults)
+
+            (outerTransactionId, parameters, planner, runtime, indexes, queryStartTime, queryStatus, queryActiveLockCount,
+              queryElapsedTime, queryCpuTime, queryWaitTime, queryIdleTime, queryAllocatedBytes, queryPageHits, queryPageFaults)
+          } else (EMPTY, MapValue.EMPTY, EMPTY, EMPTY, VirtualValues.EMPTY_LIST, EMPTY, EMPTY, Values.NO_VALUE,
+            Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
           val metaData = getMapValue(transaction.getMetaData)
           val protocol = clientInfo.map[String](_.protocol).orElse(EMPTY)
           val requestUri = clientInfo.map[String](_.requestURI).orElse(EMPTY)
           val statusDetails = transaction.getStatusDetails
           val resourceInformation = getMapValue(querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap()))
           val activeLockCount = transaction.activeLocks.count
-          val cpuTimeMillis = Duration.ofMillis(statistic.getCpuTimeMillis)
-          val waitTimeMillis = Duration.ofMillis(statistic.getWaitTimeMillis)
-          val idleTimeMillis = Duration.ofMillis(statistic.getIdleTimeMillis)
-          val allocatedDirectBytes = statistic.getNativeAllocatedBytes
-          val estimatedUsedHeapMemory = statistic.getEstimatedUsedHeapMemory
+          val cpuTime = getDurationOrNullFromMillis(statistic.getCpuTimeMillis)
+          val waitTime = Values.durationValue(Duration.ofMillis(statistic.getWaitTimeMillis))
+          val idleTime = getDurationOrNullFromMillis(statistic.getIdleTimeMillis)
+          val allocatedDirectBytes = getLongOrNull(statistic.getNativeAllocatedBytes)
+          val estimatedUsedHeapMemory = getLongOrNull(statistic.getEstimatedUsedHeapMemory)
           val pageHits = statistic.getPageHits
           val pageFaults = statistic.getPageFaults
           val initializationStackTrace = transaction.transactionInitialisationTrace.getTrace
@@ -179,30 +214,50 @@ case class ShowTransactionsCommand(givenIds: Either[List[String], Expression], v
             "runtime" -> Values.stringValue(runtime),
             // Indexes used by the currently executing query
             "indexes" -> indexes,
+            // The start time of the currently executing query
+            "currentQueryStartTime" -> Values.stringValue(queryStartTime),
             // Protocol for the transaction
             "protocol" -> Values.stringValue(protocol),
             // Request URI for the transaction
             "requestUri" -> Values.stringValue(requestUri),
+            // The status of the currently executing query (parsing, planning, planned, running, waiting)
+            "currentQueryStatus" -> Values.stringValue(queryStatus),
             // Any string a dedicated kernel API will write to track the transaction progress
             "statusDetails" -> Values.stringValue(statusDetails),
             // Resource information for the transaction
             "resourceInformation" -> resourceInformation,
             // Number of active locks held by the transaction
             "activeLockCount" -> Values.longValue(activeLockCount),
+            // Number of active locks held by the currently executing query
+            "currentQueryActiveLockCount" -> queryActiveLockCount,
             // The CPU time
-            "cpuTime" -> Values.durationValue(cpuTimeMillis),
+            "cpuTime" -> cpuTime,
             // The wait time
-            "waitTime" -> Values.durationValue(waitTimeMillis),
+            "waitTime" -> waitTime,
             // The idle time
-            "idleTime" -> Values.durationValue(idleTimeMillis),
+            "idleTime" -> idleTime,
+            // The time elapsed of the currently executing query
+            "currentQueryElapsedTime" -> queryElapsedTime,
+            // The CPU time of the currently executing query
+            "currentQueryCpuTime" -> queryCpuTime,
+            // The wait time of the currently executing query
+            "currentQueryWaitTime" -> queryWaitTime,
+            // The idle time of the currently executing query
+            "currentQueryIdleTime" -> queryIdleTime,
+            // The bytes allocated by the currently executing query
+            "currentQueryAllocatedBytes" -> queryAllocatedBytes,
             // The direct bytes allocated by the transaction
-            "allocatedDirectBytes" -> Values.longValue(allocatedDirectBytes),
+            "allocatedDirectBytes" -> allocatedDirectBytes,
             // The estimation of heap memory used by the transaction
-            "estimatedUsedHeapMemory" -> Values.longValue(estimatedUsedHeapMemory),
+            "estimatedUsedHeapMemory" -> estimatedUsedHeapMemory,
             // The page hits
             "pageHits" -> Values.longValue(pageHits),
             // The page faults
             "pageFaults" -> Values.longValue(pageFaults),
+            // The page hits of the currently executing query
+            "currentQueryPageHits" -> queryPageHits,
+            // The page faults of the currently executing query
+            "currentQueryPageFaults" -> queryPageFaults,
             // The initialization stacktrace
             "initializationStackTrace" -> Values.stringValue(initializationStackTrace),
           )
