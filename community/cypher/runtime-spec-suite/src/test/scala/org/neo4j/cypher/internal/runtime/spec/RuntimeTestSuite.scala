@@ -105,7 +105,7 @@ object RuntimeTestSuite {
  *  - executed on a real database
  *  - evaluated by it's results
  */
-abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                            val runtime: CypherRuntime[CONTEXT],
                                                            workloadMode: Boolean = false)
   extends CypherFunSuite
@@ -125,24 +125,22 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val isParallel: Boolean = runtime.name.toLowerCase == "parallel"
   val runOnlySafeScenarios: Boolean = !System.getenv().containsKey("RUN_EXPERIMENTAL")
 
-  override protected def beforeEach(): Unit = {
-    DebugLog.beginTime()
+  protected def restartDB(): Unit =
+  {
     managementService = edition.newGraphManagementService()
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
+  }
+
+  protected def createRuntimeTestSupport(): Unit =
+  {
     logProvider.clear()
     runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
     runtimeTestSupport.start()
     runtimeTestSupport.startTx()
-    super.beforeEach()
   }
 
-  override protected def afterEach(): Unit = {
-    runtimeTestSupport.stopTx()
-    DebugLog.log("")
-    shutdownDatabase()
-    super.afterEach()
-  }
+
 
   protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
                                          edition: Edition[CONTEXT],
@@ -631,35 +629,56 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 }
 
 /**
+ * Used for the general case where you want to clear the entire database before each test.
+ */
+abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+                                                           runtime: CypherRuntime[CONTEXT],
+                                                           workloadMode: Boolean = false)
+  extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode) {
+  override protected def beforeEach(): Unit = {
+    DebugLog.beginTime()
+    restartDB()
+    createRuntimeTestSupport()
+    super.beforeEach()
+
+  }
+
+  override protected def afterEach(): Unit = {
+    runtimeTestSupport.stopTx()
+    DebugLog.log("")
+    shutdownDatabase()
+    super.afterEach()
+  }
+}
+
+
+/**
  * Used for the case when you want create the database once and run multiple test
  * against that database. Useful for when a bigger database is required.
+ *
+ * NOTE: The database is not cleared between tests so if any tests in the extending class are
+ * doing updates these will be visible to other tests, use with caution.
  */
 abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                            runtime: CypherRuntime[CONTEXT],
-                                                           workloadMode: Boolean = false) extends RuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
+                                                           workloadMode: Boolean = false) extends BaseRuntimeTestSuite[CONTEXT](edition, runtime, workloadMode)
                                                            with BeforeAndAfterAll {
 
-  override protected final def beforeEach(): Unit = {
+  override protected def beforeEach(): Unit = {
     DebugLog.beginTime()
-    logProvider.clear()
-    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
-    runtimeTestSupport.start()
-    runtimeTestSupport.startTx()
+    createRuntimeTestSupport()
+    super.beforeEach()
   }
-  override protected final def afterEach(): Unit = {
+  override protected def afterEach(): Unit = {
     runtimeTestSupport.stopTx()
     DebugLog.log("")
+    super.afterEach()
   }
 
   override protected def beforeAll(): Unit = {
-
-    managementService = edition.newGraphManagementService()
-    graphDb = managementService.database(DEFAULT_DATABASE_NAME)
-    kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
-    runtimeTestSupport = createRuntimeTestSupport(graphDb, edition, workloadMode, logProvider)
-    runtimeTestSupport.start()
-    runtimeTestSupport.startTx()
-    createDatabase()
+    restartDB()
+    createRuntimeTestSupport()
+    createGraph()
     super.beforeAll()
   }
 
@@ -668,7 +687,10 @@ abstract class StaticGraphRuntimeTestSuite[CONTEXT <: RuntimeContext](edition: E
     super.afterAll()
   }
 
-  protected def createDatabase(): Unit
+  /**
+   * Creates a graph that are used by all tests in the class
+   */
+  protected def createGraph(): Unit
 }
 
 case class RecordingRuntimeResult(runtimeResult: RuntimeResult, recordingQuerySubscriber: RecordingQuerySubscriber) {
