@@ -35,21 +35,18 @@ public class IdContextFactory
     private final JobScheduler jobScheduler;
     private final Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
-    private final CursorContextFactory contextFactory;
     private final LogService logService;
 
     IdContextFactory( JobScheduler jobScheduler, Function<NamedDatabaseId,IdGeneratorFactory> idFactoryProvider,
-                      Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, CursorContextFactory contextFactory,
-                      LogService logService )
+                      Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper, LogService logService )
     {
         this.jobScheduler = jobScheduler;
         this.idFactoryProvider = idFactoryProvider;
         this.factoryWrapper = factoryWrapper;
-        this.contextFactory = contextFactory;
         this.logService = logService;
     }
 
-    public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId )
+    public DatabaseIdContext createIdContext( NamedDatabaseId namedDatabaseId, CursorContextFactory contextFactory )
     {
         return createBufferingIdContext( idFactoryProvider, jobScheduler, contextFactory, namedDatabaseId );
     }

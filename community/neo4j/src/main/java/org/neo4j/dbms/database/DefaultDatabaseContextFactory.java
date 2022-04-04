@@ -62,11 +62,11 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
     public StandaloneDatabaseContext create( NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions )
     {
         var databaseConfig = new DatabaseConfig( databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId );
+        var contextFactory = createContextFactory( databaseConfig, namedDatabaseId );
         var databaseCreationContext = new ModularDatabaseCreationContext( namedDatabaseId,
                                                                           globalModule,
                                                                           globalModule.getGlobalDependencies(),
-                                                                          databaseConfig,
-                                                                          createContextFactory( databaseConfig, namedDatabaseId ),
+                                                                          databaseConfig, contextFactory,
                                                                           new StandardConstraintSemantics(),
                                                                           new CommunityCypherEngineProvider(),
                                                                           transactionStatsFactory.create(),
@@ -74,7 +74,7 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
                                                                           AccessCapabilityFactory.configDependent(),
                                                                           ExternalIdReuseConditionProvider.NONE,
                                                                           locksSupplier.get(),
-                                                                          idContextFactory.createIdContext( namedDatabaseId ),
+                                                                          idContextFactory.createIdContext( namedDatabaseId, contextFactory ),
                                                                           commitProcessFactory,
                                                                           createTokenHolderProvider( globalModule, namedDatabaseId ),
                                                                           new GlobalAvailabilityGuardController( globalModule.getGlobalAvailabilityGuard() ),

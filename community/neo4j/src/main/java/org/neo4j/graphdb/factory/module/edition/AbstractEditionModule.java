@@ -40,7 +40,6 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.collector.DataCollectorProcedures;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.net.DefaultNetworkConnectionTracker;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -68,7 +67,6 @@ import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
@@ -206,8 +204,7 @@ public abstract class AbstractEditionModule
         return tryResolveOrCreate( IdContextFactory.class, globalModule.getExternalDependencyResolver(), () ->
             IdContextFactoryBuilder.of( globalModule.getFileSystem(),
                                         globalModule.getJobScheduler(),
-                                        globalModule.getGlobalConfig(),
-                                        new CursorContextFactory( globalModule.getTracers().getPageCacheTracer(), EMPTY ) )
+                                        globalModule.getGlobalConfig() )
                                    .withLogService( globalModule.getLogService() )
                                    .build() );
     }
