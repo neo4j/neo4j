@@ -1190,39 +1190,6 @@
     "enterpriseOnly": true
   },
   {
-    "name": "dbms.cluster.role",
-    "description": "The role of this instance in the cluster for the specified database.",
-    "mode": "READ",
-    "worksOnSystem": true,
-    "signature": "dbms.cluster.role(database :: STRING?) :: (role :: STRING?)",
-    "argumentDescription": [
-      {
-        "name": "database",
-        "description": "database :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "returnDescription": [
-      {
-        "name": "role",
-        "description": "role :: STRING?",
-        "type": "STRING?"
-      }
-    ],
-    "admin": false,
-    "rolesExecution": [
-      "PUBLIC",
-      "admin"
-    ],
-    "rolesBoostedExecution": [
-      "admin"
-    ],
-    "option": {
-      "deprecated": false
-    },
-    "enterpriseOnly": true
-  },
-  {
     "name": "dbms.cluster.routing.getRoutingTable",
     "description": "Returns endpoints of this instance.",
     "mode": "DBMS",

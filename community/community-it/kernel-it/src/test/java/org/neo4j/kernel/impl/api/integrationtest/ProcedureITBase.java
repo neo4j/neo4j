@@ -30,7 +30,6 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 
-import static org.hamcrest.Matchers.startsWith;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -227,9 +226,6 @@ public interface ProcedureITBase
                                              "submitter :: STRING?, description :: STRING?, type :: STRING?, scheduledAt :: STRING?, period :: STRING?, " +
                                              "state :: STRING?, currentStateDescription :: STRING?)",
                         "List all jobs that are active in the database internal job scheduler.", stringArray( "admin" ), "DBMS" ),
-                proc( "dbms.cluster.role", "(database :: STRING?) :: (role :: STRING?)",
-                        "The role of this instance in the cluster for the specified database.",
-                        stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
                 proc( "dbms.cluster.overview", "() :: (id :: STRING?, addresses :: LIST? OF STRING?, databases :: MAP?, groups :: LIST? OF STRING?)",
                         "Overview of all currently accessible cluster members, their databases and roles.",
                         stringArray( "reader", "editor", "publisher", "architect", "admin" ), "READ" ),
