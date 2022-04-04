@@ -49,7 +49,23 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with TestName {
 
-  val rewriter: Rewriter = OptionalMatchRemover.instance(null)
+  val rewriter: Rewriter = OptionalMatchRemover.instance(new PlannerContext(
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    CancellationChecker.NeverCancelled))
 
   test(
     """MATCH (a)
