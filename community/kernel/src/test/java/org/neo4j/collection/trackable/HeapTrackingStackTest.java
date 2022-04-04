@@ -29,7 +29,7 @@ import org.neo4j.memory.MemoryTracker;
 
 class HeapTrackingStackTest {
     private final MemoryTracker memoryTracker = new LocalMemoryTracker();
-    private HeapTrackingStack<Object> aStack;
+    private HeapTrackingArrayDeque<Object> aStack;
     private Object[] objArray;
 
     @BeforeEach
@@ -38,7 +38,7 @@ class HeapTrackingStackTest {
         for (int i = 0; i < objArray.length; i++) {
             objArray[i] = i;
         }
-        aStack = HeapTrackingCollections.newStack(memoryTracker);
+        aStack = HeapTrackingCollections.newArrayDeque(memoryTracker);
         for (Object o : objArray) {
             aStack.push(o);
         }
@@ -55,7 +55,8 @@ class HeapTrackingStackTest {
     void pop() {
         assertEquals(100, aStack.size(), "Returned incorrect size for existing list");
         int i = 99;
-        while (aStack.notEmpty()) {
+
+        while (!aStack.isEmpty()) {
             assertEquals(i--, aStack.pop());
         }
         assertEquals(-1, i);
