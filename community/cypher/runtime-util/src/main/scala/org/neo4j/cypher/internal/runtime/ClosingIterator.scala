@@ -207,7 +207,8 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
 
       def next(): Seq[T] = {
         var counter = 0
-        val buffer = mutable.ArrayBuffer[T]()
+        val buffer =
+          mutable.ArrayBuffer[T]()
         while (counter < batchSize && self.hasNext) {
           buffer += self.next()
           counter += 1

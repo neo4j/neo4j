@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction
@@ -550,7 +551,7 @@ class RecordingProbe(variablesToRecord: String*)(chain: Prober.Probe = null) ext
     with RecordingRowsProbe {
   private[this] val _seenRows = new ArrayBuffer[Array[AnyValue]]
 
-  override def onRow(row: AnyRef): Unit = {
+  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
     val cypherRow = row.asInstanceOf[CypherRow]
     val recordedVars = variablesToRecord.toArray.map { v =>
       cypherRow.getByName(v)
@@ -558,7 +559,7 @@ class RecordingProbe(variablesToRecord: String*)(chain: Prober.Probe = null) ext
     _seenRows += recordedVars
 
     if (chain != null) {
-      chain.onRow(row)
+      chain.onRow(row, queryStatistics, transactionsCommitted)
     }
   }
 
@@ -585,7 +586,7 @@ class ThreadSafeRecordingProbe(variablesToRecord: String*)(chain: Prober.Probe =
     with RecordingRowsProbe {
   private[this] val _seenRows = new ConcurrentLinkedQueue[Array[AnyValue]]
 
-  override def onRow(row: AnyRef): Unit = {
+  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
     val cypherRow = row.asInstanceOf[CypherRow]
     val recordedVars = variablesToRecord.toArray.map { v =>
       cypherRow.getByName(v)
@@ -593,7 +594,7 @@ class ThreadSafeRecordingProbe(variablesToRecord: String*)(chain: Prober.Probe =
     _seenRows.add(recordedVars)
 
     if (chain != null) {
-      chain.onRow(row)
+      chain.onRow(row, queryStatistics, transactionsCommitted)
     }
   }
 
@@ -619,7 +620,7 @@ class PrintingProbe(variablesToPrint: String*)(
 )(chain: Prober.Probe = null) extends Prober.Probe() {
   private[this] var rowCount = 0L
 
-  override def onRow(row: AnyRef): Unit = {
+  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
     val cypherRow = row.asInstanceOf[CypherRow]
     val variablesString = variablesToPrint.toArray.map { v =>
       val value = cypherRow.getByName(v)
@@ -629,7 +630,7 @@ class PrintingProbe(variablesToPrint: String*)(
     rowCount += 1
 
     if (chain != null) {
-      chain.onRow(row)
+      chain.onRow(row, queryStatistics, transactionsCommitted)
     }
   }
 }

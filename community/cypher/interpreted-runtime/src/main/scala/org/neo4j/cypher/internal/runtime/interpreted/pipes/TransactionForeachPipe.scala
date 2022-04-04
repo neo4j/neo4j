@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.evaluateBatchSize
 import org.neo4j.cypher.internal.util.attribution.Id
 
 case class TransactionForeachPipe(source: Pipe, inner: Pipe, batchSize: Expression)(val id: Id = Id.INVALID_ID)

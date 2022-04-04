@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterat
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.QueryStatistics
+import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.CypherRowEntityTransformer
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.assertTransactionStateIsEmpty
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipe.commitTransactionWithStatistics
 import org.neo4j.exceptions.InternalException
 
 import scala.util.control.NonFatal
@@ -80,8 +83,7 @@ trait TransactionPipe {
   def inNewTransaction(state: QueryState)(f: QueryState => ClosingIterator[CypherRow]): ClosingIterator[CypherRow] = {
 
     // Ensure that no write happens before a 'CALL { ... } IN TRANSACTIONS'
-    if (state.query.transactionalContext.dataRead.transactionStateHasChanges)
-      throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
+    assertTransactionStateIsEmpty(state)
 
     // beginTx()
     val stateWithNewTransaction = state.withNewTransaction()
@@ -90,12 +92,7 @@ trait TransactionPipe {
     try {
       val result: ClosingIterator[CypherRow] = f(stateWithNewTransaction)
 
-      // commitTx()
-      innerTxContext.close()
-      innerTxContext.commitTransaction()
-
-      val executionStatistics = QueryStatistics(transactionsCommitted = 1)
-      state.query.addStatistics(executionStatistics)
+      commitTransactionWithStatistics(innerTxContext, state)
 
       result
     } catch {
@@ -111,10 +108,6 @@ trait TransactionPipe {
       innerTxContext.close()
       stateWithNewTransaction.close()
     }
-  }
-
-  def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
-    PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
   }
 }
 
@@ -132,5 +125,25 @@ object TransactionPipe {
 
     def copyWithEntityWrappingValuesRebound(row: CypherRow): CypherRow =
       row.copyMapped(entityTransformer.rebindEntityWrappingValue)
+  }
+
+  def evaluateBatchSize(batchSize: Expression, state: QueryState): Long = {
+    PipeHelper.evaluateStaticLongOrThrow(batchSize, _ > 0, state, "OF ... ROWS", " Must be a positive integer.")
+  }
+
+  def assertTransactionStateIsEmpty(state: QueryState): Unit = {
+    if (state.query.transactionalContext.dataRead.transactionStateHasChanges)
+      throw new InternalException("Expected transaction state to be empty when calling transactional subquery.")
+  }
+
+  private def commitTransactionWithStatistics(
+    innerTxContext: QueryTransactionalContext,
+    outerQueryState: QueryState
+  ): Unit = {
+    innerTxContext.close()
+    innerTxContext.commitTransaction()
+
+    val executionStatistics = QueryStatistics(transactionsCommitted = 1)
+    outerQueryState.query.addStatistics(executionStatistics)
   }
 }

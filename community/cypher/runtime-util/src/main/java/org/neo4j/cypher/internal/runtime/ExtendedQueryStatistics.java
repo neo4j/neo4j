@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
-
-import org.neo4j.cypher.internal.util.attribution.IdGen
+package org.neo4j.cypher.internal.runtime;
 
 /**
- * Plan used to indicate that argument completion needs to be tracked
- *
- * NOTE: Only introduced by physical plan rewriter in pipelined runtime
+ * Extra query statistics collected by the Cypher runtimes that is not yet part of the public API
  */
-case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
-  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
-
-  val availableSymbols: Set[String] = source.availableSymbols
+public interface ExtendedQueryStatistics {
+    public int getTransactionsCommitted();
 }

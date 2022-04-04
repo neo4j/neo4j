@@ -34,7 +34,7 @@ case class ProberPipe(source: Pipe, probe: Prober.Probe)(val id: Id = Id.INVALID
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     input.map { row =>
-      probe.onRow(row)
+      probe.onRow(row, state.getStatistics, state.getStatistics.transactionsCommitted)
       row
     }
   }

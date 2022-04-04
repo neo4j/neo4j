@@ -560,12 +560,12 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     override def apply(left: QueryStatistics): MatchResult = {
       def transactionsCommittedDoesNotMatch: Option[MatchResult] = {
         left match {
-          case qs: org.neo4j.cypher.internal.runtime.QueryStatistics =>
+          case qs: org.neo4j.cypher.internal.runtime.ExtendedQueryStatistics =>
             // FIXME: we currently do not account for the outermost transaction because that is out of cypher's control
-            if (transactionsCommitted - 1 != qs.transactionsCommitted) {
+            if (transactionsCommitted - 1 != qs.getTransactionsCommitted) {
               Some(MatchResult(
                 matches = false,
-                s"expected transactionsCommitted=$transactionsCommitted but was ${qs.transactionsCommitted + 1}",
+                s"expected transactionsCommitted=$transactionsCommitted but was ${qs.getTransactionsCommitted + 1}",
                 ""
               ))
             } else {
@@ -680,7 +680,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   def failProbe(failAfterRowCount: Int): Prober.Probe = new Prober.Probe {
     val c = new AtomicInteger(0)
 
-    override def onRow(row: AnyRef): Unit = {
+    override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
       if (c.incrementAndGet() == failAfterRowCount) {
         throw new RuntimeException(s"Probe failed as expected (row count=$c)")
       }

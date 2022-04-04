@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
 /**
@@ -26,7 +27,8 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * NOTE: Only introduced by physical plan rewriter in pipelined runtime
  */
-case class ArgumentTracker(override val source: LogicalPlan)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) {
+case class TransactionCommit(override val source: LogicalPlan, batchSize: Expression)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   val availableSymbols: Set[String] = source.availableSymbols

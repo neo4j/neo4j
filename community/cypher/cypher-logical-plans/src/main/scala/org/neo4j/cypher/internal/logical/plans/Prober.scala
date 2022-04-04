@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.graphdb.QueryStatistics
 
 /**
  * Install a probe to observe data flowing through the query
@@ -47,7 +48,11 @@ object Prober {
      *
      * @param row a CypherRow representation
      */
-    def onRow(row: AnyRef): Unit
+    def onRow(
+      row: AnyRef,
+      queryStatistics: QueryStatistics /*TODO with ExtendedQueryStatistics*/,
+      transactionsCommitted: Int
+    ): Unit
 
     /**
      * A name to identify the prober in debug information.
@@ -57,6 +62,6 @@ object Prober {
   }
 
   object NoopProbe extends Probe {
-    override def onRow(row: AnyRef): Unit = {}
+    override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {}
   }
 }

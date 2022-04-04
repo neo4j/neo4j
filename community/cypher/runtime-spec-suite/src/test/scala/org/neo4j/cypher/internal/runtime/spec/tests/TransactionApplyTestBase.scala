@@ -23,19 +23,24 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
-import org.neo4j.cypher.internal.runtime.InputDataStream
+import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
+import org.neo4j.cypher.internal.runtime.spec.RecordingRowsProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
 import org.neo4j.exceptions.StatusWrapCypherException
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.kernel.api.KernelTransaction.Type
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.logging.InternalLogProvider
+import org.scalatest.Assertion
 
 abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -112,6 +117,46 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
   }
 
+  test("should work with aggregation on top") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(Seq.empty, Seq("count(prop) AS c"))
+      .projection("n.prop AS prop")
+      .transactionApply(3)
+      .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("c")
+      .withSingleRow(10)
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+  }
+
+  test("should work with aggregation on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .transactionApply(3)
+      .|.aggregation(Seq.empty, Seq("count(i) AS c"))
+      .|.unwind("range(1, x) AS i")
+      .|.create(createNodeWithProperties("n", Seq("N"), "{prop: x}"))
+      .|.argument("x")
+      .unwind("range(1, 10) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("c")
+      .withRows(singleColumn(1 to 10))
+      .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 10, transactionsCommitted = 5)
+  }
+
   test("data from returning subqueries should be accessible") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("prop")
@@ -153,36 +198,30 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(nodesCreated = 10, labelsAdded = 10, propertiesSet = 20, transactionsCommitted = 5)
   }
 
-  def inputStreamWithSideEffectInNewTxn(
-    inputValues: InputDataStream,
-    sideEffect: (InternalTransaction, Long) => Unit
-  ): InputDataStream = {
-    new OnNextInputDataStream(inputValues) {
-      override protected def onNext(offset: Long): Unit = withNewTx(sideEffect(_, offset))
-    }
-  }
-
   test("should create data in different transactions when using transactionApply") {
     val numberOfIterations = 30
     val inputRows = (0 until numberOfIterations).map { i =>
       Array[Any](i.toLong)
     }
 
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        queryStatistics.getNodesCreated shouldEqual 1
+        queryStatistics.getLabelsAdded shouldEqual 1
+      }
+    )
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(1)
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual offset
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
     runtimeResult should beColumns("n").withRows(rowCount(numberOfIterations))
 
     val nodes = Iterables.asList(tx.getAllNodes)
@@ -196,21 +235,24 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        queryStatistics.getNodesCreated shouldEqual batchSize
+        queryStatistics.getLabelsAdded shouldEqual batchSize
+      }
+    )
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(batchSize)
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.argument()
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual (offset / batchSize * batchSize)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
     runtimeResult should beColumns("n").withRows(rowCount(numberOfIterations))
 
     val nodes = Iterables.asList(tx.getAllNodes)
@@ -227,21 +269,27 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(1, "N")
     }
 
+    var nodeCount: Long = 1
+    val probe = recordingProbe(
+      "n",
+      queryStatistics => {
+        val _nodeCount = nodeCount
+        nodeCount = tx.findNodes(Label.label("N")).stream().count()
+        queryStatistics.getNodesCreated shouldEqual _nodeCount
+        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+      }
+    )
     val query = new LogicalQueryBuilder(this)
       .produceResults("n")
       .transactionApply(1)
+      .|.prober(probe)
       .|.create(createNode("n", "N"))
       .|.nodeByLabelScan("y", "N")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
     runtimeResult should beColumns("n").withRows(rowCount(Math.pow(2, numberOfIterations).toInt - 1))
 
     val nodes = Iterables.asList(tx.getAllNodes)
@@ -259,21 +307,27 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
 
+    var nodeCount: Long = 1
+    val probe = recordingProbe(
+      "b",
+      queryStatistics => {
+        val _nodeCount = nodeCount
+        nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
+        queryStatistics.getNodesCreated shouldEqual _nodeCount
+        queryStatistics.getLabelsAdded shouldEqual _nodeCount
+      }
+    )
     val query = new LogicalQueryBuilder(this)
       .produceResults("b")
       .transactionApply(1)
+      .|.prober(probe)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
       .|.nodeIndexOperator("a:Label(prop=2)")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 
-    val stream = inputStreamWithSideEffectInNewTxn(
-      inputValues(inputRows: _*).stream(),
-      (tx, offset) => Iterables.count(tx.getAllNodes) shouldEqual Math.pow(2, offset)
-    )
-
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, stream)
+    val runtimeResult: RecordingRuntimeResult = execute(query, runtime, inputValues(inputRows: _*).stream())
     runtimeResult should beColumns("b").withRows(rowCount(Math.pow(2, numberOfIterations).toInt - 1))
 
     val nodes = Iterables.asList(tx.getAllNodes)
@@ -335,5 +389,26 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(1, 2)))
       .withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2, transactionsCommitted = 2)
+  }
+
+  protected def recordingProbe(
+    variable: String,
+    assertion: QueryStatistics => Assertion
+  ): Prober.Probe with RecordingRowsProbe = {
+    val probe = new Probe {
+      private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
+      private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
+      private var _transactionsCommitted = 0
+
+      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+        if (_transactionsCommitted != transactionsCommitted) {
+          assertion(_thisTxQueryStatistics.-(_prevTxQueryStatistics))
+          _transactionsCommitted = transactionsCommitted
+          _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty.+(_thisTxQueryStatistics)
+        }
+        _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
+      }
+    }
+    new RecordingProbe(variable)(probe)
   }
 }

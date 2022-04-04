@@ -40,9 +40,9 @@ case class QueryStatistics(
   existenceConstraintsAdded: Int = 0,
   nodekeyConstraintsAdded: Int = 0,
   @BeanProperty constraintsRemoved: Int = 0,
-  transactionsCommitted: Int = 0,
+  @BeanProperty transactionsCommitted: Int = 0,
   @BeanProperty systemUpdates: Int = 0
-) extends org.neo4j.graphdb.QueryStatistics {
+) extends org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics {
 
   @BeanProperty
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded + nodekeyConstraintsAdded
@@ -111,6 +111,26 @@ case class QueryStatistics(
       systemUpdates = this.systemUpdates + other.systemUpdates
     )
   }
+
+  def -(other: QueryStatistics): QueryStatistics = {
+    QueryStatistics(
+      nodesCreated = this.nodesCreated - other.nodesCreated,
+      relationshipsCreated = this.relationshipsCreated - other.relationshipsCreated,
+      propertiesSet = this.propertiesSet - other.propertiesSet,
+      nodesDeleted = this.nodesDeleted - other.nodesDeleted,
+      relationshipsDeleted = this.relationshipsDeleted - other.relationshipsDeleted,
+      labelsAdded = this.labelsAdded - other.labelsAdded,
+      labelsRemoved = this.labelsRemoved - other.labelsRemoved,
+      indexesAdded = this.indexesAdded - other.indexesAdded,
+      indexesRemoved = this.indexesRemoved - other.indexesRemoved,
+      uniqueConstraintsAdded = this.uniqueConstraintsAdded - other.uniqueConstraintsAdded,
+      existenceConstraintsAdded = this.existenceConstraintsAdded - other.existenceConstraintsAdded,
+      nodekeyConstraintsAdded = this.nodekeyConstraintsAdded - other.nodekeyConstraintsAdded,
+      constraintsRemoved = this.constraintsRemoved - other.constraintsRemoved,
+      transactionsCommitted = this.transactionsCommitted - other.transactionsCommitted,
+      systemUpdates = this.systemUpdates - other.systemUpdates
+    )
+  }
 }
 
 object QueryStatistics {
@@ -118,6 +138,22 @@ object QueryStatistics {
 
   def apply(statistics: org.neo4j.graphdb.QueryStatistics): QueryStatistics = statistics match {
     case q: QueryStatistics => q
+    case q: org.neo4j.graphdb.QueryStatistics with ExtendedQueryStatistics =>
+      QueryStatistics(
+        nodesCreated = q.getNodesCreated,
+        nodesDeleted = q.getNodesDeleted,
+        relationshipsCreated = q.getRelationshipsCreated,
+        relationshipsDeleted = q.getRelationshipsDeleted,
+        propertiesSet = q.getPropertiesSet,
+        labelsAdded = q.getLabelsAdded,
+        labelsRemoved = q.getLabelsRemoved,
+        indexesAdded = q.getIndexesAdded,
+        indexesRemoved = q.getIndexesRemoved,
+        uniqueConstraintsAdded = q.getConstraintsAdded,
+        constraintsRemoved = q.getConstraintsRemoved,
+        systemUpdates = q.getSystemUpdates,
+        transactionsCommitted = q.getTransactionsCommitted
+      )
     case _ =>
       QueryStatistics(
         nodesCreated = statistics.getNodesCreated,

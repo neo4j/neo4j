@@ -365,7 +365,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
     /*
      * Do we have any values
      */
-    private boolean isEmpty() {
+    public boolean isEmpty() {
         return firstKey == lastKey;
     }
 

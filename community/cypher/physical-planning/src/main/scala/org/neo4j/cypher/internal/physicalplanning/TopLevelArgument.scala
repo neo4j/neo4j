@@ -39,4 +39,5 @@ object TopLevelArgument {
 
   val VALUE: Long = 0
   val SLOT_OFFSET: Int = -1
+  val UNDEFINED_SLOT_OFFSET: Int = -2
 }
