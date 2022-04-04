@@ -367,4 +367,9 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     check.run(SemanticState.clean, context).errors.map(_.msg) shouldBe Seq(missingMsg, selfReferenceMsg)
   }
+
+  test("long chain should not cause stack overflow") {
+    val check = Vector.fill(10000)(SemanticCheck.success).reduce(_ chain _)
+    check.run(SemanticState.clean, SemanticCheckContext.default) shouldBe SemanticCheckResult.success(SemanticState.clean)
+  }
 }
