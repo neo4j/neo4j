@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -55,6 +56,14 @@ public final class Util
     public static Log4jLogProvider configuredLogProvider( Config config, OutputStream out )
     {
         Neo4jLoggerContext context = LogConfig.createBuilder( out, config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) ).build();
+        return new Log4jLogProvider( context );
+    }
+
+    public static Log4jLogProvider configuredLogProvider( Config config, OutputStream out, FormattedLogFormat format )
+    {
+        Neo4jLoggerContext context = LogConfig.createBuilder( out, config.get( GraphDatabaseSettings.store_internal_log_level ) )
+                .withFormat( format )
                 .withTimezone( config.get( GraphDatabaseSettings.db_timezone ) ).build();
         return new Log4jLogProvider( context );
     }
