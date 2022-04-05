@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.TransientTransactionFailureException
+import org.neo4j.graphdb.TransactionStatusFailureException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.internal.kernel.api.security.LoginContext
@@ -735,7 +735,7 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
     // The first transaction gets id 'neo4j-transaction-3' so that should be the terminate command in this case
 
     // WHEN
-    val exception = the[TransientTransactionFailureException] thrownBy {
+    val exception = the[TransactionStatusFailureException] thrownBy {
       execute("TERMINATE TRANSACTIONS 'neo4j-transaction-3'").toList
     }
 
