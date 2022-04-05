@@ -44,6 +44,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
+      .filter("r:R")
       .relationshipTypeScan("(x)-[r:R]->(y)")
       .build()
 
@@ -63,6 +64,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r", "x", "y")
+      .filter("r:X")
       .relationshipTypeScan("(x)-[r:X]->(y)")
       .build()
 
