@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransactionStatusFailureException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -54,11 +55,12 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
         {
             Status status = ((Status.HasStatus) e).status();
             Status.Code statusCode = status.code();
+            String statusExceptionMessage = UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description();
             if ( statusCode.classification() == Status.Classification.TransientError )
             {
-                return new TransientTransactionFailureException( status, UNABLE_TO_COMPLETE_TRANSACTION + ": " + statusCode.description(), e );
+                return new TransientTransactionFailureException( status, statusExceptionMessage, e );
             }
-            return new TransactionFailureException( UNABLE_TO_COMPLETE_TRANSACTION, e );
+            return new TransactionStatusFailureException( status, statusExceptionMessage, e );
         }
         else
         {
