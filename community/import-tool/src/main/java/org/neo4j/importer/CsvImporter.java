@@ -72,6 +72,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.exception.ExceptionUtils.indexOfThrowable;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_format;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.internal.batchimport.input.Collectors.badCollector;
 import static org.neo4j.internal.batchimport.input.Collectors.collect;
@@ -179,7 +180,7 @@ class CsvImporter implements Importer
         Path internalLogFile = databaseConfig.get( store_internal_log_path );
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
               OutputStream outputStream = FileSystemUtils.createOrOpenAsOutputStream( fileSystem, internalLogFile, true );
-              Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream ) )
+              Log4jLogProvider logProvider = Util.configuredLogProvider( databaseConfig, outputStream, databaseConfig.get( store_internal_log_format ) ) )
         {
             // Let the storage engine factory be configurable in the tool later on...
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
