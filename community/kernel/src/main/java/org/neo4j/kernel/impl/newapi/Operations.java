@@ -1477,31 +1477,15 @@ public class Operations implements Write, SchemaWrite
     {
         if ( prototype.getIndexProvider() == IndexProviderDescriptor.UNDECIDED )
         {
-            IndexProviderDescriptor provider;
-            if ( prototype.getIndexType() == IndexType.FULLTEXT )
-            {
-                provider = indexProviders.getFulltextProvider();
-            }
-            else if ( prototype.getIndexType() == IndexType.LOOKUP )
-            {
-                provider = indexProviders.getTokenIndexProvider();
-            }
-            else if ( prototype.getIndexType() == IndexType.TEXT )
-            {
-                provider = indexProviders.getTextIndexProvider();
-            }
-            else if ( prototype.getIndexType() == IndexType.BTREE )
-            {
-                provider = indexProviders.getBtreeIndexProvider();
-            }
-            else if ( prototype.getIndexType() == IndexType.POINT )
-            {
-                provider = indexProviders.getPointIndexProvider();
-            }
-            else
-            {
-                provider = indexProviders.getDefaultProvider();
-            }
+            var provider = switch ( prototype.getIndexType() )
+                    {
+                        case FULLTEXT -> indexProviders.getFulltextProvider();
+                        case LOOKUP -> indexProviders.getTokenIndexProvider();
+                        case TEXT -> indexProviders.getTextIndexProvider();
+                        case BTREE -> indexProviders.getBtreeIndexProvider();
+                        case POINT -> indexProviders.getPointIndexProvider();
+                        default -> indexProviders.getDefaultProvider();
+                    };
             prototype = prototype.withIndexProvider( provider );
         }
         return prototype;
@@ -2145,19 +2129,11 @@ public class Operations implements Write, SchemaWrite
             SchemaDescriptor schema = constraint.schema();
 
             int[] entityTokenIds = schema.getEntityTokenIds();
-            String[] entityTokenNames;
-            switch ( schema.entityType() )
-            {
-            case NODE:
-                entityTokenNames = resolveTokenNames( token::nodeLabelName, entityTokenIds );
-                break;
-            case RELATIONSHIP:
-                entityTokenNames = resolveTokenNames( token::relationshipTypeName, entityTokenIds );
-                break;
-            default:
-                throw new UnspecifiedKernelException( Status.General.UnknownError, "Cannot create constraint for entity type %s in the schema %s.",
-                        schema.entityType(), schema );
-            }
+            String[] entityTokenNames = switch ( schema.entityType() )
+                    {
+                        case NODE -> resolveTokenNames( token::nodeLabelName, entityTokenIds );
+                        case RELATIONSHIP -> resolveTokenNames( token::relationshipTypeName, entityTokenIds );
+                    };
             int[] propertyIds = schema.getPropertyIds();
             String[] propertyNames = resolveTokenNames( token::propertyKeyName, propertyIds );
 

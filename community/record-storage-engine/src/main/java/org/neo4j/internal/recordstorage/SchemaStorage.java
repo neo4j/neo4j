@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexRef;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
@@ -116,12 +115,6 @@ public class SchemaStorage implements SchemaRuleAccess
     public Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( StoreCursors storeCursors )
     {
         return indexRules( streamAllSchemaRules( true, storeCursors ) ).iterator();
-    }
-
-    @Override
-    public Iterator<IndexDescriptor> tokenIndexes( StoreCursors storeCursors )
-    {
-        return indexRules( streamAllSchemaRules( true, storeCursors ) ).filter( IndexRef::isTokenIndex ).iterator();
     }
 
     @Override

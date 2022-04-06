@@ -55,8 +55,6 @@ public interface SchemaRuleAccess extends org.neo4j.kernel.impl.storemigration.S
 
     Iterator<IndexDescriptor> indexesGetAll( StoreCursors storeCursors );
 
-    Iterator<IndexDescriptor> tokenIndexes( StoreCursors storeCursors );
-
     Iterator<IndexDescriptor> indexesGetAllIgnoreMalformed( StoreCursors storeCursors );
 
     /**
