@@ -771,9 +771,9 @@ class MetaDataStoreTest
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
             assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.LATEST ); //new store should have latest
-            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.V4_2 ); //that is not 4.0
-            metaDataStore.setKernelVersion( KernelVersion.V4_2 ); //so we set it
-            assertEquals( KernelVersion.V4_2, metaDataStore.kernelVersion() );
+            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.EARLIEST ); //that is not 4.0
+            metaDataStore.setKernelVersion( KernelVersion.EARLIEST ); //so we set it
+            assertEquals( KernelVersion.EARLIEST, metaDataStore.kernelVersion() );
         }
 
         var logTail = new EmptyLogTailMetadata()
@@ -781,13 +781,12 @@ class MetaDataStoreTest
             @Override
             public KernelVersion getKernelVersion()
             {
-                return KernelVersion.V4_2;
+                return KernelVersion.EARLIEST;
             }
         };
         try ( MetaDataStore metaDataStore = newMetaDataStore( logTail ) )
         {
-            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.V4_2 ); //and can read it after a restart
-
+            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.EARLIEST ); //and can read it after a restart
         }
     }
 

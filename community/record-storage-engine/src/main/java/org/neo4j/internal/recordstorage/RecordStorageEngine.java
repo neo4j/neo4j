@@ -121,6 +121,7 @@ import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
+import static org.neo4j.util.Preconditions.checkState;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
@@ -346,7 +347,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void addIndexUpdateListener( IndexUpdateListener listener )
     {
-        Preconditions.checkState( this.indexUpdateListener == null,
+        checkState( this.indexUpdateListener == null,
                 "Only supports a single listener. Tried to add " + listener + ", but " + this.indexUpdateListener + " has already been added" );
         this.indexUpdateListener = listener;
         this.indexUpdatesSync = new IndexUpdatesWorkSync( listener, parallelIndexUpdatesApply );
@@ -377,8 +378,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         if ( txState != null )
         {
             KernelVersion version = neoStores.getMetaDataStore().kernelVersion();
-            Preconditions
-                    .checkState( version.isAtLeast( KernelVersion.V4_2 ), "Can not write older version than %s. Requested %s", KernelVersion.V4_2, version );
 
             // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
@@ -417,10 +416,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
         KernelVersion currentVersion = metaDataStore.kernelVersion();
-        Preconditions.checkState( currentVersion.isAtLeast( KernelVersion.V4_2 ),
-                "Upgrade transaction was introduced in %s and must be done from at least %s. Tried upgrading from %s to %s",
-                KernelVersion.V4_3_D4, KernelVersion.V4_2, currentVersion, versionToUpgradeTo );
-        Preconditions.checkState( versionToUpgradeTo.isGreaterThan( currentVersion ), "Can not downgrade from %s to %s", currentVersion, versionToUpgradeTo );
+        checkState( versionToUpgradeTo.isGreaterThan( currentVersion ), "Can not downgrade from %s to %s", currentVersion, versionToUpgradeTo );
 
         MetaDataRecord before = metaDataStore.newRecord();
         before.initialize( true, currentVersion.version() );

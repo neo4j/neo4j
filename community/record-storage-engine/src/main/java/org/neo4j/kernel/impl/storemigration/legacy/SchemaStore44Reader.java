@@ -167,16 +167,7 @@ public class SchemaStore44Reader implements AutoCloseable
 
     private void maybeAddFormerLabelScanStore( List<SchemaRule44> schemaRules )
     {
-        KernelVersion currentVersion;
-        try
-        {
-            currentVersion = versionSupplier.kernelVersion();
-        }
-        catch ( IllegalStateException ignored )
-        {
-            // If KernelVersion is missing we are an older store.
-            currentVersion = KernelVersion.V4_2;
-        }
+        KernelVersion currentVersion = versionSupplier.kernelVersion();
 
         if ( currentVersion.isLessThan( KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED ) )
         {
