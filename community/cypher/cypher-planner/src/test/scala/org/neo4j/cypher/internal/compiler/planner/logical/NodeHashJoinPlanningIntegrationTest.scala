@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport with AstConstructionTestSupport {
 
   test("should build plans containing joins") {
     val cfg = plannerBuilder()
@@ -98,6 +99,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .leftOuterHashJoin("n1")
       .|.cartesianProduct()
       .|.|.allNodeScan("n2")
+      .|.filterExpression(assertIsNode("n1"))
       .|.allNodeScan("n1")
       .unwind(s"$array AS a0")
       .allNodeScan("n1")
