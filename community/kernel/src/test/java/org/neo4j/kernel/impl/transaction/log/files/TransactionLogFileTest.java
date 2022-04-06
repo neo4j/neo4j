@@ -416,9 +416,9 @@ class TransactionLogFileTest
         try
         {
             List<Future<?>> futures = Stream.iterate( 0, i -> i + 1 )
-                    .limit( executors )
-                    .map( v -> executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) ) )
-                    .collect( toList() );
+                                            .limit( executors )
+                                            .map( v -> executorService.submit( () -> logFile.forceAfterAppend( LogAppendEvent.NULL ) ) )
+                                            .collect( toList() );
             while ( !writeAllLock.hasQueuedThreads() )
             {
                 parkNanos( 100 );
@@ -480,6 +480,41 @@ class TransactionLogFileTest
         assertEquals( 4, logFile.getHighestLogVersion() );
         assertThat( Arrays.stream( logFile.getMatchedFiles() ).map( path -> path.getFileName().toString() ) ).contains( "neostore.transaction.db.1",
                 "neostore.transaction.db.2", "neostore.transaction.db.3", "neostore.transaction.db.4" );
+    }
+
+    @Test
+    void combineShouldPreserveOrder() throws IOException
+    {
+        LogFiles logFiles = buildLogFiles();
+        life.start();
+        life.add( logFiles );
+
+        Path additionalSource = testDirectory.directory( "another" );
+
+        int numberOfAdditionalFile = 20;
+
+        for ( int i = 0; i < numberOfAdditionalFile; i++ )
+        {
+            createFile( additionalSource, i, i );
+        }
+
+        LogFile logFile = logFiles.getLogFile();
+        assertEquals( 1, logFile.getHighestLogVersion() );
+
+        logFile.combine( additionalSource );
+
+        assertEquals( numberOfAdditionalFile + 1, logFile.getHighestLogVersion() );
+
+        for ( int i = 2; i < numberOfAdditionalFile + 2; i++ )
+        {
+            int expectedCommitIdx = i - 2;
+            LogHeader header = readLogHeader( fileSystem, logFile.getLogFileForVersion( i ), INSTANCE );
+            Long lastCommittedTxId = header.getLastCommittedTxId();
+            assertThat( lastCommittedTxId )
+                    .withFailMessage( "File %s should have commit idx %s instead of %s",
+                                      logFile.getLogFileForVersion( i ), expectedCommitIdx, lastCommittedTxId  )
+                    .isEqualTo( expectedCommitIdx );
+        }
     }
 
     @Test
@@ -772,13 +807,18 @@ class TransactionLogFileTest
         lifeSupport.shutdown();
     }
 
-    private void createFile( Path filePath, long version ) throws IOException
+    private void createFile( Path filePath, long version, long lastCommittedTxId ) throws IOException
     {
         var filesHelper = new TransactionLogFilesHelper( fileSystem, filePath );
         try ( StoreChannel storeChannel = fileSystem.write( filesHelper.getLogFileForVersion( version ) ) )
         {
-            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, 1, StoreId.UNKNOWN ), INSTANCE );
+            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, lastCommittedTxId, StoreId.UNKNOWN ), INSTANCE );
         }
+    }
+
+    private void createFile( Path filePath, long version ) throws IOException
+    {
+        createFile( filePath, version, 1 );
     }
 
     private static class CapturingNativeAccess implements NativeAccess

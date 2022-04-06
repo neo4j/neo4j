@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -89,7 +90,8 @@ public class TransactionLogFilesHelper
         {
             return EMPTY_FILES_ARRAY;
         }
-        return files;
+        Arrays.sort( files, Comparator.comparingLong( TransactionLogFilesHelper::getLogVersion ) );
+        return files ;
     }
 
     public void accept( LogVersionVisitor visitor ) throws IOException
