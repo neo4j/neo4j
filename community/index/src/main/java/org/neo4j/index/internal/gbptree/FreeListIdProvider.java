@@ -411,11 +411,11 @@ class FreeListIdProvider implements IdProvider
         return freelistNode.maxEntries();
     }
 
-    static record FreelistMetaData( long lastId, long writePageId, long readPageId, int writePos, int readPos )
+    record FreelistMetaData( long lastId, long writePageId, long readPageId, int writePos, int readPos )
     {
     }
 
-    private static record ListHeadMetaData( long pageId, int pos )
+    private record ListHeadMetaData(long pageId, int pos )
     {
     }
 }

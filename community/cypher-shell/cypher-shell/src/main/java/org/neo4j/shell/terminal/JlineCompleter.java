@@ -74,7 +74,7 @@ public class JlineCompleter implements Completer
         }
     }
 
-    private static record CommandCompleter( List<Suggestion> allCommands )
+    private record CommandCompleter(List<Suggestion> allCommands )
     {
         List<Suggestion> complete()
         {
@@ -87,7 +87,7 @@ public class JlineCompleter implements Completer
         }
     }
 
-    private static record CypherCompleter(CypherLanguageService parser, ParameterService parameterMap )
+    private record CypherCompleter(CypherLanguageService parser, ParameterService parameterMap )
     {
         Stream<Suggestion> complete( CypherCompletion cypher )
         {

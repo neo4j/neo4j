@@ -86,7 +86,7 @@ class CypherStringQueryFactory
 
         PrefixMultiTermsQuery( Term term )
         {
-            super( term.field() );
+            super( term.field(), CONSTANT_SCORE_REWRITE );
             this.term = term;
         }
 
@@ -148,7 +148,7 @@ class CypherStringQueryFactory
 
         ContainsMultiTermsQuery( Term term )
         {
-            super( term.field() );
+            super( term.field(), CONSTANT_SCORE_REWRITE );
             this.term = term;
         }
 
@@ -238,7 +238,7 @@ class CypherStringQueryFactory
 
         SuffixMultiTermsQuery( Term term )
         {
-            super( term.field() );
+            super( term.field(), CONSTANT_SCORE_REWRITE );
             this.term = term;
         }
 
