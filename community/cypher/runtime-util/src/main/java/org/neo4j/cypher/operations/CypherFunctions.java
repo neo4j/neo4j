@@ -73,6 +73,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -766,8 +767,14 @@ public final class CypherFunctions {
     public static TextValue elementId(AnyValue entity, ElementIdMapper idMapper) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        if (entity instanceof VirtualNodeValue node) {
+        if (entity instanceof NodeValue.DirectNodeValue node) {
+            // Needed to get correct ids in certain fabric queries.
+            return stringValue(node.elementId());
+        } else if (entity instanceof VirtualNodeValue node) {
             return stringValue(idMapper.nodeElementId(node.id()));
+        } else if (entity instanceof RelationshipValue.DirectRelationshipValue relationship) {
+            // Needed to get correct ids in certain fabric queries.
+            return stringValue(relationship.elementId());
         } else if (entity instanceof VirtualRelationshipValue relationship) {
             return stringValue(idMapper.relationshipElementId(relationship.id()));
         }
