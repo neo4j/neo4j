@@ -167,6 +167,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.Repetitions
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -190,6 +191,7 @@ import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
@@ -201,6 +203,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.UpperBound
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -1663,6 +1666,27 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def transactionApply(batchSize: Long = TransactionForeach.defaultBatchSize): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => TransactionApply(lhs, rhs, literalInt(batchSize))(_)))
+
+  def trail(min: Int,
+            max: UpperBound,
+            start: String,
+            end: Option[String],
+            innerStart: String,
+            innerEnd: String,
+            groupNodes: Set[String],
+            groupRelationships: Set[String],
+            allRelationships: Set[String]): IMPL =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      Trail(lhs,
+        rhs,
+        Repetitions(min, max),
+        start,
+        end,
+        innerStart,
+        innerEnd,
+        groupNodes,
+        groupRelationships,
+        allRelationships)(_)))
 
   // SHIP IP
 

@@ -485,6 +485,10 @@ object LogicalPlanToPlanBuilderString {
       case SelectOrAntiSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case LetSelectOrAntiSemiApply(_, _, idName, predicate) =>
         wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))
+      case Trail(_, _, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships) =>
+        s"""${repetitions.min}, ${repetitions.max}, "$start", ${end.map(wrapInQuotations)}, "$innerStart", "$innerEnd",
+           |Set(${wrapInQuotationsAndMkString(groupNodes)}), Set(${wrapInQuotationsAndMkString(groupRelationships)}),
+           |Set(${wrapInQuotationsAndMkString(allRelationships)})""".stripMargin
       case NodeByIdSeek(idName, ids, argumentIds) =>
         val idsString: String = idsStr(ids)
         s""" ${wrapInQuotations(idName)}, Set(${wrapInQuotationsAndMkString(argumentIds)}), $idsString """.trim

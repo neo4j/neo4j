@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Limited
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
@@ -1772,6 +1773,23 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build()
   )
+
+  testPlan("trail",
+    new TestPlanBuilder()
+      .produceResults("me", "you", "a", "b", "r")
+      .trail(min = 0,
+        max = Limited(2),
+        start = "me",
+        end = Some("you"),
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set("a", "b"),
+        groupRelationships = Set("r"),
+        allRelationships = Set("r"))
+      .|.expandAll("(a)-[r]->(b)")
+      .|.argument("me", "a")
+      .nodeByLabelScan("me", "START", IndexOrderNone)
+      .build())
 
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =

@@ -25,10 +25,12 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.Limited
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
@@ -2257,5 +2259,45 @@ trait TransactionForeachProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     queryProfile.operatorProfile(4).rows() shouldBe (1 + 2) * sizeHint // allNodeScan
     queryProfile.operatorProfile(5).rows() shouldBe 2 // unwind
     queryProfile.operatorProfile(6).rows() shouldBe 1 // argument
+  }
+}
+
+trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
+  self: ProfileRowsTestBase[CONTEXT] =>
+
+  test("should profile rows of operations in trail operator") {
+    givenWithTransactionType (
+      circleGraph(sizeHint),
+      KernelTransaction.Type.IMPLICIT
+    )
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "a", "b", "r")
+      .trail(min = 0,
+        max = Limited(2),
+        start = "me",
+        end = Some("you"),
+        innerStart = "a",
+        innerEnd = "b",
+        groupNodes = Set("a", "b"),
+        groupRelationships = Set("r"),
+        allRelationships = Set("r"))
+      .|.expandAll("(a)-[r]->(b)")
+      .|.argument("me", "a")
+      .allNodeScan("me")
+      .build()
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
+    consume(runtimeResult)
+
+    // then
+    val queryProfile = runtimeResult.runtimeResult.queryProfile()
+
+    queryProfile.operatorProfile(0).rows() shouldBe  3 * sizeHint// produce results
+    queryProfile.operatorProfile(1).rows() shouldBe  3 * sizeHint // trail
+    queryProfile.operatorProfile(2).rows() shouldBe  2 * sizeHint// expand
+    queryProfile.operatorProfile(3).rows() shouldBe  2 * sizeHint// argument
+    queryProfile.operatorProfile(4).rows() shouldBe  1 * sizeHint// nodeByLabelScan
   }
 }
