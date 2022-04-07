@@ -26,12 +26,21 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.config.FabricSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdRepository;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
 public abstract class FabricDatabaseManager
 {
+    @FunctionalInterface
+    public interface DatabaseNodeCreator
+    {
+        Node createDatabaseNode( Transaction tx, NormalizedDatabaseName databaseName );
+    }
+
     private final DatabaseManager<DatabaseContext> databaseManager;
     private final DatabaseIdRepository databaseIdRepository;
     private final boolean multiGraphEverywhere;
@@ -75,7 +84,7 @@ public abstract class FabricDatabaseManager
 
     public abstract boolean isFabricDatabasePresent();
 
-    public abstract void manageFabricDatabases( GraphDatabaseService system, boolean update );
+    public abstract void manageFabricDatabases( GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator );
 
     public abstract boolean isFabricDatabase( String databaseNameRaw );
 
@@ -93,7 +102,7 @@ public abstract class FabricDatabaseManager
         }
 
         @Override
-        public void manageFabricDatabases( GraphDatabaseService system, boolean update )
+        public void manageFabricDatabases( GraphDatabaseService system, boolean update, DatabaseNodeCreator databaseCreator )
         {
             // a "Fabric" database with special capabilities cannot exist in CE
         }

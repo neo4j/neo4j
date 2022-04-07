@@ -44,6 +44,10 @@ import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STARTED_AT
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.HOSTED_ON_INSTALLED_AT_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.HOSTED_ON_MODE_PROPERTY;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.HOSTED_ON_RELATIONSHIP;
+import static org.neo4j.dbms.database.TopologyGraphDbmsModel.INSTANCE_LABEL;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
@@ -90,8 +94,16 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     @Override
     public void initializeSystemGraphModel( GraphDatabaseService system ) throws InvalidArgumentsException
     {
-        newDefaultDb( system );
-        newDb( system, new NormalizedDatabaseName( SYSTEM_DATABASE_NAME ), false, NAMED_SYSTEM_DATABASE_ID.databaseId().uuid() );
+        try ( var tx = system.beginTx() )
+        {
+            createDatabaseNode( tx, defaultDbName.name(), true, true, UUID.randomUUID() );
+            createDatabaseNode( tx, SYSTEM_DATABASE_NAME, false, false, NAMED_SYSTEM_DATABASE_ID.databaseId().uuid() );
+            tx.commit();
+        }
+        catch ( ConstraintViolationException e )
+        {
+            throw new InvalidArgumentsException( "The specified database '" + defaultDbName.name() + "' or '" + SYSTEM_DATABASE_NAME + "' already exists." );
+        }
     }
 
     /**
@@ -174,16 +186,13 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
                 {
                     defaultDb.setProperty( DATABASE_DEFAULT_PROPERTY, true );
                     defaultDb.setProperty( DATABASE_STATUS_PROPERTY, TopologyGraphDbmsModel.DatabaseStatus.online.name() );
-                    defaultFound = true;
+                }
+                else
+                {
+                    createDatabaseNode( tx, defaultDbName.name(), true, true, UUID.randomUUID() );
                 }
             }
             tx.commit();
-        }
-
-        // If no database exists with the default name, create it
-        if ( !defaultFound )
-        {
-            newDb( system, defaultDbName, true, UUID.randomUUID() );
         }
     }
 
@@ -199,25 +208,12 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         }
     }
 
-    private void newDefaultDb( GraphDatabaseService system ) throws InvalidArgumentsException
+    protected Node createDatabaseNode( Transaction tx, String databaseName, boolean hosted, boolean defaultDb, UUID uuid )
     {
-        newDb( system, defaultDbName, true, UUID.randomUUID() );
+        return createDatabaseNode( tx, databaseName, hosted, defaultDb, uuid, ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
     }
 
-    private void newDb( GraphDatabaseService system, NormalizedDatabaseName databaseName, boolean defaultDb, UUID uuid ) throws InvalidArgumentsException
-    {
-        try ( var tx = system.beginTx() )
-        {
-            createDatabaseNode( tx, databaseName.name(), defaultDb, uuid, ZonedDateTime.ofInstant( clock.instant(), clock.getZone() ) );
-            tx.commit();
-        }
-        catch ( ConstraintViolationException e )
-        {
-            throw new InvalidArgumentsException( "The specified database '" + databaseName + "' already exists." );
-        }
-    }
-
-    protected Node createDatabaseNode( Transaction tx, String databaseName, boolean defaultDb, UUID uuid, ZonedDateTime now )
+    private static Node createDatabaseNode( Transaction tx, String databaseName, boolean hosted, boolean defaultDb, UUID uuid, ZonedDateTime now )
     {
         var databaseNode = tx.createNode( DATABASE_LABEL );
         databaseNode.setProperty( DATABASE_NAME_PROPERTY, databaseName );
@@ -226,6 +222,17 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
         databaseNode.setProperty( DATABASE_DEFAULT_PROPERTY, defaultDb );
         databaseNode.setProperty( DATABASE_CREATED_AT_PROPERTY, now );
         databaseNode.setProperty( DATABASE_STARTED_AT_PROPERTY, now );
+
+        if ( hosted )
+        {
+            var nodes = tx.findNodes( INSTANCE_LABEL ).stream().toList();
+            if ( nodes.size() == 1 )
+            {
+                var hostedOn = databaseNode.createRelationshipTo( nodes.get( 0 ), HOSTED_ON_RELATIONSHIP );
+                hostedOn.setProperty( HOSTED_ON_MODE_PROPERTY, TopologyGraphDbmsModel.HostedOnMode.single.name() );
+                hostedOn.setProperty( HOSTED_ON_INSTALLED_AT_PROPERTY, now );
+            }
+        }
 
         Node nameNode = tx.createNode( DATABASE_NAME_LABEL );
         nameNode.setProperty( NAME_PROPERTY, databaseName );
