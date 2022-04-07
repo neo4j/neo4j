@@ -21,6 +21,7 @@ package org.neo4j.dbms.database;
 
 import java.time.Clock;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -29,9 +30,13 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -77,7 +82,24 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     @Override
     public Status detect( Transaction tx )
     {
-        return hasDatabaseNode( tx ) ? (hasSystemDatabaseNode( tx ) ? Status.CURRENT : Status.UNSUPPORTED) : Status.UNINITIALIZED;
+        if ( !hasDatabaseNode( tx ) )
+        {
+            return Status.UNINITIALIZED;
+        }
+
+        if ( hasDatabaseNode( tx ) && !hasSystemDatabaseNode( tx ) )
+        {
+            return Status.UNSUPPORTED;
+        }
+
+        if ( hasUniqueConstraint( tx, DATABASE_NAME_LABEL, NAME_PROPERTY ) && hasUniqueConstraint( tx, DATABASE_LABEL, DATABASE_NAME_PROPERTY ) )
+        {
+            return Status.CURRENT;
+        }
+        else
+        {
+            return Status.REQUIRES_UPGRADE;
+        }
     }
 
     @Override
@@ -113,8 +135,18 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent
     }
 
     @Override
-    public void upgradeToCurrent( GraphDatabaseService system )
+    public void upgradeToCurrent( GraphDatabaseService system ) throws Exception
     {
+        SystemGraphComponent.executeWithFullAccess( system, this::initializeSystemGraphConstraints );
+    }
+
+    private static boolean hasUniqueConstraint( Transaction tx, Label label, String property )
+    {
+        return Iterators.stream( tx.schema().getConstraints( label ).iterator() )
+                        .anyMatch( constraintDefinition ->
+                                           Iterables.asList( constraintDefinition.getPropertyKeys() ).equals( List.of( property ) ) &&
+                                           constraintDefinition.isConstraintType( ConstraintType.UNIQUENESS )
+                        );
     }
 
     private static boolean hasDatabaseNode( Transaction tx )
