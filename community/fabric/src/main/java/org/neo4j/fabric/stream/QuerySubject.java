@@ -243,14 +243,14 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
 
         private AnyValue withTaggedId(AnyValue value) {
             if (value instanceof VirtualNodeValue) {
-                if (value instanceof NodeValue) {
-                    return withTaggedId((NodeValue) value);
+                if (value instanceof NodeValue node) {
+                    return withTaggedId(node);
                 } else {
                     throw unableToTagError(value);
                 }
             } else if (value instanceof VirtualRelationshipValue) {
-                if (value instanceof RelationshipValue) {
-                    return withTaggedId((RelationshipValue) value);
+                if (value instanceof RelationshipValue.DirectRelationshipValue rel) {
+                    return withTaggedId(rel);
                 } else {
                     throw unableToTagError(value);
                 }
@@ -266,16 +266,23 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
         }
 
         private NodeValue withTaggedId(NodeValue nodeValue) {
-            return VirtualValues.nodeValue(tag(nodeValue.id()), nodeValue.labels(), nodeValue.properties());
+            if (nodeValue instanceof NodeValue.DirectNodeValue n) {
+                return VirtualValues.nodeValue(tag(n.id()), n.elementId(), n.labels(), n.properties());
+            }
+            throw unableToTagError(nodeValue);
         }
 
         private RelationshipValue withTaggedId(RelationshipValue relationshipValue) {
-            return VirtualValues.relationshipValue(
-                    tag(relationshipValue.id()),
-                    VirtualValues.node(tag(relationshipValue.startNodeId())),
-                    VirtualValues.node(tag(relationshipValue.endNodeId())),
-                    relationshipValue.type(),
-                    relationshipValue.properties());
+            if (relationshipValue instanceof RelationshipValue.DirectRelationshipValue r) {
+                return VirtualValues.relationshipValue(
+                        tag(r.id()),
+                        r.elementId(),
+                        VirtualValues.node(tag(r.startNodeId())),
+                        VirtualValues.node(tag(r.endNodeId())),
+                        r.type(),
+                        r.properties());
+            }
+            throw unableToTagError(relationshipValue);
         }
 
         private PathValue withTaggedId(PathValue pathValue) {

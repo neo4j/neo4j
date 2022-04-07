@@ -113,7 +113,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
     private static final long DIRECT_RELATIONSHIP_VALUE_SHALLOW_SIZE =
             shallowSizeOfInstance(DirectRelationshipValue.class);
 
-    static class DirectRelationshipValue extends RelationshipValue {
+    public static class DirectRelationshipValue extends RelationshipValue {
+        private final String elementId;
         private final VirtualNodeValue startNode;
         private final VirtualNodeValue endNode;
         private final TextValue type;
@@ -130,6 +131,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
          */
         DirectRelationshipValue(
                 long id,
+                String elementId,
                 VirtualNodeValue startNode,
                 VirtualNodeValue endNode,
                 TextValue type,
@@ -137,7 +139,9 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
                 boolean isDeleted) {
             super(id, startNode.id(), endNode.id());
             assert properties != null;
+            assert elementId != null;
 
+            this.elementId = elementId;
             this.startNode = startNode;
             this.endNode = endNode;
             this.type = type;
@@ -177,6 +181,10 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
         @Override
         public boolean isDeleted() {
             return isDeleted;
+        }
+
+        public String elementId() {
+            return elementId;
         }
     }
 }

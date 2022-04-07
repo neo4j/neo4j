@@ -185,26 +185,35 @@ public final class VirtualValues {
         return new DirectPathValue(nodes, relationships, payloadSize);
     }
 
-    public static NodeValue nodeValue(long id, TextArray labels, MapValue properties) {
-        return new NodeValue.DirectNodeValue(id, labels, properties, false);
+    public static NodeValue nodeValue(long id, String elementId, TextArray labels, MapValue properties) {
+        return new NodeValue.DirectNodeValue(id, elementId, labels, properties, false);
     }
 
-    public static NodeValue nodeValue(long id, TextArray labels, MapValue properties, boolean isDeleted) {
-        return new NodeValue.DirectNodeValue(id, labels, properties, isDeleted);
-    }
-
-    public static RelationshipValue relationshipValue(
-            long id, VirtualNodeValue startNode, VirtualNodeValue endNode, TextValue type, MapValue properties) {
-        return new RelationshipValue.DirectRelationshipValue(id, startNode, endNode, type, properties, false);
+    public static NodeValue nodeValue(
+            long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted) {
+        return new NodeValue.DirectNodeValue(id, elementId, labels, properties, isDeleted);
     }
 
     public static RelationshipValue relationshipValue(
             long id,
+            String elementId,
+            VirtualNodeValue startNode,
+            VirtualNodeValue endNode,
+            TextValue type,
+            MapValue properties) {
+        return new RelationshipValue.DirectRelationshipValue(
+                id, elementId, startNode, endNode, type, properties, false);
+    }
+
+    public static RelationshipValue relationshipValue(
+            long id,
+            String elementId,
             VirtualNodeValue startNode,
             VirtualNodeValue endNode,
             TextValue type,
             MapValue properties,
             boolean isDeleted) {
-        return new RelationshipValue.DirectRelationshipValue(id, startNode, endNode, type, properties, isDeleted);
+        return new RelationshipValue.DirectRelationshipValue(
+                id, elementId, startNode, endNode, type, properties, isDeleted);
     }
 }

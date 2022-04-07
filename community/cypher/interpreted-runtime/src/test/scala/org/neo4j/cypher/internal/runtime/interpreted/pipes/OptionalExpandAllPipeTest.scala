@@ -36,7 +36,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
-    val nodeValue = VirtualValues.nodeValue(0, Values.stringArray(), VirtualValues.map(Array(), Array()))
+    val nodeValue = VirtualValues.nodeValue(0, "n", Values.stringArray(), VirtualValues.map(Array(), Array()))
     val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
     Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(
       relIter
@@ -54,7 +54,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val monitor = QueryStateHelper.trackClosedMonitor
     val resourceManager = new ResourceManager(monitor)
     val state = QueryStateHelper.emptyWithResourceManager(resourceManager)
-    val nodeValue = VirtualValues.nodeValue(0, Values.stringArray(), VirtualValues.map(Array(), Array()))
+    val nodeValue = VirtualValues.nodeValue(0, "n", Values.stringArray(), VirtualValues.map(Array(), Array()))
 
     val relIter = new CountingRelationshipIterator(PrimitiveLongHelper.relationshipIteratorFrom((0, 0, 0, 0)))
     Mockito.when(state.query.getRelationshipsForIds(any[Long], any[SemanticDirection], any[Array[Int]])).thenReturn(

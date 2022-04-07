@@ -63,7 +63,8 @@ public abstract class NodeValue extends VirtualNodeValue {
 
     private static final long DIRECT_NODE_SHALLOW_SIZE = shallowSizeOfInstance(DirectNodeValue.class);
 
-    static class DirectNodeValue extends NodeValue {
+    public static class DirectNodeValue extends NodeValue {
+        private final String elementId;
         private final TextArray labels;
         private final MapValue properties;
         private final boolean isDeleted;
@@ -74,10 +75,12 @@ public abstract class NodeValue extends VirtualNodeValue {
          * @param properties properties of this node.
          * @param isDeleted whether this node is deleted.
          */
-        DirectNodeValue(long id, TextArray labels, MapValue properties, boolean isDeleted) {
+        DirectNodeValue(long id, String elementId, TextArray labels, MapValue properties, boolean isDeleted) {
             super(id);
+            assert elementId != null;
             assert labels != null;
             assert properties != null;
+            this.elementId = elementId;
             this.labels = labels;
             this.properties = properties;
             this.isDeleted = isDeleted;
@@ -101,6 +104,10 @@ public abstract class NodeValue extends VirtualNodeValue {
         @Override
         public boolean isDeleted() {
             return isDeleted;
+        }
+
+        public String elementId() {
+            return elementId;
         }
     }
 }

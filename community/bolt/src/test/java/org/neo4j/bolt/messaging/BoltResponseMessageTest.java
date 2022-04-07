@@ -114,6 +114,7 @@ public class BoltResponseMessageTest {
     void shouldSerializeNode() throws Throwable {
         NodeValue nodeValue = nodeValue(
                 12L,
+                "n",
                 stringArray("User", "Banana"),
                 VirtualValues.map(new String[] {"name", "age"}, new AnyValue[] {stringValue("Bob"), intValue(14)}));
         assertThat(serialized(nodeValue))
@@ -126,8 +127,9 @@ public class BoltResponseMessageTest {
     void shouldSerializeRelationship() throws Throwable {
         RelationshipValue rel = relationshipValue(
                 12L,
-                nodeValue(1L, stringArray(), VirtualValues.EMPTY_MAP),
-                nodeValue(2L, stringArray(), VirtualValues.EMPTY_MAP),
+                "r",
+                nodeValue(1L, "n1", stringArray(), VirtualValues.EMPTY_MAP),
+                nodeValue(2L, "n2", stringArray(), VirtualValues.EMPTY_MAP),
                 stringValue("KNOWS"),
                 VirtualValues.map(new String[] {"name", "age"}, new AnyValue[] {stringValue("Bob"), intValue(14)}));
         assertThat(serialized(rel))
