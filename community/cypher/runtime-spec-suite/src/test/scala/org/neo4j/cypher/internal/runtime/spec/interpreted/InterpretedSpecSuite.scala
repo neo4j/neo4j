@@ -153,6 +153,8 @@ import org.neo4j.cypher.internal.runtime.spec.tests.SubscriberErrorTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.ThreadUnsafeExpressionTests
 import org.neo4j.cypher.internal.runtime.spec.tests.Top1WithTiesTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TopTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailProfileRowsTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachDbHitsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.TransactionForeachMemoryManagementTestBase
@@ -338,6 +340,7 @@ class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, 
     with MergeProfileRowsTestBase[CommunityRuntimeContext]
     with NonParallelProfileRowsTestBase[CommunityRuntimeContext]
     with TransactionForeachProfileRowsTestBase[CommunityRuntimeContext]
+    with TrailProfileRowsTestBase[CommunityRuntimeContext]
 
 class InterpretedMemoryManagementTest extends MemoryManagementTestBase(COMMUNITY.EDITION, InterpretedRuntime)
     with TimeLimitedCypherTest
@@ -391,6 +394,10 @@ class InterpretedRollupApplyTest extends RollupApplyTestBase(COMMUNITY.EDITION, 
 
 class InterpretedRelationshipTypeScanTest
     extends RelationshipTypeScanTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedTrailTest extends TrailTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+//UPDATING
 class InterpretedEmptyResultTest extends EmptyResultTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedEagerTest extends EagerTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedTriadicSelectionTest extends TriadicSelectionTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

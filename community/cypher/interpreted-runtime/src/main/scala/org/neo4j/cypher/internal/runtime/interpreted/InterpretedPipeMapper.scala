@@ -142,6 +142,7 @@ import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
@@ -281,6 +282,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionApplyPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TriadicSelectionPipe
@@ -1385,6 +1387,9 @@ case class InterpretedPipeMapper(
 
       case TransactionApply(_, _, batchSize) =>
         TransactionApplyPipe(lhs, rhs, buildExpression(batchSize))(id = id)
+
+      case Trail(_, _, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships) =>
+        TrailPipe(lhs, rhs, repetitions, start, end, innerStart, innerEnd, groupNodes, groupRelationships, allRelationships)(id = id)
 
       case x =>
         throw new InternalException(s"Received a logical plan that has no physical operator $x")
