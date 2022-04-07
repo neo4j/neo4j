@@ -29,7 +29,6 @@ import java.util.regex.Pattern;
  */
 public class ShellStatementParser implements StatementParser
 {
-
     private static final Pattern SHELL_CMD_PATTERN = Pattern.compile( "^\\s*:.+\\s*$" );
     private static final char SEMICOLON = ';';
     private static final char BACKSLASH = '\\';
@@ -313,5 +312,6 @@ public class ShellStatementParser implements StatementParser
         statement = new StringBuilder();
         parsedStatements.clear();
         awaitedRightDelimiter = Optional.empty();
+        commentStart = NO_COMMENT;
     }
 }

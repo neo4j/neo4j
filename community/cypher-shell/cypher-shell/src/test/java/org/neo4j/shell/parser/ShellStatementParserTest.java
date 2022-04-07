@@ -481,4 +481,24 @@ class ShellStatementParserTest
         assertEquals( 0, parser.consumeStatements().size() );
         assertFalse( parser.containsText() );
     }
+
+    @Test
+    void parserReset()
+    {
+        parser.parseMoreText( "match (n) // Hi\nreturn n; // Hi again" );
+
+        assertTrue( parser.hasStatements() );
+        List<String> statements = parser.consumeStatements();
+        assertEquals( 1, statements.size() );
+        assertEquals( "match (n) return n;", statements.get( 0 ) );
+
+        parser.reset();
+
+        parser.parseMoreText( "match (n) // Hi\nreturn n; // Hi again" );
+
+        assertTrue( parser.hasStatements() );
+        statements = parser.consumeStatements();
+        assertEquals( 1, statements.size() );
+        assertEquals( "match (n) return n;", statements.get( 0 ) );
+    }
 }
