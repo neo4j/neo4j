@@ -5,20 +5,29 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>testing-parent</artifactId>
         <version>5.0.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <name>Neo4j - Testing Utils Parent</name>
-    <artifactId>testing-parent</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>test-proxy</artifactId>
+    <packaging>jar</packaging>
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <moduleName>org.neo4j.testing.parent</moduleName>
+        <moduleName>org.neo4j.test.proxy</moduleName>
+        <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
     </properties>
+
+    <name>Neo4j - Test proxy</name>
+    <description>Implementation of embedded proxy that can be used for testing purposes.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
     <licenses>
         <license>
@@ -39,15 +48,25 @@
         </license>
     </licenses>
 
-    <modules>
-        <module>io-utils</module>
-        <module>log-utils</module>
-        <module>kernel-api-utils</module>
-        <module>test-utils</module>
-        <module>import-utils</module>
-        <module>storage-engine-utils</module>
-        <module>wal-utils</module>
-        <module>layout-test-utils</module>
-        <module>test-proxy</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>com.github.netcrusherorg</groupId>
+            <artifactId>netcrusher-core</artifactId>
+            <version>0.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>test-utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+
 </project>
