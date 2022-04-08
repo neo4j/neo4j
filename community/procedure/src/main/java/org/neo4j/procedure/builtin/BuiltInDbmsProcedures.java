@@ -312,7 +312,7 @@ public class BuiltInDbmsProcedures
                                           "This is an administration command and it should be executed against the system database: dbms.upgrade" );
         }
         SystemGraphComponents versions = systemGraphComponents;
-        SystemGraphComponent.Status status = versions.detect( transaction );
+        SystemGraphComponent.Status status = versions.detect( graph );
 
         // New components are not currently initialised in cluster deployment when new binaries are booted on top of an existing database.
         // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be supported
@@ -324,7 +324,7 @@ public class BuiltInDbmsProcedures
             ArrayList<String> failed = new ArrayList<>();
             versions.forEach( component ->
                               {
-                                  SystemGraphComponent.Status initialStatus = component.detect( transaction );
+                                  SystemGraphComponent.Status initialStatus = component.detect( graph );
                                   if ( upgradableStatuses.contains( initialStatus ) )
                                   {
                                       try

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 
 /**
@@ -60,6 +61,16 @@ public interface SystemGraphComponent
      * be started).
      */
     Status detect( Transaction tx );
+
+    default Status detect( GraphDatabaseService system )
+    {
+        try ( Transaction tx = system.beginTx() )
+        {
+            SystemGraphComponent.Status status = detect( tx );
+            tx.commit();
+            return status;
+        }
+    }
 
     /**
      * If the component-specific sub-graph of the system database is not initialized yet (empty), this method should populate it with the default contents for

@@ -488,6 +488,7 @@ class BuiltInProceduresTest
         setupFakeSystemComponents();
         when( resolver.resolveDependency( Config.class ) ).thenReturn( config );
         when( callContext.isSystemDatabase() ).thenReturn( true );
+        when( graphDatabaseAPI.beginTx(  )).thenReturn( transaction );
 
         var r = call( "dbms.upgrade" ).iterator();
         assertThat( r.hasNext() ).isEqualTo( true ).describedAs( "Expected one result" );

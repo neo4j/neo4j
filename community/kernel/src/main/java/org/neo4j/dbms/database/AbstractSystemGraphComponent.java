@@ -110,16 +110,6 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         }
     }
 
-    private Status detect( GraphDatabaseService system )
-    {
-        try ( Transaction tx = system.beginTx() )
-        {
-            SystemGraphComponent.Status status = detect( tx );
-            tx.commit();
-            return status;
-        }
-    }
-
     protected static void initializeSystemGraphConstraint( Transaction tx, Label label, String property )
     {
         // Makes the creation of constraints for security idempotent
