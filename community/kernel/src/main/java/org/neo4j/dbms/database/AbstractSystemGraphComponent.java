@@ -19,12 +19,17 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.List;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
@@ -117,17 +122,19 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
 
     protected static void initializeSystemGraphConstraint( Transaction tx, Label label, String property )
     {
-        try
+        // Makes the creation of constraints for security idempotent
+        if ( !hasUniqueConstraint( tx, label, property ) )
         {
             tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
         }
-        catch ( ConstraintViolationException e )
-        {
-            // Makes the creation of constraints for security idempotent
-            if ( !e.getMessage().startsWith( "An equivalent constraint already exists" ) )
-            {
-                throw e;
-            }
-        }
+    }
+
+    protected static boolean hasUniqueConstraint( Transaction tx, Label label, String property )
+    {
+        return Iterators.stream( tx.schema().getConstraints( label ).iterator() )
+                        .anyMatch( constraintDefinition ->
+                                           Iterables.asList( constraintDefinition.getPropertyKeys() ).equals( List.of( property ) ) &&
+                                           constraintDefinition.isConstraintType( ConstraintType.UNIQUENESS )
+                        );
     }
 }
