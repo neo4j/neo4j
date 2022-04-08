@@ -67,7 +67,7 @@ public class SchemaStoreMigration
         void migrate( SchemaRuleMigrationAccess dstAccess, TokenHolders dstTokensHolders ) throws KernelException;
     }
 
-    static record SchemaStoreNewFamilyMigration(List<SchemaRule> rules) implements SchemaStoreMigrator
+    record SchemaStoreNewFamilyMigration(List<SchemaRule> rules) implements SchemaStoreMigrator
     {
 
         @Override
