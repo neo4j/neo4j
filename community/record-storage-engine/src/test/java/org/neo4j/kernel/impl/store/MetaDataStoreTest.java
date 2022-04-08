@@ -770,8 +770,9 @@ class MetaDataStoreTest
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
-            assertThat( metaDataStore.kernelVersion() ).isEqualTo( KernelVersion.LATEST ); //new store should have latest
-            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.EARLIEST ); //that is not 4.0
+            assertThat( metaDataStore.kernelVersion() )
+                    .isEqualTo( KernelVersion.LATEST ); //new store should have the latest kernel version that is not the same as earliest
+            assertThat( metaDataStore.kernelVersion() ).isNotEqualTo( KernelVersion.EARLIEST );
             metaDataStore.setKernelVersion( KernelVersion.EARLIEST ); //so we set it
             assertEquals( KernelVersion.EARLIEST, metaDataStore.kernelVersion() );
         }
