@@ -214,6 +214,8 @@ public interface Read {
 
     Scan<NodeCursor> allNodesScan();
 
+    PartitionedScan<NodeCursor> allNodesScan(int desiredNumberOfPartitions, CursorContext cursorContext);
+
     /**
      * @param reference a reference from {@link NodeCursor#nodeReference()}, {@link
      * RelationshipDataAccessor#sourceNodeReference()},

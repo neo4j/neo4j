@@ -114,7 +114,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     }
 
     @Override
-    public boolean scanBatch(AllNodeScan scan, int sizeHint) {
+    public boolean scanBatch(AllNodeScan scan, long sizeHint) {
         if (getId() != NO_ID) {
             reset();
         }

@@ -75,7 +75,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     }
 
     @Override
-    public boolean scanBatch(AllRelationshipsScan scan, int sizeHint) {
+    public boolean scanBatch(AllRelationshipsScan scan, long sizeHint) {
         if (getId() != NO_ID) {
             reset();
         }

@@ -90,7 +90,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     boolean scanBatch(
             Read read,
             AllNodeScan scan,
-            int sizeHint,
+            long sizeHint,
             LongIterator addedNodes,
             boolean hasChanges,
             AccessMode accessMode) {

@@ -37,7 +37,7 @@ public interface StorageEntityScanCursor<S extends Scan> extends StorageEntityCu
      * @param sizeHint the batch will try to read this number of entities.
      * @return <code>true</code> if there are entities to be found, otherwise <code>false</code>
      */
-    boolean scanBatch(S scan, int sizeHint);
+    boolean scanBatch(S scan, long sizeHint);
 
     /**
      * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that entity.

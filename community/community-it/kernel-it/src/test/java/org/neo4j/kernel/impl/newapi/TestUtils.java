@@ -36,6 +36,7 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.neo4j.internal.kernel.api.Cursor;
+import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -51,9 +52,14 @@ final class TestUtils {
     }
 
     static void assertDistinct(List<LongList> lists) {
+        assertDistinct(lists, "");
+    }
+
+    static void assertDistinct(List<LongList> lists, String errorMessage) {
         MutableLongSet seen = LongSets.mutable.empty();
         for (LongList list : lists) {
-            list.forEach(item -> assertTrue(seen.add(item), format("%s was seen multiple times", item)));
+            list.forEach(
+                    item -> assertTrue(seen.add(item), format("%s was seen multiple times, %s", item, errorMessage)));
         }
     }
 
@@ -97,6 +103,24 @@ final class TestUtils {
         };
     }
 
+    static <T extends Cursor> Callable<LongList> singleBatchWorker(
+            PartitionedScan<T> scan, WorkerContext<T> workerContext, ToLongFunction<T> producer) {
+        return () -> {
+            try {
+                LongArrayList batch = new LongArrayList();
+                T cursor = workerContext.getCursor();
+                var executionContext = workerContext.getContext();
+                scan.reservePartition(cursor, executionContext.cursorContext(), executionContext.accessMode());
+                while (cursor.next()) {
+                    batch.add(producer.applyAsLong(cursor));
+                }
+                return batch;
+            } finally {
+                workerContext.complete();
+            }
+        };
+    }
+
     static <T extends Cursor> List<Callable<LongList>> createWorkers(
             int sizeHint,
             Scan<T> scan,
@@ -106,6 +130,15 @@ final class TestUtils {
         ArrayList<Callable<LongList>> workers = new ArrayList<>(workerContexts.size());
         for (int i = 0; i < numberOfWorkers; i++) {
             workers.add(singleBatchWorker(scan, workerContexts.get(i), toLongFunction, sizeHint));
+        }
+        return workers;
+    }
+
+    static <T extends Cursor> List<Callable<LongList>> createWorkers(
+            PartitionedScan<T> scan, List<WorkerContext<T>> workerContexts, ToLongFunction<T> toLongFunction) {
+        ArrayList<Callable<LongList>> workers = new ArrayList<>(workerContexts.size());
+        for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
+            workers.add(singleBatchWorker(scan, workerContexts.get(i), toLongFunction));
         }
         return workers;
     }

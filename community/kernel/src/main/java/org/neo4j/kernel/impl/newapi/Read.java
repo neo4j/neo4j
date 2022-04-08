@@ -350,6 +350,13 @@ abstract class Read
     }
 
     @Override
+    public PartitionedScan<NodeCursor> allNodesScan(int desiredNumberOfPartitions, CursorContext cursorContext) {
+        ktx.assertOpen();
+        long totalCount = storageReader.nodesGetCount(cursorContext);
+        return new PartitionedNodeCursorScan(storageReader.allNodeScan(), this, desiredNumberOfPartitions, totalCount);
+    }
+
+    @Override
     public final void singleRelationship(long reference, RelationshipScanCursor cursor) {
         ktx.assertOpen();
         ((DefaultRelationshipScanCursor) cursor).single(reference, this);

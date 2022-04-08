@@ -17,24 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.newapi;
 
-import java.util.concurrent.atomic.AtomicLong;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-
-/**
- * Maintains state when performing batched scans, potentially from multiple threads.
- * <p>
- * Will break up the scan in ranges depending on the provided size hint.
- */
-abstract class BaseRecordScan<C extends PrimitiveRecord> {
-    private final AtomicLong nextStart = new AtomicLong(0);
-
-    boolean scanBatch(long sizeHint, C cursor) {
-        long start = nextStart.getAndAdd(sizeHint);
-        long stopInclusive = start + sizeHint - 1;
-        return scanRange(cursor, start, stopInclusive);
+public class ParallelPartitionedNodeLabelScanTest extends ParallelPartitionedNodeCursorTestBase<ReadTestSupport> {
+    @Override
+    public ReadTestSupport newTestSupport() {
+        return new ReadTestSupport();
     }
-
-    abstract boolean scanRange(C cursor, long start, long stopInclusive);
 }
