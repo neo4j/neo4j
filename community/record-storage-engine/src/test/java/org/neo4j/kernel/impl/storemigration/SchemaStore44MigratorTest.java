@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -51,6 +52,7 @@ import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -59,8 +61,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.filterOutBtreeIndexes;
-import static org.neo4j.kernel.impl.storemigration.RecordStorageMigrator.persistNodeLabelIndex;
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE;
 import static org.neo4j.storageengine.api.SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.BTREE;
@@ -68,7 +68,7 @@ import static org.neo4j.storageengine.api.SchemaRule44.IndexType.POINT;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.RANGE;
 import static org.neo4j.storageengine.api.SchemaRule44.IndexType.TEXT;
 
-class RecordStorageMigratorTest
+class SchemaStore44MigratorTest
 {
     private static final String MISSING_REPLACEMENT_MESSAGE =
             "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
@@ -80,6 +80,7 @@ class RecordStorageMigratorTest
             "The indexes and constraints without replacement are: ";
     private static final String NAME_ONE = "Index one";
     private static final String NAME_TWO = "Index two";
+    private static final String NAME_THREE = "Index three";
     private final MutableInt schemaId = new MutableInt();
     private int[] labels;
     private int[] props;
@@ -103,18 +104,21 @@ class RecordStorageMigratorTest
         }
     }
 
-    @Test
-    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeIndex()
+    @ParameterizedTest
+    @ValueSource( booleans = {true,false} )
+    void assertCanMigrateShouldThrowOnNonReplacedBtreeIndex( boolean changingFormatFamily )
     {
         // Given
         var index = index( BTREE, labels[0], props[0], NAME_ONE );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( index ) );
 
         // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, changingFormatFamily, tokenHolders );
+
+        var e = assertThrows( IllegalStateException.class, schemaStoreMigration44::assertCanMigrate );
 
         // Then
         assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
@@ -123,7 +127,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeBackedConstraint( SchemaRule44.ConstraintRuleType constraintType )
+    void assertCanMigrateShouldThrowOnNonReplacedBtreeBackedConstraint( SchemaRule44.ConstraintRuleType constraintType )
     {
         // Given
         var indexConstraint = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
@@ -131,11 +135,13 @@ class RecordStorageMigratorTest
         var constraint = indexConstraint.constraint();
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( index, constraint ) );
 
         // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        var e = assertThrows( IllegalStateException.class, schemaStoreMigration44::assertCanMigrate );
 
         // Then
         assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
@@ -144,7 +150,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @MethodSource( value = "nonReplacingConstraintCombinations" )
-    void filterOutBtreeIndexesShouldThrowOnNonReplacedBtreeBackedConstraintWithConstraintOfDifferentTypeOnSameSchema(
+    void assertCanMigrateShouldThrowOnNonReplacedBtreeBackedConstraintWithConstraintOfDifferentTypeOnSameSchema(
             SchemaRule44.ConstraintRuleType btreeConstraint, SchemaRule44.ConstraintRuleType otherConstraint )
     {
         // Given
@@ -152,12 +158,14 @@ class RecordStorageMigratorTest
         var rangeNodeKey = constraint( otherConstraint, RANGE, labels[0], props[0], NAME_TWO );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
                 List.of( btree.index(), btree.constraint(), rangeNodeKey.index(), rangeNodeKey.constraint() ) );
 
         // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        var e = assertThrows( IllegalStateException.class, schemaStoreMigration44::assertCanMigrate );
 
         // Then
         assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
@@ -165,7 +173,7 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void filterOutBtreeIndexesShouldIncludeAllSchemaRulesThatLackReplacementInException()
+    void assertCanMigrateShouldIncludeAllSchemaRulesThatLackReplacementInException()
     {
         // Given
         var btreeIndex1 = index( BTREE, labels[0], props[0], "btreeIndex1" );
@@ -175,7 +183,6 @@ class RecordStorageMigratorTest
 
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
                 List.of(
                         btreeIndex1, btreeIndex2,
@@ -184,7 +191,10 @@ class RecordStorageMigratorTest
                 ) );
 
         // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        var e = assertThrows( IllegalStateException.class, schemaStoreMigration44::assertCanMigrate );
 
         // Then
         assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
@@ -197,47 +207,7 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void filterOutBtreeIndexesShouldNotRemoveAnythingIfSomeRulesLackReplacement()
-    {
-        // Given
-        var btreeIndexReplaced = index( BTREE, labels[0], props[0], "btreeIndexReplaced" );
-        var replacingIndex = index( RANGE, labels[0], props[0], "replacingIndex" );
-
-        var btreeConstraintReplaced = constraint( UNIQUE, BTREE, labels[1], props[1], "btreeConstraintReplaced" );
-        var replacingConstraint = constraint( UNIQUE, RANGE, labels[1], props[1], "replacingConstraint" );
-
-        var btreeIndexWithoutReplacement = index( BTREE, labels[2], props[2], "btreeIndexWithoutReplacement" );
-        var btreeConstraintWithoutReplacement = constraint( UNIQUE, BTREE, labels[3], props[3], "btreeConstraintWithoutReplacement" );
-
-        var reader = mock( SchemaStore44Reader.class );
-        var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
-        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
-                List.of(
-                        btreeIndexReplaced, replacingIndex,
-                        btreeConstraintReplaced.index, btreeConstraintReplaced.constraint,
-                        replacingConstraint.index, replacingConstraint.constraint,
-                        btreeIndexWithoutReplacement,
-                        btreeConstraintWithoutReplacement.index, btreeConstraintWithoutReplacement.constraint
-                ) );
-
-        // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
-
-        // Then
-        assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
-                       .hasMessageContaining( btreeIndexWithoutReplacement.userDescription( tokenHolders ) )
-                       .hasMessageContaining( btreeConstraintWithoutReplacement.constraint.userDescription( tokenHolders ) )
-                       .hasMessageNotContaining( btreeIndexReplaced.userDescription( tokenHolders ) )
-                       .hasMessageNotContaining( replacingIndex.userDescription( tokenHolders ) )
-                       .hasMessageNotContaining( btreeConstraintReplaced.constraint.userDescription( tokenHolders ) )
-                       .hasMessageNotContaining( replacingConstraint.constraint.userDescription( tokenHolders ) );
-        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
-        verifyNoInteractions( access );
-    }
-
-    @Test
-    void filterOutBtreeIndexesShouldNotBeAffectedByExistsConstraint() throws KernelException
+    void schemaMigrationShouldNotBeAffectedByExistsConstraint() throws KernelException
     {
         // Given
         var btreeIndexReplacedByRange = index( BTREE, labels[0], props[0], "btreeIndexReplacedByRange" );
@@ -261,7 +231,12 @@ class RecordStorageMigratorTest
                 ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
@@ -273,7 +248,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.IndexType.class, names = {"RANGE", "POINT", "TEXT"} )
-    void filterOutBtreeIndexesShouldRemoveBtreeIndexIfReplaced( SchemaRule44.IndexType indexType ) throws KernelException
+    void schemaMigrationShouldRemoveBtreeIndexIfReplaced( SchemaRule44.IndexType indexType ) throws KernelException
     {
         // Given
         var btree = index( BTREE, labels[0], props[0], NAME_ONE );
@@ -284,7 +259,12 @@ class RecordStorageMigratorTest
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btree, range ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
@@ -292,9 +272,36 @@ class RecordStorageMigratorTest
         verifyNoMoreInteractions( access );
     }
 
+    @Test
+    void schemaMigrationShouldAddIndexesAndNotRemoveIfChangingFamily() throws KernelException
+    {
+        // Given
+        var btree = index( BTREE, labels[0], props[0], NAME_ONE );
+        var range = index( RANGE, labels[0], props[0], NAME_TWO );
+        var text = index( TEXT, labels[0], props[1], NAME_THREE );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btree, range, text ) );
+
+        // When
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, true, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
+
+        // Then
+        verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
+        verify( access ).writeSchemaRule( range.convertTo50rule() );
+        verify( access ).writeSchemaRule( text.convertTo50rule() );
+        verifyNoMoreInteractions( access );
+    }
+
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesShouldRemoveBtreeConstraintsIfReplaced( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    void schemaMigrationShouldRemoveBtreeConstraintsIfReplaced( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
     {
         // Given
         var btreeUnique = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
@@ -306,7 +313,12 @@ class RecordStorageMigratorTest
                 List.of( btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index(), rangeUnique.constraint() ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
@@ -317,29 +329,30 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesShouldFailIfOrphanedUniqueBtreeIndexExists( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    void assertCanMigrateShouldFailIfOrphanedUniqueBtreeIndexExists( SchemaRule44.ConstraintRuleType constraintType )
     {
         // Given a unique index without a constraint and a RANGE constraint on the same schema
         var btree = uniqueIndex( BTREE, labels[0], props[0], NAME_ONE, 1 );
         var rangeUnique = constraint( constraintType, RANGE, labels[0], props[0], NAME_TWO );
         var reader = mock( SchemaStore44Reader.class );
         var storeCursors = mock( StoreCursors.class );
-        var access = mock( SchemaRuleMigrationAccess.class );
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn(
                 List.of( btree, rangeUnique.index(), rangeUnique.constraint() ) );
 
         // When
-        var e = assertThrows( IllegalStateException.class, () -> filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false ) );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        var e = assertThrows( IllegalStateException.class, schemaStoreMigration44::assertCanMigrate );
 
         // Then we still fail since we can't be sure that the constraint was a replacement for the orphaned index
         assertThat( e ).hasMessageContaining( MISSING_REPLACEMENT_MESSAGE )
                 .hasMessageContaining( btree.userDescription( tokenHolders ) );
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
-        verifyNoInteractions( access );
     }
 
     @Test
-    void filterOutBtreeIndexesShouldRemoveMultipleIndexesAndConstraints() throws KernelException
+    void schemaMigrationShouldRemoveMultipleIndexesAndConstraints() throws KernelException
     {
         // Given
         var btreeIndexReplacedByRange = index( BTREE, labels[0], props[0], "btreeIndexReplacedByRange" );
@@ -381,7 +394,12 @@ class RecordStorageMigratorTest
                 ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, false );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
@@ -396,7 +414,24 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void filterOutBtreeIndexesOnSystemShouldReplaceNonUniqueBtreeIndex() throws KernelException
+    void assertCanMigrateOnSystemShouldNotThrowOnNonReplacedBtreeIndex()
+    {
+        // Given
+        var index = index( BTREE, labels[0], props[0], NAME_ONE );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( index ) );
+
+        // When
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
+
+        // Then
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+    }
+
+    @Test
+    void schemaMigrationOnSystemShouldReplaceNonUniqueBtreeIndex() throws KernelException
     {
         // Given
         var index = index( BTREE, labels[0], props[0], NAME_ONE );
@@ -407,7 +442,12 @@ class RecordStorageMigratorTest
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( index ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
@@ -421,7 +461,7 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void filterOutBtreeIndexesOnSystemShouldNotReplaceNonUniqueBtreeIndexThatHasReplacement() throws KernelException
+    void schemaMigrationOnSystemShouldNotReplaceNonUniqueBtreeIndexThatHasReplacement() throws KernelException
     {
         // Given
         var btreeIndex = index( BTREE, labels[0], props[0], NAME_ONE );
@@ -433,10 +473,14 @@ class RecordStorageMigratorTest
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( btreeIndex, rangeIndex ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
-        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
         verify( access ).deleteSchemaRule( btreeIndex.id() );
         verifyNoMoreInteractions( access );
@@ -445,7 +489,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesOnSystemShouldReplaceBtreeConstraint( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    void schemaMigrationOnSystemShouldReplaceBtreeConstraint( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
     {
         // Given
         var btreeUnique = constraint( constraintType, BTREE, labels[0], props[0], NAME_ONE );
@@ -457,7 +501,12 @@ class RecordStorageMigratorTest
                 List.of( btreeUnique.index(), btreeUnique.constraint() ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
+
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
@@ -474,7 +523,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesOnSystemShouldNotReplaceBtreeConstraintThatAlreadyHasReplacement( SchemaRule44.ConstraintRuleType constraintType )
+    void schemaMigrationOnSystemShouldNotReplaceBtreeConstraintThatAlreadyHasReplacement( SchemaRule44.ConstraintRuleType constraintType )
             throws KernelException
     {
         // Given
@@ -488,10 +537,13 @@ class RecordStorageMigratorTest
                 List.of( btreeUnique.index(), btreeUnique.constraint(), rangeUnique.index, rangeUnique.constraint ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
 
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
         // Then
-        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
         verify( access ).deleteSchemaRule( btreeUnique.index.id() );
         verify( access ).deleteSchemaRule( btreeUnique.constraint.id() );
@@ -501,7 +553,7 @@ class RecordStorageMigratorTest
 
     @ParameterizedTest
     @EnumSource( value = SchemaRule44.ConstraintRuleType.class, names = {"UNIQUE", "UNIQUE_EXISTS"} )
-    void filterOutBtreeIndexesOnSystemShouldNotTouchRangeSchemas( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
+    void schemaMigrationOnSystemShouldNotTouchRangeSchemas( SchemaRule44.ConstraintRuleType constraintType ) throws KernelException
     {
         // Given
         var rangeIndex = index( RANGE, labels[0], props[0], NAME_ONE );
@@ -514,10 +566,13 @@ class RecordStorageMigratorTest
                 List.of( rangeIndex, rangeUnique.index(), rangeUnique.constraint() ) );
 
         // When
-        filterOutBtreeIndexes( reader, storeCursors, access, tokenHolders, true );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, true, false, tokenHolders );
 
+        assertDoesNotThrow( schemaStoreMigration44::assertCanMigrate );
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
         // Then
-        ArgumentCaptor<SchemaRule> argument = ArgumentCaptor.forClass( SchemaRule.class);
         verify( reader ).loadAllSchemaRules( any( StoreCursors.class ) );
         verifyNoMoreInteractions( access );
         verifyNoMoreInteractions( reader );
@@ -538,7 +593,14 @@ class RecordStorageMigratorTest
         when( access.nextId() ).thenReturn( id );
 
         // When
-        persistNodeLabelIndex( reader, storeCursors, access );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertThat( schemaStoreMigration44.existingSchemaRulesToAdd() ).containsExactly( formerLabelScanStoreWithoutId.convertTo50rule() );
+
+        schemaStoreMigration44.assertCanMigrate();
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( access ).nextId();
@@ -560,7 +622,14 @@ class RecordStorageMigratorTest
         );
 
         // When
-        persistNodeLabelIndex( reader, storeCursors, access );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertThat( schemaStoreMigration44.existingSchemaRulesToAdd() ).containsExactly( formerLabelScanStoreWithId.convertTo50rule() );
+
+        schemaStoreMigration44.assertCanMigrate();
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verify( access ).writeSchemaRule( IndexDescriptor.NLI_PROTOTYPE.materialise( id ) );
@@ -568,7 +637,7 @@ class RecordStorageMigratorTest
     }
 
     @Test
-    void shouldNotPersisNodeLabelIndexWhenLoadingExistingNodeLabelIndex() throws KernelException
+    void shouldNotPersistNodeLabelIndexWhenLoadingExistingNodeLabelIndex() throws KernelException
     {
         // Given
         var existingNli = new SchemaRule44.Index( 15L, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), false, "My nli",
@@ -580,10 +649,44 @@ class RecordStorageMigratorTest
         when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( existingNli ) );
 
         // When
-        persistNodeLabelIndex( reader, storeCursors, access );
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, false, tokenHolders );
+
+        assertThat( schemaStoreMigration44.existingSchemaRulesToAdd() ).isEmpty();
+
+        schemaStoreMigration44.assertCanMigrate();
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
 
         // Then
         verifyNoInteractions( access );
+    }
+
+    @Test
+    void shouldPersistNodeLabelIndexWhenLoadingExistingNodeLabelIndexIfSwitchingFamily() throws KernelException
+    {
+        // Given
+        var existingNli = new SchemaRule44.Index( 15L, SchemaDescriptors.forAnyEntityTokens( EntityType.NODE ), false, "My nli",
+                SchemaRule44.IndexType.LOOKUP, new IndexProviderDescriptor( "token-lookup", "1.0" ),
+                IndexConfig.empty(), null );
+        var reader = mock( SchemaStore44Reader.class );
+        var storeCursors = mock( StoreCursors.class );
+        var access = mock( SchemaRuleMigrationAccess.class );
+        when( reader.loadAllSchemaRules( any( StoreCursors.class ) ) ).thenReturn( List.of( existingNli ) );
+
+        // When
+        SchemaStore44Migration.SchemaStore44Migrator schemaStoreMigration44 =
+                SchemaStore44Migration.getSchemaStoreMigration44( reader, storeCursors, false, true, tokenHolders );
+
+        assertThat( schemaStoreMigration44.existingSchemaRulesToAdd() ).containsExactly( existingNli.convertTo50rule() );
+
+        schemaStoreMigration44.assertCanMigrate();
+
+        schemaStoreMigration44.migrate( access, tokenHolders );
+
+        // Then
+        verify( access ).writeSchemaRule( existingNli.convertTo50rule() );
+        verifyNoMoreInteractions( access );
     }
 
     private static void verifyRangeIndex( SchemaRule44.Index index, SchemaRule newSchemaRule )

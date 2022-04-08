@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule44;
@@ -115,7 +114,7 @@ public class SchemaStore44Reader implements AutoCloseable
             PropertyStore propertyStore,
             TokenHolders tokenHolders,
             KernelVersionRepository versionSupplier,
-            Path path,
+            Path schemaStoreLocation,
             Path idFile,
             Config conf,
             IdType idType,
@@ -131,8 +130,8 @@ public class SchemaStore44Reader implements AutoCloseable
         this.propertyStore = propertyStore;
         this.tokenHolders = tokenHolders;
         this.versionSupplier = versionSupplier;
-        this.schemaStore = new SchemaStore44( path, idFile, conf, idType, idGeneratorFactory, pageCache, cursorContextFactory, logProvider, recordFormats,
-                DatabaseReadOnlyChecker.readOnly(), databaseName, openOptions );
+        this.schemaStore = new SchemaStore44( schemaStoreLocation, idFile, conf, idType, idGeneratorFactory, pageCache, cursorContextFactory, logProvider,
+                recordFormats, DatabaseReadOnlyChecker.readOnly(), databaseName, openOptions );
     }
 
     public List<SchemaRule44> loadAllSchemaRules( StoreCursors storeCursors )

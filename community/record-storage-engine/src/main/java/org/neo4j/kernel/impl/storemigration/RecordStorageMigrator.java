@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.storemigration;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.impl.factory.Sets;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -30,10 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.StringJoiner;
 import java.util.UUID;
 
 import org.neo4j.common.ProgressReporter;
@@ -56,28 +51,16 @@ import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
-import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.StoreTokens;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseFile;
 import org.neo4j.io.layout.DatabaseFile;
@@ -94,7 +77,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -103,14 +85,13 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
+import org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.SchemaStoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.KernelVersionRepository;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
@@ -124,7 +105,6 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
-import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
@@ -142,6 +122,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForV
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
+import static org.neo4j.kernel.impl.storemigration.SchemaStoreMigration.getSchemaStoreMigration;
 import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 
@@ -193,9 +174,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         RecordDatabaseLayout directoryLayout = RecordDatabaseLayout.convert( directoryLayoutArg );
         RecordDatabaseLayout migrationLayout = RecordDatabaseLayout.convert( migrationLayoutArg );
-        // Extract information about the last transaction from legacy neostore
+        RecordFormats oldFormat = selectForVersion( fromVersion.storeVersion() );
+        RecordFormats newFormat = selectForVersion( toVersion.storeVersion() );
+
+        boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
+        boolean requiresPropertyMigration =
+                !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
+
         try ( var cursorContext = contextFactory.create( RECORD_STORAGE_MIGRATION_TAG ) )
         {
+            SchemaStoreMigrator
+                    schemaStoreMigration = getSchemaStoreMigration( oldFormat, directoryLayout, cursorContext, requiresPropertyMigration,
+                    SYSTEM_DATABASE_NAME.equals( directoryLayoutArg.getDatabaseName() ), config, pageCache, fileSystem, contextFactory );
+
+            schemaStoreMigration.assertCanMigrate();
+
+            // Extract information about the last transaction from legacy neostore
             long lastTxId = tailMetadata.getLastCommittedTransaction().transactionId();
             TransactionId lastTxInfo = tailMetadata.getLastCommittedTransaction();
             LogPosition lastTxLogPosition = tailMetadata.getLastTransactionLogPosition();
@@ -204,11 +198,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             writeLastTxInformation( migrationLayout, lastTxInfo );
             writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
 
-            RecordFormats oldFormat = selectForVersion( fromVersion.storeVersion() );
-            RecordFormats newFormat = selectForVersion( toVersion.storeVersion() );
-            boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
-            boolean requiresPropertyMigration =
-                    !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
             // The FORMAT capability also includes the format family so this comparison is enough
             if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
             {
@@ -219,39 +208,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         requiresDynamicStoreMigration, requiresPropertyMigration, indexImporterFactory );
             }
 
-            if ( requiresPropertyMigration )
+            // First migration to 5.x - need to switch to new metadatastore and cleanup old index/constraints
+            if ( need50Migration( oldFormat ) )
             {
-                // Migration with the batch importer would have copied the property, property key token, and property key name stores
-                // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
-                // store files that it did not change, or didn't migrate. It could also be that we didn't do a normal store
-                // format migration. Then those files will be missing and the schema store migration would create empty ones that
-                // ended up overwriting the real ones. Those are then deleted by the migration afterwards, to avoid overwriting the
-                // actual files in the final copy from the migration directory, to the real store directory. When do a schema store
-                // migration, we will be reading and writing properties, and property key tokens, so we need those files.
-                // To get them, we just copy them again with the SKIP strategy, so we avoid overwriting any files that might have
-                // been migrated earlier.
-                List<DatabaseFile> databaseFiles =
-                        asList( RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
-                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                                RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
-                                RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, true,
-                        ExistingTargetStrategy.SKIP );
-                migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat, cursorContext, memoryTracker );
-            }
-
-            // First migration in 5.0 - when we are ready to force migration to these formats we can instead do a check on if the
-            // KernelVersion is before 5.0 (assuming we set the kernel version to 5.0 in this migration).
-            if ( need50Migration( oldFormat, newFormat ) )
-            {
-                List<DatabaseFile> databaseFiles =
-                        asList( RecordDatabaseFile.SCHEMA_STORE,
-                                RecordDatabaseFile.PROPERTY_STORE, RecordDatabaseFile.PROPERTY_ARRAY_STORE, RecordDatabaseFile.PROPERTY_STRING_STORE,
-                                RecordDatabaseFile.PROPERTY_KEY_TOKEN_STORE, RecordDatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
-                                RecordDatabaseFile.LABEL_TOKEN_STORE, RecordDatabaseFile.LABEL_TOKEN_NAMES_STORE,
-                                RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, RecordDatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE );
-                fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, true,
-                        ExistingTargetStrategy.SKIP );
+                schemaStoreMigration.copyFilesInPreparationForMigration( fileSystem, directoryLayout, migrationLayout );
 
                 IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), migrationLayout.getDatabaseName() );
                 IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
@@ -302,15 +262,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
                     dstStore.start( cursorContext );
                     var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
-                    try ( var schemaStore44Reader = getSchemaStore44Reader( migrationLayout, oldFormat, idGeneratorFactory, dstStore, dstTokensHolders ) )
-                    {
-                        persistNodeLabelIndex( schemaStore44Reader, dstCursors, dstAccess );
-                        filterOutBtreeIndexes( schemaStore44Reader, dstCursors, dstAccess, dstTokensHolders,
-                                               SYSTEM_DATABASE_NAME.equals( directoryLayoutArg.getDatabaseName() ) );
-                    }
+
+                    schemaStoreMigration.migrate( dstAccess, dstTokensHolders );
                     dstStore.flush( cursorContext );
                 }
             }
+            else if ( requiresPropertyMigration )
+            {
+                // Migrate schema store when changing format family
+                schemaStoreMigration.copyFilesInPreparationForMigration( fileSystem, directoryLayout, migrationLayout );
+                migrateSchemaStore( schemaStoreMigration, migrationLayout, newFormat, cursorContext, memoryTracker );
+            }
+
             fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, singleton( CommonDatabaseFile.METADATA_STORE ), true, false,
                            ExistingTargetStrategy.SKIP );
             MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
@@ -318,249 +281,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         }
     }
 
-    private long getValueOrDefault( MetaDataStore oldMetadataStore, int id, MetaDataRecord record, PageCursor pageCursor )
+    static long getValueOrDefault( MetaDataStore oldMetadataStore, int id, MetaDataRecord record, PageCursor pageCursor )
     {
         MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor( id, record, RecordLoad.FORCE, pageCursor );
         return recordByCursor.inUse() ? recordByCursor.getValue() : -1;
-    }
-
-    /**
-     * Make sure node label index is correctly persisted. There are two situations where it might not be:
-     * 1. As part of upgrade to 4.3/4.4 a schema record without any properties was written to the schema store.
-     *    This record was used to represent the old label scan store (< 4.3) converted to node label index.
-     *    In this case we need to rewrite this schema to give it the properties it should have. In this way we
-     *    can keep the index id.
-     * 2. If no write transaction happened after upgrade of old store to 4.3/4.4 the upgrade transaction was never injected
-     *    and node label index (as schema rule with no properties) was never persisted at all. In this case
-     *    {@link IndexDescriptor#INJECTED_NLI} will be injected by {@link org.neo4j.internal.recordstorage.SchemaStorage}
-     *    when reading schema rules. In this case we materialise this injected rule with a new real id (instead of -2).
-     */
-    @VisibleForTesting
-    static void persistNodeLabelIndex( SchemaStore44Reader schemaStore44Reader, StoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess )
-            throws KernelException
-    {
-        SchemaRule foundNLIThatNeedsUpdate = null;
-        Iterable<SchemaRule44> all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
-        for ( SchemaRule44 schemaRule : all )
-        {
-            if  ( schemaRule instanceof SchemaRule44.Index index )
-            {
-                // This is the previous labelscanstore that we want to make into a real complete record
-                if ( index.schema().equals( SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_SCHEMA ) )
-                {
-                    // Need to update NLI schema record
-                    if ( SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_GENERATED_NAME.equals( index.name() ) )
-                    {
-                        long newId = index.id() == SchemaStore44Reader.FORMER_LABEL_SCAN_STORE_ID ?
-                                     dstAccess.nextId() : // It was never persisted and now needs to persisted with a new id.
-                                     index.id();          // It was persisted and is a record with no properties, can keep id.
-                        foundNLIThatNeedsUpdate = IndexDescriptor.NLI_PROTOTYPE.materialise( newId );
-                        break;
-                    }
-                }
-            }
-        }
-        if ( foundNLIThatNeedsUpdate != null )
-        {
-            dstAccess.writeSchemaRule( foundNLIThatNeedsUpdate );
-        }
-    }
-
-    /**
-     * If a BTREE index has a replacement index - RANGE, TEXT or POINT index on same schema - the BTREE index will be removed.
-     * If BTREE index doesn't have any replacement, an exception will be thrown.
-     * If a constraint backed by a BTREE index has a replacement constraint - constraint of same type, on same schema,
-     * backed by other index type than BTREE - the BTREE backed constraint will be removed.
-     * If constraint backed by BTREE index doesn't have any replacement, an exception will be thrown.
-     *
-     * The SchemaStore (and naturally also the PropertyStore) will be updated non-transactionally.
-     *
-     * BTREE index type was deprecated in 4.4 and removed in 5.0.
-     *
-     * @param schemaStore44Reader {@link SchemaStore44Reader} reader for legacy schema store
-     * @param dstCursors {@link StoreCursors} cursors to use when reading from legacy store
-     * @param dstAccess {@link SchemaRuleMigrationAccess} access to the SchemaStore at migration destination.
-     * @param dstTokensHolders {@link TokenHolders} token holders for migration destination store.
-     * @param systemDb true if the migrating database is system db, otherwise false.
-     * @throws KernelException if BTREE index or BTREE backed constraint lacks replacement.
-     */
-    @VisibleForTesting
-    static void filterOutBtreeIndexes( SchemaStore44Reader schemaStore44Reader, StoreCursors dstCursors, SchemaRuleMigrationAccess dstAccess,
-                                       TokenHolders dstTokensHolders, boolean systemDb ) throws KernelException
-    {
-        var all = schemaStore44Reader.loadAllSchemaRules( dstCursors );
-        var toDelete = new ArrayList<SchemaRule44>();
-        var toCreate = new ArrayList<SchemaRule>();
-
-        // Organize indexes by SchemaDescriptor
-
-        var indexesBySchema = new HashMap<SchemaDescriptor,List<SchemaRule44.Index>>();
-        var uniqueIndexesByName = new HashMap<String,SchemaRule44.Index>();
-        var constraintBySchemaAndType = new HashMap<SchemaDescriptor,EnumMap<SchemaRule44.ConstraintRuleType,List<SchemaRule44.Constraint>>>();
-        for ( var schemaRule : all )
-        {
-            if ( schemaRule instanceof SchemaRule44.Index index )
-            {
-                if ( !index.unique() )
-                {
-                    indexesBySchema.computeIfAbsent( index.schema(), k -> new ArrayList<>() ).add( index );
-                }
-                else
-                {
-                    uniqueIndexesByName.put( index.name(), index );
-                }
-            }
-            if ( schemaRule instanceof SchemaRule44.Constraint constraint )
-            {
-                if ( constraint.constraintRuleType().isIndexBacked() )
-                {
-                    var constraintsByType =
-                            constraintBySchemaAndType.computeIfAbsent( constraint.schema(), k -> new EnumMap<>( SchemaRule44.ConstraintRuleType.class ) );
-                    constraintsByType.computeIfAbsent( constraint.constraintRuleType(), k -> new ArrayList<>() ).add( constraint );
-                }
-            }
-        }
-
-        // Figure out which btree indexes that has replacement and can be deleted and which don't
-        var nonReplacedIndexes = new ArrayList<SchemaRule44.Index>();
-        for ( var schema : indexesBySchema.keySet() )
-        {
-            List<SchemaRule44.Index> indexes = indexesBySchema.get( schema );
-            for ( SchemaRule44.Index index : indexes )
-            {
-                if ( index.indexType() == SchemaRule44.IndexType.BTREE )
-                {
-                    if ( indexes.size() == 1 )
-                    {
-                        nonReplacedIndexes.add( index );
-                    }
-                    else
-                    {
-                        toDelete.add( index );
-                    }
-                }
-            }
-        }
-
-        // Figure out which constraints, backed by btree indexes, that has replacement and can be deleted and which don't
-        var nonReplacedConstraints = new ArrayList<Pair<SchemaRule44.Constraint,SchemaRule44.Index>>();
-        constraintBySchemaAndType.values()
-                                 .stream().flatMap( enumMap -> enumMap.values().stream() )
-                                 .forEach( constraintsGroupedBySchemaAndType ->
-                                           {
-                                               for ( var constraint : constraintsGroupedBySchemaAndType )
-                                               {
-                                                   var backingIndex = uniqueIndexesByName.remove( constraint.name() );
-                                                   if ( backingIndex.indexType() == SchemaRule44.IndexType.BTREE )
-                                                   {
-                                                       if ( constraintsGroupedBySchemaAndType.size() == 1 )
-                                                       {
-                                                           nonReplacedConstraints.add( Pair.of( constraint, backingIndex ) );
-                                                       }
-                                                       else
-                                                       {
-                                                           toDelete.add( constraint );
-                                                           toDelete.add( backingIndex );
-                                                       }
-                                                   }
-                                               }
-                                           }
-                                 );
-
-        for ( SchemaRule44.Index uniqueIndex : uniqueIndexesByName.values() )
-        {
-            // There could be a unique index not linked to a constraint e.g. by crashing in the middle of a constraint creation,
-            // since we don't know what constraint type it should be backing we can't know if it is replaced - let's just throw on it instead.
-            if ( uniqueIndex.indexType() == SchemaRule44.IndexType.BTREE )
-            {
-                nonReplacedIndexes.add( uniqueIndex );
-            }
-        }
-
-        if ( !nonReplacedIndexes.isEmpty() || !nonReplacedConstraints.isEmpty() )
-        {
-            if ( systemDb )
-            {
-                // Forcefully replace non-replaced indexes and constraints
-                for ( SchemaRule44.Index index : nonReplacedIndexes )
-                {
-                    IndexDescriptor rangeIndex = asRangeIndex( index, dstAccess );
-                    toCreate.add( rangeIndex );
-                    toDelete.add( index );
-                }
-                for ( Pair<SchemaRule44.Constraint,SchemaRule44.Index> constraintPair : nonReplacedConstraints )
-                {
-                    var oldConstraint = constraintPair.first();
-                    var oldIndex = constraintPair.other();
-                    var rangeIndex = asRangeIndex( oldIndex, dstAccess );
-                    var rangeBackedConstraint = asRangeBackedConstraint( oldConstraint, rangeIndex, dstAccess, dstTokensHolders );
-                    rangeIndex = rangeIndex.withOwningConstraintId( rangeBackedConstraint.getId() );
-                    toCreate.add( rangeIndex );
-                    toCreate.add( rangeBackedConstraint );
-                    toDelete.add( oldIndex );
-                    toDelete.add( oldConstraint );
-                }
-            }
-            else
-            {
-                // Throw if non-replaced index exists
-                var nonReplacedIndexString = new StringJoiner( ", ", "[", "]" );
-                var nonReplacedConstraintsString = new StringJoiner( ", ", "[", "]" );
-                nonReplacedIndexes.forEach( index -> nonReplacedIndexString.add( index.userDescription( dstTokensHolders ) ) );
-                nonReplacedConstraints.forEach( pair -> nonReplacedConstraintsString.add( pair.first().userDescription( dstTokensHolders ) ) );
-                throw new IllegalStateException(
-                        "Migration will remove all BTREE indexes and constraints backed by BTREE indexes. " +
-                        "To guard from unintentionally removing indexes or constraints, " +
-                        "all BTREE indexes or constraints backed by BTREE indexes must either have been removed before this migration or " +
-                        "need to have a valid replacement. " +
-                        "Indexes can be replaced by RANGE, TEXT or POINT index and constraints can be replaced by constraints backed by RANGE index. " +
-                        "Please drop your indexes and constraints or create replacements and retry the migration. " +
-                        "The indexes and constraints without replacement are: " + nonReplacedIndexString + " and " + nonReplacedConstraintsString
-                );
-            }
-        }
-
-        for ( SchemaRule44 rule : toDelete )
-        {
-            dstAccess.deleteSchemaRule( rule.id() );
-        }
-        for ( SchemaRule rule : toCreate )
-        {
-            dstAccess.writeSchemaRule( rule );
-        }
-    }
-
-    private static ConstraintDescriptor asRangeBackedConstraint( SchemaRule44.Constraint constraint, IndexDescriptor rangeIndex,
-                                                                 SchemaRuleMigrationAccess dstAccess, TokenHolders dstTokensHolders )
-    {
-        ConstraintDescriptor newConstraint;
-        if ( constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE )
-        {
-            newConstraint = ConstraintDescriptorFactory.uniqueForSchema( constraint.schema(), rangeIndex.getIndexType() );
-        }
-        else if ( constraint.constraintRuleType() == SchemaRule44.ConstraintRuleType.UNIQUE_EXISTS )
-        {
-            newConstraint = ConstraintDescriptorFactory.nodeKeyForSchema( constraint.schema(), rangeIndex.getIndexType() );
-        }
-        else
-        {
-            throw new IllegalStateException(
-                    "We should never see non-index-backed constraint here, but got: " + constraint.userDescription( dstTokensHolders ) );
-        }
-        return newConstraint.withOwnedIndexId( rangeIndex.getId() )
-                            .withName( constraint.name() )
-                            .withId( dstAccess.nextId() );
-    }
-
-    private static IndexDescriptor asRangeIndex( SchemaRule44.Index btreeIndex, SchemaRuleMigrationAccess dstAccess )
-    {
-        var prototype = btreeIndex.unique() ? IndexPrototype.uniqueForSchema( btreeIndex.schema() )
-                                            : IndexPrototype.forSchema( btreeIndex.schema() );
-        return prototype
-                .withName( btreeIndex.name() )
-                .withIndexType( IndexType.RANGE )
-                .withIndexProvider( new IndexProviderDescriptor( "range", "1.0" ) )
-                .materialise( dstAccess.nextId() );
     }
 
     void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException
@@ -851,8 +575,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 true, ExistingTargetStrategy.OVERWRITE );
 
         RecordFormats oldFormat = selectForVersion( versionToUpgradeFrom );
-        RecordFormats newFormat = selectForVersion( versionToUpgradeTo );
-        if ( need50Migration( oldFormat, newFormat ) )
+        if ( need50Migration( oldFormat ) )
         {
             deleteBtreeIndexFiles( fileSystem, directoryLayout );
         }
@@ -861,34 +584,25 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     /**
      * Migration of the schema store is invoked if the property store needs migration.
      */
-    private void migrateSchemaStore( RecordDatabaseLayout directoryLayout, RecordDatabaseLayout migrationLayout, RecordFormats oldFormat,
+    private void migrateSchemaStore( SchemaStoreMigrator schemaStoreMigration, RecordDatabaseLayout migrationLayout,
             RecordFormats newFormat, CursorContext cursorContext, MemoryTracker memoryTracker ) throws IOException, KernelException
     {
-        IdGeneratorFactory srcIdGeneratorFactory = new ScanOnOpenReadOnlyIdGeneratorFactory();
-        StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
         StoreFactory dstFactory =
                 createStoreFactory( migrationLayout, newFormat, new ScanOnOpenOverwritingIdGeneratorFactory( fileSystem, migrationLayout.getDatabaseName() ) );
 
-        SchemaStorageCreator schemaStorageCreator = schemaStorageCreatorFlexible();
         // Token stores
-        StoreType[] sourceStoresToOpen =
-                new StoreType[]{StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME, StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
-                                StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME};
-        sourceStoresToOpen = ArrayUtil.concat( sourceStoresToOpen, schemaStorageCreator.additionalStoresToOpen() );
-        try ( NeoStores srcStore = srcFactory.openNeoStores( sourceStoresToOpen );
-              var srcCursors = new CachedStoreCursors( srcStore, cursorContext );
-              NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY );
-              schemaStorageCreator )
+        try (
+              NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY,
+                      StoreType.PROPERTY_KEY_TOKEN_NAME, StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
+                      StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME );
+              var dstCursors = new CachedStoreCursors( dstStore, cursorContext ) )
         {
             dstStore.start( cursorContext );
-            TokenHolders srcTokenHolders = createTokenHolders( srcStore, srcCursors );
-            SchemaStorage srcAccess = schemaStorageCreator.create( srcStore, srcTokenHolders, cursorContext );
-
+            var dstTokensHolders = createTokenHolders( dstStore, dstCursors );
             try ( SchemaRuleMigrationAccess dstAccess =
-                          createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker );
-                  var schemaCursors = schemaStorageCreator.getSchemaStorageTokenCursors( srcCursors ) )
+                          createMigrationTargetSchemaRuleAccess( dstStore, contextFactory, memoryTracker ) )
             {
-                migrateSchemaRules( srcAccess, dstAccess, schemaCursors );
+                schemaStoreMigration.migrate( dstAccess, dstTokensHolders );
             }
 
             dstStore.flush( cursorContext );
@@ -905,47 +619,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                                                      .rootDirectory() );
     }
 
-    static void migrateSchemaRules( SchemaStorage srcAccess, SchemaRuleMigrationAccess dstAccess,
-            StoreCursors storeCursors ) throws KernelException
-    {
-        for ( SchemaRule rule : srcAccess.getAll( storeCursors ) )
-        {
-            dstAccess.writeSchemaRule( rule );
-        }
-    }
-
-    private static boolean need50Migration( RecordFormats oldFormat, RecordFormats newFormat )
+    static boolean need50Migration( RecordFormats oldFormat )
     {
         return oldFormat.hasCapability( Index44Compatibility.INSTANCE );
     }
 
-    private static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
+    static TokenHolders createTokenHolders( NeoStores stores, CachedStoreCursors cursors )
     {
         TokenHolders tokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
                                                          StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                                                          StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         tokenHolders.setInitialTokens( allTokens( stores ), cursors );
         return tokenHolders;
-    }
-
-    private SchemaStore44Reader getSchemaStore44Reader( RecordDatabaseLayout recordDatabaseLayout, RecordFormats formats, IdGeneratorFactory idGeneratorFactory,
-                                                        NeoStores neoStores, TokenHolders tokenHolders )
-    {
-        return new SchemaStore44Reader(
-                neoStores.getPropertyStore(),
-                tokenHolders,
-                neoStores.getMetaDataStore(),
-                recordDatabaseLayout.schemaStore(),
-                recordDatabaseLayout.idSchemaStore(),
-                config,
-                SchemaIdType.SCHEMA,
-                idGeneratorFactory,
-                pageCache,
-                contextFactory,
-                NullLogProvider.getInstance(),
-                formats,
-                recordDatabaseLayout.getDatabaseName(),
-                org.eclipse.collections.api.factory.Sets.immutable.empty() );
     }
 
     @Override
@@ -958,49 +643,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     public String toString()
     {
         return "Kernel StoreMigrator";
-    }
-
-    private static SchemaStorageCreator schemaStorageCreatorFlexible()
-    {
-        return new SchemaStorageCreator()
-        {
-            private SchemaStore schemaStore;
-
-            @Override
-            public SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext )
-            {
-                schemaStore = store.getSchemaStore();
-                return new org.neo4j.internal.recordstorage.SchemaStorage( schemaStore, tokenHolders, KernelVersionRepository.LATEST );
-            }
-
-            @Override
-            public StoreType[] additionalStoresToOpen()
-            {
-                // We need NeoStores to have those stores open so that we can get schema store out in create method.
-                return new StoreType[]{StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY, StoreType.SCHEMA};
-            }
-
-            @Override
-            public StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors )
-            {
-                return srcCursors;
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                IOUtils.closeAll( schemaStore );
-            }
-        };
-    }
-
-    private interface SchemaStorageCreator extends Closeable
-    {
-        SchemaStorage create( NeoStores store, TokenHolders tokenHolders, CursorContext cursorContext );
-
-        StoreType[] additionalStoresToOpen();
-
-        StoreCursors getSchemaStorageTokenCursors( StoreCursors srcCursors );
     }
 
     private static class NodeRecordChunk extends StoreScanChunk<RecordNodeCursor>

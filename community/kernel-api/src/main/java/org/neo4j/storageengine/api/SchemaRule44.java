@@ -20,17 +20,25 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaUserDescription;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.util.Preconditions;
 
 public interface SchemaRule44
 {
     long id();
 
     String userDescription( TokenNameLookup tokenNameLookup );
+
+    SchemaRule convertTo50rule();
 
     record Index(
             long id,
@@ -48,6 +56,26 @@ public interface SchemaRule44
         {
             return SchemaUserDescription.forIndex( tokenNameLookup, id, name, unique, indexType.name(), schema, providerDescriptor, owningConstraintId );
         }
+
+        @Override
+        public SchemaRule convertTo50rule()
+        {
+            Preconditions.checkState( indexType != IndexType.BTREE, "Unsupported migration for schema rule with BTREE index type. Id: " + id );
+
+            IndexPrototype prototype = unique ? IndexPrototype.uniqueForSchema( schema ) : IndexPrototype.forSchema( schema );
+            prototype = prototype.withName( name ).withIndexType( indexType.convertIndexType() ).withIndexProvider( providerDescriptor );
+
+            IndexDescriptor index = prototype.materialise( id );
+
+            index = index.withIndexConfig( indexConfig );
+
+            if ( owningConstraintId != null )
+            {
+                index = index.withOwningConstraintId( owningConstraintId );
+            }
+
+            return index;
+        }
     }
 
     record Constraint(
@@ -64,6 +92,36 @@ public interface SchemaRule44
         {
             return SchemaUserDescription.forConstraint( tokenNameLookup, id, name, constraintRuleType.asConstraintType(), schema, ownedIndex );
         }
+
+        @Override
+        public SchemaRule convertTo50rule()
+        {
+            ConstraintDescriptor constraint;
+            switch ( constraintRuleType )
+            {
+            case UNIQUE -> {
+                Preconditions.checkState( indexType == IndexType.RANGE,
+                        "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id );
+                constraint = ConstraintDescriptorFactory.uniqueForSchema( schema, indexType.convertIndexType() );
+                if ( ownedIndex != null )
+                {
+                    constraint = constraint.withOwnedIndexId( ownedIndex );
+                }
+            }
+            case EXISTS -> constraint = ConstraintDescriptorFactory.existsForSchema( schema );
+            case UNIQUE_EXISTS -> {
+                Preconditions.checkState( indexType == IndexType.RANGE,
+                        "Unsupported migration for constraint schema rule backed by BTREE index type. Id: " + id );
+                constraint = ConstraintDescriptorFactory.nodeKeyForSchema( schema, indexType.convertIndexType() );
+                if ( ownedIndex != null )
+                {
+                    constraint = constraint.withOwnedIndexId( ownedIndex );
+                }
+            }
+            default -> throw new IllegalStateException( "Unsupported migration for constraint of type " + constraintRuleType.name() );
+            }
+            return constraint.withId( id ).withName( name );
+        }
     }
 
     enum IndexType
@@ -73,7 +131,20 @@ public interface SchemaRule44
         LOOKUP,
         TEXT,
         RANGE,
-        POINT
+        POINT;
+
+        org.neo4j.internal.schema.IndexType convertIndexType()
+        {
+            return switch ( this )
+                    {
+                        case BTREE -> throw new IllegalStateException( "Trying to convert unsupported index type 'BTREE'" );
+                        case FULLTEXT -> org.neo4j.internal.schema.IndexType.FULLTEXT;
+                        case LOOKUP -> org.neo4j.internal.schema.IndexType.LOOKUP;
+                        case TEXT -> org.neo4j.internal.schema.IndexType.TEXT;
+                        case RANGE -> org.neo4j.internal.schema.IndexType.RANGE;
+                        case POINT -> org.neo4j.internal.schema.IndexType.POINT;
+                    };
+        }
     }
 
     enum ConstraintRuleType
