@@ -49,10 +49,10 @@ import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 
-class ParallelTransactionalContextWrapper(
-  private[this] val tc: TransactionalContext,
-  private[this] val threadSafeCursors: CursorFactory
-) extends TransactionalContextWrapper {
+import java.net.URL
+
+class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext,
+                                          private[this] val threadSafeCursors: CursorFactory) extends TransactionalContextWrapper {
   // TODO: Make parallel transaction use safe.
   //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
@@ -149,4 +149,6 @@ class ParallelTransactionalContextWrapper(
   override def elementIdMapper(): ElementIdMapper = tc.elementIdMapper()
 
   override def cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
+
+  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
 }

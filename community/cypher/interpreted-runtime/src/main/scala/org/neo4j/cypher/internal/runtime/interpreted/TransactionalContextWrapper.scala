@@ -49,6 +49,8 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
 
+import java.net.URL
+
 /**
  * @param threadSafeCursors use this instead of the cursors of the current transaction, unless this is `null`.
  */
@@ -67,6 +69,8 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
   def createParallelTransactionalContext(): ParallelTransactionalContextWrapper
 
   def cancellationChecker: CancellationChecker
+
+  def validateURLAccess(url: URL): URL
 }
 
 class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, threadSafeCursors: CursorFactory = null)
@@ -171,6 +175,8 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
   override def elementIdMapper(): ElementIdMapper = tc.elementIdMapper()
 
   override val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
+
+  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(url)
 }
 
 object TransactionalContextWrapper {

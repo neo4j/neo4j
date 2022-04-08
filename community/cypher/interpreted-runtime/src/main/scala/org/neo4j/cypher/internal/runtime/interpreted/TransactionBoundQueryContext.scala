@@ -1250,13 +1250,12 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
-  override def getImportURL(url: URL): Either[String, URL] = transactionalContext.graph match {
-    case db: GraphDatabaseQueryService =>
-      try {
-        Right(db.validateURLAccess(url))
-      } catch {
-        case error: URLAccessValidationError => Left(error.getMessage)
-      }
+  override def getImportURL(url: URL): Either[String, URL] = {
+    try {
+      Right(transactionalContext.validateURLAccess(url))
+    } catch {
+      case error: URLAccessValidationError => Left(error.getMessage)
+    }
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
