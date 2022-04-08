@@ -63,4 +63,6 @@ case class TestPath(override val startNode: Node, _relationships: Seq[Relationsh
     TestPath(endNode(), _relationships.reverse)
 
   def nodeAt(offset: Int): Node = _nodes(offset)
+
+  def relationshipAt(offset: Int): Relationship = _relationships(offset)
 }

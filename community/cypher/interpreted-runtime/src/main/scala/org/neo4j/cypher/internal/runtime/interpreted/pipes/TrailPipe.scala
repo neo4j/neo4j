@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
+import org.neo4j.cypher.internal.logical.plans.GroupEntity
 import org.neo4j.cypher.internal.logical.plans.Limited
 import org.neo4j.cypher.internal.logical.plans.Repetitions
 import org.neo4j.cypher.internal.logical.plans.Unlimited
@@ -60,13 +61,14 @@ case class TrailPipe(source: Pipe,
                      end: Option[String],
                      innerStart: String,
                      innerEnd: String,
-                     groupNodes: Set[String],
-                     groupRelationships: Set[String],
-                     allRelationships: Set[String]
+                     groupNodes: Set[GroupEntity],
+                     groupRelationships: Set[GroupEntity],
+                     allRelationships: Set[String],
+                     allRelationshipGroups: Set[String]
                     )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
-  private val groupNodeNames = groupNodes.toArray.sorted
-  private val groupRelationshipNames = groupRelationships.toArray.sorted
+  private val groupNodeNames = groupNodes.toArray.sortBy(_.innerName)
+  private val groupRelationshipNames = groupRelationships.toArray.sortBy(_.innerName)
   private val emptyGroupNodes = Array.fill(groupNodeNames.length)(EMPTY_LIST)
   private val emptyGroupRelationships = Array.fill(groupRelationshipNames.length)(EMPTY_LIST)
 
@@ -79,7 +81,7 @@ case class TrailPipe(source: Pipe,
         outerRow.getByName(start) match {
           case startNode: VirtualNodeValue =>
             val stack = newArrayDeque[TrailState](tracker)
-            if (checkUpperLimit(1)) {
+            if (checkUpperLimit(0)) {
               stack.push(TrailState(startNode.id(), emptyGroupNodes, emptyGroupRelationships, EMPTY_SET, 1))
             }
             new PrefetchingIterator[CypherRow] {
@@ -99,7 +101,8 @@ case class TrailPipe(source: Pipe,
               def produceNext(): Option[CypherRow] = {
                 if (emitFirst) {
                   emitFirst = false
-                  Some(outerRow.copyWith(computeNewEntries(emptyGroupNodes, emptyGroupRelationships, startNode)))
+                  val resultRow = outerRow.copyWith(computeNewEntries(emptyGroupNodes, emptyGroupRelationships, startNode))
+                  Some(resultRow)
                 }
                 else if (innerResult.hasNext) {
                   val row = innerResult.next()
@@ -110,14 +113,23 @@ case class TrailPipe(source: Pipe,
                     val newSet = HeapTrackingCollections.newLongSet(tracker)
                     newSet.addAll(trailState.relationshipsSeen)
 
-                    val allRelationshipsUnique = allRelationships.forall(r => newSet.add(castOrFail[VirtualRelationshipValue](row.getByName(r)).id()))
+                    var allRelationshipsUnique = allRelationships.forall(r => newSet.add(castOrFail[VirtualRelationshipValue](row.getByName(r)).id()))
+                    val ig = allRelationshipGroups.iterator
+                    while (allRelationshipsUnique && ig.hasNext) {
+                      val i = castOrFail[ListValue](row.getByName(ig.next())).iterator()
+                      while (allRelationshipsUnique && i.hasNext) {
+                        allRelationshipsUnique = newSet.add(castOrFail[VirtualRelationshipValue](i.next()).id())
+                      }
+                    }
+
                     if (allRelationshipsUnique) {
                       stack.push(TrailState(innerEndNode.id(), newGroupNodes, newGroupRels, newSet, trailState.iterations + 1))
                     }
                   }
                   //if iterated long enough emit, otherwise recurse
                   if (trailState.iterations >= repetitions.min) {
-                    Some(row.copyWith(computeNewEntries(newGroupNodes, newGroupRels, innerEndNode)))
+                    val resultRow = row.copyWith(computeNewEntries(newGroupNodes, newGroupRels, innerEndNode))
+                    Some(resultRow)
                   } else {
                     produceNext()
                   }
@@ -130,6 +142,7 @@ case class TrailPipe(source: Pipe,
                   trailState = stack.pop()
                   val innerState = state.withInitialContext(outerRow.copyWith(innerStart, VirtualValues.node(trailState.node)))
                   innerResult = inner.createResults(innerState).filter(row =>
+                    // TODO there might be an optimization here. allRelationships is a superset of RHS relationships, so we are potentially checking too much.
                     allRelationships.forall(r => !trailState.relationshipsSeen.contains(castOrFail[VirtualRelationshipValue](row.getByName(r)).id())
                   ))
                   produceNext()
@@ -146,13 +159,13 @@ case class TrailPipe(source: Pipe,
     }
   }
 
-  private def computeGroupVariables(groupNames: Array[String],
+  private def computeGroupVariables(groupNames: Array[GroupEntity],
                                     groupVariables: Array[ListValue],
                                     row: CypherRow): Array[ListValue] = {
     val res = new Array[ListValue](groupNames.length)
     var i = 0
     while (i < groupNames.length) {
-      res(i) = groupVariables(i).append(row.getByName(groupNames(i)))
+      res(i) = groupVariables(i).append(row.getByName(groupNames(i).innerName))
       i += 1
     }
     res
@@ -165,12 +178,12 @@ case class TrailPipe(source: Pipe,
     val res = new Array[(String, AnyValue)](newSize)
     var i = 0
     while (i < newGroupNodes.length) {
-      res(i) = (groupNodeNames(i), newGroupNodes(i))
+      res(i) = (groupNodeNames(i).outerName, newGroupNodes(i))
       i += 1
     }
     var j = 0
     while (j < newGroupRels.length) {
-      res(i) = (groupRelationshipNames(j), newGroupRels(j))
+      res(i) = (groupRelationshipNames(j).outerName, newGroupRels(j))
       j += 1
       i += 1
     }

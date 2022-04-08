@@ -115,6 +115,7 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
+import org.neo4j.cypher.internal.logical.plans.GroupEntity
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek
@@ -1673,9 +1674,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             end: Option[String],
             innerStart: String,
             innerEnd: String,
-            groupNodes: Set[String],
-            groupRelationships: Set[String],
-            allRelationships: Set[String]): IMPL =
+            groupNodes: Set[(String, String)],
+            groupRelationships: Set[(String, String)],
+            allRelationships: Set[String],
+            allRelationshipGroups: Set[String]): IMPL =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
       Trail(lhs,
         rhs,
@@ -1684,9 +1686,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         end,
         innerStart,
         innerEnd,
-        groupNodes,
-        groupRelationships,
-        allRelationships)(_)))
+        groupNodes.map { case (inner, outer) => GroupEntity(inner, outer) },
+        groupRelationships.map { case (inner, outer) => GroupEntity(inner, outer) },
+        allRelationships,
+        allRelationshipGroups)(_)))
 
   // SHIP IP
 

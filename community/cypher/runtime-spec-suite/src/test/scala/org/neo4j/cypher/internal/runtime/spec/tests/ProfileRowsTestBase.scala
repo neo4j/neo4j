@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
@@ -2277,13 +2276,14 @@ trait TrailProfileRowsTestBase[CONTEXT <: RuntimeContext] {
         max = Limited(2),
         start = "me",
         end = Some("you"),
-        innerStart = "a",
-        innerEnd = "b",
-        groupNodes = Set("a", "b"),
-        groupRelationships = Set("r"),
-        allRelationships = Set("r"))
-      .|.expandAll("(a)-[r]->(b)")
-      .|.argument("me", "a")
+        innerStart = "a_inner",
+        innerEnd = "b_inner",
+        groupNodes = Set(("a_inner", "a"), ("b_inner", "b")),
+        groupRelationships = Set(("r_inner", "r")),
+        allRelationships = Set("r_inner"),
+        allRelationshipGroups = Set())
+      .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
+      .|.argument("me", "a_inner")
       .allNodeScan("me")
       .build()
 
