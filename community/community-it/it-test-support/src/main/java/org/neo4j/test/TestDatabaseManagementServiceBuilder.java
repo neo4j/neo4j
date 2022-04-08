@@ -70,7 +70,7 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     protected SystemNanoClock clock;
     protected boolean impermanent;
     protected Config fromConfig;
-    private boolean noOpSystemGraphInitializer;
+    protected boolean noOpSystemGraphInitializer;
     private boolean lazyProcedures = true;
 
     public TestDatabaseManagementServiceBuilder()
