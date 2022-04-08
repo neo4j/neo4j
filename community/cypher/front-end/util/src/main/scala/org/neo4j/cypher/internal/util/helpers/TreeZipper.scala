@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util.helpers
 
+import jdk.jshell.spi.ExecutionControl.InternalException
+
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
@@ -29,7 +31,7 @@ trait TreeElem[E <: TreeElem[E]] {
 
 abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
-  def apply(treeElem: E) = Location(treeElem, Top)
+  def apply(treeElem: E): Location = Location(treeElem, Top)
 
   sealed trait Context
   case object Top extends Context
@@ -39,7 +41,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def unapply(v: Any): Option[Seq[E]] = implicitly[ClassTag[E]].unapply(v).map(_.children)
   }
 
-  final case class Location(elem: E, context: Context) {
+  case class Location(elem: E, context: Context) {
     self =>
 
     def isRoot: Boolean = context == Top
@@ -50,7 +52,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     }
 
     @tailrec
-    def root: Location = self match {
+    final def root: Location = self match {
       case Location(_, Top) =>
         self
 
@@ -128,6 +130,8 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
       case Location(Children(Seq(head, tail @ _*)), _) =>
         Some(Location(head, TreeContext(Nil, self, tail.toList)))
+
+      case other => throw new InternalException(s"Unexpected type $other")
     }
 
     def up: Option[Location] = self match {
@@ -170,29 +174,29 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
   }
 
   implicit final class OptionalLocation(location: Option[Location]) {
-    def elem = location.map(_.elem)
+    def elem: Option[E] = location.map(_.elem)
 
-    def isRoot = location.map(_.isRoot)
-    def isLeaf = location.map(_.isLeaf)
+    def isRoot: Option[Boolean] = location.map(_.isRoot)
+    def isLeaf: Option[Boolean] = location.map(_.isLeaf)
 
-    def root = location.map(_.root)
+    def root: Option[Location] = location.map(_.root)
 
-    def isLeftMost = location.map(_.isLeftMost)
-    def left = location.flatMap(_.left)
-    def leftList = location.map(_.leftList)
-    def leftMost = location.map(_.leftMost)
+    def isLeftMost: Option[Boolean] = location.map(_.isLeftMost)
+    def left: Option[Location] = location.flatMap(_.left)
+    def leftList: Option[List[E]] = location.map(_.leftList)
+    def leftMost: Option[Location] = location.map(_.leftMost)
 
-    def isRightMost = location.map(_.isLeftMost)
-    def right = location.flatMap(_.right)
-    def rightMost = location.map(_.rightMost)
+    def isRightMost: Option[Boolean] = location.map(_.isLeftMost)
+    def right: Option[Location] = location.flatMap(_.right)
+    def rightMost: Option[Location] = location.map(_.rightMost)
 
-    def down = location.flatMap(_.down)
-    def up = location.flatMap(_.up)
+    def down: Option[Location] = location.flatMap(_.down)
+    def up: Option[Location] = location.flatMap(_.up)
 
-    def replace(replacementElem: E) = location.map(_.replace(replacementElem))
-    def replaceLeftList(replacementList: List[E]) = location.map(_.replaceLeftList(replacementList))
-    def insertLeft(newElem: E) = location.flatMap(_.insertLeft(newElem))
-    def insertRight(newElem: E) = location.flatMap(_.insertRight(newElem))
-    def insertChild(newElem: E) = location.map(_.insertChild(newElem))
+    def replace(replacementElem: E): Option[Location] = location.map(_.replace(replacementElem))
+    def replaceLeftList(replacementList: List[E]): Option[Location] = location.map(_.replaceLeftList(replacementList))
+    def insertLeft(newElem: E): Option[Location] = location.flatMap(_.insertLeft(newElem))
+    def insertRight(newElem: E): Option[Location] = location.flatMap(_.insertRight(newElem))
+    def insertChild(newElem: E): Option[Location] = location.map(_.insertChild(newElem))
   }
 }

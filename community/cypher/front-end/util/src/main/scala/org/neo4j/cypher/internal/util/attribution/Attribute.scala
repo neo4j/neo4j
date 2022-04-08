@@ -38,7 +38,7 @@ trait Attribute[KEY, VALUE] {
       } else {
         to.array += null
       }
-      i += 1;
+      i += 1
     }
     to
   }
@@ -139,7 +139,7 @@ trait Attribute[KEY, VALUE] {
 
   override def equals(obj: Any): Boolean = {
     obj match {
-      case that: Attribute[KEY, VALUE] =>
+      case that: Attribute[_, _] =>
         if (this eq that) return true
         this.array.equals(that.array)
       case _ => false
@@ -173,15 +173,12 @@ abstract class PartialAttribute[KEY <: Identifiable, VALUE](override val default
  */
 case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes: Attribute[KEY, _]*) {
 
-  def copy(from: Id): IdGen = new IdGen {
-
-    override def id(): Id = {
-      val to = idGen.id()
-      for (a <- attributes) {
-        a.copy(from, to)
-      }
-      to
+  def copy(from: Id): IdGen = () => {
+    val to = idGen.id()
+    for (a <- attributes) {
+      a.copy(from, to)
     }
+    to
   }
 
   def withAlso(attributes: Attribute[KEY, _]*): Attributes[KEY] = {

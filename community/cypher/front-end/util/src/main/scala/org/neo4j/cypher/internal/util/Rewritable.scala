@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.util
 
+import jdk.jshell.spi.ExecutionControl.InternalException
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 
@@ -134,9 +135,9 @@ object Rewritable {
 }
 
 case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
-  def apply(that: T) = rewriter.apply(that).asInstanceOf[T]
+  def apply(that: T): T = rewriter.apply(that).asInstanceOf[T]
 
-  def narrowed[S <: T] = TypedRewriter[S](rewriter)
+  def narrowed[S <: T]: TypedRewriter[S] = TypedRewriter[S](rewriter)
 }
 
 trait Rewritable {
@@ -203,21 +204,27 @@ object topDown {
         if (stack.isEmpty) {
           newChildren
         } else {
-          val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
-          stack.push((jobs, doneJobs += doneJob))
-          rec(stack)
+          stack.pop() match {
+            case (job :: jobs, doneJobs) =>
+              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              stack.push((jobs, doneJobs += doneJob))
+              rec(stack)
+            case _ => throw new InternalException("Empty job")
+          }
         }
       } else {
-        val (newJob :: jobs, doneJobs) = stack.pop()
-        if (stopper(newJob)) {
-          stack.push((jobs, doneJobs += newJob))
-        } else {
-          val rewrittenJob = newJob.rewrite(rewriter)
-          stack.push((rewrittenJob :: jobs, doneJobs))
-          stack.push((rewrittenJob.treeChildren.toList, new mutable.ListBuffer()))
+        stack.pop() match {
+          case (newJob :: jobs, doneJobs) =>
+            if (stopper(newJob)) {
+              stack.push((jobs, doneJobs += newJob))
+            } else {
+              val rewrittenJob = newJob.rewrite(rewriter)
+              stack.push((rewrittenJob :: jobs, doneJobs))
+              stack.push((rewrittenJob.treeChildren.toList, new mutable.ListBuffer()))
+            }
+            rec(stack)
+          case _ => throw new InternalException("Empty job")
         }
-        rec(stack)
       }
     }
   }
@@ -257,29 +264,35 @@ object topDownWithParent {
         if (stack.isEmpty) {
           newChildren
         } else {
-          val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
-          stack.push((jobs, doneJobs += doneJob))
-          rec(stack)
+          stack.pop() match {
+            case (job :: jobs, doneJobs) =>
+              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              stack.push((jobs, doneJobs += doneJob))
+              rec(stack)
+            case _ => throw new InternalException(s"Empty job")
+          }
         }
       } else {
-        val (newJob :: jobs, doneJobs) = stack.pop()
-        if (stopper(newJob)) {
-          stack.push((jobs, doneJobs += newJob))
-        } else {
-          val maybeParent = {
-            if (stack.isEmpty) {
-              None
+        stack.pop() match {
+          case (newJob :: jobs, doneJobs) =>
+            if (stopper(newJob)) {
+              stack.push((jobs, doneJobs += newJob))
             } else {
-              val (parentJobs, _) = stack.top
-              parentJobs.headOption
+              val maybeParent = {
+                if (stack.isEmpty) {
+                  None
+                } else {
+                  val (parentJobs, _) = stack.top
+                  parentJobs.headOption
+                }
+              }
+              val rewrittenJob = newJob.rewrite(rewriter, maybeParent)
+              stack.push((rewrittenJob :: jobs, doneJobs))
+              stack.push((rewrittenJob.treeChildren.toList, new ListBuffer()))
             }
-          }
-          val rewrittenJob = newJob.rewrite(rewriter, maybeParent)
-          stack.push((rewrittenJob :: jobs, doneJobs))
-          stack.push((rewrittenJob.treeChildren.toList, new ListBuffer()))
+            rec(stack)
+          case _ => throw new InternalException("Empty jobs")
         }
-        rec(stack)
       }
     }
   }
@@ -313,17 +326,22 @@ object bottomUp {
         if (stack.isEmpty) {
           newChildren
         } else {
-          val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
-          val rewrittenDoneJob = doneJob.rewrite(rewriter)
-          stack.push((jobs, doneJobs += rewrittenDoneJob))
-          rec(stack)
+          stack.pop() match {
+            case (job :: jobs, doneJobs) =>
+              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              val rewrittenDoneJob = doneJob.rewrite(rewriter)
+              stack.push((jobs, doneJobs += rewrittenDoneJob))
+              rec(stack)
+            case _ => throw new InternalException("No jobs")
+          }
         }
       } else {
         val next = currentJobs.head
         if (stopper(next)) {
-          val (job :: jobs, doneJobs) = stack.pop()
-          stack.push((jobs, doneJobs += job))
+          stack.pop() match {
+            case (job :: jobs, doneJobs) => stack.push((jobs, doneJobs += job))
+            case _                       => throw new InternalException("No jobs")
+          }
         } else {
           stack.push((next.treeChildren.toList, new ListBuffer()))
         }
@@ -365,19 +383,24 @@ object bottomUpWithRecorder {
         if (stack.isEmpty) {
           newChildren
         } else {
-          val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
-          val rewrittenDoneJob = doneJob.rewrite(rewriter)
-          if (!(doneJob eq rewrittenDoneJob))
-            recorder(doneJob, rewrittenDoneJob)
-          stack.push((jobs, doneJobs += rewrittenDoneJob))
-          rec(stack)
+          stack.pop() match {
+            case (job :: jobs, doneJobs) =>
+              val doneJob = Rewritable.dupAny(job, newChildren.toSeq)
+              val rewrittenDoneJob = doneJob.rewrite(rewriter)
+              if (!(doneJob eq rewrittenDoneJob))
+                recorder(doneJob, rewrittenDoneJob)
+              stack.push((jobs, doneJobs += rewrittenDoneJob))
+              rec(stack)
+            case _ => throw new InternalException("Empty jobs")
+          }
         }
       } else {
         val next = currentJobs.head
         if (stopper(next)) {
-          val (job :: jobs, doneJobs) = stack.pop()
-          stack.push((jobs, doneJobs += job))
+          stack.pop() match {
+            case (job :: jobs, doneJobs) => stack.push((jobs, doneJobs += job))
+            case _                       => throw new InternalException("Empty jobs")
+          }
         } else {
           stack.push((next.treeChildren.toList, new ListBuffer()))
         }

@@ -143,7 +143,13 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
 
   def covariant: TypeSpec = TypeSpec(ranges.map(_.covariant))
 
-  def unwrapLists: TypeSpec = TypeSpec(ranges.map(_.reparent { case c: ListType => c.innerType }))
+  def unwrapLists: TypeSpec = {
+    val unwrapped = ranges.map(_.reparent {
+      case c: ListType => c.innerType
+      case other       => other
+    })
+    TypeSpec(unwrapped)
+  }
 
   def unwrapPotentialLists: TypeSpec = TypeSpec(ranges.map(_.reparent {
     case c: ListType   => c.innerType
