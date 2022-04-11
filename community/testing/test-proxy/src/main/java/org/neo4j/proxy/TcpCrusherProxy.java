@@ -25,13 +25,10 @@ import org.netcrusher.tcp.TcpCrusher;
 import org.netcrusher.tcp.TcpCrusherBuilder;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;
-
-import org.neo4j.test.ports.PortAuthority;
 
 /**
  * All methods are thread safe and can be used in safely in multithreading environment
@@ -157,8 +154,7 @@ public class TcpCrusherProxy implements Neo4jProxy
         public Neo4jProxy build()
         {
             var proxyConfig =
-                    this.proxyConfiguration.orElse( new ProxyConfiguration( new InetSocketAddress( "localhost", PortAuthority.allocatePort() ),
-                                                                            new InetSocketAddress( "localhost", PortAuthority.allocatePort() ) ) );
+                    this.proxyConfiguration.orElse( ProxyConfiguration.buildProxyConfig() );
             try
             {
                 var reactor = this.reactor.orElse( new NioReactor() );
