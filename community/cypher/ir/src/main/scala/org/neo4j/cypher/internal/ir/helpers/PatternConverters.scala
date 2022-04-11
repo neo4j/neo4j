@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.expressions.EveryPath
+import org.neo4j.cypher.internal.expressions.InvalidNodePattern
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
@@ -35,7 +35,7 @@ import org.neo4j.exceptions.InternalException
 
 object PatternConverters {
 
-  object DestructResult { def empty = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
+  object DestructResult { def empty: DestructResult = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
 
   case class DestructResult(nodeIds: Seq[String], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
     def addNodeId(newId: String*): DestructResult = copy(nodeIds = nodeIds ++ newId)
@@ -51,32 +51,37 @@ object PatternConverters {
   }
 
   implicit class NodePatternConverter(val node: NodePattern) extends AnyVal {
-    def destructedNodePattern =
+    def destructedNodePattern: DestructResult =
       DestructResult(nodeIds = Seq(node.variable.get.name), Seq.empty, Seq.empty)
   }
 
   implicit class RelationshipChainDestructor(val chain: RelationshipChain) extends AnyVal {
-    def destructedRelationshipChain: DestructResult = chain match {
-      // (a)->[r]->(b)
-      case RelationshipChain(NodePattern(Some(leftNodeId), None, None, None),
-                             RelationshipPattern(Some(relId), relTypes, length, None, None, direction, _),
-                             NodePattern(Some(rightNodeId), None, None, None)) =>
-        val leftNode = leftNodeId.name
-        val rightNode = rightNodeId.name
-        val r = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
-        DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
+    def destructedRelationshipChain: DestructResult = {
+      val rightNodeName = chain.rightNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
 
-      // ...->[r]->(b)
-      case RelationshipChain(relChain: RelationshipChain,
-                             RelationshipPattern(Some(relId), relTypes, length, None, None, direction, _),
-                             NodePattern(Some(rightNodeId), None, None, None)) =>
-        val destructed = relChain.destructedRelationshipChain
-        val leftNode = destructed.rels.last.right
-        val rightNode = rightNodeId.name
-        val newRel = PatternRelationship(relId.name, (leftNode, rightNode), direction, relTypes, length.asPatternLength)
-        destructed.
-          addNodeId(rightNode).
-          addRel(newRel)
+      val relationshipName = chain.relationship.variable.getOrElse(throw new IllegalArgumentException("Missing variable in relationship pattern")).name
+      val relationshipDirection = chain.relationship.direction
+      val relationshipTypes = chain.relationship.types
+      val relationshipLength = chain.relationship.length.asPatternLength
+
+      chain.element match {
+        case _: InvalidNodePattern => throw new IllegalArgumentException("Invalid node pattern")
+
+        // (a)->[r]->(b)
+        case leftNode: NodePattern =>
+          val leftNodeName = leftNode.variable.getOrElse(throw new IllegalArgumentException("Missing variable in node pattern")).name
+          val relationship = PatternRelationship(relationshipName, (leftNodeName, rightNodeName), relationshipDirection, relationshipTypes, relationshipLength)
+          DestructResult(Seq(leftNodeName, rightNodeName), Seq(relationship), Seq.empty)
+
+        // ...->[r]->(b)
+        case leftChain:RelationshipChain =>
+          val destructed = leftChain.destructedRelationshipChain
+          val leftNodeName = destructed.rels.last.right
+          val newRelationship = PatternRelationship(relationshipName, (leftNodeName, rightNodeName), relationshipDirection, relationshipTypes, relationshipLength)
+          destructed.
+            addNodeId(rightNodeName).
+            addRel(newRelationship)
+      }
     }
   }
 
