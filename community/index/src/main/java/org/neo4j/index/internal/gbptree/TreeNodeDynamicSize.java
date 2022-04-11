@@ -1686,8 +1686,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int offsetArray = keyPosOffset( keyCount, type );
         if ( allocOffset < offsetArray )
         {
-            hasInconsistency = true;
             joiner.add( format( "Overlap between offsetArray and allocSpace, offsetArray=%d, allocOffset=%d", offsetArray, allocOffset ) );
+            return joiner.toString();
         }
 
         // If keyCount is unreasonable we will likely go out of bounds in those checks
