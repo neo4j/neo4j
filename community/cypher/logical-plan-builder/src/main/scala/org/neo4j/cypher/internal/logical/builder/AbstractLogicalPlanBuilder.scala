@@ -218,7 +218,6 @@ import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.schema.IndexType
 
-import scala.collection.GenTraversableOnce
 import scala.collection.mutable.ArrayBuffer
 
 /**

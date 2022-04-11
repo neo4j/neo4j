@@ -69,7 +69,7 @@ object PatternRelationship {
   implicit val byName = Ordering.by { patternRel: PatternRelationship => patternRel.name }
 }
 
-trait PatternLength {
+sealed trait PatternLength {
   def implicitPatternNodeCount: Int
   def isSimple: Boolean
 }
