@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -45,10 +46,13 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestPathPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
@@ -201,7 +205,6 @@ object LogicalPlanToPlanBuilderString {
       case _: UndirectedRelationshipIndexContainsScan => "relationshipIndexOperator"
       case _: DirectedRelationshipIndexEndsWithScan   => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
-      case _: DirectedRelationshipIndexScan           => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
@@ -459,21 +462,9 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
       case SetRelationshipProperty(_, idName, propertyKey, value) =>
         wrapInQuotationsAndMkString(Seq(idName, propertyKey.name, expressionStringifier(value)))
-      case SetProperties(_, entity, items) =>
-        val args = items.map {
-          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
-        }.mkString(", ")
-        Seq(wrapInQuotations(expressionStringifier(entity)), args).mkString(", ")
-      case SetNodeProperties(_, entity, items) =>
-        val args = items.map {
-          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
-        }.mkString(", ")
-        Seq(wrapInQuotations(entity), args).mkString(", ")
-      case SetRelationshipProperties(_, entity, items) =>
-        val args = items.map {
-          case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
-        }.mkString(", ")
-        Seq(wrapInQuotations(entity), args).mkString(", ")
+      case SetProperties(_, entity, items)             => setPropertiesParam(expressionStringifier(entity), items)
+      case SetNodeProperties(_, entity, items)         => setPropertiesParam(entity, items)
+      case SetRelationshipProperties(_, entity, items) => setPropertiesParam(entity, items)
       case SetPropertiesFromMap(_, idName, expression, removeOtherProps) =>
         s""" ${wrapInQuotationsAndMkString(
           Seq(expressionStringifier(idName), expressionStringifier(expression))
@@ -955,6 +946,13 @@ object LogicalPlanToPlanBuilderString {
     plansWithContent.orElse(plansWithContent2).applyOrElse(logicalPlan, (_: LogicalPlan) => "")
   }
 
+  private def setPropertiesParam(entity: String, items: Seq[(PropertyKeyName, Expression)]): String = {
+    val args = items.map {
+      case (p, e) => s"(${wrapInQuotations(p.name)}, ${wrapInQuotations(expressionStringifier(e))})"
+    }.mkString(", ")
+    Seq(wrapInQuotations(entity), args).mkString(", ")
+  }
+
   private def queryExpressionStr(valueExpr: QueryExpression[Expression], propNames: Seq[String]): String = {
     valueExpr match {
       case SingleQueryExpression(expression) => s"${propNames.head} = ${expressionStringifier(expression)}"
@@ -999,6 +997,9 @@ object LogicalPlanToPlanBuilderString {
         val lt = rangeStr(lessThan, propName)
         val pre = (gt.post._2, switchInequalitySign(gt.post._1))
         RangeStr(Some(pre), propName, lt.post)
+      case _ =>
+        // Should never come here
+        throw new IllegalStateException(s"Unknown range expression: $range")
     }
   }
 
@@ -1093,6 +1094,12 @@ object LogicalPlanToPlanBuilderString {
       s"setProperty(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), propertyKey.name, expressionStringifier(value)))})"
     case SetPropertiesFromMapPattern(entityExpression, map, removeOtherProps) =>
       s"setPropertyFromMap(${wrapInQuotationsAndMkString(Seq(expressionStringifier(entityExpression), expressionStringifier(map)))}, $removeOtherProps)"
+    case SetPropertiesPattern(entity, items) =>
+      s"setProperties(${setPropertiesParam(expressionStringifier(entity), items)})"
+    case SetNodePropertiesPattern(entity, items) =>
+      s"setNodeProperties(${setPropertiesParam(entity, items)})"
+    case SetRelationshipPropertiesPattern(entity, items) =>
+      s"setRelationshipProperties(${setPropertiesParam(entity, items)})"
   }
 
   private def pointDistanceNodeIndexSeek(
@@ -1276,8 +1283,8 @@ object LogicalPlanToPlanBuilderString {
 
   private def relTypeStr(types: Seq[RelTypeName]) = {
     types match {
-      case Seq()        => ""
       case head +: tail => s":${head.name}${tail.map(t => s"|${t.name}").mkString("")}"
+      case _            => ""
     }
   }
 

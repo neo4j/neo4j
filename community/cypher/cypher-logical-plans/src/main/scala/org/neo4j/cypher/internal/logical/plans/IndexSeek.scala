@@ -92,16 +92,20 @@ object IndexSeek {
    * Extracts just the label from an index seek string
    */
   def labelFromIndexSeekString(indexSeekString: String): String = {
-    val NODE_INDEX_SEEK_PATTERN(_, labelStr, _) = indexSeekString.trim
-    labelStr
+    indexSeekString.trim match {
+      case NODE_INDEX_SEEK_PATTERN(_, labelStr, _) => labelStr
+      case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+    }
   }
 
   /**
    * Extracts just the relationship type from an index seek string
    */
   def relTypeFromIndexSeekString(indexSeekString: String): String = {
-    val REL_INDEX_SEEK_PATTERN(_, _, _, typeStr, _, _, _) = indexSeekString.trim
-    typeStr
+    indexSeekString.trim match {
+      case REL_INDEX_SEEK_PATTERN(_, _, _, typeStr, _, _, _) => typeStr
+      case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+    }
   }
 
   /**
@@ -120,7 +124,11 @@ object IndexSeek {
     indexType: IndexType = IndexType.RANGE
   )(implicit idGen: IdGen): NodeIndexLeafPlan = {
 
-    val NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) = indexSeekString.trim
+    val (node, labelStr, predicateStr) =
+      indexSeekString.trim match {
+        case NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) => (node, labelStr, predicateStr)
+        case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+      }
     val label = LabelToken(labelStr, LabelId(labelId))
     val predicates = predicateStr.split(',').map(_.trim)
 
@@ -172,8 +180,12 @@ object IndexSeek {
     indexType: IndexType = IndexType.RANGE
   )(implicit idGen: IdGen): RelationshipIndexLeafPlan = {
 
-    val REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) =
-      indexSeekString.trim
+    val (leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) =
+      indexSeekString.trim match {
+        case REL_INDEX_SEEK_PATTERN(leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode) =>
+          (leftNode, incoming, rel, typeStr, predicateStr, outgoing, rightNode)
+        case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+      }
     val (startNode, endNode, directed) = (incoming, outgoing) match {
       case ("<", "") => (rightNode, leftNode, true)
       case ("", ">") => (leftNode, rightNode, true)
@@ -313,7 +325,7 @@ object IndexSeek {
   private def createPlan[T <: LogicalLeafPlan](
     predicates: Array[String],
     entityType: EntityType,
-    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    getValue: String => GetValueFromIndexBehavior,
     paramExpr: Iterable[Expression],
     propIds: Option[PartialFunction[String, Int]],
     customQueryExpression: Option[QueryExpression[Expression]],
@@ -513,6 +525,8 @@ object IndexSeek {
 
         case EXISTS(propStr) =>
           createScan(Seq(prop(propStr)))
+
+        case unknownPredicate => throw new IllegalStateException("Expected predicate, got " + unknownPredicate)
       }
     } else if (predicates.length > 1 && customQueryExpression.isEmpty) {
       val properties = new ArrayBuffer[IndexedProperty]()

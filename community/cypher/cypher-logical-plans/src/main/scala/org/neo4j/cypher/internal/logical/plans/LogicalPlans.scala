@@ -99,6 +99,16 @@ object LogicalPlans {
         case (Some(left), Some(right)) if comingFrom eq right =>
           planStack.push(current)
           populate(left)
+
+        case (Some(_), Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. In a two child plan, we must come from either RHS or LHS: op: $current\nfull plan: $plan"
+          )
+
+        case (None, Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. We can not have a RHS without having a LHS: op: $current\nfull plan: $plan"
+          )
       }
 
       comingFrom = current
@@ -157,7 +167,8 @@ object LogicalPlans {
     populate()
 
     while (stack != Nil) {
-      val current :: newStack = stack
+      val current = stack.head
+      val newStack = stack.tail
       stack = newStack
 
       (current.lhs, current.rhs) match {
@@ -186,6 +197,15 @@ object LogicalPlans {
             lhsStack = lhsStack.tail
             acc = combineLeftAndRight(lhsAcc, acc, current)
           }
+        case (Some(_), Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. In a two child plan, we must come from either RHS or LHS: op: $current"
+          )
+
+        case (None, Some(_)) =>
+          throw new IllegalStateException(
+            s"Tried to map bad logical plan. We can not have a RHS without having a LHS: op: $current"
+          )
       }
 
       comingFrom = current

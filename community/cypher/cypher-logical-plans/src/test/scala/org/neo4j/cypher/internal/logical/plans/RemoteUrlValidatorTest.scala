@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.messages.MessageUtil
 
-import scala.collection.JavaConverters.seqAsJavaListConverter
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class RemoteUrlValidatorTest extends CypherFunSuite {
 
@@ -37,7 +37,7 @@ class RemoteUrlValidatorTest extends CypherFunSuite {
 
   insecureUrls.foreach(url =>
     test(s"validator should throw exception for url '$url' with insecure schemes") {
-      val Some(exception) = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = true)
+      val exception = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = true).getOrElse(fail)
       exception shouldBe a[InvalidArgumentException]
       exception should have message MessageUtil.insecureScheme(url, secureSchemes.asJava)
     }
@@ -58,7 +58,7 @@ class RemoteUrlValidatorTest extends CypherFunSuite {
   Seq("http" + url, "https" + url, noSchemeUrl).foreach {
     url =>
       test(s"validator should throw exception for invalid url '$url' with insecure schemes") {
-        val Some(exception) = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = true)
+        val exception = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = true).getOrElse(fail)
         exception shouldBe a[InvalidArgumentException]
         exception should have message MessageUtil.invalidScheme(url, validSchemes.asJava)
       }
@@ -66,7 +66,7 @@ class RemoteUrlValidatorTest extends CypherFunSuite {
       test(
         s"validator should throw exception for invalid url '$url' with insecure schemes and no security requirement"
       ) {
-        val Some(exception) = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = false)
+        val exception = RemoteUrlValidator.assertValidRemoteDatabaseUrl(url, secure = false).getOrElse(fail)
         exception shouldBe a[InvalidArgumentException]
         exception should have message MessageUtil.invalidScheme(url, validSchemes.asJava)
       }
