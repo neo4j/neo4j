@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
+import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -243,7 +243,7 @@ class RecordStorageMigratorIT
         StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
                 batchImporterFactory, INSTANCE );
-        String migrateTo = getVersionToMigrateTo( check );
+        String migrateTo = getVersionToMigrateTo();
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
                 getStoreVersion( migrateTo ), EMPTY, loadLogTail( databaseLayout, CONFIG, storageEngine ) );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo );
@@ -530,7 +530,7 @@ class RecordStorageMigratorIT
 
     private static String getVersionToMigrateTo()
     {
-        return PageAligned.LATEST_NAME;
+        return Standard.LATEST_NAME;
     }
 
     private static RecordStoreVersionCheck getVersionCheck( PageCache pageCache, RecordDatabaseLayout layout )
