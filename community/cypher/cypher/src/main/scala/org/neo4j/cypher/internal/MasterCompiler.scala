@@ -27,14 +27,7 @@ import org.neo4j.values.virtual.MapValue
 import java.time.Clock
 
 object MasterCompiler {
-  val DEFAULT_QUERY_CACHE_SIZE: Int = 128
-  val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
-  val DEFAULT_QUERY_PLAN_TARGET: Long = 1000 * 60 * 60 * 7 // 7 hours
   val CLOCK: Clock = Clock.systemUTC()
-  val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
-  val DEFAULT_STATISTICS_DIVERGENCE_TARGET = 0.1
-  val DEFAULT_DIVERGENCE_ALGORITHM: CypherReplanAlgorithm = CypherReplanAlgorithm.INVERSE
-  val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 
 /**
