@@ -172,6 +172,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
@@ -438,6 +439,8 @@ public class Database extends LifecycleAdapter
                 // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the latest info
                 tailMetadata = getLogTail();
             }
+            TransactionId lastCommittedTransaction = tailMetadata.getLastCommittedTransaction();
+            cursorContextFactory.init( lastCommittedTransaction::transactionId );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -450,9 +453,10 @@ public class Database extends LifecycleAdapter
                     userLogProvider, recoveryCleanupWorkCollector, !storageExists, readOnlyDatabaseChecker, tailMetadata, otherDatabaseMemoryTracker,
                     cursorContextFactory );
 
-            elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency( metadataProvider );
+            cursorContextFactory.init( metadataProvider::getLastClosedTransactionId );
+            elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
 
             //Recreate the logFiles after storage engine to get access to dependencies
             var logFiles = getLogFiles();
@@ -477,8 +481,6 @@ public class Database extends LifecycleAdapter
                     buildIndexingService( storageEngine, databaseSchemaState, indexStoreViewFactory, indexStatisticsStore, otherDatabaseMemoryTracker );
 
             databaseDependencies.satisfyDependency( storageEngine.countsAccessor() );
-
-            cursorContextFactory.init( metadataProvider::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, storageEngine );
             DatabaseTransactionLogModule transactionLogModule =

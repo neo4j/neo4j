@@ -160,21 +160,14 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
         switch ( constraint.type() )
         {
-        case UNIQUE:
-            visitAddedUniquenessConstraint( constraint.asUniquenessConstraint(), constraintId );
-            break;
-
-        case UNIQUE_EXISTS:
-            visitAddedNodeKeyConstraint( constraint.asNodeKeyConstraint(), constraintId );
-            break;
-
-        case EXISTS:
+        case UNIQUE -> visitAddedUniquenessConstraint( constraint.asUniquenessConstraint(), constraintId );
+        case UNIQUE_EXISTS -> visitAddedNodeKeyConstraint( constraint.asNodeKeyConstraint(), constraintId );
+        case EXISTS ->
+        {
             ConstraintDescriptor rule = constraintSemantics.createExistenceConstraint( constraintId, constraint );
             schemaStateChanger.createSchemaRule( recordState, rule );
-            break;
-
-        default:
-            throw new IllegalStateException( constraint.type().toString() );
+        }
+        default -> throw new IllegalStateException( constraint.type().toString() );
         }
     }
 

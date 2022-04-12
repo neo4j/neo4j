@@ -45,7 +45,7 @@ package org.neo4j.io.pagecache.context;
 public interface VersionContext
 {
     /**
-     * Initialise read context with latest closed transaction id as it current version.
+     * Initialise read context with the latest closed transaction id as it current version.
      */
     void initRead();
 

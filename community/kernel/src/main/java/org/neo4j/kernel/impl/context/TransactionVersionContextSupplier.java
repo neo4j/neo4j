@@ -44,7 +44,9 @@ public class TransactionVersionContextSupplier implements VersionContextSupplier
     public VersionContext createVersionContext()
     {
         Objects.requireNonNull( lastClosedTransactionIdSupplier );
-        return new TransactionVersionContext( lastClosedTransactionIdSupplier );
+        var versionContext = new TransactionVersionContext( lastClosedTransactionIdSupplier );
+        versionContext.initRead();
+        return versionContext;
     }
 
 }

@@ -41,6 +41,7 @@ import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
@@ -114,6 +115,7 @@ public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseCont
 
     private static VersionContextSupplier.Factory internalVersionContextSupplierFactory( DatabaseConfig databaseConfig )
     {
-        return databaseId -> databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier() : EmptyVersionContextSupplier.EMPTY;
+        return databaseId -> databaseConfig.get( multi_version_store ) || databaseConfig.get( snapshot_query ) ? new TransactionVersionContextSupplier()
+                                                                                                               : EmptyVersionContextSupplier.EMPTY;
     }
 }
