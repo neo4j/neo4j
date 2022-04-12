@@ -19,7 +19,6 @@
  */
 package org.neo4j.dbms.database;
 
-import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_store;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.snapshot_query;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
@@ -60,15 +59,7 @@ public abstract class AbstractDatabaseContextFactory<DB> implements DatabaseCont
         return () -> createLockManager(lockFactory, globalModule.getGlobalConfig(), globalModule.getGlobalClock());
     }
 
-    public static TokenHolders createTokenHolderProvider(GlobalModule platform, NamedDatabaseId databaseId) {
-        DatabaseContextProvider<?> databaseContextProvider =
-                platform.getGlobalDependencies().resolveDependency(DatabaseContextProvider.class);
-        Supplier<Kernel> kernelSupplier = () -> {
-            var databaseContext = databaseContextProvider
-                    .getDatabaseContext(databaseId)
-                    .orElseThrow(() -> new IllegalStateException(format("Database %s not found.", databaseId.name())));
-            return databaseContext.dependencies().resolveDependency(Kernel.class);
-        };
+    public static TokenHolders createTokenHolderProvider(Supplier<Kernel> kernelSupplier) {
         return new TokenHolders(
                 new DelegatingTokenHolder(createPropertyKeyCreator(kernelSupplier), TYPE_PROPERTY_KEY),
                 new DelegatingTokenHolder(createLabelIdCreator(kernelSupplier), TYPE_LABEL),

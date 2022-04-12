@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.javacompat.CommunityCypherEngineProvider;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.ModularDatabaseCreationContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
+import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.GlobalAvailabilityGuardController;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -59,27 +60,45 @@ public class DefaultDatabaseContextFactory extends AbstractDatabaseContextFactor
 
     @Override
     public StandaloneDatabaseContext create(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
-        var databaseConfig =
-                new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId);
-        var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
-        var databaseCreationContext = new ModularDatabaseCreationContext(
-                namedDatabaseId,
-                globalModule,
-                globalModule.getGlobalDependencies(),
-                databaseConfig,
-                contextFactory,
-                new StandardConstraintSemantics(),
-                new CommunityCypherEngineProvider(),
-                transactionStatsFactory.create(),
-                ModularDatabaseCreationContext.defaultFileWatcherFilter(),
-                AccessCapabilityFactory.configDependent(),
-                ExternalIdReuseConditionProvider.NONE,
-                locksSupplier.get(),
-                idContextFactory.createIdContext(namedDatabaseId, contextFactory),
-                commitProcessFactory,
-                createTokenHolderProvider(globalModule, namedDatabaseId),
-                new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),
-                components.readOnlyDatabases());
-        return new StandaloneDatabaseContext(new Database(databaseCreationContext));
+        return new Creator(namedDatabaseId, databaseOptions).context();
+    }
+
+    private class Creator {
+        private final Database kernelDatabase;
+        private final StandaloneDatabaseContext context;
+
+        private Creator(NamedDatabaseId namedDatabaseId, DatabaseOptions databaseOptions) {
+            var databaseConfig =
+                    new DatabaseConfig(databaseOptions.settings(), globalModule.getGlobalConfig(), namedDatabaseId);
+            var contextFactory = createContextFactory(databaseConfig, namedDatabaseId);
+            var creationContext = new ModularDatabaseCreationContext(
+                    namedDatabaseId,
+                    globalModule,
+                    globalModule.getGlobalDependencies(),
+                    databaseConfig,
+                    contextFactory,
+                    new StandardConstraintSemantics(),
+                    new CommunityCypherEngineProvider(),
+                    transactionStatsFactory.create(),
+                    ModularDatabaseCreationContext.defaultFileWatcherFilter(),
+                    AccessCapabilityFactory.configDependent(),
+                    ExternalIdReuseConditionProvider.NONE,
+                    locksSupplier.get(),
+                    idContextFactory.createIdContext(namedDatabaseId, contextFactory),
+                    commitProcessFactory,
+                    createTokenHolderProvider(this::kernel),
+                    new GlobalAvailabilityGuardController(globalModule.getGlobalAvailabilityGuard()),
+                    components.readOnlyDatabases());
+            kernelDatabase = new Database(creationContext);
+            context = new StandaloneDatabaseContext(kernelDatabase);
+        }
+
+        private StandaloneDatabaseContext context() {
+            return context;
+        }
+
+        private Kernel kernel() {
+            return kernelDatabase.getDependencyResolver().resolveDependency(Kernel.class);
+        }
     }
 }

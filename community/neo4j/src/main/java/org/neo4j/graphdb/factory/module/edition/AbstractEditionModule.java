@@ -206,7 +206,7 @@ public abstract class AbstractEditionModule {
         return dependencies.containsDependency(clazz) ? dependencies.resolveDependency(clazz) : newInstanceMethod.get();
     }
 
-    protected IdContextFactory createIdContextFactory(GlobalModule globalModule) {
+    public static IdContextFactory createIdContextFactory(GlobalModule globalModule) {
         return tryResolveOrCreate(
                 IdContextFactory.class, globalModule.getExternalDependencyResolver(), () -> IdContextFactoryBuilder.of(
                                 globalModule.getFileSystem(),
