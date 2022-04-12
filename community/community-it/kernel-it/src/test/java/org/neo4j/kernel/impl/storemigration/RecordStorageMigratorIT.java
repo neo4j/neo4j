@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,7 +35,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore;
@@ -62,6 +65,7 @@ import org.neo4j.kernel.impl.store.format.aligned.PageAligned;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -70,13 +74,17 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ExternalStoreId;
+import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.extension.RandomExtension;
@@ -86,6 +94,7 @@ import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -215,6 +224,94 @@ class RecordStorageMigratorIT
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
             assertEquals( new UUID( 1, 2 ), metaDataStore.getDatabaseIdUuid( NULL_CONTEXT ).orElseThrow() );
             assertEquals( new UUID( 3, 4 ), metaDataStore.getExternalStoreId().orElseThrow().getId() );
+        }
+    }
+
+    @Test
+    void changeStoreIdOnMigration() throws IOException, KernelException
+    {
+        Path prepare = testDirectory.directory( "prepare" );
+        var fs = testDirectory.getFileSystem();
+        MigrationTestUtils.prepareSampleLegacyDatabase( StandardV4_3.STORE_VERSION, fs, databaseLayout, prepare );
+
+        LogService logService = NullLogService.getInstance();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
+        String versionToMigrateFrom = getVersionToMigrateFrom( check );
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+
+        StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
+                batchImporterFactory, INSTANCE );
+        String migrateTo = getVersionToMigrateTo( check );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
+                getStoreVersion( migrateTo ), EMPTY, loadLogTail( databaseLayout, CONFIG, storageEngine ) );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom, migrateTo );
+
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
+                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, CONFIG, storageEngine ) );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+            StoreId storeId = metaDataStore.getStoreId();
+            assertNotEquals( 1155255428148939479L, storeId.getRandomId() );
+            assertEquals( Standard.LATEST_STORE_VERSION, StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
+        }
+    }
+
+    @Test
+    void keepIdsOnUpgrade() throws IOException, KernelException
+    {
+        StoreId storeId;
+        ExternalStoreId externalStoreId;
+        UUID databaseUUID = UUID.randomUUID();
+        DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
+        try
+        {
+            GraphDatabaseAPI database = (GraphDatabaseAPI) dbms.database( DEFAULT_DATABASE_NAME );
+            MetadataProvider metadataProvider = database.getDependencyResolver().resolveDependency( MetadataProvider.class );
+            storeId = metadataProvider.getStoreId();
+            externalStoreId = metadataProvider.getExternalStoreId().orElseThrow();
+
+            metadataProvider.setDatabaseIdUuid( databaseUUID, NULL_CONTEXT );
+        }
+        finally
+        {
+            dbms.shutdown();
+        }
+
+        LogService logService = NullLogService.getInstance();
+        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
+        CursorContextFactory contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
+
+        StandardFormatWithMinorVersionBump toFormat = new StandardFormatWithMinorVersionBump();
+        RecordStoreVersion versionToMigrateFrom = new RecordStoreVersion( Standard.LATEST_RECORD_FORMATS );
+        RecordStoreVersion versionToMigrateTo = new RecordStoreVersion( toFormat );
+
+        Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, ByteUnit.mebiBytes( 8 ) );
+        config.set( GraphDatabaseInternalSettings.include_versions_under_development, true );
+
+        StorageEngineFactory storageEngine = StorageEngineFactory.defaultStorageEngine();
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, config, logService, jobScheduler,
+                contextFactory, batchImporterFactory, INSTANCE );
+        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
+                versionToMigrateTo, EMPTY, loadLogTail( databaseLayout, config, storageEngine ) );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom.storeVersion(), versionToMigrateTo.storeVersion() );
+
+        StoreFactory storeFactory =
+                new StoreFactory( databaseLayout, config, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
+                        logService.getInternalLogProvider(), contextFactory, writable(), loadLogTail( databaseLayout, config, storageEngine ) );
+        try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
+        {
+            MetaDataStore metaDataStore = neoStores.getMetaDataStore();
+            StoreId newStoreId = metaDataStore.getStoreId();
+            // Store version should be updated, and the rest should be as before
+            assertEquals( toFormat.storeVersion(), StoreVersion.versionLongToString( newStoreId.getStoreVersion() ) );
+            assertEquals( storeId.getRandomId(), newStoreId.getRandomId() );
+            assertEquals( databaseUUID, metaDataStore.getDatabaseIdUuid( NULL_CONTEXT ).orElseThrow() );
+            assertEquals( externalStoreId, metaDataStore.getExternalStoreId().orElseThrow() );
         }
     }
 

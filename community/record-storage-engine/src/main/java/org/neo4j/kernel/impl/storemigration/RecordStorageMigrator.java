@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -117,6 +118,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.batchimport.Configuration.defaultConfiguration;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createMigrationTargetSchemaRuleAccess;
 import static org.neo4j.internal.recordstorage.StoreTokens.allTokens;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -280,6 +282,13 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                            ExistingTargetStrategy.SKIP );
             MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), STORE_VERSION, StoreVersion.versionStringToLong( toVersion.storeVersion() ),
                     migrationLayout.getDatabaseName(), cursorContext );
+
+            // Update store id if we have done a migration
+            if ( oldFormat.getFormatFamily() != newFormat.getFormatFamily() || oldFormat.majorVersion() != newFormat.majorVersion() )
+            {
+                MetaDataStore.setRecord( pageCache, migrationLayout.metadataStore(), RANDOM_NUMBER,
+                        new SecureRandom().nextLong(), migrationLayout.getDatabaseName(), cursorContext );
+            }
         }
     }
 
