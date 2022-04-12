@@ -95,8 +95,8 @@ public class MigrateStoreCommand extends AbstractCommand
             defaultValue = DEFAULT_DATABASE_NAME, converter = Converters.DatabaseNameConverter.class )
     private NormalizedDatabaseName database;
 
-    @Option( names = "--storage-engine", paramLabel = "<storage engine>", description = "Storage engine to migrate the store to" )
-    private String storageEngine;
+//    @Option( names = "--storage-engine", paramLabel = "<storage engine>", description = "Storage engine to migrate the store to" )
+//    private String storageEngine;
 
     @Option( names = "--format-family", paramLabel = "<format family>", description = "Format family to migrate the store to. " +
             "This option is supported only in combination with --storage-engine RECORD" )
@@ -154,8 +154,7 @@ public class MigrateStoreCommand extends AbstractCommand
                                 () -> loadLogTail( fs, pageCache, config, currentStorageEngineFactory, DatabaseTracers.EMPTY, databaseLayout,
                                         memoryTracker ) ) );
 
-                StorageEngineFactory storageEngineFactoryToMigrateTo = getStorageEngineFactoryToMigrateTo( fs, databaseLayout, pageCache );
-                storeMigrator.migrateIfNeeded( storageEngineFactoryToMigrateTo, formatFamily );
+                storeMigrator.migrateIfNeeded( formatFamily );
             }
             catch ( FileLockException e )
             {
@@ -196,21 +195,6 @@ public class MigrateStoreCommand extends AbstractCommand
         {
             throw new CommandFailedException( "Database '" + databaseLayout.getDatabaseName() + "' does not exist", e );
         }
-    }
-
-    private StorageEngineFactory getStorageEngineFactoryToMigrateTo( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )
-    {
-        // If storage engine was explicitly provided,
-        // the store will be migrated to that engine
-        // (technically it can be the same engine as the store is currently on, but it plays no role).
-        if ( storageEngine != null )
-        {
-            return StorageEngineFactory.selectStorageEngine( storageEngine );
-        }
-
-        // If storage engine was not explicitly provided,
-        // the store will stay on the storage engine it is currently on.
-        return getCurrentStorageEngineFactory( fs, databaseLayout, pageCache );
     }
 
     private StorageEngineFactory getCurrentStorageEngineFactory( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache )

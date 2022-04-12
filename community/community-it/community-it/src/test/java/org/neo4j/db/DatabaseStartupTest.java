@@ -27,12 +27,10 @@ import java.util.Optional;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -46,7 +44,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -55,12 +52,10 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.internal.helpers.Exceptions.findCauseOrSuppressed;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -74,7 +69,7 @@ class DatabaseStartupTest
     private DatabaseLayout databaseLayout;
 
     @Test
-    void startTheDatabaseWithWrongVersionShouldFailWithUpgradeNotAllowed() throws Throwable
+    void startDatabaseWithWrongVersionShouldFail() throws Throwable
     {
         // given
         // create a store
@@ -105,53 +100,9 @@ class DatabaseStartupTest
             assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
             DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
             assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
-            Throwable throwable = findCauseOrSuppressed( dbStateService.causeOfFailure( databaseService.databaseId() ).get(),
-                    e -> e instanceof IllegalArgumentException ).get();
-            assertEquals( "Unknown store version 'bad'", throwable.getMessage() );
-        }
-        finally
-        {
-            managementService.shutdown();
-        }
-    }
-
-    @Test
-    void startTheDatabaseWithWrongVersionShouldFailAlsoWhenUpgradeIsAllowed() throws Throwable
-    {
-        // given
-        // create a store
-
-        DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
-        GraphDatabaseService db = managementService.database( DEFAULT_DATABASE_NAME );
-        try ( Transaction tx = db.beginTx() )
-        {
-            tx.createNode();
-            tx.commit();
-        }
-        managementService.shutdown();
-
-        // mess up the version in the metadatastore
-        String badStoreVersion = "bad";
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-              ThreadPoolJobScheduler scheduler = new ThreadPoolJobScheduler();
-              PageCache pageCache = createPageCache( fileSystem, scheduler, PageCacheTracer.NULL ) )
-        {
-            MetaDataStore.setRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.STORE_VERSION,
-                    StoreVersion.versionStringToLong( badStoreVersion ), databaseLayout.getDatabaseName(), NULL_CONTEXT );
-        }
-
-        managementService = new TestDatabaseManagementServiceBuilder( databaseLayout )
-                .setConfig( GraphDatabaseSettings.allow_upgrade, true )
-                .build();
-        GraphDatabaseAPI databaseService = (GraphDatabaseAPI) managementService.database( DEFAULT_DATABASE_NAME );
-        try
-        {
-            assertThrows( DatabaseShutdownException.class, databaseService::beginTx );
-            DatabaseStateService dbStateService = databaseService.getDependencyResolver().resolveDependency( DatabaseStateService.class );
-            assertTrue( dbStateService.causeOfFailure( databaseService.databaseId() ).isPresent() );
-            Optional<Throwable> upgradeException = findCauseOrSuppressed( dbStateService.causeOfFailure( databaseService.databaseId() ).get(),
-                    e -> e instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
-            assertTrue( upgradeException.isPresent() );
+            assertThat( dbStateService.causeOfFailure( databaseService.databaseId() ).get() )
+                    .hasRootCauseExactlyInstanceOf( IllegalArgumentException.class )
+                    .hasRootCauseMessage( "Unknown store version 'bad'" );
         }
         finally
         {

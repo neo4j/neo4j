@@ -136,6 +136,8 @@ import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TA
  */
 public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
+    public static final String NAME = "Store files";
+
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
     private static final String RECORD_STORAGE_MIGRATION_TAG = "recordStorageMigration";
     private static final String NODE_CHUNK_MIGRATION_TAG = "nodeChunkMigration";
@@ -156,7 +158,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             CursorContextFactory contextFactory,
             BatchImporterFactory batchImporterFactory, MemoryTracker memoryTracker )
     {
-        super( "Store files" );
+        super( NAME );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;

@@ -370,7 +370,10 @@ public class RecordFormatSelector
     }
 
     /**
-     * Returns the latest store version (both latest major and minor) for the submitted format family.
+     * Finds the latest store version (both latest major and minor) for the submitted format family.
+     * <p>
+     * The returned format is not guaranteed to be supported to run a database on ({@link RecordFormats#onlyForMigration()}).
+     * Formats under development can be included in the search depending on the corresponding setting in the supplied config.
      */
     public static RecordFormats findLatestFormatInFamily( String formatFamily, Config config )
     {
@@ -388,6 +391,25 @@ public class RecordFormatSelector
             formats = newestFormatInFamily.orElse( formats );
         }
         return formats;
+    }
+
+    /**
+     * Finds the latest minor version ({@link RecordFormats#minorVersion()}) for the combination of the format family ({@link RecordFormats#getFormatFamily()})
+     * and the major version ({@link RecordFormats#majorVersion()}) of the supplied format.
+     * <p>
+     * The returned format is not guaranteed to be supported to run a database on ({@link RecordFormats#onlyForMigration()}).
+     * Formats under development can be included in the search depending on the corresponding setting in the supplied config.
+     */
+    public static RecordFormats findLatestMinorVersion( RecordFormats format, Config config )
+    {
+        var includeDevFormats = config.get( GraphDatabaseInternalSettings.include_versions_under_development );
+        return Iterables.stream( allFormats() )
+                        .filter( candidate -> candidate.getFormatFamily() == format.getFormatFamily()
+                                && candidate.majorVersion() == format.majorVersion()
+                                && candidate.minorVersion() > format.minorVersion()
+                                && (includeDevFormats || !candidate.formatUnderDevelopment()) )
+                        .max( comparingInt( RecordFormats::minorVersion ) )
+                        .orElse( format );
     }
 
     private static RecordFormats selectSpecificFormat( String recordFormat, boolean includeDevFormats )

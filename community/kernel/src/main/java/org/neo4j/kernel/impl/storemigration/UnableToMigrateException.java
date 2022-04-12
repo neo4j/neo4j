@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-public class UnableToMigrateException  extends RuntimeException
+public class UnableToMigrateException extends RuntimeException
 {
-    UnableToMigrateException( String message, Throwable cause )
+    public UnableToMigrateException( String message, Throwable cause )
     {
         super( message, cause );
     }
 
-    UnableToMigrateException( String message )
+    public UnableToMigrateException( String message )
     {
         super( message );
     }

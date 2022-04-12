@@ -41,7 +41,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.FileLockException;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -98,7 +98,7 @@ public class DumpCommand extends AbstractCommand
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            if ( fileSystem.fileExists( databaseLayout.file( StoreUpgrader.MIGRATION_DIRECTORY ) ) )
+            if ( fileSystem.fileExists( databaseLayout.file( StoreMigrator.MIGRATION_DIRECTORY ) ) )
             {
                 throw new CommandFailedException( "Store migration folder detected - A dump can not be taken during a store migration. Make sure " +
                                                   "store migration is completed before trying again." );

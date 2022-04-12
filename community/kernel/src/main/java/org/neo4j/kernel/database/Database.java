@@ -46,6 +46,7 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
@@ -108,8 +109,8 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
-import org.neo4j.kernel.impl.storemigration.LegacyDatabaseMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.UnableToMigrateException;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -144,6 +145,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.DatabaseEventListeners;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
@@ -681,14 +683,23 @@ public class Database extends LifecycleAdapter
      */
     private void upgradeStore( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker ) throws IOException
     {
-        createDatabaseMigrator( databaseConfig, databasePageCache, memoryTracker ).migrate();
-    }
-
-    private LegacyDatabaseMigrator createDatabaseMigrator( DatabaseConfig databaseConfig, DatabasePageCache databasePageCache, MemoryTracker memoryTracker )
-    {
-        var factory = new DatabaseMigratorFactory( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
-                namedDatabaseId, memoryTracker, tracers, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ) );
-        return factory.createDatabaseMigrator( databaseLayout, storageEngineFactory, databaseDependencies );
+        IndexProviderMap indexProviderMap = databaseDependencies.resolveDependency( IndexProviderMap.class );
+        var logTailSupplier = Suppliers.lazySingleton( () ->
+        {
+            try
+            {
+                return new LogTailExtractor( fs, databasePageCache, databaseConfig, storageEngineFactory, tracers )
+                        .getTailMetadata( databaseLayout, memoryTracker );
+            }
+            catch ( Exception e )
+            {
+                throw new UnableToMigrateException( "Fail to load log tail during upgrade.", e );
+            }
+        } );
+        var storeMigrator = new StoreMigrator( fs, databaseConfig, databaseLogService, databasePageCache, tracers.getPageCacheTracer(), scheduler,
+                databaseLayout, storageEngineFactory, indexProviderMap, new CursorContextFactory( tracers.getPageCacheTracer(), EMPTY ), memoryTracker,
+                logTailSupplier );
+        storeMigrator.upgradeIfNeeded();
     }
 
     /**

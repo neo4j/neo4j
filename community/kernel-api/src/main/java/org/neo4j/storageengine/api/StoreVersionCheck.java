@@ -27,6 +27,7 @@ public interface StoreVersionCheck
 {
     /**
      * Store version of an existing store (this instance knows which store it's about).
+     *
      * @param cursorContext underlying page cursor context.
      * @return store version of the existing store.
      */
@@ -34,63 +35,100 @@ public interface StoreVersionCheck
 
     /**
      * Convert the a store version to String form.
+     *
      * @param storeVersion the store version to convert
      * @return store version of the existing store.
      */
     String storeVersionToString( long storeVersion );
 
     /**
-     * Store version as dictated by configuration if specified, otherwise latest of current store, or default version if no store is available.
-     * @return store version that is specified in the order 'config->store->default'.
-     */
-    String configuredVersion();
-
-    /**
-     * Check if the store version is explicitly configured or relying on current store or default value.
-     * @return {@code true} if it is explicitly configured, {@code false} otherwise
-     */
-    boolean isVersionConfigured();
-
-    /**
-     * Returns the latest store version (both latest major and minor) for the submitted format family
+     * Figures out the migration target version and checks if migration to that version is possible.
+     * <p>
+     * The migration target version will be the latest store version (both latest major and minor) for the submitted format family
      * if the submitted format family is not {@code null}.
-     * If the submitted format family is {@code null }, it will return the latest store version
+     * If the submitted format family is {@code null }, it will be the latest store version (both latest major and minor)
      * for the store family the store is currently on.
      */
-    String getLatestAvailableVersion( String formatFamily, CursorContext cursorContext );
+    MigrationCheckResult getAndCheckMigrationTargetVersion( String formatFamily, CursorContext cursorContext );
 
     /**
-     * Should only be called if {@link #storeVersion(CursorContext)} and {@link #configuredVersion()} aren't equal.
-     * Checks whether or not the store version can be upgraded to the desired (i.e. from configured) version.
-     * @param desiredVersion store version to check whether or not the existing store is upgradable to.
-     * @param cursorContext underlying page cursor context.
-     * @return Result of the check.
+     * Figures out the upgrade target version and checks if upgrade to that version is possible.
+     * <p>
+     * The upgrade target version is the latest minor format version for the combination of the format family
+     * and the major version of the store format the store is currently on.
      */
-    Result checkUpgrade( String desiredVersion, CursorContext cursorContext );
+    UpgradeCheckResult getAndCheckUpgradeTargetVersion( CursorContext cursorContext );
 
-    record Result( Outcome outcome, String actualVersion, String storeFilename )
+    record MigrationCheckResult(MigrationOutcome outcome, String versionToMigrateFrom, String versionToMigrateTo, Exception cause )
     {
+
     }
 
-    enum Outcome
+    enum MigrationOutcome
     {
-        ok( true ),
-        missingStoreFile( false ),
-        storeVersionNotFound( false ),
-        unexpectedStoreVersion( false ),
-        attemptedStoreDowngrade( false ),
-        unexpectedUpgradingVersion( false );
+        // successful outcomes:
+        /**
+         * The target migration version is the same as the version the store is currently on.
+         */
+        NO_OP,
+        /**
+         * The target migration version has been determined and the migration is possible.
+         */
+        MIGRATION_POSSIBLE,
 
-        private final boolean success;
+        // failure outcomes:
+        /**
+         * The version the store is currently could not be read or understood.
+         * <p>
+         * Logically, {@link MigrationCheckResult#versionToMigrateFrom()} and {@link MigrationCheckResult#versionToMigrateTo()}
+         * are {@code null} for this outcome.
+         */
+        STORE_VERSION_RETRIEVAL_FAILURE,
+        /**
+         * The target migration version has been determined,
+         * but the migration path from the version the store is currently on to the determined target migration version is not supported.
+         */
+        UNSUPPORTED_MIGRATION_PATH,
+        /**
+         * The target migration version has been determined, but it is no longer supported.
+         * Since the migration target version is determined as the latest major and minor version combination for the target format family,
+         * it means that the target format family is no longer supported by the current binaries as there is no supported format version for the family.
+         * The only possible step is migration to another format family.
+         */
+        UNSUPPORTED_TARGET_VERSION,
+    }
 
-        Outcome( boolean success )
-        {
-            this.success = success;
-        }
+    record UpgradeCheckResult(UpgradeOutcome outcome, String versionToUpgradeFrom, String versionToUpgradeTo, Exception cause )
+    {
 
-        public boolean isSuccessful()
-        {
-            return this.success;
-        }
+    }
+
+    enum UpgradeOutcome
+    {
+        // successful outcomes:
+
+        /**
+         * The target upgrade version is the same as the version the store is currently on.
+         */
+        NO_OP,
+        /**
+         * The target upgrade version has been determined and the migration is possible.
+         */
+        UPGRADE_POSSIBLE,
+
+        // failure outcomes:
+        /**
+         * The version the store is currently could not be read or understod.
+         * <p>
+         * Logically, {@link UpgradeCheckResult#versionToUpgradeFrom()} and {@link UpgradeCheckResult#versionToUpgradeTo()} are {@code null} for this outcome.
+         */
+        STORE_VERSION_RETRIEVAL_FAILURE,
+        /**
+         * The target upgrade version has been determined, but it is no longer supported.
+         * Since the upgrade target version is determined as the latest minor version of the format the store is currently on,
+         * it means that the current major version of the store format is no longer supported by the current binaries.
+         * The only possible step is migration to another major version of the current format family or to another format family.
+         */
+        UNSUPPORTED_TARGET_VERSION
     }
 }

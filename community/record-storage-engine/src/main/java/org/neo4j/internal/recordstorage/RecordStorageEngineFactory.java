@@ -162,8 +162,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             LogService logService, CursorContextFactory contextFactory )
     {
-        return new RecordStoreVersionCheck( fs, pageCache, convert( databaseLayout ), logService.getInternalLogProvider(), config,
-                contextFactory );
+        return new RecordStoreVersionCheck( pageCache, convert( databaseLayout ), config );
     }
 
     @Override

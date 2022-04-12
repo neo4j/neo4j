@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
+import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.time.FakeClock;
 
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
@@ -33,59 +36,63 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 class VisibleMigrationProgressMonitorTest
 {
-    @Test
-    void shouldReportAllPercentageSteps()
+    @EnumSource( Operation.class )
+    @ParameterizedTest
+    void shouldReportAllPercentageSteps( Operation operation )
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog log = logProvider.getLog( getClass() );
-        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
+        var monitor = operation.createMonitor( log, new FakeClock() );
         monitor.started( 1 );
 
         // WHEN
-        monitorSection( monitor, "First", 100, 40, 25, 23 /*these are too far*/ , 10, 50 );
+        monitorSection( monitor, "First", 100, 40, 25, 23 /*these are too far*/, 10, 50 );
         monitor.completed();
 
         // THEN
-        verifySectionReportedCorrectly( logProvider );
+        verifySectionReportedCorrectly( operation, logProvider );
     }
 
-    @Test
-    void progressNeverReportMoreThenHundredPercent()
+    @EnumSource( Operation.class )
+    @ParameterizedTest
+    void progressNeverReportMoreThenHundredPercent( Operation operation )
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog log = logProvider.getLog( getClass() );
-        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
+        var monitor = operation.createMonitor( log, new FakeClock() );
 
         monitor.started( 1 );
         monitorSection( monitor, "First", 100, 1, 10, 99, 170 );
         monitor.completed();
 
-        verifySectionReportedCorrectly( logProvider );
+        verifySectionReportedCorrectly( operation, logProvider );
     }
 
-    @Test
-    void reportStartStopOfTransactionLogsMigration()
+    @EnumSource( Operation.class )
+    @ParameterizedTest
+    void reportStartStopOfTransactionLogsMigration( Operation operation )
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog log = logProvider.getLog( getClass() );
-        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
+        var monitor = operation.createMonitor( log, new FakeClock() );
 
         monitor.startTransactionLogsMigration();
         monitor.completeTransactionLogsMigration();
 
-        assertThat( logProvider ).containsMessages( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED,
-                VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
+        assertThat( logProvider ).containsMessages( operation.txLogsStartMessage(),
+                operation.txLogsCompletedMessage() );
     }
 
-    @Test
-    void shouldIncludeDurationInCompletionMessage()
+    @EnumSource( Operation.class )
+    @ParameterizedTest
+    void shouldIncludeDurationInCompletionMessage( Operation operation )
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
         InternalLog log = logProvider.getLog( getClass() );
         FakeClock clock = new FakeClock();
-        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log, clock );
+        var monitor = operation.createMonitor( log, clock );
 
         // when
         monitor.started( 1 );
@@ -96,19 +103,19 @@ class VisibleMigrationProgressMonitorTest
         assertThat( logProvider ).containsMessages( "took 1s 500ms" );
     }
 
-    private static void verifySectionReportedCorrectly( AssertableLogProvider logProvider )
+    private static void verifySectionReportedCorrectly( Operation operation, AssertableLogProvider logProvider )
     {
         var messageMatcher = assertThat( logProvider );
-        messageMatcher.containsMessages( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
+        messageMatcher.containsMessages( operation.startMessage() );
         for ( int i = 10; i <= 100; i += 10 )
         {
             messageMatcher.containsMessages( i + "%" );
         }
-        messageMatcher.containsMessages( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );
-        messageMatcher.forClass( VisibleMigrationProgressMonitor.class ).forLevel( INFO ).doesNotContainMessage( "110%" );
+        messageMatcher.containsMessages( operation.completedMessage() );
+        messageMatcher.forClass( VisibleMigrationProgressMonitorFactory.class ).forLevel( INFO ).doesNotContainMessage( "110%" );
     }
 
-    private static void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )
+    private static void monitorSection( MigrationProgressMonitor monitor, String name, int max, int... steps )
     {
         ProgressReporter progressReporter = monitor.startSection( name );
         progressReporter.start( max );
@@ -117,5 +124,84 @@ class VisibleMigrationProgressMonitorTest
             progressReporter.progress( step );
         }
         progressReporter.completed();
+    }
+
+    private enum Operation
+    {
+
+        UPGRADE
+                {
+                    @Override
+                    MigrationProgressMonitor createMonitor( InternalLog log, Clock clock )
+                    {
+                        return VisibleMigrationProgressMonitorFactory.forUpgrade( log, clock );
+                    }
+
+                    @Override
+                    String startMessage()
+                    {
+                        return "Starting upgrade of database";
+                    }
+
+                    @Override
+                    String completedMessage()
+                    {
+                        return "Successfully finished upgrade of database";
+                    }
+
+                    @Override
+                    String txLogsStartMessage()
+                    {
+                        return "Starting transaction logs upgrade.";
+                    }
+
+                    @Override
+                    String txLogsCompletedMessage()
+                    {
+                        return "Transaction logs upgrade completed.";
+                    }
+                },
+        MIGRATION
+                {
+                    @Override
+                    MigrationProgressMonitor createMonitor( InternalLog log, Clock clock )
+                    {
+                        return VisibleMigrationProgressMonitorFactory.forMigration( log, clock );
+                    }
+
+                    @Override
+                    String startMessage()
+                    {
+                        return "Starting migration of database";
+                    }
+
+                    @Override
+                    String completedMessage()
+                    {
+                        return "Successfully finished migration of database";
+                    }
+
+                    @Override
+                    String txLogsStartMessage()
+                    {
+                        return "Starting transaction logs migration.";
+                    }
+
+                    @Override
+                    String txLogsCompletedMessage()
+                    {
+                        return "Transaction logs migration completed.";
+                    }
+                };
+
+        abstract MigrationProgressMonitor createMonitor( InternalLog log, Clock clock );
+
+        abstract String startMessage();
+
+        abstract String completedMessage();
+
+        abstract String txLogsStartMessage();
+
+        abstract String txLogsCompletedMessage();
     }
 }

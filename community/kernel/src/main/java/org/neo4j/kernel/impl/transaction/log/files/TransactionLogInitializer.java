@@ -98,7 +98,7 @@ public class TransactionLogInitializer
         }
     }
 
-    public void upgradeExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason )
+    public void migrateExistingLogFiles( DatabaseLayout layout, Path transactionLogsDirectory, String checkpointReason )
             throws Exception
     {
         try ( LogFilesSpan span = buildLogFiles( layout, transactionLogsDirectory ) )
