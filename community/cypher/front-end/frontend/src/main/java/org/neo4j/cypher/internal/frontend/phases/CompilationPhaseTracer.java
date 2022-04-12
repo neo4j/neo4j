@@ -24,6 +24,7 @@ public interface CompilationPhaseTracer
         DEPRECATION_WARNINGS,
         ADDITION_ERRORS,
         SEMANTIC_CHECK,
+        SEMANTIC_TYPE_CHECK,
         AST_REWRITE,
         LOGICAL_PLANNING,
         CODE_GENERATION,

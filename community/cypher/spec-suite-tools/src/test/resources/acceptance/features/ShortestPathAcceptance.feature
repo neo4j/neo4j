@@ -393,7 +393,7 @@ Feature: ShortestPathAcceptance
     MATCH path = allShortestPaths((a:A)-[:REL*0..100]-(c:C))
     WITH nodes(path) AS pathNodes
     WITH pathNodes[0] AS p, pathNodes[3] as c
-    RETURN size((c)-[:REL]-(:B)-[:REL]-(:B)-[:REL]-(p)) AS size
+    RETURN size([path=(c)-[:REL]-(:B)-[:REL]-(:B)-[:REL]-(p) | path]) AS size
     """
     Then the result should be, in any order:
       | size |

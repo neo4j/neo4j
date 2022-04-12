@@ -207,32 +207,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     )
   }
 
-  test("should build plans with SemiApply for a single pattern predicate with size") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())>0 RETURN a", stripProduceResults = false)._1
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a")
-        .semiApply()
-        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with AntiSemiApply for a single negated pattern predicate with size") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->())=0 RETURN a", stripProduceResults = false)._1
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a")
-        .antiSemiApply()
-        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
   test("should build plans with 2 SemiApplies for two pattern predicates") {
     val logicalPlan = planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
@@ -401,34 +375,6 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
 
   test("should build plans with AntiSemiApply for a single negated pattern predicate with exists with Label on other node") {
     val logicalPlan = planFor("MATCH (a) WHERE NOT exists((a)-[:X]->(:Foo)) RETURN a", stripProduceResults = false)._1
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a")
-        .antiSemiApply()
-        .|.filter("anon_3:Foo")
-        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with SemiApply for a single pattern predicate with size with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))>0 RETURN a", stripProduceResults = false)._1
-    logicalPlan should equal(
-      new LogicalPlanBuilder()
-        .produceResults("a")
-        .semiApply()
-        .|.filter("anon_3:Foo")
-        .|.expandAll("(a)-[anon_2:X]->(anon_3)")
-        .|.argument("a")
-        .allNodeScan("a")
-        .build()
-    )
-  }
-
-  test("should build plans with AntiSemiApply for a single negated pattern predicate with size with Label on other node") {
-    val logicalPlan = planFor("MATCH (a) WHERE size((a)-[:X]->(:Foo))=0 RETURN a", stripProduceResults = false)._1
     logicalPlan should equal(
       new LogicalPlanBuilder()
         .produceResults("a")
@@ -839,7 +785,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     val q =
       """
         |MATCH (n)
-        |RETURN (n)-->() AS bs
+        |RETURN [p=(n)-->() | p] AS bs
       """.stripMargin
 
     planFor(q)._1 should beLike {

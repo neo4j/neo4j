@@ -47,11 +47,10 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations) 
         val semanticTable = state.maybeSemanticTable.getOrElse(
           throw new IllegalStateException(s"Got semantic deprecations ${semanticDeprecations.getClass.getSimpleName} but no SemanticTable")
         )
-        val foundWithoutContext = state.statement().folder.fold(Set.empty[Deprecation]) {
+
+        state.statement().folder.fold(Set.empty[Deprecation]) {
           semanticDeprecations.find(semanticTable).andThen(deprecation => acc => acc + deprecation)
         }
-        val foundWithContext = semanticDeprecations.findWithContext(state.statement(), semanticTable)
-        foundWithoutContext ++ foundWithContext
     }
 
     val notifications = allDeprecations.flatMap(_.notification)

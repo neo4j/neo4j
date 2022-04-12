@@ -60,7 +60,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       RETURN CASE
-               WHEN id(n) >= 0 THEN (n)-->()
+               WHEN id(n) >= 0 THEN [p=(n)-->() | p]
                ELSE 42
              END AS p
       """
@@ -83,7 +83,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       RETURN CASE
-               WHEN id(n) < 0 THEN (n)-->()
+               WHEN id(n) < 0 THEN [p=(n)-->() | p]
                ELSE 42
              END AS p
       """
@@ -108,8 +108,8 @@ Feature: CaseExpression
       """
       MATCH (n)
       RETURN CASE
-               WHEN n:A1 THEN (n)-->(:B1)
-               WHEN n:A2 THEN (n)-->(:B2)
+               WHEN n:A1 THEN [p=(n)-->(:B1) | p]
+               WHEN n:A2 THEN [p=(n)-->(:B2) | p]
                ELSE 42
              END AS p
       """
@@ -133,7 +133,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WITH CASE
-             WHEN id(n) >= 0 THEN (n)-->()
+             WHEN id(n) >= 0 THEN [p=(n)-->() | p]
              ELSE 42
            END AS p, count(n) AS c
       RETURN p, c
@@ -156,7 +156,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WITH CASE
-             WHEN id(n) < 0 THEN (n)-->()
+             WHEN id(n) < 0 THEN [p=(n)-->() | p]
              ELSE 42
            END AS p, count(n) AS c
       RETURN p, c
@@ -180,8 +180,8 @@ Feature: CaseExpression
       """
       MATCH (n)
       WITH CASE
-             WHEN n:A1 THEN (n)-->(:B1)
-             WHEN n:A2 THEN (n)-->(:B2)
+             WHEN n:A1 THEN [p=(n)-->(:B1) | p]
+             WHEN n:A2 THEN [p=(n)-->(:B2) | p]
              ELSE 42
            END AS p, count(n) AS c
       RETURN p, c
@@ -205,7 +205,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) >= 0 THEN size((n)-->())
+               WHEN id(n) >= 0 THEN size([p=(n)-->() | p])
                ELSE 42
              END) > 0
       RETURN n
@@ -227,7 +227,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN size((n)-->())
+               WHEN id(n) < 0 THEN size([p=(n)-->() | p])
                ELSE 42
              END) > 0
       RETURN n
@@ -251,7 +251,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN size((n)-[:X]->())
+               WHEN id(n) < 0 THEN size([p=(n)-[:X]->() | p])
                ELSE 42
              END) > 0
       RETURN n
@@ -275,7 +275,7 @@ Feature: CaseExpression
       """
       MATCH (n)
       WHERE (CASE
-               WHEN id(n) < 0 THEN size((n)-->(:X))
+               WHEN id(n) < 0 THEN size([p=(n)-->(:X) | p])
                ELSE 42
              END) > 0
       RETURN n
@@ -301,7 +301,7 @@ Feature: CaseExpression
       MATCH (a:A)
       RETURN CASE
                WHEN a.prop = 42 THEN []
-               ELSE (a)-->()
+               ELSE [p=(a)-->() | p]
              END AS x
       """
     Then the result should be, in any order:

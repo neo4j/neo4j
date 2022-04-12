@@ -25,22 +25,19 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.DeprecatedVarLengthBindingNotification
-import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -178,24 +175,6 @@ object Deprecations {
           Some(DeprecatedCoercionOfListToBoolean(e.position))
         )
     }
-
-    override def findWithContext(statement: ast.Statement,
-                                 semanticTable: SemanticTable): Set[Deprecation] = {
-      val deprecationsOfPatternExpressionsOutsideExists = statement.folder.treeFold[Set[Deprecation]](Set.empty) {
-        case Exists(_) =>
-          // Don't look inside exists()
-          deprecations => SkipChildren(deprecations)
-
-        case p: PatternExpression if !isExpectedTypeBoolean(semanticTable, p) =>
-          val deprecation = Deprecation(
-            None,
-            Some(DeprecatedPatternExpressionOutsideExistsSyntax(p.position))
-          )
-          deprecations => SkipChildren(deprecations + deprecation)
-      }
-
-      deprecationsOfPatternExpressionsOutsideExists
-    }
   }
 }
 
@@ -219,5 +198,4 @@ trait SyntacticDeprecations extends Deprecations {
 
 trait SemanticDeprecations extends Deprecations {
   def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation]
-  def findWithContext(statement: ast.Statement, semanticTable: SemanticTable): Set[Deprecation] = Set.empty
 }

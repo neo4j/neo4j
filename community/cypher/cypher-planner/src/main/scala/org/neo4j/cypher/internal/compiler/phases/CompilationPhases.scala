@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProp
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
@@ -125,6 +126,7 @@ object CompilationPhases {
         extractSensitiveLiterals
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
+      SemanticTypeCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeaturesIn4_X)
   }
 

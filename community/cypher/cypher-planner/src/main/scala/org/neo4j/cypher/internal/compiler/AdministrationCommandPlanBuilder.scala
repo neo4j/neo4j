@@ -95,11 +95,15 @@ import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -499,6 +503,14 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // Currently doesn't allow WITH, is this a problem for rewrites?
       case q@Query(SingleQuery(clauses))
         if clauses.exists(_.isInstanceOf[CommandClauseAllowedOnSystem]) && clauses.forall(_.isInstanceOf[ClauseAllowedOnSystem]) =>
+
+        clauses.folder.treeExists {
+          case p: PatternExpression => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include a pattern expression in the RETURN clause on a system database", p.position)
+          case p: PatternComprehension => throw context.cypherExceptionFactory.syntaxException(
+            "You cannot include a pattern comprehension in the RETURN clause on a system database", p.position)
+        }
+
         Some(plans.AllowedNonAdministrationCommands(q))
 
       case q =>

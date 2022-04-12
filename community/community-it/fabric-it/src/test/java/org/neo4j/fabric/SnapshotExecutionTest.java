@@ -190,7 +190,7 @@ class SnapshotExecutionTest
         var query = joinAsLines(
                 "CREATE (n1:LABEL_1), (n2:LABEL_2)",
                 "MERGE (n1) - [:TYPE_1] -> (n2)",
-                "RETURN () - [] -> ()[0] AS p"
+                "RETURN [path=() - [] -> () | path][0] AS p"
         );
 
         Path p = driver.session().run( query ).stream().map( r -> r.get( "p" ) ).findFirst().get().asPath();

@@ -103,13 +103,6 @@ public enum NotificationCode
             Status.Statement.FeatureDeprecationWarning,
             "The hex integer literal syntax `0X123` is deprecated, please use `0x123` instead"
     ),
-    DEPRECATED_USE_OF_PATTERN_EXPRESSION(
-            SeverityLevel.WARNING,
-            Status.Statement.FeatureDeprecationWarning,
-            "A pattern expression should only be used in order to test the existence of a pattern. " +
-            "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
-            "All other uses are deprecated and should be replaced by a pattern comprehension."
-    ),
     DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN(
             SeverityLevel.WARNING,
             Status.Statement.FeatureDeprecationWarning,

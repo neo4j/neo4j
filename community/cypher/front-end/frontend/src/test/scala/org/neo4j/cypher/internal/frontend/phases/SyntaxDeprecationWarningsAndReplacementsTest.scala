@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVa
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
-import org.neo4j.cypher.internal.util.DeprecatedPatternExpressionOutsideExistsSyntax
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
@@ -72,16 +71,6 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
   test("should not warn about correct hexadecimal syntax  (negative literal)") {
     check("RETURN -0x1277") should equal(Set.empty)
-  }
-
-  test("should warn about pattern expression in RETURN clause") {
-    check("RETURN ()--()") should equal(Set(
-      DeprecatedPatternExpressionOutsideExistsSyntax(InputPosition(7, 1, 8))
-    ))
-  }
-
-  test("should not warn about pattern expression in exists function") {
-    check("WITH 1 AS foo WHERE exists(()--()) RETURN *") should equal(Set.empty)
   }
 
   test("should not warn about coercion with a pattern expression in WHERE clause") {

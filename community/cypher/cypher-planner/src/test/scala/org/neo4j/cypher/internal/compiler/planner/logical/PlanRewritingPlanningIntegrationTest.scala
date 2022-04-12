@@ -28,7 +28,7 @@ class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should use GetDegree to compute the degree of a node") {
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
-    val plan = cfg.plan("MATCH (n) RETURN size((n)-->()) AS deg").stripProduceResults
+    val plan = cfg.plan("MATCH (n) RETURN size([p=(n)-->() | p]) AS deg").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .projection(Map("deg" -> getDegree(varFor("n"), OUTGOING)))
       .allNodeScan("n")

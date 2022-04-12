@@ -28,7 +28,6 @@ import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITER
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_USE_OF_PATTERN_EXPRESSION
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX
@@ -157,48 +156,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("not deprecated binding variable length relationship") {
     assertNoNotificationInSupportedVersions("MATCH p = ()-[*]-() RETURN relationships(p) AS rs", DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP)
-  }
-
-  test("deprecated pattern expression syntax") {
-    val queries = Seq(
-      "MATCH (a) RETURN (a)--()",
-      "MATCH (a) WHERE ANY (x IN (a)--() WHERE 1=1) RETURN a",
-    )
-
-    assertNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
-  }
-
-  test("not deprecated pattern expression syntax") {
-    // Existential subqueries was introduced in Neo4j 4.0
-    assertNoNotificationInSupportedVersions_4_X("MATCH (a) WHERE EXISTS {(x) WHERE (x)--()} RETURN a", DEPRECATED_USE_OF_PATTERN_EXPRESSION)
-
-    val queries = Seq(
-      "MATCH (a)--() RETURN a",
-      "MATCH (a) WHERE exists((a)--()) RETURN a",
-      "MATCH (a) WHERE (a)--() RETURN a",
-      "MATCH (a) RETURN [p=(a)--(b) | p]",
-      "RETURN NOT exists(()--())",
-      "RETURN NOT ()--()",
-      "RETURN ()--() OR ()--()--()",
-      """
-        |EXPLAIN
-        |MATCH (actor:Actor)
-        |RETURN actor,
-        |  CASE
-        |    WHEN (actor)-[:WON]->(:Oscar) THEN 'Oscar winner'
-        |    WHEN (actor)-[:WON]->(:GoldenGlobe) THEN 'Golden Globe winner'
-        |    ELSE 'None'
-        |  END AS accolade
-        |""".stripMargin,
-      """
-        |EXPLAIN
-        |MATCH (movie:Movie)<-[:ACTED_IN]-(actor:Actor)
-        |WITH movie, collect(actor) AS cast
-        |WHERE ANY(actor IN cast WHERE (actor)-[:WON]->(:Award))
-        |RETURN movie
-        |""".stripMargin
-    )
-    assertNoNotificationInSupportedVersions(queries, DEPRECATED_USE_OF_PATTERN_EXPRESSION)
   }
 
   test("deprecated coercion list to boolean") {

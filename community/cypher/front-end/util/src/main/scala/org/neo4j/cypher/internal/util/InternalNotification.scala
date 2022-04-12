@@ -37,8 +37,6 @@ case class DeprecatedOctalLiteralSyntax(position: InputPosition) extends Interna
 
 case class DeprecatedHexLiteralSyntax(position: InputPosition) extends InternalNotification
 
-case class DeprecatedPatternExpressionOutsideExistsSyntax(position: InputPosition) extends InternalNotification
-
 case class DeprecatedCoercionOfListToBoolean(position: InputPosition) extends InternalNotification
 
 case class DeprecatedSelfReferenceToVariableInCreatePattern(position: InputPosition) extends InternalNotification

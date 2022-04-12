@@ -33,7 +33,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)
-      RETURN [x IN (n)-->() | head(nodes(x))] AS p
+      RETURN [x=(n)-->() | head(nodes(x))] AS p
       """
     Then the result should be, in any order:
       | p            |
@@ -53,7 +53,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:A)
-      WITH [x IN (n)-->() | head(nodes(x))] AS p, count(n) AS c
+      WITH [x=(n)-->() | head(nodes(x))] AS p, count(n) AS c
       RETURN p, c
       """
     Then the result should be, in any order:
@@ -72,7 +72,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)
-      WHERE n IN [x IN (n)-->() | head(nodes(x))]
+      WHERE n IN [x=(n)-->() | head(nodes(x))]
       RETURN n
       """
     Then the result should be, in any order:
@@ -94,8 +94,8 @@ Feature: PatternExpressionAcceptance
       """
       MATCH (n)
       WHERE (n)-->() AND (CASE
-                            WHEN n:A THEN size((n)-->(:C))
-                            WHEN n:B THEN size((n)-->(:D))
+                            WHEN n:A THEN size([p=(n)-->(:C) | p])
+                            WHEN n:B THEN size([p=(n)-->(:D) | p])
                             ELSE 42
                           END) > 1
       RETURN n
@@ -116,7 +116,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (liker)
-      RETURN (liker)--() AS isNew
+      RETURN [p=(liker)--() | p] AS isNew
         ORDER BY liker.time
       """
     Then the result should be, in order:
@@ -136,7 +136,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)
-      RETURN (n)-->() AS p
+      RETURN [p=(n)-->() | p] AS p
       """
     Then the result should be, in any order:
       | p                                      |
@@ -157,7 +157,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:A)
-      RETURN (n)-->(:B)
+      RETURN [p=(n)-->(:B) | p] AS `(n)-->(:B)`
       """
     Then the result should be, in any order:
       | (n)-->(:B)          |
@@ -174,7 +174,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:A), (b:B)
-      RETURN (a)-[*]->(b) AS path
+      RETURN [p=(a)-[*]->(b) | p] AS path
       """
     Then the result should be, in any order:
       | path                |
@@ -192,7 +192,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)-->(b)
-      WITH (n)-->() AS p, count(b) AS c
+      WITH [p=(n)-->() | p] AS p, count(b) AS c
       RETURN p, c
       """
     Then the result should be, in any order:
@@ -209,7 +209,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:A), (b:B)
-      WITH (a)-[*]->(b) AS path, count(a) AS c
+      WITH [p=(a)-[*]->(b) | p] AS path, count(a) AS c
       RETURN path, c
       """
     Then the result should be, in any order:
@@ -227,7 +227,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:A)
-      RETURN (n)-[:HAS]->() AS p
+      RETURN [p=(n)-[:HAS]->() | p] AS p
       """
     Then the result should be, in any order:
       | p                   |
@@ -246,7 +246,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:A)
-      RETURN count((n)-[:HAS]->()) AS c
+      RETURN count([p=(n)-[:HAS]->() | p]) AS c
       """
     Then the result should be, in any order:
       | c |
@@ -268,7 +268,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE size((n)-->()) > 2
+      WHERE size([p=(n)-->() | p]) > 2
       RETURN n
       """
     Then the result should be, in any order:
@@ -291,7 +291,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE size((n)<--()) > 2
+      WHERE size([p=(n)<--() | p]) > 2
       RETURN n
       """
     Then the result should be, in any order:
@@ -314,7 +314,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n:X)
-      WHERE size((n)--()) > 2
+      WHERE size([p=(n)--() | p]) > 2
       RETURN n
       """
     Then the result should be, in any order:
@@ -338,7 +338,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (n)
-      WHERE size((n)-[:X|Y]-()) > 2
+      WHERE size([p=(n)-[:X|Y]-() | p]) > 2
       RETURN n
       """
     Then the result should be, in any order:
@@ -379,7 +379,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH p = (n:X)-->(b)
-      RETURN n, [x IN nodes(p) | size((x)-->(:Y))] AS list
+      RETURN n, [x IN nodes(p) | size([p=(x)-->(:Y) | p])] AS list
       """
     Then the result should be, in any order:
       | n           | list   |
@@ -417,7 +417,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN size((a)-->()) AS size
+      RETURN size([p=(a)-->() | p]) AS size
       """
     Then the result should be, in any order:
       | size |
@@ -437,7 +437,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN size((a)-[:T]->()) AS size
+      RETURN size([p=(a)-[:T]->() | p]) AS size
       """
     Then the result should be, in any order:
       | size |
@@ -457,7 +457,7 @@ Feature: PatternExpressionAcceptance
     When executing query:
       """
       MATCH (a:X)
-      RETURN size((a)-[:T|OTHER]->()) AS size
+      RETURN size([p=(a)-[:T|OTHER]->() | p]) AS size
       """
     Then the result should be, in any order:
       | size |
