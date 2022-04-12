@@ -98,6 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.Input.knownEstimates;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
@@ -227,6 +228,7 @@ public class ParallelBatchImporterTest
             {
                 managementService.shutdown();
             }
+            assertThat( mentionsCountsStoreRebuild( databaseLayout ) ).isFalse();
             assertConsistent( databaseLayout );
             successful = true;
         }
@@ -247,6 +249,17 @@ public class ParallelBatchImporterTest
                 }
                 System.err.println( "Additional debug information stored in " + failureFile );
             }
+        }
+    }
+
+    private boolean mentionsCountsStoreRebuild( DatabaseLayout databaseLayout ) throws IOException
+    {
+        var config = Config.newBuilder().set( GraphDatabaseSettings.neo4j_home, databaseLayout.getNeo4jLayout().homeDirectory() ).build();
+        var debugLogPath = config.get( store_internal_log_path );
+        try ( var lines = Files.lines( debugLogPath ) )
+        {
+            return lines.anyMatch(
+                    line -> line.contains( "Missing counts store, rebuilding it" ) && line.contains( "[" + databaseLayout.getDatabaseName() ) );
         }
     }
 

@@ -137,7 +137,7 @@ public class TransactionLogInitializer
     {
         TransactionId committedTx = store.getLastCommittedTransaction();
         long timestamp = committedTx.commitTimestamp();
-        long upgradeTransactionId = committedTx.transactionId() + 1;
+        long upgradeTransactionId = store.nextCommittingTransactionId();
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         PhysicalTransactionRepresentation emptyTx = emptyTransaction( timestamp, upgradeTransactionId );
@@ -145,6 +145,7 @@ public class TransactionLogInitializer
         logFile.forceAfterAppend( LogAppendEvent.NULL );
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint( logFiles, reason, position, new TransactionId( upgradeTransactionId, checksum, timestamp ) );
+        store.transactionCommitted( upgradeTransactionId, checksum, timestamp );
     }
 
     private static PhysicalTransactionRepresentation emptyTransaction( long timestamp, long txId )

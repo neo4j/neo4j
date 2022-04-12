@@ -108,8 +108,8 @@ public class ParallelBatchImporter implements BatchImporter
             logic.calculateNodeDegrees();
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
-            logic.buildCountsStore();
             logFilesInitializer.initializeLogFiles( databaseLayout, store.getNeoStores().getMetaDataStore(), fileSystem, BATCH_IMPORTER_CHECKPOINT );
+            logic.buildCountsStore();
             logic.success();
         }
     }
