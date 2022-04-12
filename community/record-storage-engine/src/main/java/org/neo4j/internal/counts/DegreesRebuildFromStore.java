@@ -274,7 +274,8 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
                 LogProgressReporter progress )
         {
             super( "Prepare cache", null, config, Step.RECYCLE_BATCHES );
-            add( new BatchFeedStep( control(), config, withProgress( forwards( 0, store.getHighId(), config ), progress ), store.getRecordSize() ) );
+            add( new BatchFeedStep( control(), config, withProgress( forwards( store.getNumberOfReservedLowIds(), store.getHighId(), config ), progress ),
+                    store.getRecordSize() ) );
             add( new ReadRecordsStep<>( control(), config, false, store, pageCacheTracer ) );
             add( new PrepareCacheStep( control(), config, cache ) );
         }
