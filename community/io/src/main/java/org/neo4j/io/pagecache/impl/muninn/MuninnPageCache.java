@@ -46,6 +46,8 @@ import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.buffer.IOBufferFactory;
+import org.neo4j.io.pagecache.impl.muninn.versioned.InMemoryVersionStorage;
+import org.neo4j.io.pagecache.impl.muninn.versioned.VersionStorage;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -210,6 +212,8 @@ public class MuninnPageCache implements PageCache
 
     // 'true' (the default) if we should print any exceptions we get when unmapping a file.
     private boolean printExceptionsOnClose;
+
+    private VersionStorage versionStorage;
 
     static
     {
@@ -402,6 +406,7 @@ public class MuninnPageCache implements PageCache
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
         this.preallocateStoreFiles = configuration.preallocateStoreFiles;
+        versionStorage = reservedPageBytes > 0 ? new InMemoryVersionStorage( configuration.memoryAllocator, cachePageSize ) : VersionStorage.EMPTY_STORAGE;
         setFreelistHead( new AtomicInteger() );
 
         // Expose the total number of pages
