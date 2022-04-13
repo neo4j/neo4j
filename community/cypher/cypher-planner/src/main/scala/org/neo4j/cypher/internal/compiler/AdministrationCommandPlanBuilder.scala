@@ -95,9 +95,7 @@ import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
