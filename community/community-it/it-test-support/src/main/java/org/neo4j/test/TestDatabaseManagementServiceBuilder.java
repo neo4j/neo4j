@@ -52,9 +52,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.LazyProcedures;
-import org.neo4j.test.fabric.TestFabricDatabaseManagementServiceFactory;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.util.FeatureToggles;
 
 /**
  * Test factory for graph databases.
@@ -65,8 +63,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
         implements TestNeo4jDatabaseManagementServiceBuilder {
     private static final Path EPHEMERAL_PATH =
             Path.of("/target/test data/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
-    public static final String FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME = "fabric_in_embedded_test_transactions";
-    public static final boolean FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE = false;
 
     protected FileSystemAbstraction fileSystem;
     protected InternalLogProvider internalLogProvider;
@@ -131,20 +127,10 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
 
     @Override
     protected DatabaseManagementService newDatabaseManagementService(Config config, ExternalDependencies dependencies) {
-        var factory = fabricInEmbeddedTestTransactionsEnabled()
-                ? new TestFabricDatabaseManagementServiceFactory(
-                        getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider, config)
-                : new TestDatabaseManagementServiceFactory(
-                        getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider);
+        var factory = new TestDatabaseManagementServiceFactory(
+                getDbmsInfo(config), getEditionFactory(config), fileSystem, clock, internalLogProvider);
 
         return factory.build(augmentConfig(config), GraphDatabaseDependencies.newDependencies(dependencies));
-    }
-
-    private static boolean fabricInEmbeddedTestTransactionsEnabled() {
-        return FeatureToggles.flag(
-                TestDatabaseManagementServiceBuilder.class,
-                FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_FLAG_NAME,
-                FABRIC_IN_EMBEDDED_TEST_TRANSACTIONS_DEFAULT_VALUE);
     }
 
     @Override
