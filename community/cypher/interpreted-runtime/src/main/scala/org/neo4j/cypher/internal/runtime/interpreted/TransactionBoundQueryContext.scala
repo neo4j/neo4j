@@ -203,13 +203,6 @@ sealed class TransactionBoundQueryContext(transactionalContext: TransactionalCon
     ids
   }
 
-  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val indexProvider = provider.map(p => transactionalContext.schemaWrite.indexProviderByName(p))
-    val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.BTREE, entityId, entityType, propertyKeyIds, name, indexProvider)
-    val prototypeWithConfig = prototype.withIndexConfig(indexConfig)
-    addIndexRule(descriptor, prototypeWithConfig)
-  }
-
   override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
     val (descriptor, prototype) = getIndexDescriptorAndPrototype(IndexType.RANGE, entityId, entityType, propertyKeyIds, name, provider)
     addIndexRule(descriptor, prototype)

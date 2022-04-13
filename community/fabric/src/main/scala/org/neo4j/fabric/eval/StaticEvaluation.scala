@@ -211,8 +211,6 @@ object StaticEvaluation {
 
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notAvailable()
 
-    override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = notAvailable()
-
     override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()
 
     override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = notAvailable()

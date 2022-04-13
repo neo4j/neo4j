@@ -35,13 +35,10 @@ import org.neo4j.cypher.internal.ast.ConstraintVersion
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -253,14 +250,6 @@ case class Prettifier(
 
     val useString = asString(command.useGraph)
     val commandString = command match {
-
-      case CreateBtreeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "BTREE INDEX")
-        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
-
-      case CreateBtreeRelationshipIndex(Variable(variable), RelTypeName(relType), properties, name, ifExistsDo, options, _) =>
-        val startOfCommand = getStartOfCommand(name, ifExistsDo, "BTREE INDEX")
-        s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
 
       case CreateRangeNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, fromDefault, _) =>
         val schemaType = if (fromDefault) "INDEX" else "RANGE INDEX"

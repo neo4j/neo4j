@@ -340,14 +340,14 @@ class PrettifierIT extends CypherFunSuite {
     "create INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
       "CREATE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
 
-    "CREATE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "range-1.0"}""",
 
-    "create INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
+      """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
 
-    "create INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified'}}" ->
+      """CREATE INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
 
     "CREATE index FOR (n:Person) on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -382,14 +382,14 @@ class PrettifierIT extends CypherFunSuite {
     "create INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
       "CREATE INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
 
-    "CREATE index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "range-1.0"}""",
 
-    "create INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
+      """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
 
-    "create INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified'}}" ->
+      """CREATE INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
 
     "CREATE index FOR ()-[n:R]-() on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -485,83 +485,6 @@ class PrettifierIT extends CypherFunSuite {
 
     "create RANGE INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
       "CREATE RANGE INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
-
-    // btree
-
-    "create BTREE INDEX FOR (n:A) ON (n.p)" ->
-      "CREATE BTREE INDEX FOR (n:A) ON (n.p)",
-
-    "create BTREE INDEX foo FOR (n:A) ON (n.p)" ->
-      "CREATE BTREE INDEX foo FOR (n:A) ON (n.p)",
-
-    "create BTREE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
-      "CREATE BTREE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
-
-    "CREATE BTREE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
-
-    "create BTREE INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
-
-    "create BTREE INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE BTREE INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
-
-    "CREATE BTREE index FOR (n:Person) on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
-      """CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
-
-    "CREATE BTREE index FOR (n:Person) on (n.name) OPtiONS {}" ->
-      """CREATE BTREE INDEX FOR (n:Person) ON (n.name) OPTIONS {}""",
-
-    "create or REPLACE BTREE INDEX FOR (n:A) ON (n.p)" ->
-      "CREATE OR REPLACE BTREE INDEX FOR (n:A) ON (n.p)",
-
-    "create or REPLACE BTREE INDEX foo FOR (n:A) ON (n.p)" ->
-      "CREATE OR REPLACE BTREE INDEX foo FOR (n:A) ON (n.p)",
-
-    "create BTREE INDEX IF not EXISTS FOR (n:A) ON (n.p)" ->
-      "CREATE BTREE INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
-
-    "create BTREE INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
-      "CREATE BTREE INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
-
-    "create BTREE INDEX FOR ()-[n:R]->() ON (n.p)" ->
-      "CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.p)",
-
-    "create btree INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
-      "CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
-
-    "create BTREE INDEX foo FOR ()<-[n:R]-() ON (n.p)" ->
-      "CREATE BTREE INDEX foo FOR ()-[n:R]-() ON (n.p)",
-
-    "create BTREE INDEX `foo` FOR ()-[n:R]-() ON (n.p)" ->
-      "CREATE BTREE INDEX foo FOR ()-[n:R]-() ON (n.p)",
-
-    "CREATE BTREE index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "native-btree-1.0"}""",
-
-    "create BTREE INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
-
-    "create BTREE INDEX myIndex for ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE BTREE INDEX myIndex FOR ()-[n:R]-() ON (n.name) OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
-
-    "CREATE BTREE index FOR ()-[n:R]-() on (n.name) OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
-      """CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
-
-    "CREATE BTREE index FOR ()<-[n:R]-() on (n.name) OPtiONS {}" ->
-      """CREATE BTREE INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {}""",
-
-    "create or REPLACE BTREE INDEX FOR ()-[n:R]-() ON (n.p)" ->
-      "CREATE OR REPLACE BTREE INDEX FOR ()-[n:R]-() ON (n.p)",
-
-    "create or REPLACE BTREE INDEX foo FOR ()-[n:R]-() ON (n.p)" ->
-      "CREATE OR REPLACE BTREE INDEX foo FOR ()-[n:R]-() ON (n.p)",
-
-    "create BTREE INDEX IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
-      "CREATE BTREE INDEX IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
-
-    "create BTREE INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
-      "CREATE BTREE INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
 
     // lookup
 
@@ -895,14 +818,14 @@ class PrettifierIT extends CypherFunSuite {
     "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY" ->
       "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p1, n.p2) IS NODE KEY",
 
-    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "range-1.0"}""",
 
-    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS NODE KEY OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS NODE KEY OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
+      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
 
-    "create CONSTRAINT FOR (n:A) require (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create CONSTRAINT FOR (n:A) require (n.p) IS NODE KEY OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified' }}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
 
     "CREATE constraint FOR (n:A) REQUIRE (n.p) IS NODE KEY OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -928,14 +851,14 @@ class PrettifierIT extends CypherFunSuite {
     "create or REPLACE CONSTRAINT foo FOR (n:A) REQUIRE n.p IS UNIQUE" ->
       "CREATE OR REPLACE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS UNIQUE",
 
-    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {indexProvider: 'native-btree-1.0'}" ->
-      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0"}""",
+    "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {indexProvider: 'range-1.0'}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}""",
 
-    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS UNIQUE OPTIONS {`indexProvider`: 'native-btree-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
-      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "native-btree-1.0", indexConfig: {`spatial.cartesian.max`: [100.0, 100.0], `spatial.cartesian.min`: [-100.0, -100.0]}}""",
+    "create CONSTRAINT myConstraint FOR (n:A) require (n.p) IS UNIQUE OPTIONS {`indexProvider`: 'range-1.0', indexConfig: { }}" ->
+      """CREATE CONSTRAINT myConstraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexProvider: "range-1.0", indexConfig: {}}""",
 
-    "create CONSTRAINT FOR (n:A) require (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0,40.0], `spatial.wgs-84.min`: [-60.0,-40.0] }}" ->
-      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexConfig: {`spatial.wgs-84.max`: [60.0, 40.0], `spatial.wgs-84.min`: [-60.0, -40.0]}}""",
+    "create CONSTRAINT FOR (n:A) require (n.p) IS UNIQUE OPTIONS {indexConfig: {someConfig: 'toShowItCanBePrettified'}}" ->
+      """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {indexConfig: {someConfig: "toShowItCanBePrettified"}}""",
 
     "CREATE constraint FOR (n:A) REQUIRE (n.p) IS UNIQUE OPtiONS {nonValidOption : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
       """CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS UNIQUE OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
@@ -1020,9 +943,6 @@ class PrettifierIT extends CypherFunSuite {
     "show all inDEXES" ->
       "SHOW ALL INDEXES",
 
-    "show BTREE index" ->
-      "SHOW BTREE INDEXES",
-
     "show RAnGE index" ->
       "SHOW RANGE INDEXES",
 
@@ -1043,10 +963,6 @@ class PrettifierIT extends CypherFunSuite {
 
     "show index WHERE uniqueness = 'UNIQUE'" ->
       """SHOW ALL INDEXES
-        |  WHERE uniqueness = "UNIQUE"""".stripMargin,
-
-    "show btree inDEXES WHERE uniqueness = 'UNIQUE'" ->
-      """SHOW BTREE INDEXES
         |  WHERE uniqueness = "UNIQUE"""".stripMargin,
 
     "show lookup index  YIELD *" ->

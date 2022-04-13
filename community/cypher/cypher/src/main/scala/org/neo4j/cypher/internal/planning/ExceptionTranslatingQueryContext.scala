@@ -427,9 +427,6 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext) extends
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(tokenNameLookup, inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor =
-    translateException(tokenNameLookup, inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
-
   override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor =
     translateException(tokenNameLookup, inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider))
 

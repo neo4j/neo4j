@@ -21,8 +21,6 @@ import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
@@ -80,18 +78,12 @@ object Additions {
       case c: UnresolvedCall if c.yieldAll =>
         throw cypherExceptionFactory.syntaxException("Procedure call using `YIELD *` is not supported in this Cypher version.", c.position)
 
-      // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
-      case c: CreateBtreeNodeIndex =>
-        throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR (n:Label) ON (n.prop) [OPTIONS {...}]
       case c: CreateRangeNodeIndex if c.fromDefault =>
-        // Range index with `fromDefault` is a btree index, this was done to prepare for RANGE being the default index
         throw cypherExceptionFactory.syntaxException("Creating index using this syntax is not supported in this Cypher version.", c.position)
 
-      // CREATE [BTREE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
-      case c: CreateBtreeRelationshipIndex =>
-        throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
+      // CREATE INDEX [name] [IF NOT EXISTS] FOR ()-[n:RelType]-() ON (n.prop) [OPTIONS {...}]
       case c: CreateRangeRelationshipIndex if c.fromDefault =>
-        // Range index with `fromDefault` is a btree index, this was done to prepare for RANGE being the default index
         throw cypherExceptionFactory.syntaxException("Relationship property indexes are not supported in this Cypher version.", c.position)
 
       // CREATE LOOKUP INDEX ...
@@ -171,7 +163,7 @@ object Additions {
       case e: ExistsSubClause =>
         throw cypherExceptionFactory.syntaxException("Existential subquery is not supported in this Cypher version.", e.position)
 
-      // SHOW [ALL|BTREE|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [WHERE clause|YIELD clause]
+      // SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [WHERE clause|YIELD clause]
       case s: ShowIndexesClause =>
         throw cypherExceptionFactory.syntaxException("SHOW INDEXES is not supported in this Cypher version.", s.position)
 

@@ -90,14 +90,14 @@ case class CreateBtreeNodeIndex(variable: Variable, label: LabelName, properties
   extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def semanticCheck: SemanticCheck = checkOptionsMap("btree node index", options) chain super.semanticCheck
+  override def semanticCheck: SemanticCheck = error("Invalid index type b-tree, use range, point or text index instead.", position)
 }
 
 case class CreateBtreeRelationshipIndex(variable: Variable, relType: RelTypeName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)
   extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def semanticCheck: SemanticCheck = checkOptionsMap("btree relationship property index", options) chain super.semanticCheck
+  override def semanticCheck: SemanticCheck = error("Invalid index type b-tree, use range, point or text index instead.", position)
 }
 
 case class CreateRangeNodeIndex(variable: Variable, label: LabelName, properties: List[Property], name: Option[String], ifExistsDo: IfExistsDo, options: Options, fromDefault: Boolean, useGraph: Option[GraphSelection] = None)(override val position: InputPosition)

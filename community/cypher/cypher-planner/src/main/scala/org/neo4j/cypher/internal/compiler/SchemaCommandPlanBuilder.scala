@@ -20,11 +20,8 @@
 package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.common.EntityType
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateIndexOldSyntax
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -40,7 +37,6 @@ import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDo
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
-import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -59,8 +55,6 @@ import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.graphdb.schema.IndexType
-
-import scala.annotation.nowarn
 
 /**
  * This planner takes on queries that requires no planning such as schema commands
@@ -85,15 +79,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         case _ => None
       }
       (propKeys, source)
-    }
-
-    def createBtreeIndex(entityName: Either[LabelName, RelTypeName],
-                         props: List[Property],
-                         name: Option[String],
-                         ifExistsDo: IfExistsDo,
-                         options: Options): Option[LogicalPlan] = {
-      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.BTREE, name, ifExistsDo): @nowarn("msg=Java enum BTREE in Java enum IndexType is deprecated") // we accept to use BTREE for now
-      Some(plans.CreateBtreeIndex(source, entityName, propKeys, name, options))
     }
 
     def createRangeIndex(entityName: Either[LabelName, RelTypeName],
@@ -173,14 +158,6 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>
         Some(plans.DropConstraintOnName(name, ifExists))
-        
-      // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-      case CreateBtreeNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
-        createBtreeIndex(Left(label), props, name, ifExistsDo, options)
-
-      // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
-      case CreateBtreeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
-        createBtreeIndex(Right(relType), props, name, ifExistsDo, options)
 
       // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreateRangeNodeIndex(_, label, props, name, ifExistsDo, options, _, _) =>

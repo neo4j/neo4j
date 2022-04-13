@@ -37,7 +37,6 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats
@@ -59,31 +58,41 @@ trait GraphIcing {
 
   implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
 
+    // Create uniqueness constraint
+
     def createUniqueConstraint(label: String, property: String): ConstraintDefinition = {
-      withTx( tx =>  {
+      val constraint = withTx( tx =>  {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       } )
+      awaitIndexesOnline()
+      constraint
     }
 
     def createUniqueConstraint(label: String, properties: String*): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       })
+      awaitIndexesOnline()
       getNodeConstraint(label, properties)
     }
 
     def createUniqueConstraintWithName(name: String, label: String, property: String): ConstraintDefinition = {
-      withTx( tx =>  {
+      val constraint = withTx( tx =>  {
         tx.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).withName(name).create()
       } )
+      awaitIndexesOnline()
+      constraint
     }
 
     def createUniqueConstraintWithName(name: String, label: String, properties: String*): ConstraintDefinition = {
       withTx( tx =>  {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS UNIQUE")
       } )
+      awaitIndexesOnline()
       getNodeConstraint(label, properties)
     }
+
+    // Create node existence constraint
 
     def createNodeExistenceConstraint(label: String, property: String): ConstraintDefinition = {
       withTx( tx => {
@@ -98,6 +107,8 @@ trait GraphIcing {
       })
       getNodeConstraint(label, Seq(property))
     }
+
+    // Create relationship existence constraint
 
     def createRelationshipExistenceConstraint(relType: String, property: String, direction: Direction = Direction.BOTH): ConstraintDefinition = {
       val relSyntax = direction match {
@@ -123,10 +134,13 @@ trait GraphIcing {
       getRelationshipConstraint(relType, property)
     }
 
+    // Create node key constraint
+
     def createNodeKeyConstraint(label: String, properties: String*): ConstraintDefinition = {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
+      awaitIndexesOnline()
       getNodeConstraint(label, properties)
     }
 
@@ -134,64 +148,29 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.${properties.mkString(", n.")}) IS NODE KEY")
       })
+      awaitIndexesOnline()
       getNodeConstraint(label, properties)
     }
 
-    def createConstraintWithProvider(label: String, property: String, constraintPredicate: String, provider: String, name: Option[String] = None): ConstraintDefinition = {
-      // Create a constraint with given provider, only node key and uniqueness constraints allow providers hence no support for relationship patterns
-      val nameString = name.map(n => s"`$n`").getOrElse("")
-      withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE (n.$property) $constraintPredicate OPTIONS {indexProvider: '$provider'}")
-      })
-      getNodeConstraint(label, Seq(property))
-    }
-
-    def createNodeConstraint(label: String,
-                             properties: Seq[String],
-                             constraintPredicate: ConstraintPredicate,
-                             provider: IndexProviderDescriptor,
-                             name: Option[String] = None): ConstraintDefinition = {
-      assert(properties.nonEmpty, "Constraints must have at least one property")
-      val nameString = name.map(n => s"`$n`").getOrElse("")
-      val propertyString = properties.map(prop => s"n.$prop").mkString(", ")
-      withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT $nameString FOR (n:$label) REQUIRE ($propertyString) ${constraintPredicate.cypherRepresentation} OPTIONS {indexProvider: '${provider.name()}'}")
-      })
-
-      getNodeConstraint(label, properties)
-    }
-
-    def createBtreeNodeIndex(label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(None, label, properties, IndexType.BTREE)
-    }
+    // Create index with given type
 
     def createNodeIndex(indexType: IndexType, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties, indexType)
-    }
-
-    def createBtreeRelationshipIndex(relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, relType, properties, IndexType.BTREE)
-    }
-
-    def createRelationshipIndex(indexType: IndexType, relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(None, relType, properties, indexType)
-    }
-
-    def createBtreeNodeIndexWithName(name: String, label: String, properties: String*): IndexDefinition = {
-      createNodeIndex(Some(name), label, properties, IndexType.BTREE)
     }
 
     def createNodeIndexWithName(indexType: IndexType, name: String, label: String, properties: String*): IndexDefinition = {
       createNodeIndex(Some(name), label, properties, indexType)
     }
 
-    def createBtreeRelationshipIndexWithName(name: String, relType: String, properties: String*): IndexDefinition = {
-      createRelationshipIndex(Some(name), relType, properties, IndexType.BTREE)
+    def createRelationshipIndex(indexType: IndexType, relType: String, properties: String*): IndexDefinition = {
+      createRelationshipIndex(None, relType, properties, indexType)
     }
 
     def createRelationshipIndexWithName(indexType: IndexType, name: String, relType: String, properties: String*): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, properties, indexType)
     }
+
+    // Create default (range) index
 
     def createNodeIndex(label: String, properties: String*): IndexDefinition = {
       createNodeIndex(None, label, properties)
@@ -209,6 +188,8 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, properties)
     }
 
+    // Create text index
+
     def createTextNodeIndex(label: String, property: String): IndexDefinition = {
       createNodeIndex(None, label, Seq(property), IndexType.TEXT)
     }
@@ -224,6 +205,8 @@ trait GraphIcing {
     def createTextRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
       createRelationshipIndex(Some(name), relType, Seq(property), IndexType.TEXT)
     }
+
+    // Create point index
 
     def createPointNodeIndex(label: String, property: String): IndexDefinition = {
       createNodeIndex(None, label, Seq(property), IndexType.POINT)
@@ -241,6 +224,8 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, Seq(property), IndexType.POINT)
     }
 
+    // Create label/prop index help methods
+
     private def createNodeIndex(maybeName: Option[String], label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE, options: Map[String, String] = Map.empty): IndexDefinition = {
       createIndex(maybeName, s"(e:$label)", properties, indexType, () => getNodeIndex(label, properties, indexType), options)
     }
@@ -254,11 +239,7 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}")
       })
-
-      withTx( tx =>  {
-        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
-
+      awaitIndexesOnline()
       getIndex()
     }
 
@@ -273,6 +254,8 @@ trait GraphIcing {
       }
     }
 
+    // Create fulltext index
+
     def createNodeFulltextIndex(labels:List[String], properties: List[String], maybeName: Option[String] = None): IndexDefinition = {
       val pattern = s"(e:${labels.map(l => s"`$l`").mkString("|")})"
       createFulltextIndex(pattern, properties, () => getFulltextIndex(labels, properties, isNodeIndex = true), maybeName)
@@ -285,17 +268,14 @@ trait GraphIcing {
 
     private def createFulltextIndex(pattern: String, properties: Seq[String], getIndex: () => IndexDefinition, maybeName: Option[String]): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
-
       withTx( tx => {
         tx.execute(s"CREATE FULLTEXT INDEX$nameString FOR $pattern ON EACH [${properties.map(p => s"e.`$p`").mkString(",")}]")
       })
-
-      withTx( tx =>  {
-        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
-
+      awaitIndexesOnline()
       getIndex()
     }
+
+    // Create and drop lookup index
 
     def createLookupIndex(isNodeIndex: Boolean, maybeName: Option[String] = None): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
@@ -303,19 +283,23 @@ trait GraphIcing {
       withTx( tx => {
         tx.execute(s"CREATE LOOKUP INDEX$nameString FOR $pattern ON EACH $function")
       })
-
-      withTx( tx =>  {
-        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
-
+      awaitIndexesOnline()
       getLookupIndex(isNodeIndex)
     }
+
+    def dropLookupIndex(isNodeIndex: Boolean): Unit = withTx(tx => {
+      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).foreach(idx => idx.drop())
+    })
+
+    // Wait for indexes
 
     def awaitIndexesOnline(): Unit = {
       withTx( tx =>  {
         tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
       } )
     }
+
+    // Find index
 
     def getNodeIndex(label: String, properties: Seq[String], indexType: IndexType = IndexType.RANGE): IndexDefinition =
       getMaybeNodeIndex(label, properties, indexType).get
@@ -341,10 +325,6 @@ trait GraphIcing {
 
     def getMaybeLookupIndex(isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
       tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex)
-    })
-
-    def dropLookupIndex(isNodeIndex: Boolean): Unit = withTx(tx => {
-      tx.schema().getIndexes().asScala.find(id => id.getIndexType.equals(IndexType.LOOKUP) && id.isNodeIndex == isNodeIndex).foreach(idx => idx.drop())
     })
 
     def getMaybeFulltextIndex(entities: List[String], props: List[String], isNodeIndex: Boolean): Option[IndexDefinition] = withTx(tx => {
@@ -393,6 +373,8 @@ trait GraphIcing {
       } )
     }
 
+    // Find constraint
+
     def getNodeConstraint(label: String, properties: Seq[String]): ConstraintDefinition = {
       withTx( tx =>  {
         tx.schema().getConstraints(Label.label(label)).asScala.find(constraint => constraint.getPropertyKeys.asScala.toList == properties.toList).get
@@ -427,15 +409,7 @@ trait GraphIcing {
       (labelOrRelType, properties)
     } )
 
-    def createUniqueIndex(label: String, property: String, provider: String = RangeIndexProvider.DESCRIPTOR.name()): Unit = {
-      withTx( tx => {
-        tx.execute(s"CREATE CONSTRAINT FOR (p:$label) REQUIRE p.$property IS UNIQUE OPTIONS {indexProvider: '$provider'}")
-      } )
-
-      withTx( tx => {
-        tx.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
-      } )
-    }
+    // Transaction methods
 
     // Runs code inside of a transaction. Will mark the transaction as successful if no exception is thrown
     def inTx[T](f: InternalTransaction => T, txType: Type = Type.IMPLICIT): T = withTx(f, txType)
@@ -478,27 +452,13 @@ trait GraphIcing {
       }
     }
 
-    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
+    def txCounts: TxCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
 
     private def txMonitor: DatabaseTransactionStats = graphService.getDependencyResolver.resolveDependency(classOf[DatabaseTransactionStats])
   }
 }
 
 final case class TxCounts(commits: Long = 0, rollbacks: Long = 0, active: Long = 0) {
-  def +(other: TxCounts) = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
-  def -(other: TxCounts) = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
-}
-
-sealed trait ConstraintPredicate {
-  val cypherRepresentation: String
-}
-
-object ConstraintPredicate {
-  case object NodeKey extends ConstraintPredicate {
-    val cypherRepresentation: String = "IS NODE KEY"
-  }
-
-  case object Uniqueness extends ConstraintPredicate {
-    val cypherRepresentation: String = "IS UNIQUE"
-  }
+  def +(other: TxCounts): TxCounts = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
+  def -(other: TxCounts): TxCounts = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
 }

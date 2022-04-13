@@ -88,7 +88,6 @@ import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
-import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
@@ -410,9 +409,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
 
       case DoNothingIfExistsForFulltextIndex(entityNames, propertyKeyNames, nameOption) =>
         PlanDescriptionImpl(id, s"DoNothingIfExists(INDEX)", NoChildren, Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, NoOptions))), variables, withRawCardinalities)
-
-      case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateRangeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", NoChildren, Seq(Details(rangeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -788,9 +784,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
           case ExpandInto => "Into"
         }
         PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(Details(pretty"$expandDescription$predicatesDescription")), variables, withRawCardinalities)
-
-      case CreateBtreeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(btreeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
 
       case CreateRangeIndex(_, entityName, propertyKeyNames, nameOption, options) => // Can be both a leaf plan and a middle plan so need to be in both places
         PlanDescriptionImpl(id, "CreateIndex", children, Seq(Details(rangeIndexInfo(nameOption, entityName, propertyKeyNames, options))), variables, withRawCardinalities)
@@ -1320,9 +1313,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
     }
     pretty"${asPrettyString.raw(indexType)} INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
   }
-
-  private def btreeIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Options): PrettyString =
-    indexInfo("BTREE", nameOption, entityName, properties, options)
 
   private def rangeIndexInfo(nameOption: Option[String], entityName: Either[LabelName, RelTypeName], properties: Seq[PropertyKeyName], options: Options): PrettyString =
     indexInfo("RANGE", nameOption, entityName, properties, options)

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
-import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
@@ -56,14 +55,12 @@ import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.exceptions.CantCompileQueryException
-import org.neo4j.graphdb.schema.IndexType.BTREE
 import org.neo4j.graphdb.schema.IndexType.POINT
 import org.neo4j.graphdb.schema.IndexType.RANGE
 import org.neo4j.graphdb.schema.IndexType.TEXT
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -143,24 +140,6 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         SuccessResult
       })
 
-    // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
-    // CREATE BTREE INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
-    case CreateBtreeIndex(source, entityName, props, name, options) => context =>
-      SchemaExecutionPlan("CreateIndex", (ctx, params) => {
-        val (entityId, entityType) = getEntityInfo(entityName, ctx)
-        val schemaType = entityType match {
-          case EntityType.NODE => "btree node index"
-          case EntityType.RELATIONSHIP =>"btree relationship index"
-        }
-        val (indexProvider, indexConfig) = CreateBtreeIndexOptionsConverter(schemaType).convert(options, params) match {
-          case None => (None, IndexConfig.empty())
-          case Some(CreateIndexWithStringProviderOptions(provider, config)) => (provider, config)
-        }
-        val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
-        ctx.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
-        SuccessResult
-      }, source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context)))
-
     // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
     // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[n:TYPE]-() ON (n.prop) [OPTIONS {...}]
     case CreateRangeIndex(source, entityName, props, name, options) => context =>
@@ -235,11 +214,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name) => _ =>
       val innerIndexType = indexType match {
-        case BTREE => IndexType.BTREE
         case POINT => IndexType.POINT
         case RANGE => IndexType.RANGE
         case TEXT  => IndexType.TEXT
-        case it    => throw new IllegalStateException(s"Did not expect index type $it here: only btree, point, range or text indexes." )
+        case it    => throw new IllegalStateException(s"Did not expect index type $it here: only point, range or text indexes." )
       }
       SchemaExecutionPlan("DoNothingIfExist", (ctx, _) => {
         val (entityId, entityType) = getEntityInfo(entityName, ctx)
@@ -279,26 +257,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForConstraint(_, entityName, props, assertion, name, options) => _ =>
       SchemaExecutionPlan("DoNothingIfExist", (ctx, params) => {
-        def assertIndexBackedOptionsAndCheckIfRangeBacked(constraintType: String) =
-          IndexBackedConstraintsOptionsConverter(constraintType).convert(options, params) match {
-            case Some(CreateIndexWithStringProviderOptions(Some(provider), _)) => provider.equalsIgnoreCase(RangeIndexProvider.DESCRIPTOR.name())
-            case None => true // range index-backed by default
-            case _ => false
-          }
-
-        val isRangeBacked = assertion match {
-          case NodeKey    => assertIndexBackedOptionsAndCheckIfRangeBacked("node key constraint")
-          case Uniqueness => assertIndexBackedOptionsAndCheckIfRangeBacked("uniqueness constraint")
-          case NodePropertyExistence =>
-            PropertyExistenceConstraintOptionsConverter("node").convert(options, params) // Assert empty options
-            false
-          case RelationshipPropertyExistence =>
-            PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params) // Assert empty options
-            false
+        // Assert correct options to get errors even if matching constraint already exists
+        assertion match {
+          case NodeKey                       => IndexBackedConstraintsOptionsConverter("node key constraint").convert(options, params)
+          case Uniqueness                    => IndexBackedConstraintsOptionsConverter("uniqueness constraint").convert(options, params)
+          case NodePropertyExistence         => PropertyExistenceConstraintOptionsConverter("node").convert(options, params)
+          case RelationshipPropertyExistence => PropertyExistenceConstraintOptionsConverter("relationship").convert(options, params)
         }
+
         val (entityId, _) = getEntityInfo(entityName, ctx)
         val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-        if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion, isRangeBacked), entityId, propertyKeyIds: _*)) {
+        if (ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)) {
           IgnoredResult
         } else if (name.exists(ctx.constraintExists)) {
           IgnoredResult
@@ -322,14 +291,12 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   def isApplicable(logicalPlanState: LogicalPlanState): Boolean = logicalToExecutable.isDefinedAt(logicalPlanState.maybeLogicalPlan.get)
 
-  def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType, isRangeBacked: Boolean): ConstraintDescriptor => Boolean =
+  def convertConstraintTypeToConstraintMatcher(assertion: ConstraintType): ConstraintDescriptor => Boolean =
     assertion match {
       case NodePropertyExistence         => c => c.isNodePropertyExistenceConstraint
       case RelationshipPropertyExistence => c => c.isRelationshipPropertyExistenceConstraint
-      case Uniqueness if isRangeBacked   => c => c.isUniquenessConstraint && c.asIndexBackedConstraint().indexType() == IndexType.RANGE
-      case Uniqueness                    => c => c.isUniquenessConstraint && c.asIndexBackedConstraint().indexType() == IndexType.BTREE
-      case NodeKey if isRangeBacked      => c => c.isNodeKeyConstraint && c.asIndexBackedConstraint().indexType() == IndexType.RANGE
-      case NodeKey                       => c => c.isNodeKeyConstraint && c.asIndexBackedConstraint().indexType() == IndexType.BTREE
+      case Uniqueness                    => c => c.isUniquenessConstraint
+      case NodeKey                       => c => c.isNodeKeyConstraint
     }
 
   implicit private def labelToId(ctx: QueryContext)(label: LabelName): LabelId =
@@ -338,14 +305,8 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
     PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))
 
-  private def labelProp(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName) =
-    (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name))
-
   private def labelPropWithName(ctx: QueryContext)(label: LabelName, prop: PropertyKeyName, name: Option[String]) =
     (ctx.getOrCreateLabelId(label.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
-
-  private def typeProp(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName) =
-    (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name))
 
   private def typePropWithName(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName, name: Option[String]) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name), name)

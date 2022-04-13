@@ -158,8 +158,8 @@ object ShowConstraintsCommand {
   private def extractOptionsString(maybeProviderName: Option[String], maybeIndexConfig: Option[IndexConfig], constraintType: String): String = {
     val providerName = maybeProviderName.getOrElse(throw new IllegalArgumentException(s"Expected a provider name for $constraintType constraint."))
     val indexConfig = maybeIndexConfig.getOrElse(throw new IllegalArgumentException(s"Expected an index configuration for $constraintType constraint."))
-    val btreeConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
-    optionsAsString(providerName, btreeConfig)
+    val btreeOrEmptyConfig = configAsString(indexConfig, value => pointConfigValueAsString(value))
+    optionsAsString(providerName, btreeOrEmptyConfig)
   }
 
   private def getConstraintType(internalConstraintType: schema.ConstraintType, entityType: EntityType): ShowConstraintType = {

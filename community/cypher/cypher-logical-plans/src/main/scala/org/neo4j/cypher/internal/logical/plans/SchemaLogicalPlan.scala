@@ -50,10 +50,6 @@ case class CreateRelationshipPropertyExistenceConstraint(source: Option[DoNothin
 }
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
-case class CreateBtreeIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
 case class CreateRangeIndex(source: Option[DoNothingIfExistsForIndex], entityName: Either[LabelName, RelTypeName], propertyKeyNames: List[PropertyKeyName], name: Option[String], options: Options)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }

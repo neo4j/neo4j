@@ -119,12 +119,6 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = {
-    val result = inner.addBtreeIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig)
-    indexesAdded.increase()
-    result
-  }
-
   override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = {
     val result = inner.addRangeIndexRule(entityId, entityType, propertyKeyIds, name, provider)
     indexesAdded.increase()

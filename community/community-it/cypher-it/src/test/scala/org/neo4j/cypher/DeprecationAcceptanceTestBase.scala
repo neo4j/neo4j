@@ -22,17 +22,12 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP
-import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_BTREE_INDEX_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_COERCION_OF_LIST_TO_BOOLEAN
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_HEX_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_OCTAL_LITERAL_SYNTAX
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD
 import org.neo4j.graphdb.impl.notification.NotificationDetail
-import org.neo4j.graphdb.schema.IndexSettingImpl.FULLTEXT_EVENTUALLY_CONSISTENT
-import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_CARTESIAN_MAX
-import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.scalatest.BeforeAndAfterAll
 
 abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeAndAfterAll with DeprecationTestSupport {
@@ -58,84 +53,6 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.Factory.deprecatedField("changedProc", "oldField")
     assertNotificationInSupportedVersions(query, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
-  }
-
-  // DEPRECATED INDEX / CONSTRAINT SYNTAX in 4.X
-
-  test("deprecated create btree index syntax") {
-    // Note: This index syntax was introduced in 4.X
-
-    // CREATE BTREE INDEX ...
-    assertNotificationInSupportedVersions_4_X("CREATE BTREE INDEX FOR (n:Label) ON (n.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
-    assertNotificationInSupportedVersions_4_X("CREATE BTREE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", DEPRECATED_BTREE_INDEX_SYNTAX)
-
-    // CREATE INDEX ... OPTIONS { <btree options> }
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
-         |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
-         |OPTIONS {indexprovider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
-         |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE INDEX FOR ()-[r:TYPE]-() ON (r.prop)
-         |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNoNotificationInSupportedVersions_4_X(
-      s"""CREATE INDEX FOR (n:Label) ON (n.prop)
-         |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-  }
-
-  ignore("deprecated create constraint backed by btree index syntax") {
-    // OPTIONS was introduced in 4.2
-    // FOR ... REQUIRE was introduced in 4.4 and can therefore not be used in this test (since it tests 4.3)
-    // ON ... ASSERT is now removed, hence the ignored test -> will be remove when BTREE is removed
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE CONSTRAINT ON (n:Label)
-         |ASSERT (n.prop) IS NODE KEY
-         |OPTIONS {IndexProvider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE CONSTRAINT ON (n:Label)
-         |ASSERT (n.prop) IS UNIQUE
-         |OPTIONS {indexprovider: '${GenericNativeIndexProvider.DESCRIPTOR.name()}'}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE CONSTRAINT ON (n:Label)
-         |ASSERT (n.prop) IS NODE KEY
-         |OPTIONS {IndexConfig: {`${SPATIAL_CARTESIAN_MAX.getSettingName}`: [40, 60]}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNotificationInSupportedVersions_4_X(
-      s"""CREATE CONSTRAINT ON (n:Label)
-         |ASSERT (n.prop) IS UNIQUE
-         |OPTIONS {indexconfig: {`${SPATIAL_WGS84_MIN.getSettingName}`: [-40, -60]}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-    assertNoNotificationInSupportedVersions_4_X(
-      s"""CREATE CONSTRAINT ON (n:Label)
-         |ASSERT (n.prop) IS UNIQUE
-         |OPTIONS {indexconfig: {`${FULLTEXT_EVENTUALLY_CONSISTENT.getSettingName}`: false}}""".stripMargin,
-      DEPRECATED_BTREE_INDEX_SYNTAX
-    )
-  }
-
-  test("deprecated show btree index syntax") {
-    // Note: Show indexes was introduced in Neo4j 4.2
-    assertNotificationInSupportedVersions_4_X("SHOW BTREE INDEXES", DEPRECATED_BTREE_INDEX_SYNTAX)
   }
 
   // OTHER DEPRECATIONS IN 4.X

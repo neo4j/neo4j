@@ -67,10 +67,10 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.NODE), any(), any(), any(), any()))
+  when(inner.addRangeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.NODE), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptors.forLabel(1, 2)).withName("index_1").materialise(1))
 
-  when(inner.addBtreeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.RELATIONSHIP), any(), any(), any(), any()))
+  when(inner.addRangeIndexRule(anyInt(), ArgumentMatchers.eq(EntityType.RELATIONSHIP), any(), any(), any()))
     .thenReturn(IndexPrototype.forSchema(SchemaDescriptors.forRelType(1, 2)).withName("index_1").materialise(1))
 
   var context: UpdateCountingQueryContext = _
@@ -194,25 +194,25 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index for node") {
-    context.addBtreeIndexRule(0, EntityType.NODE, Array(1), None, None, IndexConfig.empty)
+    context.addRangeIndexRule(0, EntityType.NODE, Array(1), None, None)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for node with name") {
-    context.addBtreeIndexRule(0, EntityType.NODE, Array(1), Some("name"), None, IndexConfig.empty)
+    context.addRangeIndexRule(0, EntityType.NODE, Array(1), Some("name"), None)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for relationship") {
-    context.addBtreeIndexRule(0, EntityType.RELATIONSHIP, Array(1), None, None, IndexConfig.empty)
+    context.addRangeIndexRule(0, EntityType.RELATIONSHIP, Array(1), None, None)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("add_index for relationship with name") {
-    context.addBtreeIndexRule(0, EntityType.RELATIONSHIP, Array(1), Some("name"), None, IndexConfig.empty)
+    context.addRangeIndexRule(0, EntityType.RELATIONSHIP, Array(1), Some("name"), None)
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }

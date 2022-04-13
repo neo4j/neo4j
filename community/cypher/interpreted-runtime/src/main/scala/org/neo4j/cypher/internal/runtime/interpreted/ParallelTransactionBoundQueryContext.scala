@@ -72,7 +72,6 @@ object ParallelTransactionBoundQueryContext {
     override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = unsupported()
     override def getOrCreatePropertyKeyId(propertyKey: String): Int = unsupported()
     override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = unsupported()
-    override def addBtreeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[String], indexConfig: IndexConfig): IndexDescriptor = unsupported()
     override def addRangeIndexRule(entityId: Int, entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = unsupported()
     override def addLookupIndexRule(entityType: EntityType, name: Option[String], provider: Option[IndexProviderDescriptor]): IndexDescriptor = unsupported()
     override def addFulltextIndexRule(entityIds: List[Int], entityType: EntityType, propertyKeyIds: Seq[Int], name: Option[String], provider: Option[IndexProviderDescriptor], indexConfig: IndexConfig): IndexDescriptor = unsupported()

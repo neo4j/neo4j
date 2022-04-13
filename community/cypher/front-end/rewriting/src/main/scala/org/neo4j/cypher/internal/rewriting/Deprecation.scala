@@ -17,13 +17,10 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Options
-import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -31,9 +28,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.ASTNode
-import org.neo4j.cypher.internal.util.DeprecatedBtreeIndexSyntax
 import org.neo4j.cypher.internal.util.DeprecatedCoercionOfListToBoolean
 import org.neo4j.cypher.internal.util.DeprecatedHexLiteralSyntax
 import org.neo4j.cypher.internal.util.DeprecatedOctalLiteralSyntax
@@ -85,76 +80,8 @@ object Deprecations {
           None,
           Some(DeprecatedVarLengthBindingNotification(p.position, variable.name))
         )
-
-        // CREATE BTREE INDEX ...
-      case i: ast.CreateBtreeNodeIndex =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-        // CREATE BTREE INDEX ...
-      case i: ast.CreateBtreeRelationshipIndex =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-      // CREATE INDEX ... OPTIONS {<btree options>}
-      case i: ast.CreateRangeNodeIndex if i.fromDefault && hasBtreeOptions(i.options) =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-      // CREATE INDEX ... OPTIONS {<btree options>}
-      case i: ast.CreateRangeRelationshipIndex if i.fromDefault && hasBtreeOptions(i.options) =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
-
-      // CREATE CONSTRAINT ... OPTIONS {<btree options>}
-      case c: ast.CreateNodeKeyConstraint if hasBtreeOptions(c.options) =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(c.position))
-        )
-
-      // CREATE CONSTRAINT ... OPTIONS {<btree options>}
-      case c: ast.CreateUniquePropertyConstraint if hasBtreeOptions(c.options) =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(c.position))
-        )
-
-      case i: ast.ShowIndexesClause if i.indexType == ast.BtreeIndexes =>
-        Deprecation(
-          None,
-          Some(DeprecatedBtreeIndexSyntax(i.position))
-        )
     }
 
-    private def hasBtreeOptions(options: Options): Boolean = options match {
-      case OptionsMap(opt) => opt.exists {
-        case (key, value: StringLiteral) if key.equalsIgnoreCase("indexProvider") =>
-          // Can't reach the GenericNativeIndexProvider and NativeLuceneFusionIndexProviderFactory30
-          // so have to hardcode the btree providers instead
-          value.value.equalsIgnoreCase("native-btree-1.0") || value.value.equalsIgnoreCase("lucene+native-3.0")
-
-        case (key, value: MapExpression) if key.equalsIgnoreCase("indexConfig") =>
-          // Can't reach the settings so have to hardcode them instead, only checks start of setting names
-          //  spatial.cartesian.{min | max}
-          //  spatial.cartesian-3d.{min | max}
-          //  spatial.wgs-84.{min | max}
-          //  spatial.wgs-84-3d.{min | max}
-          val settings = value.items.map(_._1.name)
-          settings.exists(name => name.toLowerCase.startsWith("spatial.cartesian") || name.toLowerCase.startsWith("spatial.wgs-84"))
-
-        case _ => false
-      }
-      case _ => false
-    }
   }
 
   case object semanticallyDeprecatedFeaturesIn4_X extends SemanticDeprecations {

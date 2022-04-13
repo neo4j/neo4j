@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.POPULATION
+import org.neo4j.kernel.impl.index.schema.RangeIndexProviderFactory
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.test.utils.TestDirectory
 
@@ -71,7 +72,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     createDbWithFailedIndex()
     try {
       // WHEN THEN
-      val e = intercept[FailedIndexException](execute("CREATE BTREE INDEX FOR (n:Person) ON (n.name)"))
+      val e = intercept[FailedIndexException](execute("CREATE INDEX FOR (n:Person) ON (n.name)"))
       e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
       managementService.shutdown()
@@ -123,7 +124,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     dbFactory.noOpSystemGraphInitializer()
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
-    val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
+    val providerFactory = new FailingGenericNativeIndexProviderFactory(new RangeIndexProviderFactory, POPULATION)
     dbFactory.addExtension(providerFactory)
     managementService = dbFactory.build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
@@ -138,7 +139,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
       val kernelTransaction = transaction.kernelTransaction()
       val tokenWrite = kernelTransaction.tokenWrite
       val prototype = IndexPrototype.forSchema(SchemaDescriptors.forLabel(tokenWrite.labelGetOrCreateForName("Person"),
-        tokenWrite.propertyKeyGetOrCreateForName("name")), FailingGenericNativeIndexProviderFactory.DESCRIPTOR).withIndexType(IndexType.BTREE)
+        tokenWrite.propertyKeyGetOrCreateForName("name")), FailingGenericNativeIndexProviderFactory.DESCRIPTOR).withIndexType(IndexType.RANGE)
       kernelTransaction.schemaWrite.indexCreate(prototype)
       transaction.commit()
     } finally {

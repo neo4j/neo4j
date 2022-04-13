@@ -560,6 +560,7 @@ case class ShowIndexesClause(unfilteredColumns: DefaultOrAllShowColumns, indexTy
     error(
       """`SHOW INDEXES` no longer allows the `BRIEF` and `VERBOSE` keywords,
         |please omit `BRIEF` and use `YIELD *` instead of `VERBOSE`.""".stripMargin, position)
+  else if (indexType == BtreeIndexes) error("Invalid index type b-tree, please omit the `BTREE` filter.", position)
   else super.semanticCheck
 }
 

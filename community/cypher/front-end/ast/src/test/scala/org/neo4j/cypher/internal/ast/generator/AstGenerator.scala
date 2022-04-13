@@ -49,13 +49,10 @@ import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
-import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
 import org.neo4j.cypher.internal.ast.Create
-import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
-import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
@@ -1199,7 +1196,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // ----------------------------------
 
   def _indexType: Gen[ShowIndexType] = for {
-    indexType <- oneOf(AllIndexes, BtreeIndexes, RangeIndexes, FulltextIndexes, TextIndexes, PointIndexes, LookupIndexes)
+    indexType <- oneOf(AllIndexes, RangeIndexes, FulltextIndexes, TextIndexes, PointIndexes, LookupIndexes)
   } yield indexType
 
   def _listOfLabels: Gen[List[LabelName]] = for {
@@ -1337,8 +1334,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     options           <- _optionsMapAsEither
     fromDefault       <- boolean
     use               <- option(_use)
-    btreeNodeIndex    = CreateBtreeNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
-    btreeRelIndex     = CreateBtreeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
     rangeNodeIndex    = CreateRangeNodeIndex(variable, labelName, props, name, ifExistsDo, options, fromDefault, use)(pos)
     rangeRelIndex     = CreateRangeRelationshipIndex(variable, relType, props, name, ifExistsDo, options, fromDefault, use)(pos)
     lookupNodeIndex   = CreateLookupIndex(variable, isNodeIndex = true, FunctionInvocation(FunctionName(Labels.name)(pos), distinct = false, IndexedSeq(variable))(pos), name, ifExistsDo, options, use)(pos)
@@ -1349,8 +1344,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     textRelIndex      = CreateTextRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
     pointNodeIndex    = CreatePointNodeIndex(variable, labelName, props, name, ifExistsDo, options, use)(pos)
     pointRelIndex     = CreatePointRelationshipIndex(variable, relType, props, name, ifExistsDo, options, use)(pos)
-    command           <- oneOf(btreeNodeIndex, btreeRelIndex, rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex,
-                               fulltextNodeIndex, fulltextRelIndex, textNodeIndex, textRelIndex, pointNodeIndex, pointRelIndex)
+    command           <- oneOf(rangeNodeIndex, rangeRelIndex, lookupNodeIndex, lookupRelIndex, fulltextNodeIndex, fulltextRelIndex,
+                               textNodeIndex, textRelIndex, pointNodeIndex, pointRelIndex)
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {
