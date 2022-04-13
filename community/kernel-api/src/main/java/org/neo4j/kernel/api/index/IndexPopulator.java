@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
@@ -100,14 +102,14 @@ public interface IndexPopulator extends MinimalIndexAccessor
      * Close this populator and releases any resources related to it.
      * If {@code populationCompletedSuccessfully} is {@code true} then it must mark this index
      * as {@link InternalIndexState#ONLINE} so that future invocations of its parent
-     * {@link IndexProvider#getInitialState(IndexDescriptor, CursorContext)} also returns {@link InternalIndexState#ONLINE}.
+     * {@link IndexProvider#getInitialState(IndexDescriptor, CursorContext, ImmutableSet)} also returns {@link InternalIndexState#ONLINE}.
      *
      * @param populationCompletedSuccessfully {@code true} if the index population was successful, where the index should
      * be marked as {@link InternalIndexState#ONLINE}. Supplying {@code false} can have two meanings:
      * <ul>
      *     <li>if {@link #markAsFailed(String)} have been called the end state should be {@link InternalIndexState#FAILED}.
      *     This method call should also make sure that the failure message gets stored for retrieval the next open, and made available for later requests
-     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext)}.</li>
+     *     via {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext, ImmutableSet)}.</li>
      *     <li>if {@link #markAsFailed(String)} have NOT been called the end state should be {@link InternalIndexState#POPULATING}</li>
      * </ul>
      * @param cursorContext underlying page cache events tracer
@@ -116,7 +118,7 @@ public interface IndexPopulator extends MinimalIndexAccessor
 
     /**
      * Called when a population failed. The failure string should be stored for future retrieval by
-     * {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext)}. Called before {@link #close(boolean, CursorContext)}
+     * {@link IndexProvider#getPopulationFailure(IndexDescriptor, CursorContext, ImmutableSet)}. Called before {@link #close(boolean, CursorContext)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.

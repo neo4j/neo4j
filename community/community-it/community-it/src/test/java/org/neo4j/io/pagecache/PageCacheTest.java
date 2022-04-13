@@ -34,6 +34,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.ReadOnlyBufferException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
@@ -377,10 +378,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                     // so we should be able to verify the contents of the file.
                     try ( DataInputStream stream = new DataInputStream( fs.openAsInputStream( file( "a" ) ) ) )
                     {
-                        stream.readNBytes(reservedBytes);
+                        stream.readNBytes( reservedBytes );
                         for ( int j = 0; j < shortsPerPage; j++ )
                         {
-                            int value = stream.readShort();
+                            int value = Short.reverseBytes( stream.readShort() );
                             assertThat( value ).as( "short pos = " + j + ", iteration = " + i ).isEqualTo( i );
                         }
                     }
@@ -2075,7 +2076,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
             }
 
-            ByteBuffer buf = ByteBuffers.allocate( 23, INSTANCE );
+            ByteBuffer buf = ByteBuffers.allocate( 23, ByteOrder.LITTLE_ENDIAN, INSTANCE );
             try ( StoreChannel channel = fs.read( file( "a" ) ) )
             {
                 channel.position( reservedBytes );
@@ -2913,7 +2914,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         configureStandardPageCache();
 
-        try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
+        try ( PagedFile pagedFile = map( file( "a" ), filePageSize, immutable.empty() ) )
         {
             try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
             {
@@ -2972,18 +2973,82 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         cursor.getBytes( new byte[5] );
         assertThat( cursor.getOffset() ).isEqualTo( 24 );
 
-        byte[] expectedBytes = new byte[]{0, 0, 0, 0, 0, 0, 0, 1, // first; long
-                0, 0, 0, 1, // second; int
-                0, 1, // third; short
-                1, // fourth; byte
-                1, 2, 3, // fifth; more bytes
-                2, // sixth; additional bytes
-                1, 1, 1, 1, 1, // lastly; more bytes
+        byte[] expectedBytes = new byte[]{1, 0, 0, 0, 0, 0, 0, 0, // first; long
+                                          1, 0, 0, 0, // second; int
+                                          1, 0, // third; short
+                                          1, // fourth; byte
+                                          1, 2, 3, // fifth; more bytes
+                                          2, // sixth; additional bytes
+                                          1, 1, 1, 1, 1, // lastly; more bytes
         };
         byte[] actualBytes = new byte[24];
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
         assertThat( actualBytes ).containsExactly( expectedBytes );
+    }
+
+    @Test
+    void testLitteEndianCursor() throws IOException
+    {
+        configureStandardPageCache();
+
+        try ( var pagedFile = map( file( "a" ), filePageSize, immutable.empty() ) )
+        {
+            try ( var cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
+            {
+                cursor.next();
+                cursor.putLong( 0x1020304050607055L );
+                cursor.putInt( 0x10203040 );
+                cursor.putShort( (short) 0x1020 );
+            }
+
+            try ( var cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
+            {
+                cursor.next();
+                assertThat( cursor.getLong() ).isEqualTo( 0x1020304050607055L );
+                assertThat( cursor.getInt() ).isEqualTo( 0x10203040 );
+                assertThat( cursor.getShort() ).isEqualTo( (short) 0x1020 );
+                cursor.setOffset( 0 );
+                var actualBytes = new byte[Long.BYTES + Integer.BYTES + Short.BYTES];
+                cursor.getBytes( actualBytes );
+                // little-endian bytes layout
+                assertThat( actualBytes ).containsExactly( new byte[]{0x55, 0x70, 0x60, 0x50, 0x40, 0x30, 0x20, 0x10,
+                                                                      0x40, 0x30, 0x20, 0x10,
+                                                                      0x20, 0x10} );
+            }
+        }
+    }
+
+    @Test
+    void testBigEndianCursor() throws IOException
+    {
+        configureStandardPageCache();
+
+        try ( var pagedFile = map( file( "a" ), filePageSize, immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) ) )
+        {
+            try ( var cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
+            {
+                cursor.next();
+                cursor.putLong( 0x1020304050607055L );
+                cursor.putInt( 0x10203040 );
+                cursor.putShort( (short) 0x1020 );
+            }
+
+            try ( var cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK, NULL_CONTEXT ) )
+            {
+                cursor.next();
+                assertThat( cursor.getLong() ).isEqualTo( 0x1020304050607055L );
+                assertThat( cursor.getInt() ).isEqualTo( 0x10203040 );
+                assertThat( cursor.getShort() ).isEqualTo( (short) 0x1020 );
+                cursor.setOffset( 0 );
+                var actualBytes = new byte[Long.BYTES + Integer.BYTES + Short.BYTES];
+                cursor.getBytes( actualBytes );
+                // little-endian bytes layout
+                assertThat( actualBytes ).containsExactly( new byte[]{0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x55,
+                                                                      0x10, 0x20, 0x30, 0x40,
+                                                                      0x10, 0x20} );
+            }
+        }
     }
 
     @Test

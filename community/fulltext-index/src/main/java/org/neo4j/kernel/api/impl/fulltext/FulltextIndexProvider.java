@@ -21,8 +21,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -180,13 +182,15 @@ public class FulltextIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor index, CursorContext cursorContext )
+    public InternalIndexState getInitialState( IndexDescriptor index, CursorContext cursorContext,
+                                               ImmutableSet<OpenOption> openOptions )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         String failure = indexStorage.getStoredIndexFailure();
@@ -242,7 +246,8 @@ public class FulltextIndexProvider extends IndexProvider
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig,
-            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                        ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         if ( isReadOnly() )
         {
@@ -273,7 +278,8 @@ public class FulltextIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor index, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( index.getId() );
         Analyzer analyzer = createAnalyzer( index, tokenHolders );

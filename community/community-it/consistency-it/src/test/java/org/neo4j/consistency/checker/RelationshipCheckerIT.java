@@ -136,7 +136,7 @@ class RelationshipCheckerIT
                     () -> SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST ).indexesGetAll(
                             storeCursors );
             var indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator( indexDescriptors.iterator() ),
-                            new IndexSamplingConfig( config ), tokenHolders, contextFactory );
+                                                     new IndexSamplingConfig( config ), tokenHolders, contextFactory, storageEngine.getOpenOptions() );
             context = new CheckerContext( neoStores, indexAccessors,
                     execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                     tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),

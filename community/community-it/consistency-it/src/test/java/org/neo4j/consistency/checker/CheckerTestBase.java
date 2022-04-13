@@ -251,7 +251,8 @@ class CheckerTestBase
         CursorContextFactory contextFactory = new CursorContextFactory( PageCacheTracer.NULL, EMPTY );
         IndexAccessors indexAccessors = new IndexAccessors( indexProviders,
                 cursorContext -> asResourceIterator( allIndexes( neoStores, dependencies.resolveDependency( TokenHolders.class ) ).iterator() ),
-                new IndexSamplingConfig( config ), new LookupAccessorsFromRunningDb( indexingService ), tokenHolders, contextFactory );
+                                                            new IndexSamplingConfig( config ), new LookupAccessorsFromRunningDb( indexingService ),
+                                                            tokenHolders, contextFactory, neoStores.getOpenOptions() );
         InconsistencyReport report = new InconsistencyReport( new InconsistencyMessageLogger( NullLog.getInstance() ), inconsistenciesSummary );
         monitor = mock( ConsistencyReporter.Monitor.class );
         reporter = new ConsistencyReporter( report, monitor );

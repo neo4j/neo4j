@@ -23,10 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.internal.unsafe.UnsafeUtil;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.lang.Math.toIntExact;
 
 public final class ByteBuffers
 {
@@ -42,16 +39,7 @@ public final class ByteBuffers
      */
     public static ByteBuffer allocate( int capacity, MemoryTracker memoryTracker )
     {
-        memoryTracker.allocateHeap( capacity );
-        try
-        {
-            return ByteBuffer.allocate( capacity );
-        }
-        catch ( Throwable any )
-        {
-            memoryTracker.releaseHeap( capacity );
-            throw any;
-        }
+        return allocate( capacity, ByteOrder.BIG_ENDIAN, memoryTracker );
     }
 
     /**
@@ -63,20 +51,16 @@ public final class ByteBuffers
      */
     public static ByteBuffer allocate( int capacity, ByteOrder order, MemoryTracker memoryTracker )
     {
-        return allocate( capacity, memoryTracker ).order( order );
-    }
-
-    /**
-     * Allocate on heap byte buffer with default byte order
-     * @param capacity byte buffer capacity
-     * @param capacityUnit byte buffer capacity unit
-     * @param memoryTracker underlying buffers allocation memory tracker
-     * @return byte buffer with requested size
-     */
-    public static ByteBuffer allocate( int capacity, ByteUnit capacityUnit, MemoryTracker memoryTracker )
-    {
-        int bufferCapacity = toIntExact( capacityUnit.toBytes( capacity ) );
-        return allocate( bufferCapacity, memoryTracker );
+        memoryTracker.allocateHeap( capacity );
+        try
+        {
+            return ByteBuffer.allocate( capacity ).order( order );
+        }
+        catch ( Throwable any )
+        {
+            memoryTracker.releaseHeap( capacity );
+            throw any;
+        }
     }
 
     /**

@@ -19,8 +19,11 @@
  */
 package org.neo4j.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Random;
 
@@ -43,7 +46,8 @@ public class SabotageNativeIndex extends NativeIndexRestartAction
     }
 
     @Override
-    protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException
+    protected void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         int files = scrambleIndexFiles( fs, indexDirectoryStructure.rootDirectory() );
         assertThat( files ).as( "there is no index to sabotage" ).isGreaterThanOrEqualTo( 1 );

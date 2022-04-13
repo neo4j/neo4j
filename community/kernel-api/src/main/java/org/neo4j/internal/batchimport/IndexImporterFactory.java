@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.batchimport;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
+
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -33,7 +37,7 @@ import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 public interface IndexImporterFactory
 {
     IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-            CursorContextFactory contextFactory );
+                               CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions );
 
-    IndexImporterFactory EMPTY = ( descriptor, layout, fs, pageCache, cursorTracer ) -> EMPTY_IMPORTER;
+    IndexImporterFactory EMPTY = ( descriptor, layout, fs, pageCache, cursorTracer, openOptions ) -> EMPTY_IMPORTER;
 }

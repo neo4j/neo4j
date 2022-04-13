@@ -470,7 +470,7 @@ public class Database extends LifecycleAdapter
 
             // Schema indexes
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector,
-                    readOnlyDatabaseChecker, cursorContextFactory );
+                    readOnlyDatabaseChecker, cursorContextFactory, storageEngine.getOpenOptions() );
             life.add( indexStatisticsStore );
 
             IndexingService indexingService =
@@ -738,7 +738,7 @@ public class Database extends LifecycleAdapter
     {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreViewFactory,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, indexMonitor,
-                databaseSchemaState, indexStatisticsStore, contextFactory, memoryTracker, databaseName, readOnlyChecker );
+                databaseSchemaState, indexStatisticsStore, contextFactory, memoryTracker, databaseName, readOnlyChecker, storageEngine.getOpenOptions() );
         storageEngine.addIndexUpdateListener( indexingService );
         return indexingService;
     }

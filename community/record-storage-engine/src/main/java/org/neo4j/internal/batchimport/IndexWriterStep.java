@@ -69,7 +69,8 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T>
         {
             var index = findIndex( entityType, schemaRuleAccess, storeCursors ).orElseGet(
                     () -> createIndex( entityType, indexConfig, schemaRuleAccess, schemaStore, memoryTracker, cursorContext, storeCursors ) );
-            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), contextFactory );
+            return importerFactory.getImporter( index, neoStores.databaseLayout(), neoStores.fileSystem(), neoStores.getPageCache(), contextFactory,
+                                                neoStores.getOpenOptions() );
         }
     }
 

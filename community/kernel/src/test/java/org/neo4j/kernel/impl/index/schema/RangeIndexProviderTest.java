@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -72,7 +73,7 @@ class RangeIndexProviderTest extends IndexProviderTests
 
         // when
         IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup );
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig(), tokenNameLookup, Sets.immutable.empty() );
               IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) )
         {
             indexUpdater.process( IndexEntryUpdate.add( 1, descriptor, someValue ) );

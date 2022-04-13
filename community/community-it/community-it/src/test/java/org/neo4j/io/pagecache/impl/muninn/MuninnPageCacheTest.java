@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -2010,7 +2011,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     {
         try ( StoreChannel channel = fs.write( path ) )
         {
-            ByteBuffer buf = ByteBuffers.allocate( 16 + 2 * reservedBytes, INSTANCE );
+            ByteBuffer buf = ByteBuffers.allocate( 16 + 2 * reservedBytes, ByteOrder.LITTLE_ENDIAN, INSTANCE );
             buf.put( ByteBuffer.allocate( reservedBytes ) );
             buf.putLong( x );
             buf.put( ByteBuffer.allocate( reservedBytes ) );
@@ -2040,7 +2041,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 
     private void checkFileWithTwoLongs( String fileName, long valueA, long valueB ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffers.allocate( 16 + 2 * reservedBytes, INSTANCE );
+        ByteBuffer buffer = ByteBuffers.allocate( 16 + 2 * reservedBytes, ByteOrder.LITTLE_ENDIAN, INSTANCE );
         try ( StoreChannel channel = fs.read( file( fileName ) ) )
         {
             channel.readAll( buffer );

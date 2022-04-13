@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
+
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -50,6 +52,6 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey>
         DatabaseIndexContext databaseIndexContext = DatabaseIndexContext.builder( pageCache, fs, new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
                 DEFAULT_DATABASE_NAME ).build();
         StandardConfiguration configuration = new StandardConfiguration();
-        return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration );
+        return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, collector, descriptor, indexSettings, configuration, Sets.immutable.empty() );
     }
 }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.AfterEach;
@@ -82,6 +83,7 @@ import org.neo4j.values.storable.ValueType;
 
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -152,7 +154,7 @@ public class LuceneIndexAccessorIT
         MutableLongSet expectedNodes = LongSets.mutable.withInitialCapacity( nodes );
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( var accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // when
             removeSomeNodes( indexDescriptor, nodes / 2, accessor, expectedNodes );
@@ -175,7 +177,7 @@ public class LuceneIndexAccessorIT
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
         config.set( GraphDatabaseSettings.read_only_databases, Set.of( DEFAULT_DATABASE_NAME ) );
-        try ( IndexAccessor onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( var onlineAccessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             assertThrows( UnsupportedOperationException.class, () -> onlineAccessor.newUpdater( IndexUpdateMode.ONLINE, NULL_CONTEXT, false ) );
         }
@@ -189,7 +191,7 @@ public class LuceneIndexAccessorIT
         MutableLongSet expectedNodes = LongSets.mutable.empty();
         IndexDescriptor indexDescriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 1, 2, 3, 4, 5 ) ).withName( "TestIndex" ).materialise( 99 );
         populateWithInitialNodes( indexDescriptor, nodes, expectedNodes );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexDescriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // when
             removeSomeNodes( indexDescriptor, 2, accessor, expectedNodes );
@@ -211,7 +213,7 @@ public class LuceneIndexAccessorIT
         IndexDescriptor descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
         TokenNameLookup tokenNameLookup = mock( TokenNameLookup.class );
         populateWithInitialNodes( descriptor, 0, new LongHashSet() );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, immutable.empty() ) )
         {
             // when
             BitSet expectedEntities = writeRandomThings( accessor, descriptor );
@@ -239,7 +241,7 @@ public class LuceneIndexAccessorIT
         MutableLongSet expectedNodes = new LongHashSet();
         populateWithInitialNodes( descriptor, random.nextInt( 1_000, 10_000 ), expectedNodes );
 
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // when
             MutableLongSet readNodes = new LongHashSet();
@@ -262,7 +264,7 @@ public class LuceneIndexAccessorIT
     void updaterShouldIgnoreUnsupportedTypes( ValueType unsupportedType ) throws Exception
     {
         final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
-        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // given  an empty index
             // when   an unsupported value type is added
@@ -285,7 +287,7 @@ public class LuceneIndexAccessorIT
     void updaterShouldChangeUnsupportedToSupportedByAdd( ValueType unsupportedType ) throws Exception
     {
         final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
-        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // when   an unsupported value type is added
             final var entityId = idGenerator().getAsLong();
@@ -321,7 +323,7 @@ public class LuceneIndexAccessorIT
     void updaterShouldChangeSupportedToUnsupportedByRemove( ValueType unsupportedType ) throws Exception
     {
         final var descriptor = IndexPrototype.forSchema( SchemaDescriptors.forLabel( 0, 1 ) ).withName( "test" ).materialise( 1 );
-        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ) ) )
+        try ( var accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, mock( TokenNameLookup.class ), immutable.empty() ) )
         {
             // given  an empty index
             // when   a supported value type is added
@@ -370,7 +372,7 @@ public class LuceneIndexAccessorIT
             throws IndexEntryConflictException, IOException
     {
         IndexPopulator populator = indexProvider.getPopulator( indexDescriptor, samplingConfig, ByteBufferFactory.heapBufferFactory( (int) kibiBytes( 100 ) ),
-                                                               INSTANCE, mock( TokenNameLookup.class ) );
+                                                               INSTANCE, mock( TokenNameLookup.class ), immutable.empty() );
         Collection<IndexEntryUpdate<IndexDescriptor>> initialData = new ArrayList<>();
         populator.create();
         for ( long id = 0; id < nodes; id++ )

@@ -466,6 +466,7 @@ public class MuninnPageCache implements PageCache
         boolean deleteOnClose = false;
         boolean anyPageSize = false;
         boolean useDirectIO = false;
+        boolean littleEndian = true;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
@@ -487,6 +488,10 @@ public class MuninnPageCache implements PageCache
             else if ( option.equals( PageCacheOpenOptions.DIRECT ) )
             {
                 useDirectIO = true;
+            }
+            else if ( option.equals( PageCacheOpenOptions.BIG_ENDIAN ) )
+            {
+                littleEndian = false;
             }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
@@ -510,6 +515,13 @@ public class MuninnPageCache implements PageCache
                             "filePageSize of " + pagedFile.pageSize() +
                             " bytes.";
                     throw new IllegalArgumentException( msg );
+                }
+                if ( pagedFile.littleEndian != littleEndian )
+                {
+                    throw new IllegalArgumentException( "Cannot map file " + path + " with " +
+                                                        "littleEndian " + littleEndian + ", " +
+                                                        "because it has already been mapped with a " +
+                                                        "littleEndian " + pagedFile.littleEndian );
                 }
                 if ( truncateExisting )
                 {
@@ -542,7 +554,8 @@ public class MuninnPageCache implements PageCache
                 preallocateStoreFiles,
                 databaseName,
                 faultLockStriping,
-                ioController );
+                ioController,
+                littleEndian );
         pagedFile.incrementRefCount();
         pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( path, pagedFile );

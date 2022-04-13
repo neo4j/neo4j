@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import org.neo4j.counts.CountsAccessor;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -43,6 +45,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -184,7 +187,8 @@ class GBPTreeCountsStoreTest
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+        GBPTreeCountsStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                                 immutable.empty() );
 
         // then
         String dump = out.toString();
@@ -228,7 +232,8 @@ class GBPTreeCountsStoreTest
     private void instantiateCountsStore( CountsBuilder builder, DatabaseReadOnlyChecker readOnlyChecker, GBPTreeCountsStore.Monitor monitor ) throws IOException
     {
         countsStore = new GBPTreeCountsStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker, monitor,
-                DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ) );
+                                              DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                                              Sets.immutable.empty() );
     }
 
     private static class TestableCountsBuilder implements CountsBuilder

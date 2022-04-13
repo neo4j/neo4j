@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -92,17 +95,19 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey,PointLayout
 
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, PointLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
     {
         return new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(), configuration,
-                archiveFailedIndex, bufferFactory, config, memoryTracker );
+                                                  archiveFailedIndex, bufferFactory, config, memoryTracker, openOptions );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, PointLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, PointLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
+                                              ImmutableSet<OpenOption> openOptions )
     {
         return new PointIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration );
+                                       layout.getSpaceFillingCurveSettings(), configuration, openOptions );
     }
 
     @Override

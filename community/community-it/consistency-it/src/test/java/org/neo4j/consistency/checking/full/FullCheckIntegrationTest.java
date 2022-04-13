@@ -475,7 +475,7 @@ public class FullCheckIntegrationTest
             IndexDescriptor rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = storeAccess.indexes().lookup( rule.getIndexProvider() )
-                    .getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                    .getPopulator( rule, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, storeAccess.nativeStores().getOpenOptions() );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false, NULL_CONTEXT );
         }

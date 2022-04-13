@@ -136,7 +136,7 @@ class NodeCheckerIT
                             .indexesGetAll( storeCursors );
             var indexAccessors =
                     new IndexAccessors( providerMap, cursorContext -> asResourceIterator( indexDescriptors.iterator() ), new IndexSamplingConfig( config ),
-                            tokenHolders, contextFactory );
+                                        tokenHolders, contextFactory, storageEngine.getOpenOptions() );
             context = new CheckerContext( neoStores, indexAccessors,
                     execution, mock( ConsistencyReport.Reporter.class, RETURNS_MOCKS ), CacheAccess.EMPTY,
                     tokenHolders, mock( RecordLoading.class ), mock( CountsState.class ), mock( EntityBasedMemoryLimiter.class ),

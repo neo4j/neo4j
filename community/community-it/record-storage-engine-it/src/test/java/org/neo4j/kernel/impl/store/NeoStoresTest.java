@@ -753,7 +753,7 @@ public class NeoStoresTest
             {
                 // Return a special id generator which will throw exception on close
                 return new IndexedIdGenerator( pageCache, fileName, immediate(), idType, allowLargeIdCaches, () -> 6 * 7, maxValue, readOnlyChecker, config,
-                        databaseName, contextFactory, IndexedIdGenerator.NO_MONITOR, immutable.empty(), slotDistribution )
+                        databaseName, contextFactory, IndexedIdGenerator.NO_MONITOR, openOptions, slotDistribution )
                 {
                     @Override
                     public synchronized void close()

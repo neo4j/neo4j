@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +79,7 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
@@ -596,7 +598,7 @@ class GBPTreeTest
 
             byte[] newHeader = new byte[random.nextInt( 100 )];
             random.nextBytes( newHeader );
-            GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), DEFAULT_DATABASE_NAME, NULL_CONTEXT );
+            GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ), DEFAULT_DATABASE_NAME, NULL_CONTEXT, immutable.empty() );
 
             Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
 
@@ -649,7 +651,8 @@ class GBPTreeTest
 
         // WHEN
         // Read separate
-        GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                            Sets.immutable.empty() );
 
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
@@ -662,16 +665,18 @@ class GBPTreeTest
         Path doesNotExist = Path.of( "Does not exist" );
         try ( PageCache pageCache = createPageCache( defaultPageSize ) )
         {
-            assertThatThrownBy( () -> GBPTree.readHeader( pageCache, doesNotExist, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT ) )
-                    .isInstanceOf( NoSuchFileException.class );
+            assertThatThrownBy( () -> GBPTree.readHeader( pageCache, doesNotExist, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                                                          Sets.immutable.empty() ) ).isInstanceOf( NoSuchFileException.class );
         }
     }
 
     @Test
     void openWithReadHeaderMustThrowMetadataMismatchExceptionIfFileIsEmpty() throws Exception
     {
-        openMustThrowMetadataMismatchExceptionIfFileIsEmpty( pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER,
-                DEFAULT_DATABASE_NAME, NULL_CONTEXT ) );
+        openMustThrowMetadataMismatchExceptionIfFileIsEmpty(
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER,
+                                                 DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                                                 Sets.immutable.empty() ) );
     }
 
     @Test
@@ -695,7 +700,8 @@ class GBPTreeTest
     void readHeaderMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfSomeMetaPageIsMissing(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                                                 Sets.immutable.empty() ) );
     }
 
     @Test
@@ -721,7 +727,8 @@ class GBPTreeTest
     void readHeaderMustThrowIOExceptionIfStatePagesAreAllZeros() throws Exception
     {
         openMustThrowMetadataMismatchExceptionIfStatePagesAreAllZeros(
-                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT ) );
+                pageCache -> GBPTree.readHeader( pageCache, indexFile, NO_HEADER_READER, DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                                                 Sets.immutable.empty() ) );
     }
 
     @Test
@@ -767,7 +774,8 @@ class GBPTreeTest
                 length.set( headerData.limit() );
                 headerData.get( readHeader );
             };
-            GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT );
+            GBPTree.readHeader( pageCache, indexFile, headerReader, DEFAULT_DATABASE_NAME, NULL_CONTEXT,
+                                Sets.immutable.empty() );
 
             // THEN
             assertEquals( headerBytes.length, length.get() );

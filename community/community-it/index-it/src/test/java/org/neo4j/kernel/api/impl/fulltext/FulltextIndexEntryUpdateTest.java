@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -429,7 +430,7 @@ class FulltextIndexEntryUpdateTest
     private IndexPopulator getPopulator() throws IOException
     {
         final var populator = provider.getPopulator( index, SAMPLING_CONFIG, ByteBufferFactory.heapBufferFactory( (int) ByteUnit.kibiBytes( 100 ) ),
-                                                     EmptyMemoryTracker.INSTANCE, tokenHolders.lookupWithIds() );
+                                                     EmptyMemoryTracker.INSTANCE, tokenHolders.lookupWithIds(), Sets.immutable.empty() );
         populator.create();
         return populator;
     }
@@ -446,7 +447,7 @@ class FulltextIndexEntryUpdateTest
 
     private IndexAccessor getAccessor() throws IOException
     {
-        return provider.getOnlineAccessor( index, SAMPLING_CONFIG, tokenHolders.lookupWithIds() );
+        return provider.getOnlineAccessor( index, SAMPLING_CONFIG, tokenHolders.lookupWithIds(), Sets.immutable.empty() );
     }
 
     private IndexUpdater getUpdater( IndexAccessor accessor )

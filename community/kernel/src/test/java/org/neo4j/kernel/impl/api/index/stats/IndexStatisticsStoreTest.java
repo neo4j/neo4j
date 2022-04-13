@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
@@ -89,7 +91,7 @@ class IndexStatisticsStoreTest
     private IndexStatisticsStore openStore( String fileName ) throws IOException
     {
         var statisticsStore = new IndexStatisticsStore( pageCache, testDirectory.file( fileName ), immediate(), writable(), DEFAULT_DATABASE_NAME,
-                contextFactory );
+                                                        contextFactory, Sets.immutable.empty() );
         return lifeSupport.add( statisticsStore );
     }
 
@@ -277,7 +279,7 @@ class IndexStatisticsStoreTest
     {
         final Exception e = assertThrows( Exception.class,
                 () -> new IndexStatisticsStore( pageCache, testDirectory.file( "non-existing" ), immediate(), readOnly(), DEFAULT_DATABASE_NAME,
-                        contextFactory ) );
+                        contextFactory, Sets.immutable.empty() ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof WriteOnReadOnlyAccessDbException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof TreeFileNotFoundException ) );
         assertTrue( Exceptions.contains( e, t -> t instanceof IllegalStateException ) );

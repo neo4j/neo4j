@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.counts;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -91,11 +94,12 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     public GBPTreeCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, Monitor monitor, String databaseName,
-            int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
+                               CountsBuilder initialCountsBuilder, DatabaseReadOnlyChecker readOnlyChecker, Monitor monitor, String databaseName,
+                               int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory,
+                               ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new InitialCountsRebuilder( initialCountsBuilder ), readOnlyChecker, NAME,
-                monitor, databaseName, maxCacheSize, userLogProvider, contextFactory );
+               monitor, databaseName, maxCacheSize, userLogProvider, contextFactory, openOptions );
     }
 
     @Override
@@ -156,9 +160,10 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         throw new IllegalArgumentException( "Unknown type " + key.type );
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory,
+                             ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeCountsStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeCountsStore::keyToString, openOptions );
     }
 
     private static class Incrementer implements CountsAccessor.Updater

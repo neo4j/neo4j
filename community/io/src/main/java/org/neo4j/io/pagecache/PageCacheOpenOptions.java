@@ -44,5 +44,10 @@ public enum PageCacheOpenOptions implements OpenOption
      * Please check that your platform is supported before providing this option.
      * @see ExtendedOpenOption for details.
      */
-    DIRECT
+    DIRECT,
+
+    /**
+     * Use big-endian byte order when operating with mapped file
+     */
+    BIG_ENDIAN
 }

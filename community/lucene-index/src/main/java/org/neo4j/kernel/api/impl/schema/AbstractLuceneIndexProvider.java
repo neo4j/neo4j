@@ -20,8 +20,10 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
@@ -121,7 +123,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder
                 .create( descriptor, readOnlyChecker, config )
@@ -139,7 +142,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         SchemaIndex luceneIndex = LuceneSchemaIndexBuilder.create( descriptor, readOnlyChecker, config )
                                                           .withSamplingConfig( samplingConfig )
@@ -150,7 +154,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                               ImmutableSet<OpenOption> openOptions )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         String failure = indexStorage.getStoredIndexFailure();
@@ -178,7 +183,8 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext ) throws IllegalStateException
+    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                        ImmutableSet<OpenOption> openOptions ) throws IllegalStateException
     {
         return defaultIfEmpty( getIndexStorage( descriptor.getId() ).getStoredIndexFailure(), StringUtils.EMPTY );
     }

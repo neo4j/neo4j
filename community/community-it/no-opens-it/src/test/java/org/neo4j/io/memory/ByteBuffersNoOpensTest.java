@@ -21,8 +21,6 @@ package org.neo4j.io.memory;
 
 import org.junit.jupiter.api.Test;
 
-import java.nio.ByteBuffer;
-
 import org.neo4j.memory.LocalMemoryTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

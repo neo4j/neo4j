@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.memory.ByteBuffers;
@@ -418,8 +419,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
     void copyToByteBufferTakeReservedBytesIntoAccount() throws IOException
     {
         try ( var pageCache = getPageCache( fs, 1024, new DefaultPageCacheTracer() );
-                var pagedFile = map( file( "a" ), pageCache.pageSize() );
-                MuninnPageCursor writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
+              var pagedFile = map( file( "a" ), pageCache.pageSize() );
+              var writer = (MuninnPageCursor) pagedFile.io( 0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT ) )
         {
             assertTrue( writer.next() );
 
@@ -432,8 +433,8 @@ class MuninnPageCacheWithRealFileSystemWithReservedBytesIT extends MuninnPageCac
             }
             assertThat( writtenValues ).isNotZero();
 
-            var heapBuffer = ByteBuffers.allocate( writer.getPageSize(), EmptyMemoryTracker.INSTANCE );
-            var nativeBuffer = ByteBuffers.allocateDirect( writer.getPageSize(), EmptyMemoryTracker.INSTANCE );
+            var heapBuffer = ByteBuffers.allocate( writer.getPageSize(), ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE );
+            var nativeBuffer = ByteBuffers.allocateDirect( writer.getPageSize(), EmptyMemoryTracker.INSTANCE ).order( ByteOrder.LITTLE_ENDIAN );
 
             try
             {

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,9 +52,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-            IndexDescriptor descriptor )
+                         IndexDescriptor descriptor, ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, layout, indexFiles, descriptor );
+        super( databaseIndexContext, layout, indexFiles, descriptor, openOptions );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), indexUpdateIgnoreStrategy() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE );
     }

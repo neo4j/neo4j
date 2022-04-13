@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -34,6 +35,7 @@ import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -70,8 +72,11 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.R
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader> implements MetadataProvider
 {
     private static final String TYPE_DESCRIPTOR = "NeoStore";
-    static final long NOT_INITIALIZED = Long.MIN_VALUE;
+    private static final long NOT_INITIALIZED = Long.MIN_VALUE;
     static final UUID NOT_INITIALIZED_UUID = new UUID( NOT_INITIALIZED, NOT_INITIALIZED );
+
+    // MetaDataStore always big-endian so we can read store version regardless of endianness of other stores
+    private static final ImmutableSet<OpenOption> REQUIRED_OPTIONS = immutable.of( PageCacheOpenOptions.BIG_ENDIAN );
 
     // Positions of meta-data records
     public enum Position
@@ -236,7 +241,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     {
         long previousValue = NOT_INITIALIZED;
         int pageSize = pageCache.pageSize();
-        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageSize, databaseName, REQUIRED_OPTIONS ) )
         {
             int offset = offset( position );
             try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext ) )
@@ -289,7 +294,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         var recordFormat = new MetaDataRecordFormat();
         int payloadSize = pageCache.payloadSize();
         long value = FIELD_NOT_PRESENT;
-        try ( PagedFile pagedFile = pageCache.map( neoStore, pageCache.pageSize(), databaseName, immutable.empty(), DISABLED ) )
+        try ( PagedFile pagedFile = pageCache.map( neoStore, pageCache.pageSize(), databaseName, REQUIRED_OPTIONS, DISABLED ) )
         {
             if ( pagedFile.getLastPageId() >= 0 )
             {

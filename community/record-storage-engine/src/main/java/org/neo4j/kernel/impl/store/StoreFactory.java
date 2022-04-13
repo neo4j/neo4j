@@ -34,9 +34,12 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.logging.InternalLogProvider;
 
@@ -147,6 +150,8 @@ public class StoreFactory
 
     private static ImmutableSet<OpenOption> buildOpenOptions( Config config, RecordFormats recordFormats, ImmutableSet<OpenOption> openOptions )
     {
+        openOptions = openOptions.newWithAll( PageCacheOptionsSelector.select( recordFormats ) );
+
         // we need to modify options only for aligned format and avoid passing direct io option in all other cases
         if ( recordFormats.getFormatFamily() != FormatFamily.aligned )
         {

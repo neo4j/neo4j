@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -78,7 +80,8 @@ class GBPTreePartialCreateFuzzIT
         // check readHeader
         try
         {
-            GBPTree.readHeader( pageCache, file, NO_HEADER_READER, testDirectory.homePath().getFileName().toString(), NULL_CONTEXT );
+            GBPTree.readHeader( pageCache, file, NO_HEADER_READER, testDirectory.homePath().getFileName().toString(), NULL_CONTEXT,
+                                Sets.immutable.empty() );
         }
         catch ( MetadataMismatchException | IOException e )
         {

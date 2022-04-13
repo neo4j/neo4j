@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Iterator;
 
 import org.neo4j.configuration.Config;
@@ -49,6 +50,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -123,12 +125,15 @@ class OnlineIndexUpdatesTest
         CursorContextFactory contextFactory = new CursorContextFactory( NULL, EMPTY );
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem, immediate(), databaseLayout.getDatabaseName() ), pageCache,
-                        fileSystem, nullLogProvider, contextFactory, writable(), EMPTY_LOG_TAIL );
+                                  fileSystem, nullLogProvider, contextFactory, writable(), EMPTY_LOG_TAIL );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        GBPTreeCountsStore counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
-                new CountsComputer( neoStores, pageCache, contextFactory, databaseLayout, INSTANCE, NullLog.getInstance() ), writable(),
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), contextFactory );
+        var counts = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(),
+                                             new CountsComputer( neoStores, pageCache, contextFactory, databaseLayout, INSTANCE,
+                                                                 NullLog.getInstance() ), writable(),
+                                             GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000,
+                                             NullLogProvider.getInstance(), contextFactory,
+                                             neoStores.getOpenOptions() );
         life.add( wrapInLifecycle( counts ) );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();

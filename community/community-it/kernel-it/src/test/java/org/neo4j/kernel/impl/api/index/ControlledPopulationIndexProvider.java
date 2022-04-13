@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -104,14 +107,16 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor indexConfig, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+    public IndexAccessor getOnlineAccessor( IndexDescriptor indexConfig, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
@@ -119,7 +124,8 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                               ImmutableSet<OpenOption> openOptions )
     {
         return initialIndexState;
     }

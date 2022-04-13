@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.reserved_page_header_bytes;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -72,8 +73,9 @@ public class GBPTreeBootstrapper implements Closeable
         try
         {
             instantiatePageCache( fs, jobScheduler, PageCache.PAGE_SIZE );
+            var openOptions = immutable.of( additionalOptions );
             // Get meta information about the tree
-            MetaVisitor<?,?> metaVisitor = visitMeta( file );
+            MetaVisitor<?,?> metaVisitor = visitMeta( file, openOptions );
             Meta meta = metaVisitor.meta;
             if ( !isReasonablePageSize( meta.getPayloadSize() ) )
             {
@@ -83,17 +85,17 @@ public class GBPTreeBootstrapper implements Closeable
             {
                 // GBPTree was created with a different page size, re-instantiate page cache and re-read meta.
                 instantiatePageCache( fs, jobScheduler, pageCachePageForPayload( meta.getPayloadSize() ) );
-                metaVisitor = visitMeta( file );
+                metaVisitor = visitMeta( file, openOptions );
                 meta = metaVisitor.meta;
             }
-            StateVisitor<?,?> stateVisitor = visitState( file );
+            StateVisitor<?,?> stateVisitor = visitState( file, openOptions );
             Pair<TreeState,TreeState> statePair = stateVisitor.statePair;
             TreeState state = TreeStatePair.selectNewestValidState( statePair );
 
             // Create layout and treeNode from meta
             Layout<?,?> layout = layoutBootstrapper.create( file, pageCache, meta );
             GBPTree<?,?> tree = new GBPTree<>( pageCache, file, layout, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, ignore(), readOnlyChecker,
-                    Sets.immutable.of( additionalOptions ), DEFAULT_DATABASE_NAME, file.getFileName().toString(), contextFactory );
+                                               openOptions, DEFAULT_DATABASE_NAME, file.getFileName().toString(), contextFactory );
             return new SuccessfulBootstrap( tree, layout, state, meta );
         }
         catch ( Exception e )
@@ -113,22 +115,22 @@ public class GBPTreeBootstrapper implements Closeable
         closePageCache();
     }
 
-    private MetaVisitor<?,?> visitMeta( Path file ) throws IOException
+    private MetaVisitor<?,?> visitMeta( Path file, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         MetaVisitor<?,?> metaVisitor = new MetaVisitor();
         try ( var cursorContext = contextFactory.create( "TreeBootstrap" ) )
         {
-            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorContext );
+            GBPTreeStructure.visitMeta( pageCache, file, metaVisitor, file.getFileName().toString(), cursorContext, openOptions );
         }
         return metaVisitor;
     }
 
-    private StateVisitor<?,?> visitState( Path file ) throws IOException
+    private StateVisitor<?,?> visitState( Path file, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         StateVisitor<?,?> stateVisitor = new StateVisitor();
         try ( var cursorContext = contextFactory.create( "TreeBootstrap" ) )
         {
-            GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorContext );
+            GBPTreeStructure.visitState( pageCache, file, stateVisitor, file.getFileName().toString(), cursorContext, openOptions );
         }
         return stateVisitor;
     }

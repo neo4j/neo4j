@@ -21,12 +21,14 @@ package org.neo4j.kernel.recovery;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -103,6 +105,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -1019,17 +1022,18 @@ class RecoveryIT
         RecordDatabaseLayout layout = RecordDatabaseLayout.cast( db.databaseLayout() );
         managementService.shutdown();
         assertFalse( isRecoveryRequired( layout ) );
+        var openOptions = db.getDependencyResolver().resolveDependency( StorageEngine.class ).getOpenOptions();
         // Make an ID generator, say for the node store, dirty
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, layout.idNodeStore(), RecordIdType.NODE, () -> 0L /*will not be used*/, 10_000,
                 writable(), Config.defaults(), CONTEXT_FACTORY,
-                Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                openOptions, IdSlotDistribution.SINGLE_IDS ) )
         {
             // Merely opening a marker will make the backing GBPTree dirty
             idGenerator.marker( NULL_CONTEXT ).close();
         }
         assertFalse( isRecoveryRequired( layout ) );
-        assertTrue( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
+        assertTrue( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE, openOptions ) );
 
         // when
         MutableBoolean recoveryRunEvenThoughNoCommitsAfterLastCheckpoint = new MutableBoolean();
@@ -1057,7 +1061,7 @@ class RecoveryIT
                                           .force() );
 
         // then
-        assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE ) );
+        assertFalse( idGeneratorIsDirty( layout.idNodeStore(), RecordIdType.NODE, openOptions ) );
         assertTrue( recoveryRunEvenThoughNoCommitsAfterLastCheckpoint.booleanValue() );
     }
 
@@ -1362,11 +1366,11 @@ class RecoveryIT
         assertFalse( isRecoveryRequired( layout ) );
     }
 
-    private boolean idGeneratorIsDirty( Path path, IdType idType ) throws IOException
+    private boolean idGeneratorIsDirty( Path path, IdType idType, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem, immediate(), "my db" );
         try ( IdGenerator idGenerator = idGeneratorFactory.open( pageCache, path, idType, () -> 0L /*will not be used*/, 10_000, readOnly(),
-                Config.defaults(), CONTEXT_FACTORY, Sets.immutable.empty(), IdSlotDistribution.SINGLE_IDS ) )
+                Config.defaults(), CONTEXT_FACTORY, openOptions, IdSlotDistribution.SINGLE_IDS ) )
         {
             MutableBoolean dirtyOnStartup = new MutableBoolean();
             InvocationHandler invocationHandler = ( proxy, method, args ) ->

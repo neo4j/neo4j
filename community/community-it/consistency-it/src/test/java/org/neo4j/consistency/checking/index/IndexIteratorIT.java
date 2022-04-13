@@ -94,7 +94,8 @@ class IndexIteratorIT
             var tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores, storeCursors );
             indexAccessors = new IndexAccessors( providerMap, c -> asResourceIterator(
                     SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, KernelVersionRepository.LATEST )
-                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, contextFactory );
+                            .indexesGetAll( storeCursors ) ), new IndexSamplingConfig( config ), SIMPLE_NAME_LOOKUP, contextFactory,
+                                                 neoStores.getOpenOptions() );
         }
     }
 

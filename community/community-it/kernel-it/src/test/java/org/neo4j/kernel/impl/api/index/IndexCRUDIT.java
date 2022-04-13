@@ -189,9 +189,10 @@ class IndexCRUDIT
     private GatheringIndexWriter newWriter() throws IOException
     {
         GatheringIndexWriter writer = new GatheringIndexWriter();
-        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ) ) )
+        when( mockedIndexProvider.getPopulator( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any(), any(), any( TokenNameLookup.class ),
+                                                any() ) )
                 .thenReturn( writer );
-        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ) ) )
+        when( mockedIndexProvider.getOnlineAccessor( any( IndexDescriptor.class ), any( IndexSamplingConfig.class ), any( TokenNameLookup.class ), any() ) )
                 .thenReturn( writer );
         return writer;
     }

@@ -19,7 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.List;
 
@@ -236,4 +240,13 @@ public interface StorageEngine extends Lifecycle
      * @return the relationship ID from the decoded element ID.
      */
     long decodeRelationshipId( byte[] from, int offset );
+
+    /**
+     * Open options used for related store files and to be used for other files managed outside of StorageEngine but related to the same database
+     * @return set of open options
+     */
+    default ImmutableSet<OpenOption> getOpenOptions()
+    {
+        return Sets.immutable.empty();
+    }
 }

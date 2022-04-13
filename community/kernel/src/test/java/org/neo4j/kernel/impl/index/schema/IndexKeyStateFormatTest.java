@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -133,7 +134,9 @@ abstract class IndexKeyStateFormatTest<KEY extends NativeIndexKey<KEY>> extends 
 
     private void withCursor( Path storeFile, boolean create, Consumer<PageCursor> cursorConsumer ) throws IOException
     {
-        ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE) : immutable.of( WRITE );
+        // TODO little-endian format add little-endian versions of formats
+        ImmutableSet<OpenOption> openOptions = create ? immutable.of( WRITE, CREATE, PageCacheOpenOptions.BIG_ENDIAN )
+                                                      : immutable.of( WRITE, PageCacheOpenOptions.BIG_ENDIAN );
         try ( PageCache pageCache = pageCacheExtension.getPageCache( globalFs );
               PagedFile pagedFile = pageCache.map( storeFile, pageCache.pageSize(), DEFAULT_DATABASE_NAME, openOptions );
               PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_WRITE_LOCK, CursorContext.NULL_CONTEXT ) )

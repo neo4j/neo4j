@@ -79,6 +79,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
@@ -144,6 +145,7 @@ class IndexPopulationJobTest
     private int labelId;
     private IndexStatisticsStore indexStatisticsStore;
     private JobScheduler jobScheduler;
+    private StorageEngine storageEngine;
 
     @BeforeEach
     void before() throws Exception
@@ -157,6 +159,7 @@ class IndexPopulationJobTest
                            .createTokenIndexStoreView( indexingService::getIndexProxy );
         indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
         jobScheduler = db.getDependencyResolver().resolveDependency( JobScheduler.class );
+        storageEngine = db.getDependencyResolver().resolveDependency( StorageEngine.class );
 
         try ( KernelTransaction tx = kernel.beginTransaction( IMPLICIT, LoginContext.AUTH_DISABLED ) )
         {
@@ -838,7 +841,8 @@ class IndexPopulationJobTest
         IndexProvider indexProvider = db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         IndexDescriptor indexDescriptor = prototype.withName( "index_21" ).materialise( 21 );
         indexDescriptor = indexProvider.completeConfiguration( indexDescriptor );
-        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        return indexProvider.getPopulator( indexDescriptor, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                           storageEngine.getOpenOptions() );
     }
 
     private IndexPopulationJob newIndexPopulationJob( IndexPopulator populator, FlippableIndexProxy flipper, EntityType type, IndexPrototype prototype )

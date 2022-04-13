@@ -86,6 +86,7 @@ public abstract class MuninnPageCursor extends PageCursor
     private int pageSize;
     private int filePageSize;
     private int filePayloadSize;
+    private boolean littleEndian;
     protected final VersionContext versionContext;
     protected final CursorContext cursorContext;
     private int offset;
@@ -136,6 +137,7 @@ public abstract class MuninnPageCursor extends PageCursor
         this.noGrow = noFault || isFlagRaised( pf_flags, PagedFile.PF_NO_GROW );
         this.offset = pageReservedBytes;
         this.filePayloadSize = filePageSize - pageReservedBytes;
+        this.littleEndian = pagedFile.littleEndian;
         this.tracer.openCursor();
     }
 
@@ -586,7 +588,7 @@ public abstract class MuninnPageCursor extends PageCursor
     public long getLong()
     {
         long p = nextBoundedPointer( SIZE_OF_LONG );
-        long value = getLongAt( p );
+        long value = getLongAt( p, littleEndian );
         offset += SIZE_OF_LONG;
         return value;
     }
@@ -595,30 +597,26 @@ public abstract class MuninnPageCursor extends PageCursor
     public long getLong( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
-        return getLongAt( p );
+        return getLongAt( p, littleEndian );
     }
 
-    private static long getLongAt( long p )
+    private static long getLongAt( long p, boolean littleEndian )
     {
-        long value;
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            value = UnsafeUtil.getLong( p );
-            if ( !UnsafeUtil.storeByteOrderIsNative )
+            var value = UnsafeUtil.getLong( p );
+            if ( UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian )
             {
-                value = Long.reverseBytes( value );
+                return value;
             }
+            return Long.reverseBytes( value );
         }
-        else
-        {
-            value = getLongBigEndian( p );
-        }
-        return value;
+        return getLongUnaligned( p, littleEndian );
     }
 
-    private static long getLongBigEndian( long p )
+    private static long getLongUnaligned( long p, boolean littleEndian )
     {
-        long a = UnsafeUtil.getByte( p     ) & 0xFF;
+        long a = UnsafeUtil.getByte( p ) & 0xFF;
         long b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         long c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         long d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
@@ -626,6 +624,10 @@ public abstract class MuninnPageCursor extends PageCursor
         long f = UnsafeUtil.getByte( p + 5 ) & 0xFF;
         long g = UnsafeUtil.getByte( p + 6 ) & 0xFF;
         long h = UnsafeUtil.getByte( p + 7 ) & 0xFF;
+        if ( littleEndian )
+        {
+            return (h << 56) | (g << 48) | (f << 40) | (e << 32) | (d << 24) | (c << 16) | (b << 8) | a;
+        }
         return (a << 56) | (b << 48) | (c << 40) | (d << 32) | (e << 24) | (f << 16) | (g << 8) | h;
     }
 
@@ -633,7 +635,7 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putLong( long value )
     {
         long p = nextBoundedPointer( SIZE_OF_LONG );
-        putLongAt( p, value );
+        putLongAt( p, value, littleEndian );
         offset += SIZE_OF_LONG;
     }
 
@@ -641,38 +643,52 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putLong( int offset, long value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_LONG );
-        putLongAt( p, value );
+        putLongAt( p, value, littleEndian );
     }
 
-    private static void putLongAt( long p, long value )
+    private static void putLongAt( long p, long value, boolean littleEndian )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putLong( p, UnsafeUtil.storeByteOrderIsNative ? value : Long.reverseBytes( value ) );
+            UnsafeUtil.putLong( p, UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? value : Long.reverseBytes( value ) );
         }
         else
         {
-            putLongBigEndian( value, p );
+            putLongUnaligned( value, p, littleEndian );
         }
     }
 
-    private static void putLongBigEndian( long value, long p )
+    private static void putLongUnaligned( long value, long p, boolean littleEndian )
     {
-        UnsafeUtil.putByte( p    , (byte)( value >> 56 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 48 ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 40 ) );
-        UnsafeUtil.putByte( p + 3, (byte)( value >> 32 ) );
-        UnsafeUtil.putByte( p + 4, (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 5, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 6, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 7, (byte) value );
+        if ( littleEndian )
+        {
+            UnsafeUtil.putByte( p, (byte) value );
+            UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+            UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+            UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+            UnsafeUtil.putByte( p + 4, (byte) (value >> 32) );
+            UnsafeUtil.putByte( p + 5, (byte) (value >> 40) );
+            UnsafeUtil.putByte( p + 6, (byte) (value >> 48) );
+            UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p, (byte) (value >> 56) );
+            UnsafeUtil.putByte( p + 1, (byte) (value >> 48) );
+            UnsafeUtil.putByte( p + 2, (byte) (value >> 40) );
+            UnsafeUtil.putByte( p + 3, (byte) (value >> 32) );
+            UnsafeUtil.putByte( p + 4, (byte) (value >> 24) );
+            UnsafeUtil.putByte( p + 5, (byte) (value >> 16) );
+            UnsafeUtil.putByte( p + 6, (byte) (value >> 8) );
+            UnsafeUtil.putByte( p + 7, (byte) value );
+        }
     }
 
     @Override
     public int getInt()
     {
         long p = nextBoundedPointer( SIZE_OF_INT );
-        int i = getIntAt( p );
+        int i = getIntAt( p, littleEndian );
         offset += SIZE_OF_INT;
         return i;
     }
@@ -681,25 +697,29 @@ public abstract class MuninnPageCursor extends PageCursor
     public int getInt( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_INT );
-        return getIntAt( p );
+        return getIntAt( p, littleEndian );
     }
 
-    private static int getIntAt( long p )
+    private static int getIntAt( long p, boolean littleEndian )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             int x = UnsafeUtil.getInt( p );
-            return UnsafeUtil.storeByteOrderIsNative ? x : Integer.reverseBytes( x );
+            return UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? x : Integer.reverseBytes( x );
         }
-        return getIntBigEndian( p );
+        return getIntUnaligned( p, littleEndian );
     }
 
-    private static int getIntBigEndian( long p )
+    private static int getIntUnaligned( long p, boolean littleEndian )
     {
-        int a = UnsafeUtil.getByte( p     ) & 0xFF;
+        int a = UnsafeUtil.getByte( p ) & 0xFF;
         int b = UnsafeUtil.getByte( p + 1 ) & 0xFF;
         int c = UnsafeUtil.getByte( p + 2 ) & 0xFF;
         int d = UnsafeUtil.getByte( p + 3 ) & 0xFF;
+        if ( littleEndian )
+        {
+            return (d << 24) | (c << 16) | (b << 8) | a;
+        }
         return (a << 24) | (b << 16) | (c << 8) | d;
     }
 
@@ -707,7 +727,7 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putInt( int value )
     {
         long p = nextBoundedPointer( SIZE_OF_INT );
-        putIntAt( p, value );
+        putIntAt( p, value, littleEndian );
         offset += SIZE_OF_INT;
     }
 
@@ -715,27 +735,37 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putInt( int offset, int value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_INT );
-        putIntAt( p, value );
+        putIntAt( p, value, littleEndian );
     }
 
-    private static void putIntAt( long p, int value )
+    private static void putIntAt( long p, int value, boolean littleEndian )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putInt( p, UnsafeUtil.storeByteOrderIsNative ? value : Integer.reverseBytes( value ) );
+            UnsafeUtil.putInt( p, UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? value : Integer.reverseBytes( value ) );
         }
         else
         {
-            putIntBigEndian( value, p );
+            putIntUnaligned( value, p, littleEndian );
         }
     }
 
-    private static void putIntBigEndian( int value, long p )
+    private static void putIntUnaligned( int value, long p, boolean littleEndian )
     {
-        UnsafeUtil.putByte( p    , (byte)( value >> 24 ) );
-        UnsafeUtil.putByte( p + 1, (byte)( value >> 16 ) );
-        UnsafeUtil.putByte( p + 2, (byte)( value >> 8  ) );
-        UnsafeUtil.putByte( p + 3, (byte) value );
+        if ( littleEndian )
+        {
+            UnsafeUtil.putByte( p, (byte) value );
+            UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+            UnsafeUtil.putByte( p + 2, (byte) (value >> 16) );
+            UnsafeUtil.putByte( p + 3, (byte) (value >> 24) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p, (byte) (value >> 24) );
+            UnsafeUtil.putByte( p + 1, (byte) (value >> 16) );
+            UnsafeUtil.putByte( p + 2, (byte) (value >> 8) );
+            UnsafeUtil.putByte( p + 3, (byte) value );
+        }
     }
 
     @Override
@@ -817,7 +847,7 @@ public abstract class MuninnPageCursor extends PageCursor
     public final short getShort()
     {
         long p = nextBoundedPointer( SIZE_OF_SHORT );
-        short s = getShortAt( p );
+        short s = getShortAt( p, littleEndian );
         offset += SIZE_OF_SHORT;
         return s;
     }
@@ -826,23 +856,27 @@ public abstract class MuninnPageCursor extends PageCursor
     public short getShort( int offset )
     {
         long p = getBoundedPointer( offset, SIZE_OF_SHORT );
-        return getShortAt( p );
+        return getShortAt( p, littleEndian );
     }
 
-    private static short getShortAt( long p )
+    private static short getShortAt( long p, boolean littleEndian )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
             short x = UnsafeUtil.getShort( p );
-            return UnsafeUtil.storeByteOrderIsNative ? x : Short.reverseBytes( x );
+            return UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? x : Short.reverseBytes( x );
         }
-        return getShortBigEndian( p );
+        return getShortUnaligned( p, littleEndian );
     }
 
-    private static short getShortBigEndian( long p )
+    private static short getShortUnaligned( long p, boolean littleEndian )
     {
         short a = (short) (UnsafeUtil.getByte( p     ) & 0xFF);
         short b = (short) (UnsafeUtil.getByte( p + 1 ) & 0xFF);
+        if ( littleEndian )
+        {
+            return (short) ((b << 8) | a);
+        }
         return (short) ((a << 8) | b);
     }
 
@@ -850,7 +884,7 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putShort( short value )
     {
         long p = nextBoundedPointer( SIZE_OF_SHORT );
-        putShortAt( p, value );
+        putShortAt( p, value, littleEndian );
         offset += SIZE_OF_SHORT;
     }
 
@@ -858,25 +892,33 @@ public abstract class MuninnPageCursor extends PageCursor
     public void putShort( int offset, short value )
     {
         long p = getBoundedPointer( offset, SIZE_OF_SHORT );
-        putShortAt( p, value );
+        putShortAt( p, value, littleEndian );
     }
 
-    private static void putShortAt( long p, short value )
+    private static void putShortAt( long p, short value, boolean littleEndian )
     {
         if ( UnsafeUtil.allowUnalignedMemoryAccess )
         {
-            UnsafeUtil.putShort( p, UnsafeUtil.storeByteOrderIsNative ? value : Short.reverseBytes( value ) );
+            UnsafeUtil.putShort( p, UnsafeUtil.nativeByteOrderIsLittleEndian == littleEndian ? value : Short.reverseBytes( value ) );
         }
         else
         {
-            putShortBigEndian( value, p );
+            putShortUnaligned( value, p, littleEndian );
         }
     }
 
-    private static void putShortBigEndian( short value, long p )
+    private static void putShortUnaligned( short value, long p, boolean littleEndian )
     {
-        UnsafeUtil.putByte( p    , (byte)( value >> 8 ) );
-        UnsafeUtil.putByte( p + 1, (byte) value );
+        if ( littleEndian )
+        {
+            UnsafeUtil.putByte( p, (byte) value );
+            UnsafeUtil.putByte( p + 1, (byte) (value >> 8) );
+        }
+        else
+        {
+            UnsafeUtil.putByte( p, (byte) (value >> 8) );
+            UnsafeUtil.putByte( p + 1, (byte) value );
+        }
     }
 
     @Override

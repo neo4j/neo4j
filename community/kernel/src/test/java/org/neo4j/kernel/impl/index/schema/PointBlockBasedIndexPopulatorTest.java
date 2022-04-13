@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -80,7 +81,8 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
             throws IOException
     {
         final var populator = new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, LAYOUT, INDEX_DESCRIPTOR, SPATIAL_SETTINGS,
-                                                                 CONFIGURATION, false, bufferFactory, CONFIG, memoryTracker, monitor );
+                                                                 CONFIGURATION, false, bufferFactory, CONFIG, memoryTracker, monitor,
+                                                                 Sets.immutable.empty() );
         populator.create();
         return populator;
     }
@@ -143,6 +145,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
     private PointIndexAccessor pointAccessor()
     {
         final var cleanup = RecoveryCleanupWorkCollector.immediate();
-        return new PointIndexAccessor( databaseIndexContext, indexFiles, LAYOUT, cleanup, INDEX_DESCRIPTOR, SPATIAL_SETTINGS, CONFIGURATION );
+        return new PointIndexAccessor( databaseIndexContext, indexFiles, LAYOUT, cleanup, INDEX_DESCRIPTOR, SPATIAL_SETTINGS, CONFIGURATION,
+                                       Sets.immutable.empty() );
     }
 }

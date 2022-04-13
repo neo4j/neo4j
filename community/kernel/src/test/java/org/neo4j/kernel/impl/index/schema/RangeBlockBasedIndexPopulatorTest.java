@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.factory.Sets;
+
 import java.io.IOException;
 
 import org.neo4j.configuration.Config;
@@ -43,7 +45,7 @@ class RangeBlockBasedIndexPopulatorTest extends GenericBlockBasedIndexPopulatorT
         Config config = Config.defaults( GraphDatabaseInternalSettings.index_populator_merge_factor, 2 );
         RangeBlockBasedIndexPopulator populator =
                 new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, INDEX_DESCRIPTOR, false, bufferFactory, config, memoryTracker,
-                        tokenNameLookup, monitor );
+                                                   tokenNameLookup, monitor, Sets.immutable.empty() );
         populator.create();
         return populator;
     }

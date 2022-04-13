@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.common.TokenNameLookup;
@@ -137,16 +140,18 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey,RangeLayout
 
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
     {
         return new RangeBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex,
-                bufferFactory, config, memoryTracker, tokenNameLookup );
+                                                  bufferFactory, config, memoryTracker, tokenNameLookup, openOptions );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, RangeLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
+                                              ImmutableSet<OpenOption> openOptions )
     {
-        return new RangeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor, tokenNameLookup );
+        return new RangeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor, tokenNameLookup, openOptions );
     }
 
     @Override

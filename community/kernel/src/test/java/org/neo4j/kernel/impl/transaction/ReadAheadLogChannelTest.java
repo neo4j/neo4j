@@ -41,6 +41,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
 
+import static java.lang.Math.toIntExact;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -175,7 +176,7 @@ class ReadAheadLogChannelTest
     {
         try ( StoreChannel channel = fileSystem.write( file ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( 1, KibiByte, INSTANCE );
+            ByteBuffer buffer = ByteBuffers.allocate( toIntExact( KibiByte.toBytes( 1 ) ), INSTANCE );
             visitor.visit( buffer );
             buffer.flip();
             channel.writeAll( buffer );

@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +46,6 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.eclipse.collections.api.factory.Sets.immutable;
 
 /**
  * A simple store for keeping index statistics counts, like number of updates, index size, number of unique values a.s.o.
@@ -73,14 +74,16 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
     private final ConcurrentHashMap<Long,ImmutableIndexStatistics> cache = new ConcurrentHashMap<>();
 
     public IndexStatisticsStore( PageCache pageCache, DatabaseLayout databaseLayout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory ) throws IOException
+                                 DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
+            throws IOException
     {
         this( pageCache, databaseLayout.indexStatisticsStore(), recoveryCleanupWorkCollector, readOnlyChecker, databaseLayout.getDatabaseName(),
-                contextFactory );
+                contextFactory, openOptions );
     }
 
     public IndexStatisticsStore( PageCache pageCache, Path path, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContextFactory contextFactory ) throws IOException
+            DatabaseReadOnlyChecker readOnlyChecker, String databaseName, CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
+            throws IOException
     {
         this.pageCache = pageCache;
         this.path = path;
@@ -88,15 +91,15 @@ public class IndexStatisticsStore extends LifecycleAdapter implements IndexStati
         this.databaseName = databaseName;
         this.layout = new IndexStatisticsLayout();
         this.readOnlyChecker = readOnlyChecker;
-        initTree( contextFactory );
+        initTree( contextFactory, openOptions );
     }
 
-    private void initTree( CursorContextFactory contextFactory ) throws IOException
+    private void initTree( CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         try
         {
             tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
-                    recoveryCleanupWorkCollector, readOnlyChecker, immutable.empty(), databaseName, "Statistics store", contextFactory );
+                                  recoveryCleanupWorkCollector, readOnlyChecker, openOptions, databaseName, "Statistics store", contextFactory );
             try ( var cursorContext = contextFactory.create( "indexStatisticScan" ) )
             {
                 scanTree( ( key, value ) -> cache.put( key.getIndexId(), new ImmutableIndexStatistics( value ) ), cursorContext );

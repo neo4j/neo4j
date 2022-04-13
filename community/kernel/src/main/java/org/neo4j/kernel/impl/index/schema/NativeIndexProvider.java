@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.common.TokenNameLookup;
@@ -90,7 +92,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         if ( databaseIndexContext.readOnlyChecker.isReadOnly() )
         {
@@ -99,30 +102,33 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
 
         IndexFiles indexFiles = indexFiles( descriptor );
         return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor,
-                bufferFactory, memoryTracker, tokenNameLookup );
+                                  bufferFactory, memoryTracker, tokenNameLookup, openOptions );
     }
 
     protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor,
-            ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup );
+                                                         ByteBufferFactory bufferFactory, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                         ImmutableSet<OpenOption> openOptions );
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         IndexFiles indexFiles = indexFiles( descriptor );
-        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, tokenNameLookup );
+        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor, tokenNameLookup, openOptions );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
+                                                       ImmutableSet<OpenOption> openOptions )
             throws IOException;
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             String failureMessage =
                     NativeIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName,
-                            cursorContext );
+                                                      cursorContext, openOptions );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -132,11 +138,12 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,LAYOUT extend
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
-            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext );
+            return NativeIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext,
+                                            openOptions );
         }
         catch ( MetadataMismatchException | IOException e )
         {

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +54,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -501,7 +503,8 @@ class CountsComputerTest
     private GBPTreeCountsStore createCountsStore( CountsBuilder builder ) throws IOException
     {
         return new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, immediate(), builder, writable(),
-                GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY );
+                                       GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY,
+                                       Sets.immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException

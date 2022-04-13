@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -89,7 +90,7 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     {
         final var populator = new PointBlockBasedIndexPopulator( databaseIndexContext, indexFiles, LAYOUT, indexDescriptor, SPATIAL_SETTINGS,
                                                                  CONFIGURATION, false, heapBufferFactory( (int) kibiBytes( 40 ) ),
-                                                                 CONFIG, EmptyMemoryTracker.INSTANCE );
+                                                                 CONFIG, EmptyMemoryTracker.INSTANCE, Sets.immutable.empty() );
         populator.create();
         return populator;
     }
@@ -233,7 +234,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
     private PointIndexAccessor pointAccessor()
     {
         final var cleanup = RecoveryCleanupWorkCollector.immediate();
-        return new PointIndexAccessor( databaseIndexContext, indexFiles, LAYOUT, cleanup, INDEX_DESCRIPTOR, SPATIAL_SETTINGS, CONFIGURATION );
+        return new PointIndexAccessor( databaseIndexContext, indexFiles, LAYOUT, cleanup, INDEX_DESCRIPTOR, SPATIAL_SETTINGS, CONFIGURATION,
+                                       Sets.immutable.empty() );
     }
 
     private enum ScanUpdateOrder

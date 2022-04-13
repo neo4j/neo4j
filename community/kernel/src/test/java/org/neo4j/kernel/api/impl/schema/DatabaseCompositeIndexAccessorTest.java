@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.assertj.core.api.Condition;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -326,11 +327,12 @@ public class DatabaseCompositeIndexAccessorTest
 
     private static IndexAccessor indexAccessor( IndexProvider provider, IndexDescriptor descriptor ) throws IOException
     {
-        IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
+        IndexPopulator populator = provider.getPopulator( descriptor, SAMPLING_CONFIG, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP,
+                                                          Sets.immutable.empty() );
         populator.create();
         populator.close( true, CursorContext.NULL_CONTEXT );
 
-        return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP );
+        return provider.getOnlineAccessor( descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP, Sets.immutable.empty() );
     }
 
     private static Set<Long> resultSet( ValueIndexReader reader, PropertyIndexQuery... queries ) throws IndexNotApplicableKernelException

@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.common.TokenNameLookup;
@@ -87,29 +89,31 @@ public class TokenIndexProvider extends IndexProvider
 
     @Override
     public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                        ImmutableSet<OpenOption> openOptions )
     {
         if ( databaseIndexContext.readOnlyChecker.isReadOnly() )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, indexFiles( descriptor ), descriptor ) );
+        return new WorkSyncedIndexPopulator( new TokenIndexPopulator( databaseIndexContext, indexFiles( descriptor ), descriptor, openOptions ) );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return new TokenIndexAccessor( databaseIndexContext, indexFiles( descriptor ), descriptor, recoveryCleanupWorkCollector );
+        return new TokenIndexAccessor( databaseIndexContext, indexFiles( descriptor ), descriptor, recoveryCleanupWorkCollector, openOptions );
     }
 
     @Override
-    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+    public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             String failureMessage = TokenIndexes.readFailureMessage( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName,
-                    cursorContext );
+                                                                     cursorContext, openOptions );
             return defaultIfEmpty( failureMessage, StringUtils.EMPTY );
         }
         catch ( IOException e )
@@ -119,11 +123,13 @@ public class TokenIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+    public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                               ImmutableSet<OpenOption> openOptions )
     {
         try
         {
-            return TokenIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext );
+            return TokenIndexes.readState( databaseIndexContext.pageCache, storeFile( descriptor ), databaseIndexContext.databaseName, cursorContext,
+                                           openOptions );
         }
         catch ( MetadataMismatchException | IOException e )
         {

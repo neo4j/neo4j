@@ -27,6 +27,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -45,6 +46,7 @@ import org.neo4j.index.internal.gbptree.InternalTreeLogic.RemoveResult;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -54,7 +56,6 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.Arrays.asList;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
@@ -759,7 +760,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorContext ) )
         {
             PageCursorUtil.goTo( cursor, "header data", state.pageId() );
-            doReadHeader( headerReader, cursor );
+            doReadHeader( headerReader, cursor, openOptions.contains( PageCacheOpenOptions.BIG_ENDIAN ) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN );
         }
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         setRoot( state.rootId(), state.rootGeneration() );
@@ -782,20 +783,22 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
      * @param headerReader reads header data, previously written using {@link #checkpoint( Consumer, CursorContext)}
      * or {@link #close()}
      * @param databaseName name of the database index file belongs to.
+     * @param openOptions
      * @throws IOException On page cache error
      * @throws MetadataMismatchException if some meta page is missing (tree not fully initialized)
      */
-    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, String databaseName, CursorContext cursorContext )
+    public static void readHeader( PageCache pageCache, Path indexFile, Header.Reader headerReader, String databaseName, CursorContext cursorContext,
+                                   ImmutableSet<OpenOption> openOptions )
             throws IOException, MetadataMismatchException
     {
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, openOptions ) )
         {
             Pair<TreeState,TreeState> states = loadStatePages( pagedFile, cursorContext );
             TreeState state = TreeStatePair.selectNewestValidState( states );
             try ( PageCursor cursor = pagedFile.io( state.pageId(), PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 PageCursorUtil.goTo( cursor, "header data", state.pageId() );
-                doReadHeader( headerReader, cursor );
+                doReadHeader( headerReader, cursor, openOptions.contains( PageCacheOpenOptions.BIG_ENDIAN ) ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN );
             }
         }
         catch ( Throwable t )
@@ -808,7 +811,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
     }
 
-    private static void doReadHeader( Header.Reader headerReader, PageCursor cursor ) throws IOException
+    private static void doReadHeader( Header.Reader headerReader, PageCursor cursor, ByteOrder order ) throws IOException
     {
         int headerDataLength;
         do
@@ -827,7 +830,7 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
         }
         while ( cursor.shouldRetry() );
 
-        headerReader.read( ByteBuffer.wrap( headerDataBytes ) );
+        headerReader.read( ByteBuffer.wrap( headerDataBytes ).order( order ) );
     }
 
     private void writeState( PagedFile pagedFile, Header.Writer headerWriter, CursorContext cursorContext ) throws IOException
@@ -888,10 +891,10 @@ public class GBPTree<KEY,VALUE> implements Closeable, Seeker.Factory<KEY,VALUE>
 
     @VisibleForTesting
     public static void overwriteHeader( PageCache pageCache, Path indexFile, Consumer<PageCursor> headerWriter, String databaseName,
-            CursorContext cursorContext ) throws IOException
+                                        CursorContext cursorContext, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         Header.Writer writer = replace( headerWriter );
-        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, immutable.empty() ) )
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, cursorContext, databaseName, openOptions ) )
         {
             Pair<TreeState,TreeState> states = readStatePages( pagedFile, cursorContext );
             TreeState newestValidState = TreeStatePair.selectNewestValidState( states );

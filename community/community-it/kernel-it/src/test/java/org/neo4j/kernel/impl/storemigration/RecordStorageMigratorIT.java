@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.function.Function;
@@ -52,6 +54,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -337,7 +340,8 @@ class RecordStorageMigratorIT
                 batchImporterFactory, INSTANCE );
 
         // WHEN migrating
-        var logTailMetadata = loadLogTail( databaseLayout, CONFIG, StorageEngineFactory.defaultStorageEngine() );
+        var engineFactory = StorageEngineFactory.defaultStorageEngine();
+        var logTailMetadata = loadLogTail( databaseLayout, CONFIG, engineFactory );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
                 getStoreVersion( getVersionToMigrateTo() ),
                 EMPTY, logTailMetadata );
@@ -345,7 +349,6 @@ class RecordStorageMigratorIT
 
         // THEN starting the new store should be successful
         assertThat( testDirectory.getFileSystem().fileExists( databaseLayout.relationshipGroupDegreesStore() ) ).isTrue();
-        CursorContext cursorContext = NULL_CONTEXT;
         GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder noRebuildAssertion = new GBPTreeRelationshipGroupDegreesStore.DegreesRebuilder()
         {
             @Override
@@ -368,13 +371,17 @@ class RecordStorageMigratorIT
                 }
             }
         };
-        try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
-                databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(), immediate(), noRebuildAssertion, writable(),
-                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), counts_store_max_cached_entries.defaultValue(),
-                NullLogProvider.getInstance(), contextFactory ) )
+        var migratedStoreOpenOptions = engineFactory.getStoreOpenOptions( fs, pageCache, databaseLayout, contextFactory );
+        try ( var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
+                                                                                databaseLayout.relationshipGroupDegreesStore(), testDirectory.getFileSystem(),
+                                                                                immediate(), noRebuildAssertion, writable(),
+                                                                                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
+                                                                                counts_store_max_cached_entries.defaultValue(),
+                                                                                NullLogProvider.getInstance(), contextFactory,
+                                                                                migratedStoreOpenOptions ) )
         {
             // The rebuild would happen here in start and will throw exception (above) if invoked
-            groupDegreesStore.start( cursorContext, StoreCursors.NULL, INSTANCE );
+            groupDegreesStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
 
             // The store keeps track of committed transactions.
             // It is essential that it starts with the transaction
@@ -385,7 +392,7 @@ class RecordStorageMigratorIT
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, CONFIG, new ScanOnOpenOverwritingIdGeneratorFactory( fs, databaseLayout.getDatabaseName() ), pageCache, fs,
                         logService.getInternalLogProvider(), contextFactory, writable(),
-                        loadLogTail( databaseLayout, CONFIG, StorageEngineFactory.defaultStorageEngine() ) );
+                        loadLogTail( databaseLayout, CONFIG, engineFactory ) );
         storeFactory.openAllNeoStores().close();
         assertThat( logProvider ).forLevel( ERROR ).doesNotHaveAnyLogs();
     }

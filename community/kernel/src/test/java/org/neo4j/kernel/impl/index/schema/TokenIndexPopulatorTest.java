@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.Test;
@@ -96,7 +97,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey,TokenScan
         DatabaseIndexContext context =
                 DatabaseIndexContext.builder( pageCache, fs, NULL_CONTEXT_FACTORY,
                         DEFAULT_DATABASE_NAME ).withMonitors( monitors ).withTag( monitorTag ).withReadOnlyChecker( writable() ).build();
-        return new TokenIndexPopulator( context, indexFiles, indexDescriptor );
+        return new TokenIndexPopulator( context, indexFiles, indexDescriptor, Sets.immutable.empty() );
     }
 
     @Test

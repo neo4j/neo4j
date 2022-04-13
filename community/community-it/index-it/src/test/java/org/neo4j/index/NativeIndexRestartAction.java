@@ -19,13 +19,15 @@
  */
 package org.neo4j.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 
 abstract class NativeIndexRestartAction
 {
@@ -36,13 +38,14 @@ abstract class NativeIndexRestartAction
         this.providerDescriptor = providerDescriptor;
     }
 
-    public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout ) throws IOException
+    public void run( FileSystemAbstraction fs, DatabaseLayout databaseLayout, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         IndexDirectoryStructure indexDirectoryStructure = nativeIndexDirectoryStructure( databaseLayout, providerDescriptor );
-        runOnDirectoryStructure( fs, indexDirectoryStructure );
+        runOnDirectoryStructure( fs, indexDirectoryStructure, openOptions );
     }
 
-    protected abstract void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure ) throws IOException;
+    protected abstract void runOnDirectoryStructure( FileSystemAbstraction fs, IndexDirectoryStructure indexDirectoryStructure,
+                                                     ImmutableSet<OpenOption> openOptions ) throws IOException;
 
     static IndexDirectoryStructure nativeIndexDirectoryStructure( DatabaseLayout databaseLayout, IndexProviderDescriptor providerDescriptor )
     {

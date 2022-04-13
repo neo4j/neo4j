@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -99,7 +100,8 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey>
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context = DatabaseIndexContext.builder( pageCache, fs, contextFactory,
                 DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new PointIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, SPACE_FILLING_CURVE_SETTINGS, CONFIGURATION );
+        return new PointIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, SPACE_FILLING_CURVE_SETTINGS, CONFIGURATION,
+                                       Sets.immutable.empty() );
     }
 
     @Override

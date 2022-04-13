@@ -17,27 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.impl.store.format;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.nio.file.OpenOption;
 
-import org.neo4j.internal.batchimport.IndexImporter;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-public class IndexImporterFactoryImpl implements IndexImporterFactory
+public class PageCacheOptionsSelector
 {
-
-    @Override
-    public IndexImporter getImporter( IndexDescriptor index, DatabaseLayout layout, FileSystemAbstraction fs, PageCache pageCache,
-                                      CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
+    /**
+     * Builds set of options required for provided format
+     */
+    public static ImmutableSet<OpenOption> select( RecordFormats recordFormats )
     {
-        return new TokenIndexImporter( index, layout, fs, pageCache, contextFactory, openOptions );
+        if ( recordFormats.hasCapability( RecordStorageCapability.LITTLE_ENDIAN ) ) // old formats don't have such capability, so they are big-endian
+        {
+            return Sets.immutable.empty();
+        }
+        return Sets.immutable.of( PageCacheOpenOptions.BIG_ENDIAN );
     }
 }

@@ -23,6 +23,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -42,7 +43,6 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.util.Preconditions;
 
-import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 public class TokenIndex implements ConsistencyCheckable
@@ -109,6 +109,7 @@ public class TokenIndex implements ConsistencyCheckable
 
     private final String databaseName;
     private final CursorContextFactory contextFactory;
+    private final ImmutableSet<OpenOption> openOptions;
     /**
      * The actual index which backs this token index.
      */
@@ -134,7 +135,8 @@ public class TokenIndex implements ConsistencyCheckable
      */
     private final IndexDescriptor monitoringDescriptor;
 
-    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
+    public TokenIndex( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
+                       ImmutableSet<OpenOption> openOptions )
     {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
@@ -146,6 +148,7 @@ public class TokenIndex implements ConsistencyCheckable
         this.indexFiles = indexFiles;
         this.tokenStoreName = descriptor.getName();
         this.monitoringDescriptor = descriptor;
+        this.openOptions = openOptions;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
@@ -153,7 +156,7 @@ public class TokenIndex implements ConsistencyCheckable
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
         index = new GBPTree<>( pageCache, indexFiles.getStoreFile(), new TokenScanLayout(), monitor, NO_HEADER_READER, headerWriter,
-                recoveryCleanupWorkCollector, readOnlyChecker, immutable.empty(), databaseName, tokenStoreName, contextFactory );
+                recoveryCleanupWorkCollector, readOnlyChecker, openOptions, databaseName, tokenStoreName, contextFactory );
     }
 
     void instantiateUpdater()

@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.EnumSet;
 
@@ -96,9 +99,11 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
         {
             @Override
             public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                    MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
             {
-                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup );
+                IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup,
+                                                                              openOptions );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
                 {
                     return new IndexPopulator.Delegating( actualPopulator )
@@ -114,10 +119,11 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
             }
 
             @Override
-            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+            public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                    ImmutableSet<OpenOption> openOptions )
                     throws IOException
             {
-                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
+                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
                 return new IndexAccessor.Delegating( actualAccessor )
                 {
                     @Override
@@ -140,17 +146,19 @@ public class FailingGenericNativeIndexProviderFactory extends BuiltInDelegatingI
             }
 
             @Override
-            public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+            public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                ImmutableSet<OpenOption> openOptions )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE
-                                                                          : actualProvider.getPopulationFailure( descriptor, cursorContext );
+                                                                          : actualProvider.getPopulationFailure( descriptor, cursorContext, openOptions );
             }
 
             @Override
-            public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+            public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                       ImmutableSet<OpenOption> openOptions )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED
-                                                                          : actualProvider.getInitialState( descriptor, cursorContext );
+                                                                          : actualProvider.getInitialState( descriptor, cursorContext, openOptions );
             }
         };
     }

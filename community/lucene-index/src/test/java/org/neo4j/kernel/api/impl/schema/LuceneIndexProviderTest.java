@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,7 +87,7 @@ class LuceneIndexProviderTest
                 getLuceneIndexProvider( config, new DirectoryFactory.InMemoryDirectoryFactory(), fileSystem, graphDbDir );
         assertThrows( UnsupportedOperationException.class,
                 () -> readOnlyIndexProvider.getPopulator( descriptor, new IndexSamplingConfig( config ),
-                        heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP ) );
+                                                          heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty() ) );
     }
 
     @Test
@@ -135,7 +136,7 @@ class LuceneIndexProviderTest
         var provider = createIndexProvider( config );
         var samplingConfig = new IndexSamplingConfig( config );
         var bufferFactory = heapBufferFactory( (int) kibiBytes( 100 ) );
-        var populator = provider.getPopulator( descriptor, samplingConfig, bufferFactory, INSTANCE, mock( TokenNameLookup.class ) );
+        var populator = provider.getPopulator( descriptor, samplingConfig, bufferFactory, INSTANCE, mock( TokenNameLookup.class ), Sets.immutable.empty() );
         var race = new Race();
 
         // And the underlying index files are created
@@ -189,7 +190,7 @@ class LuceneIndexProviderTest
     private static IndexAccessor getIndexAccessor( Config readOnlyConfig, TextIndexProvider indexProvider )
             throws IOException
     {
-        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), SIMPLE_TOKEN_LOOKUP );
+        return indexProvider.getOnlineAccessor( descriptor, new IndexSamplingConfig( readOnlyConfig ), SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty() );
     }
 
     private static TextIndexProvider getLuceneIndexProvider( Config config, DirectoryFactory directoryFactory,

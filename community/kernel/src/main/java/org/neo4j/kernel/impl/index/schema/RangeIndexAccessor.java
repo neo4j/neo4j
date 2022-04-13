@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -33,10 +37,11 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey>
     private IndexValueValidator validator;
 
     RangeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<RangeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+                        IndexLayout<RangeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                        IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
+                        ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
         this.tokenNameLookup = tokenNameLookup;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }

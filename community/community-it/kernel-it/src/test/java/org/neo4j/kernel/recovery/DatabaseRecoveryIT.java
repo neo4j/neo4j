@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -925,10 +927,11 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
                 throws IOException
         {
-            IndexAccessor actualAccessor = super.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
+            IndexAccessor actualAccessor = super.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
             return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
         }
 

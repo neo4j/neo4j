@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.collections.impl.factory.Sets;
+import org.eclipse.collections.api.factory.Sets;
 
 import java.io.IOException;
 import java.io.Writer;

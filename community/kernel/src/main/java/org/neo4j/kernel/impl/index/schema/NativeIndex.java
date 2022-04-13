@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
@@ -54,10 +57,12 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final String databaseName;
     private final CursorContextFactory contextFactory;
+    private final ImmutableSet<OpenOption> openOptions;
 
     protected GBPTree<KEY,NullValue> tree;
 
-    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY> layout, IndexFiles indexFiles, IndexDescriptor descriptor )
+    NativeIndex( DatabaseIndexContext databaseIndexContext, IndexLayout<KEY> layout, IndexFiles indexFiles, IndexDescriptor descriptor,
+                 ImmutableSet<OpenOption> openOptions )
     {
         this.pageCache = databaseIndexContext.pageCache;
         this.fileSystem = databaseIndexContext.fileSystem;
@@ -69,6 +74,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.indexFiles = indexFiles;
         this.layout = layout;
         this.descriptor = descriptor;
+        this.openOptions = openOptions;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
@@ -77,7 +83,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         GBPTree.Monitor monitor = treeMonitor();
         Path storeFile = indexFiles.getStoreFile();
         tree = new GBPTree<>( pageCache, storeFile, layout, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, readOnlyChecker,
-                immutable.empty(), databaseName, descriptor.getName(), contextFactory );
+                openOptions, databaseName, descriptor.getName(), contextFactory );
         afterTreeInstantiation( tree );
     }
 

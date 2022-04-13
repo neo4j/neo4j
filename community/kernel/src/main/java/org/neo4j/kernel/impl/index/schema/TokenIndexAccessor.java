@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.function.IntFunction;
 
@@ -46,9 +49,10 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor
     private final EntityType entityType;
 
     public TokenIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+                               RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                               ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, descriptor );
+        super( databaseIndexContext, indexFiles, descriptor, openOptions );
 
         entityType = descriptor.schema().entityType();
         instantiateTree( recoveryCleanupWorkCollector, new NativeIndexHeaderWriter( ONLINE ) );

@@ -20,8 +20,10 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
@@ -30,6 +32,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 
+import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -63,14 +66,16 @@ public class GBPTreeStructure<KEY, VALUE>
      * @param file {@link Path} containing the tree to visit meta page for.
      * @param visitor {@link GBPTreeVisitor} that shall visit meta.
      * @param databaseName name of the database file belongs to
+     * @param openOptions
      * @throws IOException on I/O error.
      */
-    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext )
-            throws IOException
+    public static void visitMeta( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext,
+                                  ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
+        var options = openOptions.newWithoutAll( asList( GBPTreeOpenOptions.values() ) ).newWith( StandardOpenOption.READ );
+        try ( var pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, options ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
+            try ( var cursor = pagedFile.io( IdSpace.META_PAGE_ID, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 visitMeta( cursor, visitor );
             }
@@ -80,18 +85,20 @@ public class GBPTreeStructure<KEY, VALUE>
     /**
      * Visit the state of the tree present in the given {@code file}.
      *
+     * @param openOptions
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
      * @param file {@link Path} containing the tree to visit state for.
      * @param visitor {@link GBPTreeVisitor} that shall visit state.
      * @param databaseName name of the database file belongs to
      * @throws IOException on I/O error.
      */
-    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext )
-            throws IOException
+    public static void visitState( PageCache pageCache, Path file, GBPTreeVisitor visitor, String databaseName, CursorContext cursorContext,
+                                   ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, immutable.of( StandardOpenOption.READ ) ) )
+        var options = openOptions.newWithoutAll( asList( GBPTreeOpenOptions.values() ) ).newWith( StandardOpenOption.READ );
+        try ( var pagedFile = pageCache.map( file, pageCache.pageSize(), databaseName, options ) )
         {
-            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
+            try ( var cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK, cursorContext ) )
             {
                 visitTreeState( cursor, visitor );
             }

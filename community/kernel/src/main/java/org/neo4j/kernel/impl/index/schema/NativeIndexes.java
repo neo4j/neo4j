@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -36,10 +39,11 @@ public final class NativeIndexes
     private NativeIndexes()
     {}
 
-    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext ) throws IOException
+    public static InternalIndexState readState( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext,
+                                                ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions );
         return switch ( headerReader.state )
                 {
                     case BYTE_FAILED -> InternalIndexState.FAILED;
@@ -49,11 +53,12 @@ public final class NativeIndexes
                 };
     }
 
-    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext )
+    static String readFailureMessage( PageCache pageCache, Path indexFile, String databaseName, CursorContext cursorContext,
+                                      ImmutableSet<OpenOption> openOptions )
             throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader();
-        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext );
+        GBPTree.readHeader( pageCache, indexFile, headerReader, databaseName, cursorContext, openOptions );
         return headerReader.failureMessage;
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.factory.Sets;
+
 import java.io.IOException;
 
 import org.neo4j.common.TokenNameLookup;
@@ -36,7 +38,7 @@ class NativeIndexPopulatorTestCases
     {
         return ( nativeIndexContext, storeFile, layout, descriptor, tokenNameLookup ) ->
                 new RangeBlockBasedIndexPopulator( nativeIndexContext, storeFile, layout, descriptor, false,
-                        heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup );
+                                                   heapBufferFactory( 10 * 1024 ), config, INSTANCE, tokenNameLookup, Sets.immutable.empty() );
     }
 
     @FunctionalInterface

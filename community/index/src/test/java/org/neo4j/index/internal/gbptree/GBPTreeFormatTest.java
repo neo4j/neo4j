@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,6 +34,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.test.FormatCompatibilityVerifier;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -41,6 +43,7 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.tags.MultiVersionedTag;
 import org.neo4j.test.utils.PageCacheConfig;
 
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -169,7 +172,9 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     protected void verifyFormat( Path storeFile ) throws IOException, FormatViolationException
     {
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        // TODO little-endian format add little-endian versions of formats
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTreeBuilder<>( pageCache, storeFile, layout )
+                .with( immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) ).build() )
         {
         }
         catch ( MetadataMismatchException e )
@@ -181,7 +186,8 @@ public class GBPTreeFormatTest<KEY,VALUE> extends FormatCompatibilityVerifier
     @Override
     public void verifyContent( Path storeFile ) throws IOException
     {
-        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<KEY,VALUE> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout )
+                .with( immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) ).build() )
         {
             {
                 // WHEN reading from the tree

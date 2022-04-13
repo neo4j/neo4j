@@ -20,12 +20,14 @@
 package org.neo4j.internal.counts;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,6 +53,7 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.logging.InternalLogProvider;
@@ -112,8 +115,10 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     private volatile boolean started;
 
     public GBPTreeGenericCountsStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem, RecoveryCleanupWorkCollector recoveryCollector,
-            Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, Monitor monitor, String databaseName,
-            int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory ) throws IOException
+                                      Rebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker, String name, Monitor monitor, String databaseName,
+                                      int maxCacheSize, InternalLogProvider userLogProvider, CursorContextFactory contextFactory,
+                                      ImmutableSet<OpenOption> openOptions )
+            throws IOException
     {
         this.userLogProvider = userLogProvider;
         this.readOnlyChecker = readOnlyChecker;
@@ -129,14 +134,14 @@ public class GBPTreeGenericCountsStore implements CountsStorage
         GBPTree<CountsKey,CountsValue> instantiatedTree;
         try
         {
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions );
         }
         catch ( MetadataMismatchException e )
         {
             // Corrupt, delete and rebuild
             fileSystem.deleteFileOrThrow( file );
             header = new CountsHeader( NEEDS_REBUILDING_HIGH_ID );
-            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory );
+            instantiatedTree = instantiateTree( pageCache, file, recoveryCollector, readOnlyChecker, header, contextFactory, openOptions );
         }
         this.tree = instantiatedTree;
         boolean successful = false;
@@ -166,12 +171,13 @@ public class GBPTreeGenericCountsStore implements CountsStorage
     }
 
     private GBPTree<CountsKey,CountsValue> instantiateTree( PageCache pageCache, Path file, RecoveryCleanupWorkCollector recoveryCollector,
-            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, CursorContextFactory contextFactory )
+                                                            DatabaseReadOnlyChecker readOnlyChecker, CountsHeader header, CursorContextFactory contextFactory,
+                                                            ImmutableSet<OpenOption> openOptions )
     {
         try
         {
             return new GBPTree<>( pageCache, file, layout, GBPTree.NO_MONITOR, header, header, recoveryCollector, readOnlyChecker,
-                    immutable.empty(), databaseName, name, contextFactory );
+                                  openOptions, databaseName, name, contextFactory );
         }
         catch ( TreeFileNotFoundException e )
         {
@@ -505,21 +511,22 @@ public class GBPTreeGenericCountsStore implements CountsStorage
      * @param name of the {@link GBPTree}.
      * @param contextFactory context factory for page cursors
      * @param keyToString function for generating proper descriptions of the keys.
+     * @param openOptions
      * @throws IOException on missing file or I/O error.
      */
     protected static void dump( PageCache pageCache, Path file, PrintStream out, String databaseName, String name, CursorContextFactory contextFactory,
-            Function<CountsKey,String> keyToString ) throws IOException
+                                Function<CountsKey,String> keyToString, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         // First check if it even exists as we don't really want to create it as part of dumping it. readHeader will throw if not found
         CountsHeader header = new CountsHeader( BASE_TX_ID );
         try ( var cursorContext = contextFactory.create( "dump" ) )
         {
-            GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext );
+            GBPTree.readHeader( pageCache, file, header, databaseName, cursorContext, openOptions );
         }
 
         // Now open it and dump its contents
         try ( GBPTree<CountsKey,CountsValue> tree = new GBPTree<>( pageCache, file, new CountsLayout(), GBPTree.NO_MONITOR, header, GBPTree.NO_HEADER_WRITER,
-                RecoveryCleanupWorkCollector.ignore(), readOnly(), immutable.empty(), databaseName, name, contextFactory ) )
+                RecoveryCleanupWorkCollector.ignore(), readOnly(), openOptions, databaseName, name, contextFactory ) )
         {
             out.printf( "Highest gap-free txId: %d%n", header.highestGapFreeTxId() );
             try ( var cursorContext = contextFactory.create( "dumpVisitor" ) )

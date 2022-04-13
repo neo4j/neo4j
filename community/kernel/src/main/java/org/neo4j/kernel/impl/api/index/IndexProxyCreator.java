@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -45,18 +48,21 @@ class IndexProxyCreator
     private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
+    private final ImmutableSet<OpenOption> openOptions;
 
     IndexProxyCreator( IndexSamplingConfig samplingConfig,
-            IndexStatisticsStore indexStatisticsStore,
-            IndexProviderMap providerMap,
-            TokenNameLookup tokenNameLookup,
-            InternalLogProvider logProvider )
+                       IndexStatisticsStore indexStatisticsStore,
+                       IndexProviderMap providerMap,
+                       TokenNameLookup tokenNameLookup,
+                       InternalLogProvider logProvider,
+                       ImmutableSet<OpenOption> openOptions )
     {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.providerMap = providerMap;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
+        this.openOptions = openOptions;
     }
 
     IndexProxy createPopulatingIndexProxy( IndexDescriptor index, boolean flipToTentative, IndexMonitor monitor,
@@ -155,7 +161,7 @@ class IndexProxyCreator
             MemoryTracker memoryTracker )
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getPopulator( index, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup );
+        return provider.getPopulator( index, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions );
     }
 
     private MinimalIndexAccessor minimalIndexAccessorFromProvider( IndexDescriptor index )
@@ -167,6 +173,6 @@ class IndexProxyCreator
     private IndexAccessor onlineAccessorFromProvider( IndexDescriptor index, IndexSamplingConfig samplingConfig ) throws IOException
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
-        return provider.getOnlineAccessor( index, samplingConfig, tokenNameLookup );
+        return provider.getOnlineAccessor( index, samplingConfig, tokenNameLookup, openOptions );
     }
 }

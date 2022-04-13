@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -54,7 +55,6 @@ import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.PERIOD;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.constrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
@@ -76,10 +76,11 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     void before() throws Exception
     {
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                               Sets.immutable.empty() );
         populator.create();
         populator.close( true, CursorContext.NULL_CONTEXT );
-        accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup );
+        accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty() );
     }
 
     @AfterEach

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.schema;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.EOFException;
@@ -79,7 +80,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT, Sets.immutable.empty() );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
@@ -98,7 +99,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT, Sets.immutable.empty() );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );
@@ -117,7 +118,7 @@ class LuceneSchemaIndexCorruptionTest
         // When
         IndexDescriptor descriptor = forSchema( forLabel( 1, 1 ), provider.getProviderDescriptor() )
                 .withName( "index_" + faultyIndexId ).materialise( faultyIndexId );
-        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT );
+        InternalIndexState initialState = provider.getInitialState( descriptor, NULL_CONTEXT, Sets.immutable.empty() );
 
         // Then
         assertThat( initialState ).isEqualTo( InternalIndexState.POPULATING );

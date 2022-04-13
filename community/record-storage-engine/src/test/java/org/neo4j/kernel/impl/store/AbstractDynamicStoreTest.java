@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,6 +38,7 @@ import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -81,7 +83,7 @@ class AbstractDynamicStoreTest
     {
         try ( StoreChannel channel = fs.write( storeFile ) )
         {
-            ByteBuffer buffer = ByteBuffers.allocate( pageCache.payloadSize(), INSTANCE );
+            ByteBuffer buffer = ByteBuffers.allocate( pageCache.payloadSize(), ByteOrder.BIG_ENDIAN, INSTANCE );
             while ( buffer.hasRemaining() )
             {
                 buffer.putInt( BLOCK_SIZE );
@@ -263,7 +265,8 @@ class AbstractDynamicStoreTest
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs, immediate(), DEFAULT_DATABASE_NAME );
         AbstractDynamicStore store = new AbstractDynamicStore( storeFile, idFile, Config.defaults(), RecordIdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
-                formats.dynamic(), formats.storeVersion(), DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME, immutable.empty() )
+                formats.dynamic(), formats.storeVersion(), DatabaseReadOnlyChecker.writable(), DEFAULT_DATABASE_NAME,
+                                                               immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) )
         {
             @Override
             public String getTypeDescriptor()

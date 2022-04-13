@@ -585,6 +585,11 @@ public class NeoStores implements AutoCloseable
         return recordFormats;
     }
 
+    public ImmutableSet<OpenOption> getOpenOptions()
+    {
+        return openOptions;
+    }
+
     public static boolean isStorePresent( FileSystemAbstraction fs, RecordDatabaseLayout databaseLayout )
     {
         return fs.fileExists( databaseLayout.metadataStore() );

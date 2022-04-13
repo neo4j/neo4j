@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -222,7 +223,7 @@ class NonUniqueLuceneIndexPopulatingUpdaterIT
         var samplingConfig = new IndexSamplingConfig( Config.defaults() );
         var index = forSchema( supplier.schema(), TextIndexProvider.DESCRIPTOR ).withName( "some_name" ).materialise( 1 );
         var bufferFactory = heapBufferFactory( (int) kibiBytes( 100 ) );
-        var populator = provider.getPopulator( index, samplingConfig, bufferFactory, INSTANCE, mock( TokenNameLookup.class ) );
+        var populator = provider.getPopulator( index, samplingConfig, bufferFactory, INSTANCE, mock( TokenNameLookup.class ), Sets.immutable.empty() );
         populator.create();
         return populator;
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -78,10 +79,12 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ),
                 p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor, CursorContext.NULL_CONTEXT ) ).contains( failure );
+        assertThat( indexProvider.getPopulationFailure( descriptor, CursorContext.NULL_CONTEXT,
+                                                        Sets.immutable.empty() ) ).contains( failure );
     }
 
     @Test
@@ -89,7 +92,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ), p ->
         {
             String failure = "The contrived failure";
 
@@ -98,7 +102,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             p.close( false, CursorContext.NULL_CONTEXT );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor, CursorContext.NULL_CONTEXT ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor, CursorContext.NULL_CONTEXT,
+                                                                 Sets.immutable.empty() ) );
         }, false );
     }
 
@@ -107,7 +112,9 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+
+                                                             Sets.immutable.empty() );
         p.close( false, CursorContext.NULL_CONTEXT );
 
         // WHEN
@@ -122,7 +129,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         final Value propertyValue = Values.of( "value1" );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ), p ->
         {
             long nodeId = 1;
 
@@ -137,7 +145,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         } );
 
         // THEN
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                        Sets.immutable.empty() ) )
         {
             try ( ValueIndexReader reader = accessor.newValueReader();
                   NodeValueIterator nodes = new NodeValueIterator() )
@@ -153,7 +162,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     void shouldPopulateWithAllValues() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ),
                 p -> p.add( updates( valueSet1 ), CursorContext.NULL_CONTEXT ) );
 
         // THEN
@@ -164,7 +174,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     void shouldUpdateWithAllValuesDuringPopulation() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ), p ->
         {
             try ( IndexUpdater updater = p.newPopulatingUpdater( CursorContext.NULL_CONTEXT ) )
             {
@@ -183,10 +194,12 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
     void shouldPopulateAndUpdate() throws Exception
     {
         // GIVEN
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ),
                 p -> p.add( updates( valueSet1 ), CursorContext.NULL_CONTEXT ) );
 
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                        Sets.immutable.empty() ) )
         {
             // WHEN
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
@@ -256,7 +269,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             firstBatch.add( new NodeAndValue( nodeId++, stringValue( prefix + i + " " + i ) ) );
         }
 
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   Sets.immutable.empty() ), p ->
         {
             p.add( updates( firstBatch ), CursorContext.NULL_CONTEXT );
             p.add( updates( secondBatch ), CursorContext.NULL_CONTEXT );
@@ -270,7 +284,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         Collections.shuffle( toRemove );
 
         // And we should be able to remove the entries in any order
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                        Sets.immutable.empty() ) )
         {
             // WHEN
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false ) )
@@ -305,7 +320,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
     private void assertHasAllValues( List<NodeAndValue> values ) throws IOException, IndexNotApplicableKernelException
     {
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                        Sets.immutable.empty() ) )
         {
             try ( ValueIndexReader reader = accessor.newValueReader() )
             {
@@ -335,14 +351,16 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
         {
             // when
             long offset = valueSet1.size();
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                       Sets.immutable.empty() ), p ->
             {
                 p.add( updates( valueSet1, 0 ), CursorContext.NULL_CONTEXT );
                 p.add( updates( valueSet1, offset ), CursorContext.NULL_CONTEXT );
             } );
 
             // then
-            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                            Sets.immutable.empty() ) )
             {
                 try ( ValueIndexReader reader = accessor.newValueReader() )
                 {
@@ -379,7 +397,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
             int nodeId1 = 1;
             int nodeId2 = 2;
 
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                       Sets.immutable.empty() ), p ->
             {
                 try
                 {

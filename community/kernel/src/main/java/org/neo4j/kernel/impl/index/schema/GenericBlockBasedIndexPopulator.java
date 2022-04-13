@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,19 +42,25 @@ class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<BtreeKey>
     private final TokenNameLookup tokenNameLookup;
 
     GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey> layout,
-            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
-            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                     IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+                                     SpaceFillingCurveConfiguration configuration,
+                                     boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
+                                     TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
     {
         this( databaseIndexContext, indexFiles, layout, descriptor, spatialSettings, configuration, archiveFailedIndex, bufferFactory, config, memoryTracker,
-                tokenNameLookup, BlockStorage.Monitor.NO_MONITOR );
+              tokenNameLookup, BlockStorage.Monitor.NO_MONITOR, openOptions );
     }
 
     GenericBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<BtreeKey> layout,
-            IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings, SpaceFillingCurveConfiguration configuration,
-            boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
-            BlockStorage.Monitor blockStorageMonitor )
+                                     IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+                                     SpaceFillingCurveConfiguration configuration,
+                                     boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
+                                     TokenNameLookup tokenNameLookup,
+                                     BlockStorage.Monitor blockStorageMonitor,
+                                     ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
+               openOptions );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;

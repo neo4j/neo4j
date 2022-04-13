@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -121,16 +124,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>> 
     private final AtomicLong numberOfAppliedExternalUpdates = new AtomicLong();
 
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker )
+                              IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
+                              MemoryTracker memoryTracker, ImmutableSet<OpenOption> openOptions )
     {
-        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR );
+        this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, NO_MONITOR, openOptions );
     }
 
     BlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-            BlockStorage.Monitor blockStorageMonitor )
+                              IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
+                              MemoryTracker memoryTracker,
+                              BlockStorage.Monitor blockStorageMonitor, ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
         this.archiveFailedIndex = archiveFailedIndex;
         this.memoryTracker = memoryTracker;
         this.mergeFactor = config.get( GraphDatabaseInternalSettings.index_populator_merge_factor );

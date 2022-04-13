@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -65,9 +68,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>>
     private boolean closed;
 
     NativeIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<KEY> layout,
-            IndexDescriptor descriptor )
+                          IndexDescriptor descriptor, ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, layout, indexFiles, descriptor );
+        super( databaseIndexContext, layout, indexFiles, descriptor, openOptions );
         this.treeKey = layout.newKey();
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
         this.ignoreStrategy = indexUpdateIgnoreStrategy();

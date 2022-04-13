@@ -20,8 +20,10 @@
 package org.neo4j.kernel.api.index;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import org.neo4j.common.TokenNameLookup;
@@ -52,7 +54,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  *
  * When an index rule is added, the IndexingService is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory, MemoryTracker, TokenNameLookup)} batch index writer}.
+ * {@link #getPopulator(IndexDescriptor, IndexSamplingConfig, ByteBufferFactory, MemoryTracker, TokenNameLookup, ImmutableSet)} batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -97,7 +99,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig, TokenNameLookup) online accessor} to
+ * {@link #getOnlineAccessor(IndexDescriptor, IndexSamplingConfig, TokenNameLookup, ImmutableSet) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter implements IndexConfigCompleter
@@ -132,7 +134,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 private final MinimalIndexAccessor singleMinimalAccessor = MinimalIndexAccessor.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                        ImmutableSet<OpenOption> openOptions )
                 {
                     return singleWriter;
                 }
@@ -145,13 +148,15 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                    MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                    ImmutableSet<OpenOption> openOptions )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                           ImmutableSet<OpenOption> openOptions )
                 {
                     return InternalIndexState.ONLINE;
                 }
@@ -175,7 +180,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+                public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                    ImmutableSet<OpenOption> openOptions )
                 {
                     return StringUtils.EMPTY;
                 }
@@ -204,12 +210,14 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * Used for initially populating a created index, using batch insertion.
      */
     public abstract IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup );
+                                                 MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                 ImmutableSet<OpenOption> openOptions );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+    public abstract IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                     ImmutableSet<OpenOption> openOptions )
             throws IOException;
 
     /**
@@ -218,19 +226,23 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
      * Implementations are expected to persist this failure
      * @param descriptor {@link IndexDescriptor} of the index.
      * @param cursorContext underlying page cursor context
+     * @param openOptions
      * @return failure, in the form of a stack trace, that happened during population or empty string if there is no failure
      */
-    public abstract String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext );
+    public abstract String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                 ImmutableSet<OpenOption> openOptions );
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor, CursorContext)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(IndexDescriptor, CursorContext, ImmutableSet)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      * @param descriptor to get initial state for.
      * @param cursorContext underlying page cursor context.
+     * @param openOptions
      */
-    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext );
+    public abstract InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                        ImmutableSet<OpenOption> openOptions );
 
     /**
      * Validate that the given index prototype can be used to create an index with the given index provider, or throw an {@link IllegalArgumentException} if
@@ -302,25 +314,29 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
         @Override
         public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions )
         {
             return null;
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
         {
             return null;
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                            ImmutableSet<OpenOption> openOptions )
         {
             return StringUtils.EMPTY;
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                   ImmutableSet<OpenOption> openOptions )
         {
             return null;
         }
@@ -368,28 +384,32 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
 
         @Override
         public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions )
         {
-            return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup );
+            return provider.getPopulator( descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+        public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
                 throws IOException
         {
-            return provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
+            return provider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions );
         }
 
         @Override
-        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext )
+        public String getPopulationFailure( IndexDescriptor descriptor, CursorContext cursorContext,
+                                            ImmutableSet<OpenOption> openOptions )
         {
-            return provider.getPopulationFailure( descriptor, cursorContext );
+            return provider.getPopulationFailure( descriptor, cursorContext, openOptions );
         }
 
         @Override
-        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+        public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                   ImmutableSet<OpenOption> openOptions )
         {
-            return provider.getInitialState( descriptor, cursorContext );
+            return provider.getInitialState( descriptor, cursorContext, openOptions );
         }
 
         @Override

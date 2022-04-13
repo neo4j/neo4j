@@ -22,6 +22,7 @@ package org.neo4j.consistency;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.bouncycastle.util.Arrays;
 import org.eclipse.collections.api.list.primitive.ImmutableLongList;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.TestInstance;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +76,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.TestNeo4jDatabaseManagementServiceBuilder;
 
@@ -108,6 +111,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
     private RecordDatabaseLayout databaseLayout;
     // Re-instantiated in @BeforeEach using sourceSnapshot
     private EphemeralFileSystemAbstraction fs;
+    private ImmutableSet<OpenOption> openOptions;
 
     private Path labelTokenIndexFile;
     private Path relationshipTypeIndexFile;
@@ -124,6 +128,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
                         indexWithStringData( db, label );
                         databaseLayout = RecordDatabaseLayout.cast( ((GraphDatabaseAPI) db).databaseLayout() );
                         setTokenIndexFiles( db );
+                        openOptions = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( StorageEngine.class ).getOpenOptions();
                     },
                     // Config
                     builder -> {} );
@@ -790,14 +795,14 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         return corruptIndexes( fs, readOnlyChecker, corruptionInject, targetFiles );
     }
 
-    private static List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
-            Path... targetFiles ) throws Exception
+    private List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
+                                       Path... targetFiles ) throws Exception
     {
         return corruptIndexes( fs, readOnlyChecker, corruptionInject, new SchemaLayouts(), targetFiles );
     }
 
-    private static List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
-            LayoutBootstrapper layoutBootstrapper, Path... targetFiles ) throws Exception
+    private List<Path> corruptIndexes( FileSystemAbstraction fs, DatabaseReadOnlyChecker readOnlyChecker, CorruptionInject corruptionInject,
+                                       LayoutBootstrapper layoutBootstrapper, Path... targetFiles ) throws Exception
     {
         List<Path> treeFiles = new ArrayList<>();
         var contextFactory = new CursorContextFactory( NULL, EMPTY );
@@ -807,7 +812,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT
         {
             for ( Path file : targetFiles )
             {
-                GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( file, NO_FLUSH_ON_CLOSE );
+                var bootstrap = bootstrapper.bootstrapTree( file, openOptions.newWith( NO_FLUSH_ON_CLOSE ).toArray( new OpenOption[0] ) );
                 if ( bootstrap.isTree() )
                 {
                     treeFiles.add( file );

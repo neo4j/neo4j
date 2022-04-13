@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
@@ -142,6 +143,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final String databaseName;
+    private final ImmutableSet<OpenOption> openOptions;
 
     // Some stores are considered temporary during the import and will be reordered/restructured
     // into the main store. These temporary stores will live here
@@ -181,6 +183,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
         this.logTailMetadata = logTailMetadata;
+        this.openOptions = PageCacheOptionsSelector.select( recordFormats );
     }
 
     private boolean databaseExistsAndContainsData()
@@ -438,10 +441,12 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         {
             throw new UncheckedIOException( e );
         }
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), builder, writable(), GBPTreeCountsStore.NO_MONITOR, databaseName,
-                neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider, contextFactory );
-                var cursorContext = contextFactory.create( "buildCountsStore" ) )
+        try ( var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                                                        RecoveryCleanupWorkCollector.immediate(), builder, writable(), GBPTreeCountsStore.NO_MONITOR,
+                                                        databaseName,
+                                                        neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider, contextFactory,
+                                                        openOptions );
+              var cursorContext = contextFactory.create( "buildCountsStore" ) )
         {
             countsStore.start( cursorContext, storeCursors, memoryTracker );
             countsStore.checkpoint( cursorContext );
@@ -453,12 +458,16 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
         // Also build an empty relationship group degrees store since the importer will not make any group degrees external.
         // This will prevent an unnecessary rebuild on the first startup.
-        try ( GBPTreeRelationshipGroupDegreesStore groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
-                databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
-                new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder( neoStores.getMetaDataStore().getLastCommittedTransactionId() ), writable(),
-                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider,
-                contextFactory );
-                var cursorContext = contextFactory.create( "buildRelationshipDegreesStore" ) )
+        try ( var groupDegreesStore = new GBPTreeRelationshipGroupDegreesStore( pageCache,
+                                                                                databaseLayout.relationshipGroupDegreesStore(), fileSystem, immediate(),
+                                                                                new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(
+                                                                                        neoStores.getMetaDataStore().getLastCommittedTransactionId() ),
+                                                                                writable(),
+                                                                                GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(),
+                                                                                neo4jConfig.get( counts_store_max_cached_entries ), userLogProvider,
+                                                                                contextFactory,
+                                                                                openOptions );
+              var cursorContext = contextFactory.create( "buildRelationshipDegreesStore" ) )
         {
             groupDegreesStore.start( cursorContext, storeCursors, memoryTracker );
             groupDegreesStore.checkpoint( cursorContext );
@@ -638,5 +647,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public boolean usesDoubleRelationshipRecordUnits()
     {
         return doubleRelationshipRecordUnits;
+    }
+
+    public ImmutableSet<OpenOption> getOpenOptions()
+    {
+        return openOptions;
     }
 }

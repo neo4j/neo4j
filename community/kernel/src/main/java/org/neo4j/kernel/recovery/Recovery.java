@@ -408,7 +408,8 @@ public final class Recovery
                         NO_LOCK_SERVICE, logProvider );
 
         IndexStatisticsStore indexStatisticsStore =
-                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, cursorContextFactory );
+                new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupCollector, readOnlyChecker, cursorContextFactory,
+                                          storageEngine.getOpenOptions() );
         IndexingService indexingService =
                 Database.buildIndexingService( storageEngine, schemaState, indexStoreViewFactory, indexStatisticsStore, config, scheduler, indexProviderMap,
                         tokenHolders, logProvider, monitors.newMonitor( IndexMonitor.class ), cursorContextFactory, memoryTracker,

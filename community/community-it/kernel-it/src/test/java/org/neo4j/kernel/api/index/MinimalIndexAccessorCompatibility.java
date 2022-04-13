@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,7 +62,8 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
         {
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             fs.mkdir( homePath );
-            IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP );
+            IndexPopulator populator = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_NAME_LOOKUP,
+                                                                   Sets.immutable.empty() );
             populator.create();
             populator.close( true, NULL_CONTEXT );
             minimalIndexAccessor = indexProvider.getMinimalIndexAccessor( descriptor );

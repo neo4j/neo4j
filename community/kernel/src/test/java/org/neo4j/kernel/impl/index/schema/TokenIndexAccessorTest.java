@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -85,7 +86,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey,Toke
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context =
                 DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new TokenIndexAccessor( context, indexFiles, indexDescriptor, cleanup );
+        return new TokenIndexAccessor( context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty() );
     }
 
     @Override

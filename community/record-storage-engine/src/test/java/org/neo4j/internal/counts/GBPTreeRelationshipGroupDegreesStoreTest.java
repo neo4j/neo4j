@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.counts;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import org.neo4j.internal.counts.GBPTreeRelationshipGroupDegreesStore.DegreesReb
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore.Updater;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -45,6 +47,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -189,7 +192,8 @@ class GBPTreeRelationshipGroupDegreesStoreTest
 
         // when
         ByteArrayOutputStream out = new ByteArrayOutputStream( 1024 );
-        GBPTreeRelationshipGroupDegreesStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), CONTEXT_FACTORY );
+        GBPTreeRelationshipGroupDegreesStore.dump( pageCache, countsStoreFile(), new PrintStream( out ), CONTEXT_FACTORY,
+                                                   immutable.empty() );
 
         // then
         String dump = out.toString();
@@ -234,7 +238,8 @@ class GBPTreeRelationshipGroupDegreesStoreTest
             throws IOException
     {
         countsStore = new GBPTreeRelationshipGroupDegreesStore( pageCache, countsStoreFile(), fs, immediate(), builder, readOnlyChecker,
-                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), CONTEXT_FACTORY );
+                                                                monitor, DEFAULT_DATABASE_NAME, 10, NullLogProvider.getInstance(), CONTEXT_FACTORY,
+                                                                Sets.immutable.empty() );
     }
 
     private static class TestableCountsBuilder implements DegreesRebuilder

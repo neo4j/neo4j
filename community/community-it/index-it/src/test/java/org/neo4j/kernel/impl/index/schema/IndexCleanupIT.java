@@ -45,6 +45,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -188,8 +189,9 @@ public class IndexCleanupIT
 
     private void restartDatabase( SetInitialStateInNativeIndex action ) throws IOException
     {
+        var openOptions = db.getDependencyResolver().resolveDependency( StorageEngine.class ).getOpenOptions();
         managementService.shutdown();
-        action.run( fs, databaseLayout );
+        action.run( fs, databaseLayout, openOptions );
         configureDb();
     }
 

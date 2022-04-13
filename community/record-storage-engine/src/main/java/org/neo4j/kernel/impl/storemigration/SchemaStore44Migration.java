@@ -402,6 +402,6 @@ public class SchemaStore44Migration
                 NullLogProvider.getInstance(),
                 formats,
                 recordDatabaseLayout.getDatabaseName(),
-                org.eclipse.collections.api.factory.Sets.immutable.empty() );
+                neoStores.getOpenOptions() );
     }
 }

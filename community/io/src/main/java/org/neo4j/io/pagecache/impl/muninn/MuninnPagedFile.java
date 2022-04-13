@@ -66,6 +66,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final MuninnPageCache pageCache;
     final int filePageSize;
     final int fileReservedPageBytes;
+    final boolean littleEndian;
     private final PageCacheTracer pageCacheTracer;
     private final IOBufferFactory bufferFactory;
     final LatchMap pageFaultLatches;
@@ -138,16 +139,18 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
      * @param databaseName an optional name of the database this file belongs to. This option associates the mapped file with a database.
      * This information is currently used only for monitoring purposes.
      * @param ioController io controller to report page file io operations
+     * @param littleEndian
      * @throws IOException If the {@link PageSwapper} could not be created.
      */
     MuninnPagedFile( Path path, MuninnPageCache pageCache, int filePageSize, PageSwapperFactory swapperFactory, PageCacheTracer pageCacheTracer,
-            boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, boolean preallocateStoreFiles, String databaseName,
-            int faultLockStriping, IOController ioController ) throws IOException
+                     boolean createIfNotExists, boolean truncateExisting, boolean useDirectIo, boolean preallocateStoreFiles, String databaseName,
+                     int faultLockStriping, IOController ioController, boolean littleEndian ) throws IOException
     {
         super( pageCache.pages );
         this.pageCache = pageCache;
         this.filePageSize = filePageSize;
         this.fileReservedPageBytes = pageCache.pageReservedBytes();
+        this.littleEndian = littleEndian;
         this.cursorFactory = new CursorFactory( this );
         this.pageCacheTracer = pageCacheTracer;
         this.pageFaultLatches = new LatchMap( faultLockStriping );

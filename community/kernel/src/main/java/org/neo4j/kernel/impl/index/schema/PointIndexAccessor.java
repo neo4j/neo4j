@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,10 +40,11 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey>
     private final SpaceFillingCurveConfiguration configuration;
 
     PointIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<PointKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
+                        IndexLayout<PointKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
+                        IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration,
+                        ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );

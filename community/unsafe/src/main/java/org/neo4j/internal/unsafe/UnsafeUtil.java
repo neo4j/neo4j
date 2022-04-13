@@ -86,7 +86,7 @@ public final class UnsafeUtil
     private static final int pageSize;
 
     public static final boolean allowUnalignedMemoryAccess;
-    public static final boolean storeByteOrderIsNative;
+    public static final boolean nativeByteOrderIsLittleEndian;
 
     static
     {
@@ -110,7 +110,7 @@ public final class UnsafeUtil
                         default -> false;
                     };
         }
-        storeByteOrderIsNative = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
+        nativeByteOrderIsLittleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
         Class<?> dbbClass = null;
         VarHandle bbMark = null;

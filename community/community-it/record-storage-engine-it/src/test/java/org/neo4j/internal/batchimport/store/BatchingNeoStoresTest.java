@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport.store;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -46,6 +47,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -62,6 +64,8 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
+import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -294,9 +298,13 @@ class BatchingNeoStoresTest
     void shouldRebuildCountsStoreEvenIfExistsInEmptyDb() throws IOException
     {
         // given
+        var openOptions = PageCacheOptionsSelector.select(
+                RecordFormatSelector.selectForStoreOrConfigForNewDbs( Config.defaults(), databaseLayout, fileSystem, pageCache,
+                                                                      NullLogService.getInstance().getInternalLogProvider(), CONTEXT_FACTORY ) );
         try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(),
-                GBPTreeCountsStore.NO_MONITOR, DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY ) )
+                                                                       RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(),
+                                                                       GBPTreeCountsStore.NO_MONITOR, DEFAULT_DATABASE_NAME, 1_000,
+                                                                       NullLogProvider.getInstance(), CONTEXT_FACTORY, openOptions ) )
         {
             countsStore.start( NULL_CONTEXT, StoreCursors.NULL, INSTANCE );
             countsStore.checkpoint( NULL_CONTEXT );
@@ -329,9 +337,11 @@ class BatchingNeoStoresTest
         }
 
         // then
-        try ( GBPTreeCountsStore countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
-                RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(), GBPTreeCountsStore.NO_MONITOR,
-                DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY ) )
+        try ( var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem,
+                                                        RecoveryCleanupWorkCollector.immediate(), CountsBuilder.EMPTY, writable(),
+                                                        GBPTreeCountsStore.NO_MONITOR,
+                                                        DEFAULT_DATABASE_NAME, 1_000, NullLogProvider.getInstance(), CONTEXT_FACTORY,
+                                                        openOptions ) )
         {
             assertEquals( 10, countsStore.nodeCount( 1, NULL_CONTEXT ) );
             assertEquals( 20, countsStore.nodeCount( 2, NULL_CONTEXT ) );

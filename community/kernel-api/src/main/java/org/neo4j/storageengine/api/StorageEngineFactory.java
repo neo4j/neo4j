@@ -19,9 +19,13 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.awt.desktop.OpenFilesEvent;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -270,6 +274,12 @@ public interface StorageEngineFactory
     void consistencyCheck( FileSystemAbstraction fileSystem, DatabaseLayout layout, Config config, PageCache pageCache, IndexProviderMap indexProviders,
             InternalLog log, ConsistencySummaryStatistics summary, int numberOfThreads, double memoryLimitLeewayFactor, OutputStream progressOutput,
             boolean verbose, ConsistencyFlags flags, CursorContextFactory contextFactory ) throws ConsistencyCheckIncompleteException;
+
+    /**
+     * Detects open options for existing store such as endianness or versionness
+     */
+    ImmutableSet<OpenOption> getStoreOpenOptions( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout,
+                                                  CursorContextFactory contextFactory );
 
     /**
      * @return the default {@link StorageEngineFactory}.

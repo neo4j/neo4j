@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -155,7 +156,8 @@ abstract class IndexPopulationStressTest
         descriptor2 = indexProvider
                 .completeConfiguration( forSchema( forLabel( 1, 0 ), PROVIDER ).withIndexType( indexType() ).withName( "index_1" ).materialise( 1 ) );
         fs.mkdirs( indexProvider.directoryStructure().rootDirectory() );
-        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup );
+        populator = indexProvider.getPopulator( descriptor, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ), INSTANCE, tokenNameLookup,
+                                                Sets.immutable.empty() );
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
 
@@ -195,10 +197,10 @@ abstract class IndexPopulationStressTest
 
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded( generators, updates );
-        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup );
-                IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup );
-                var reader = accessor.newValueReader();
-                var referenceReader = referenceAccessor.newValueReader() )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, Sets.immutable.empty() );
+              IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor( descriptor2, samplingConfig, tokenNameLookup, Sets.immutable.empty() );
+              var reader = accessor.newValueReader();
+              var referenceReader = referenceAccessor.newValueReader() )
         {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
@@ -319,7 +321,7 @@ abstract class IndexPopulationStressTest
             throws IndexEntryConflictException, IOException
     {
         IndexPopulator referencePopulator = indexProvider.getPopulator( descriptor2, samplingConfig, heapBufferFactory( (int) kibiBytes( 40 ) ),
-                INSTANCE, tokenNameLookup );
+                                                                        INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         referencePopulator.create();
         boolean referenceSuccess = false;
         try

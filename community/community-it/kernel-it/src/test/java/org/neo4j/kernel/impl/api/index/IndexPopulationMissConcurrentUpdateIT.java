@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -191,7 +193,8 @@ public class IndexPopulationMissConcurrentUpdateIT
             {
                 @Override
                 public IndexPopulator getPopulator( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, ByteBufferFactory bufferFactory,
-                        MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                    MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                    ImmutableSet<OpenOption> openOptions )
                 {
                     return new IndexPopulator.Adapter()
                     {
@@ -244,13 +247,15 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup )
+                public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                                        ImmutableSet<OpenOption> openOptions )
                 {
                     return mock( IndexAccessor.class );
                 }
 
                 @Override
-                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext )
+                public InternalIndexState getInitialState( IndexDescriptor descriptor, CursorContext cursorContext,
+                                                           ImmutableSet<OpenOption> openOptions )
                 {
                     return POPULATING;
                 }

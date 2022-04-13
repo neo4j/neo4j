@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -31,18 +35,22 @@ class RangeBlockBasedIndexPopulator extends BlockBasedIndexPopulator<RangeKey>
     private final TokenNameLookup tokenNameLookup;
 
     RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
-            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-            TokenNameLookup tokenNameLookup )
+                                   IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
+                                   MemoryTracker memoryTracker,
+                                   TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
     {
         this( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup,
-                BlockStorage.Monitor.NO_MONITOR );
+              BlockStorage.Monitor.NO_MONITOR, openOptions );
     }
 
     RangeBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexLayout<RangeKey> layout,
-            IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
-            TokenNameLookup tokenNameLookup, BlockStorage.Monitor blockStorageMonitor )
+                                   IndexDescriptor descriptor, boolean archiveFailedIndex, ByteBufferFactory bufferFactory, Config config,
+                                   MemoryTracker memoryTracker,
+                                   TokenNameLookup tokenNameLookup, BlockStorage.Monitor blockStorageMonitor,
+                                   ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
+               openOptions );
         this.tokenNameLookup = tokenNameLookup;
     }
 

@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +35,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
@@ -102,7 +104,8 @@ class GBPTreeBootstrapperTest
     {
         setupTest( testSetup );
 
-        try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout ).build() )
+        try ( GBPTree<MutableLong,MutableLong> tree = new GBPTreeBuilder<>( pageCache, storeFile, layout )
+                .with( Sets.immutable.of( PageCacheOpenOptions.BIG_ENDIAN ) ).build() )
         {
             tree.checkpoint( CursorContext.NULL_CONTEXT );
         }
@@ -126,7 +129,7 @@ class GBPTreeBootstrapperTest
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler();
               GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper( fs, scheduler, layoutBootstrapper, readOnly(), contextFactory ) )
         {
-            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile );
+            GBPTreeBootstrapper.Bootstrap bootstrap = bootstrapper.bootstrapTree( storeFile, PageCacheOpenOptions.BIG_ENDIAN );
             assertTrue( bootstrap.isTree() );
             try ( GBPTree<?,?> tree = bootstrap.getTree();
                   var cursorContext = contextFactory.create( "shouldBootstrapTreeOfDifferentPageSizes" ) )

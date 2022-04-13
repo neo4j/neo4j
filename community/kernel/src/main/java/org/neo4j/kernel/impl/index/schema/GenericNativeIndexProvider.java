@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -177,17 +180,19 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<BtreeKey,Gen
 
     @Override
     protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, ByteBufferFactory bufferFactory,
-            MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup )
+                                                MemoryTracker memoryTracker, TokenNameLookup tokenNameLookup,
+                                                ImmutableSet<OpenOption> openOptions )
     {
         return new GenericBlockBasedIndexPopulator( databaseIndexContext, indexFiles, layout, descriptor, layout.getSpaceFillingCurveSettings(),
-                configuration, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup );
+                                                    configuration, archiveFailedIndex, bufferFactory, config, memoryTracker, tokenNameLookup, openOptions );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, IndexDescriptor descriptor, TokenNameLookup tokenNameLookup,
+                                              ImmutableSet<OpenOption> openOptions )
     {
         return new GenericNativeIndexAccessor( databaseIndexContext, indexFiles, layout, recoveryCleanupWorkCollector, descriptor,
-                layout.getSpaceFillingCurveSettings(), configuration, tokenNameLookup );
+                                               layout.getSpaceFillingCurveSettings(), configuration, tokenNameLookup, openOptions );
     }
 
     @Override

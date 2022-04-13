@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -35,21 +39,24 @@ public class PointBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Poin
     private final SpaceFillingCurveConfiguration configuration;
 
     PointBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
-            ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker )
+                                   IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+                                   SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
+                                   ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker,
+                                   ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker );
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, openOptions );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }
 
     PointBlockBasedIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
-            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
-            ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, BlockStorage.Monitor blockStorageMonitor )
+                                   IndexLayout<PointKey> layout, IndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettings spatialSettings,
+                                   SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex,
+                                   ByteBufferFactory bufferFactory, Config config, MemoryTracker memoryTracker, BlockStorage.Monitor blockStorageMonitor,
+                                   ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, archiveFailedIndex, bufferFactory, config, memoryTracker, blockStorageMonitor,
+               openOptions );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }

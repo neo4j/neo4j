@@ -36,7 +36,7 @@ public class DatabaseIndexContext
     final String databaseName;
 
     private DatabaseIndexContext( PageCache pageCache, FileSystemAbstraction fileSystem, Monitors monitors, String monitorTag,
-            DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, String databaseName )
+                                  DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, String databaseName )
     {
         this.pageCache = pageCache;
         this.fileSystem = fileSystem;

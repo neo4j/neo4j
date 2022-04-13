@@ -168,7 +168,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders, neoStores.getMetaDataStore() );
         return new IndexAccessors( indexProviders, new SchemaRulesDescriptors( neoStores, schemaRuleAccess ), new IndexSamplingConfig( config ), tokenHolders,
-                contextFactory );
+                                   contextFactory, neoStores.getOpenOptions() );
     }
 
     public void check() throws ConsistencyCheckIncompleteException
@@ -331,8 +331,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
     private void checkCounts()
     {
         try ( var cursorContext = contextFactory.create( COUNT_STORE_CONSISTENCY_CHECKER_TAG );
-                var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
-                new CountsBuilder()
+              var countsStore = new GBPTreeCountsStore( pageCache, databaseLayout.countStore(), fileSystem, RecoveryCleanupWorkCollector.ignore(),
+                                                        new CountsBuilder()
                 {
                     @Override
                     public void initialize( CountsAccessor.Updater updater, CursorContext cursorContext, MemoryTracker memoryTracker )
@@ -346,9 +346,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                     {
                         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                     }
-                }, readOnly(),GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                        contextFactory );
-                var checker = observedCounts.checker( reporter ) )
+                }, readOnly(), GBPTreeCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
+                                                        contextFactory, neoStores.getOpenOptions() );
+              var checker = observedCounts.checker( reporter ) )
         {
             if ( context.consistencyFlags.isCheckGraph() )
             {
@@ -382,7 +382,7 @@ public class RecordStorageConsistencyChecker implements AutoCloseable
                 return neoStores.getMetaDataStore().getLastCommittedTransactionId();
             }
         }, readOnly(), GBPTreeGenericCountsStore.NO_MONITOR, databaseLayout.getDatabaseName(), 100, NullLogProvider.getInstance(),
-                      contextFactory ) )
+                                                                                       contextFactory, neoStores.getOpenOptions() ) )
         {
             consistencyCheckSingleCheckable( report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP, cursorContext );
         }

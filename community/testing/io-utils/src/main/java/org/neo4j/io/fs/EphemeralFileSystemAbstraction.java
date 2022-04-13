@@ -60,6 +60,7 @@ import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
 import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.Arrays.asList;
@@ -508,7 +509,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 
     private static ByteBuffer newCopyBuffer()
     {
-        return ByteBuffers.allocate( 1, ByteUnit.MebiByte, INSTANCE );
+        return ByteBuffers.allocate( toIntExact( ByteUnit.MebiByte.toBytes( 1 ) ), INSTANCE );
     }
 
     private void copyRecursivelyFromOtherFs( Path from, FileSystemAbstraction fromFs, Path to, ByteBuffer buffer )

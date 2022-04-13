@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
+import java.nio.file.OpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,10 +43,11 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<BtreeKey>
     private IndexValueValidator validator;
 
     GenericNativeIndexAccessor( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles,
-            IndexLayout<BtreeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration, TokenNameLookup tokenNameLookup )
+                                IndexLayout<BtreeKey> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexDescriptor descriptor,
+                                IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration,
+                                TokenNameLookup tokenNameLookup, ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, layout, descriptor );
+        super( databaseIndexContext, indexFiles, layout, descriptor, openOptions );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         this.tokenNameLookup = tokenNameLookup;

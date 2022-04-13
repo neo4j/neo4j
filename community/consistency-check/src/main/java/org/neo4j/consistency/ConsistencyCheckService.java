@@ -19,9 +19,12 @@
  */
 package org.neo4j.consistency;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -294,7 +297,8 @@ public class ConsistencyCheckService
 
             if ( consistencyFlags.isCheckIndexStructure() )
             {
-                IndexStatisticsStore statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector, contextFactory );
+                var openOptions = storageEngineFactory.getStoreOpenOptions( fileSystem, pageCache, layout, contextFactory );
+                var statisticsStore = getStatisticStore( pageCache, recoveryCleanupWorkCollector, contextFactory, openOptions );
                 life.add( statisticsStore );
                 consistencyCheckSingleCheckable( log, summary, statisticsStore, "INDEX_STATISTICS", NULL_CONTEXT );
             }
@@ -361,11 +365,11 @@ public class ConsistencyCheckService
     }
 
     private IndexStatisticsStore getStatisticStore( PageCache pageCache, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            CursorContextFactory contextFactory )
+                                                    CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions )
     {
         try
         {
-            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory );
+            return new IndexStatisticsStore( pageCache, layout, recoveryCleanupWorkCollector, readOnly(), contextFactory, openOptions );
         }
         catch ( IOException e )
         {

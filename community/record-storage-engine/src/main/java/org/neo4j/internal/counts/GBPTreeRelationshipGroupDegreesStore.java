@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.counts;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -49,12 +52,13 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
     static final byte TYPE_DEGREE = (byte) 3;
 
     public GBPTreeRelationshipGroupDegreesStore( PageCache pageCache, Path file, FileSystemAbstraction fileSystem,
-            RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder, DatabaseReadOnlyChecker readOnlyChecker,
-            Monitor monitor, String databaseName, int maxCacheSize, InternalLogProvider userLogProvider,
-            CursorContextFactory contextFactory ) throws IOException
+                                                 RecoveryCleanupWorkCollector recoveryCollector, DegreesRebuilder rebuilder,
+                                                 DatabaseReadOnlyChecker readOnlyChecker,
+                                                 Monitor monitor, String databaseName, int maxCacheSize, InternalLogProvider userLogProvider,
+                                                 CursorContextFactory contextFactory, ImmutableSet<OpenOption> openOptions ) throws IOException
     {
         super( pageCache, file, fileSystem, recoveryCollector, new RebuilderWrapper( rebuilder ), readOnlyChecker, NAME, monitor, databaseName,
-                maxCacheSize, userLogProvider, contextFactory );
+               maxCacheSize, userLogProvider, contextFactory, openOptions );
     }
 
     @Override
@@ -142,9 +146,11 @@ public class GBPTreeRelationshipGroupDegreesStore extends GBPTreeGenericCountsSt
         return key.first >> 2;
     }
 
-    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory ) throws IOException
+    public static void dump( PageCache pageCache, Path file, PrintStream out, CursorContextFactory contextFactory,
+                             ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeRelationshipGroupDegreesStore::keyToString );
+        GBPTreeGenericCountsStore.dump( pageCache, file, out, DEFAULT_DATABASE_NAME, NAME, contextFactory, GBPTreeRelationshipGroupDegreesStore::keyToString,
+                                        openOptions );
     }
 
     private static final Updater NO_OP_UPDATER = new Updater()

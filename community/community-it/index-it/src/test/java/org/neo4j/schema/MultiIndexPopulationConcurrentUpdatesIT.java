@@ -349,9 +349,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             IndexProviderMap providerMap = getIndexProviderMap();
 
             indexService = IndexingServiceFactory.createIndexingService( config, scheduler,
-                    providerMap, indexStoreViewFactory, ktx.tokenRead(), initialSchemaRulesLoader( storageEngine ),
-                    nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
-                    mock( IndexStatisticsStore.class ), new CursorContextFactory( PageCacheTracer.NULL, EMPTY ), INSTANCE, "", writable() );
+                                                                         providerMap, indexStoreViewFactory, ktx.tokenRead(),
+                                                                         initialSchemaRulesLoader( storageEngine ),
+                                                                         nullLogProvider, IndexMonitor.NO_MONITOR, getSchemaState(),
+                                                                         mock( IndexStatisticsStore.class ),
+                                                                         new CursorContextFactory( PageCacheTracer.NULL, EMPTY ),
+                                                                         INSTANCE, "", writable(),
+                                                                         storageEngine.getOpenOptions() );
             indexService.start();
 
             rules = createIndexRules( provider, indexType, labelNameIdMap, propertyId );

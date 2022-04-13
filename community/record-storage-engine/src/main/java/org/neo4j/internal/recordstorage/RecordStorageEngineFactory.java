@@ -19,10 +19,14 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.factory.Sets;
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +74,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -85,6 +90,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -341,7 +347,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                     NullLogProvider.getInstance(),
                     recordFormats,
                     recordDatabaseLayout.getDatabaseName(),
-                    immutable.empty()
+                    stores.getOpenOptions()
             ) )
             {
 
@@ -566,6 +572,20 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public ImmutableSet<OpenOption> getStoreOpenOptions( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout layout,
+                                                         CursorContextFactory contextFactory )
+    {
+        RecordDatabaseLayout recordDatabaseLayout = RecordDatabaseLayout.convert( layout );
+        RecordFormats recordFormats = RecordFormatSelector.selectForStore( recordDatabaseLayout, fs, pageCache, NullLogProvider.getInstance(), contextFactory );
+        if ( recordFormats == null )
+        {
+            throw new IllegalStateException( "Can't detect open options for empty store" );
+        }
+
+        return PageCacheOptionsSelector.select( recordFormats );
     }
 
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess( NeoStores stores, CursorContextFactory contextFactory,

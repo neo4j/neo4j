@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.io.memory.ByteBuffers;
 
+import static java.lang.Math.toIntExact;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -46,7 +47,7 @@ public class Chunker
 
     public static byte[] chunk( int maxChunkSize, byte[][] messages ) throws IOException
     {
-        final ByteBuffer outputBuffer = ByteBuffers.allocate( 8, KibiByte, INSTANCE );
+        final ByteBuffer outputBuffer = ByteBuffers.allocate( toIntExact( KibiByte.toBytes( 8 ) ), INSTANCE );
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );

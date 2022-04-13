@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -65,13 +66,15 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                       Sets.immutable.empty() ),
                     p -> p.add( Arrays.asList(
                     add( 1, descriptor, Values.of( "v1" ), Values.of( "v2" ) ),
                     add( 2, descriptor, Values.of( "v1" ), Values.of( "v2" ) ) ), CursorContext.NULL_CONTEXT ) );
 
             // then
-            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup ) )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig, tokenNameLookup,
+                                                                            Sets.immutable.empty() ) )
             {
                 try ( ValueIndexReader reader = accessor.newValueReader();
                       NodeValueIterator nodes = new NodeValueIterator() )
@@ -102,7 +105,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                       Sets.immutable.empty() ), p ->
             {
                 try
                 {
@@ -128,7 +132,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
         {
             // given
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+            withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                       Sets.immutable.empty() ), p ->
             {
                 p.add( Arrays.asList(
                         add( nodeId1, descriptor, value1, value2 ),

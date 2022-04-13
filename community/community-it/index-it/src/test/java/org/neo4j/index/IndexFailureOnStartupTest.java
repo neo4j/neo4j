@@ -19,12 +19,14 @@
  */
 package org.neo4j.index;
 
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -39,6 +41,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsController;
@@ -156,11 +159,12 @@ public class IndexFailureOnStartupTest
 
     private void sabotageNativeIndexAndRestartDbms()
     {
+        var openOptions = db.getDependencyResolver().resolveDependency( StorageEngine.class ).getOpenOptions();
         controller.restartDbms( db.databaseName(), builder ->
         {
             try
             {
-                new SabotageNativeIndex( random.random(), RangeIndexProvider.DESCRIPTOR ).run( fs, db.databaseLayout() );
+                new SabotageNativeIndex( random.random(), RangeIndexProvider.DESCRIPTOR ).run( fs, db.databaseLayout(), openOptions );
             }
             catch ( IOException e )
             {

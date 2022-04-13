@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -166,7 +167,8 @@ abstract class IndexProviderTests
         provider = newReadOnlyProvider();
 
         assertThrows( UnsupportedOperationException.class, () -> provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ) );
+                                                                                        heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                                                        Sets.immutable.empty() ) );
     }
 
     /* getPopulationFailure */
@@ -176,14 +178,15 @@ abstract class IndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        IndexPopulator populator =
+                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
         populator.close( true, NULL_CONTEXT );
 
         // when
         // ... no failure on populator
 
-        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL_CONTEXT ) );
+        assertEquals( StringUtils.EMPTY, provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() ) );
     }
 
     @Test
@@ -193,19 +196,19 @@ abstract class IndexProviderTests
         provider = newProvider();
 
         IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                                   heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         nonFailedPopulator.create();
         nonFailedPopulator.close( true, NULL_CONTEXT );
 
         IndexPopulator failedPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         failedPopulator.create();
 
         // when
         failedPopulator.markAsFailed( "failure" );
         failedPopulator.close( false, NULL_CONTEXT );
 
-        var populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
+        var populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
         assertEquals( StringUtils.EMPTY, populationFailure );
     }
 
@@ -215,7 +218,7 @@ abstract class IndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
 
         // when
@@ -224,7 +227,7 @@ abstract class IndexProviderTests
         populator.close( false, NULL_CONTEXT );
 
         // then
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -234,10 +237,10 @@ abstract class IndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator firstPopulator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                               heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         firstPopulator.create();
         IndexPopulator secondPopulator = provider.getPopulator( otherDescriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         secondPopulator.create();
 
         // when
@@ -249,8 +252,8 @@ abstract class IndexProviderTests
         secondPopulator.close( false, NULL_CONTEXT );
 
         // then
-        assertThat( provider.getPopulationFailure( descriptor(), NULL_CONTEXT ) ).isEqualTo( firstFailure );
-        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL_CONTEXT ) ).isEqualTo( secondFailure );
+        assertThat( provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() ) ).isEqualTo( firstFailure );
+        assertThat( provider.getPopulationFailure( otherDescriptor(), NULL_CONTEXT, Sets.immutable.empty() ) ).isEqualTo( secondFailure );
     }
 
     @Test
@@ -259,7 +262,7 @@ abstract class IndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
 
         // when
@@ -269,7 +272,7 @@ abstract class IndexProviderTests
 
         // then
         provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT );
+        String populationFailure = provider.getPopulationFailure( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
         assertThat( populationFailure ).isEqualTo( failureMessage );
     }
 
@@ -283,7 +286,7 @@ abstract class IndexProviderTests
         provider = newProvider();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
@@ -296,11 +299,11 @@ abstract class IndexProviderTests
         // given
         provider = newProvider();
         IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(),
-                heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+                                                          heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
@@ -312,13 +315,14 @@ abstract class IndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        IndexPopulator populator =
+                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
         populator.markAsFailed( "Just some failure" );
         populator.close( false, NULL_CONTEXT );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
 
         // then
         assertEquals( InternalIndexState.FAILED, state );
@@ -329,12 +333,13 @@ abstract class IndexProviderTests
     {
         // given
         provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        IndexPopulator populator =
+                provider.getPopulator( descriptor(), samplingConfig(), heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, Sets.immutable.empty() );
         populator.create();
         populator.close( true, NULL_CONTEXT );
 
         // when
-        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT );
+        InternalIndexState state = provider.getInitialState( descriptor(), NULL_CONTEXT, Sets.immutable.empty() );
 
         // then
         assertEquals( InternalIndexState.ONLINE, state );

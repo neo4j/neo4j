@@ -19,9 +19,12 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -294,7 +297,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                 }
             }, readOnlyChecker, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory );
+                                           config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory, getOpenOptions() );
         }
         catch ( IOException e )
         {
@@ -309,9 +312,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             return new GBPTreeRelationshipGroupDegreesStore( pageCache, layout.relationshipGroupDegreesStore(), fs, recoveryCleanupWorkCollector,
-                    new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, contextFactory, internalLogProvider, Configuration.DEFAULT ),
-                    readOnlyChecker, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
-                    config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory );
+                                                             new DegreesRebuildFromStore( pageCache, neoStores, databaseLayout, contextFactory,
+                                                                                          internalLogProvider, Configuration.DEFAULT ),
+                                                             readOnlyChecker, GBPTreeGenericCountsStore.NO_MONITOR, layout.getDatabaseName(),
+                                                             config.get( counts_store_max_cached_entries ), userLogProvider, contextFactory, getOpenOptions() );
         }
         catch ( IOException e )
         {
@@ -721,5 +725,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         ByteBuffer buffer = ByteBuffer.allocate( Long.BYTES );
         buffer.putLong( nodeId );
         return buffer.array();
+    }
+
+    @Override
+    public ImmutableSet<OpenOption> getOpenOptions()
+    {
+        return neoStores.getOpenOptions();
     }
 }

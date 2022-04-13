@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -69,7 +70,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey>
         RecoveryCleanupWorkCollector cleanup = RecoveryCleanupWorkCollector.immediate();
         DatabaseIndexContext context =
                 DatabaseIndexContext.builder( pageCache, fs, contextFactory, DEFAULT_DATABASE_NAME ).withReadOnlyChecker( writable() ).build();
-        return new RangeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup );
+        return new RangeIndexAccessor( context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty() );
     }
 
     @Override

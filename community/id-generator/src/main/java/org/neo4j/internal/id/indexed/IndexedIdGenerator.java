@@ -55,7 +55,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
-import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
@@ -342,7 +341,7 @@ public class IndexedIdGenerator implements IdGenerator
         this.defaultMerger = new IdRangeMerger( false, monitor );
         this.recoveryMerger = new IdRangeMerger( true, monitor );
 
-        Optional<HeaderReader> header = readHeader( pageCache, path, databaseName, contextFactory );
+        Optional<HeaderReader> header = readHeader( pageCache, path, databaseName, contextFactory, openOptions );
         // We check generation here too since we could get into this scenario:
         // 1. start on existing store, but with missing .id file so that it gets created
         // 2. rebuild will happen in start(), but perhaps the db was shut down or killed before or during start()
@@ -657,18 +656,20 @@ public class IndexedIdGenerator implements IdGenerator
     /**
      * Reads contents of a header in an existing {@link IndexedIdGenerator}.
      *
-     * @param pageCache {@link PageCache} to map id generator in.
-     * @param path {@link Path} pointing to the id generator.
+     * @param pageCache    {@link PageCache} to map id generator in.
+     * @param path         {@link Path} pointing to the id generator.
      * @param databaseName name of the database id generator belongs to
-     * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly,
-     * otherwise {@link Optional#empty()}.
+     * @param openOptions
+     * @return {@link Optional} with the data embedded inside the {@link HeaderReader} if the id generator existed and the header was read correctly, otherwise
+     * {@link Optional#empty()}.
      */
-    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, String databaseName, CursorContextFactory contextFactory )
+    private static Optional<HeaderReader> readHeader( PageCache pageCache, Path path, String databaseName, CursorContextFactory contextFactory,
+                                                      ImmutableSet<OpenOption> openOptions )
     {
         try ( var cursorContext = contextFactory.create( "readHeader" ) )
         {
             HeaderReader headerReader = new HeaderReader();
-            GBPTree.readHeader( pageCache, path, headerReader, databaseName, cursorContext );
+            GBPTree.readHeader( pageCache, path, headerReader, databaseName, cursorContext, openOptions );
             return Optional.of( headerReader );
         }
         catch ( NoSuchFileException e )
@@ -689,20 +690,22 @@ public class IndexedIdGenerator implements IdGenerator
      * @param path {@link Path} pointing to the id generator.
      * @throws IOException if the file was missing or some other I/O error occurred.
      */
-    public static void dump( PageCache pageCache, Path path, CursorContextFactory contextFactory, boolean onlySummary ) throws IOException
+    public static void dump( PageCache pageCache, Path path, CursorContextFactory contextFactory, boolean onlySummary,
+                             ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-            HeaderReader header = readHeader( pageCache, path, DEFAULT_DATABASE_NAME, contextFactory ).orElseThrow(
-                    () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
-            IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
-            try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
-                    immediate(), readOnly(), immutable.empty(), DEFAULT_DATABASE_NAME, "Indexed ID generator", contextFactory ) )
+        HeaderReader header = readHeader( pageCache, path, DEFAULT_DATABASE_NAME, contextFactory, openOptions )
+                .orElseThrow( () -> new NoSuchFileException( path.toAbsolutePath().toString() ) );
+        IdRangeLayout layout = new IdRangeLayout( header.idsPerEntry );
+        try ( GBPTree<IdRangeKey,IdRange> tree = new GBPTree<>( pageCache, path, layout, GBPTree.NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
+                                                                immediate(), readOnly(), openOptions,
+                                                                DEFAULT_DATABASE_NAME, "Indexed ID generator", contextFactory ) )
+        {
+            System.out.println( header );
+            if ( onlySummary )
             {
-                System.out.println( header );
-                if ( onlySummary )
-                {
-                    MutableLong numDeletedNotFreed = new MutableLong();
-                    MutableLong numDeletedAndFreed = new MutableLong();
-                    System.out.println( "Calculating summary..." );
+                MutableLong numDeletedNotFreed = new MutableLong();
+                MutableLong numDeletedAndFreed = new MutableLong();
+                System.out.println( "Calculating summary..." );
                     try ( var cursorContext = contextFactory.create( "IndexDump" ) )
                     {
                         tree.visit( new GBPTreeVisitor.Adaptor<>()

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.memory.MemoryTracker;
 
+import static java.lang.Math.toIntExact;
 import static org.neo4j.io.memory.ByteBuffers.allocate;
 import static org.neo4j.io.memory.ByteBuffers.releaseBuffer;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -45,7 +46,7 @@ public final class HeapScopedBuffer implements ScopedBuffer
 
     public HeapScopedBuffer( int capacity, ByteUnit byteUnit, MemoryTracker memoryTracker )
     {
-        this( allocate( capacity, byteUnit, memoryTracker ), memoryTracker );
+        this( allocate( toIntExact( byteUnit.toBytes( capacity ) ), memoryTracker ), memoryTracker );
     }
 
     private HeapScopedBuffer( ByteBuffer buffer, MemoryTracker memoryTracker )

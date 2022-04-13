@@ -39,7 +39,12 @@ public enum RecordStorageCapability implements Capability
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
+    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
+
+    /**
+     * Store files are in little-endian format
+     */
+    LITTLE_ENDIAN( CapabilityType.FORMAT, CapabilityType.STORE );
 
     private final CapabilityType[] types;
     private final boolean additive;

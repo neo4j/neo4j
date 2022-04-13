@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -204,6 +205,6 @@ class ReadEntityIdsStepUsingTokenIndexTest
                 .forProvider( TokenIndexProvider.DESCRIPTOR );
         IndexFiles indexFiles = new IndexFiles.Directory( testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId() );
         return new TokenIndexAccessor( DatabaseIndexContext.builder( pageCache, testDir.getFileSystem(), contextFactory, DEFAULT_DATABASE_NAME ).build(),
-                indexFiles, INDEX_DESCRIPTOR, immediate() );
+                                       indexFiles, INDEX_DESCRIPTOR, immediate(), Sets.immutable.empty() );
     }
 }

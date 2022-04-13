@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema.tracking;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -38,8 +41,9 @@ public class TrackingReadersIndexProvider extends IndexProvider.Delegating
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup ) throws IOException
+    public IndexAccessor getOnlineAccessor( IndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TokenNameLookup tokenNameLookup,
+                                            ImmutableSet<OpenOption> openOptions ) throws IOException
     {
-        return new TrackingReadersIndexAccessor( indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup ) );
+        return new TrackingReadersIndexAccessor( indexProvider.getOnlineAccessor( descriptor, samplingConfig, tokenNameLookup, openOptions ) );
     }
 }

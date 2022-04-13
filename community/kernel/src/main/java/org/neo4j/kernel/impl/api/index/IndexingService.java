@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
@@ -29,6 +30,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -122,6 +124,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final String databaseName;
     private final DatabaseReadOnlyChecker readOnlyChecker;
     private final Config config;
+    private final ImmutableSet<OpenOption> openOptions;
     private final TokenNameLookup tokenNameLookup;
     private final JobScheduler jobScheduler;
     private final InternalLogProvider internalLogProvider;
@@ -141,22 +144,23 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private volatile State state = State.NOT_STARTED;
 
     IndexingService( IndexProxyCreator indexProxyCreator,
-            IndexProviderMap providerMap,
-            IndexMapReference indexMapRef,
-            IndexStoreViewFactory indexStoreViewFactory,
-            Iterable<IndexDescriptor> indexDescriptors,
-            IndexSamplingController samplingController,
-            TokenNameLookup tokenNameLookup,
-            JobScheduler scheduler,
-            SchemaState schemaState,
-            InternalLogProvider internalLogProvider,
-            IndexMonitor monitor,
-            IndexStatisticsStore indexStatisticsStore,
-            CursorContextFactory contextFactory,
-            MemoryTracker memoryTracker,
-            String databaseName,
-            DatabaseReadOnlyChecker readOnlyChecker,
-            Config config )
+                     IndexProviderMap providerMap,
+                     IndexMapReference indexMapRef,
+                     IndexStoreViewFactory indexStoreViewFactory,
+                     Iterable<IndexDescriptor> indexDescriptors,
+                     IndexSamplingController samplingController,
+                     TokenNameLookup tokenNameLookup,
+                     JobScheduler scheduler,
+                     SchemaState schemaState,
+                     InternalLogProvider internalLogProvider,
+                     IndexMonitor monitor,
+                     IndexStatisticsStore indexStatisticsStore,
+                     CursorContextFactory contextFactory,
+                     MemoryTracker memoryTracker,
+                     String databaseName,
+                     DatabaseReadOnlyChecker readOnlyChecker,
+                     Config config,
+                     ImmutableSet<OpenOption> openOptions )
     {
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -176,6 +180,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.databaseName = databaseName;
         this.readOnlyChecker = readOnlyChecker;
         this.config = config;
+        this.openOptions = openOptions;
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView( descriptor -> indexMapRef.getIndexProxy( descriptor.getId() ) );
     }
 
@@ -203,34 +208,30 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                                                          "to be able to use binaries for version 4.3 or newer." );
                     }
 
-                    IndexProxy indexProxy;
-
                     IndexProviderDescriptor providerDescriptor = descriptor.getIndexProvider();
                     IndexProvider provider = providerMap.lookup( providerDescriptor );
-                    InternalIndexState initialState = provider.getInitialState( descriptor, cursorContext );
+                    InternalIndexState initialState = provider.getInitialState( descriptor, cursorContext, openOptions );
 
                     indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() ).add( new IndexLogRecord( descriptor ) );
 
                     internalLog.debug( indexStateInfo( "init", initialState, descriptor ) );
-                    switch ( initialState )
-                    {
-                    case ONLINE:
-                        monitor.initialState(databaseName, descriptor, ONLINE );
-                        indexProxy = indexProxyCreator.createOnlineIndexProxy( descriptor );
-                        break;
-                    case POPULATING:
-                        // The database was shut down during population, or a crash has occurred, or some other sad thing.
-                        monitor.initialState( databaseName, descriptor, POPULATING );
-                        indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor );
-                        break;
-                    case FAILED:
-                        monitor.initialState( databaseName, descriptor, FAILED );
-                        IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorContext ) );
-                        indexProxy = indexProxyCreator.createFailedIndexProxy( descriptor, failure );
-                        break;
-                    default:
-                        throw new IllegalArgumentException( "" + initialState );
-                    }
+                    IndexProxy indexProxy = switch ( initialState )
+                            {
+                                case ONLINE -> {
+                                    monitor.initialState( databaseName, descriptor, ONLINE );
+                                    yield indexProxyCreator.createOnlineIndexProxy( descriptor );
+                                }
+                                case POPULATING -> {
+                                    // The database was shut down during population, or a crash has occurred, or some other sad thing.
+                                    monitor.initialState( databaseName, descriptor, POPULATING );
+                                    yield indexProxyCreator.createRecoveringIndexProxy( descriptor );
+                                }
+                                case FAILED -> {
+                                    monitor.initialState( databaseName, descriptor, FAILED );
+                                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( descriptor, cursorContext, openOptions ) );
+                                    yield indexProxyCreator.createFailedIndexProxy( descriptor, failure );
+                                }
+                            };
                     indexMap.putIndexProxy( indexProxy );
                 }
                 logIndexStateSummary( "init", indexStates );

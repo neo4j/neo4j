@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.eclipse.collections.api.set.ImmutableSet;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -42,9 +45,10 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator
     private boolean dropped;
     private boolean closed;
 
-    TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor )
+    TokenIndexPopulator( DatabaseIndexContext databaseIndexContext, IndexFiles indexFiles, IndexDescriptor descriptor,
+                         ImmutableSet<OpenOption> openOptions )
     {
-        super( databaseIndexContext, indexFiles, descriptor );
+        super( databaseIndexContext, indexFiles, descriptor, openOptions );
     }
 
     @Override

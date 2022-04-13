@@ -27,6 +27,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.eclipse.collections.impl.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +96,7 @@ class LuceneSchemaIndexPopulatorTest
                 new Monitors(), Config.defaults(), writable() );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexPrototype.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withName( "index" ).materialise( 0 );
-        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP );
+        indexPopulator = provider.getPopulator( index, samplingConfig, heapBufferFactory( 1024 ), INSTANCE, SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty() );
         indexPopulator.create();
     }
 
@@ -313,7 +314,7 @@ class LuceneSchemaIndexPopulatorTest
     private void switchToVerification() throws IOException
     {
         indexPopulator.close( true, NULL_CONTEXT );
-        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL_CONTEXT ) );
+        assertEquals( InternalIndexState.ONLINE, provider.getInitialState( index, NULL_CONTEXT, Sets.immutable.empty() ) );
         reader = DirectoryReader.open( directory );
         searcher = new IndexSearcher( reader );
     }

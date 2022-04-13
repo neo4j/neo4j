@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.collections.api.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
@@ -44,10 +46,10 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
         String failure = "The contrived failure";
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
         // WHEN (this will attempt to call close)
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ),
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup, immutable.empty() ),
                 p -> p.markAsFailed( failure ), false );
         // THEN
-        assertThat( indexProvider.getPopulationFailure( descriptor, NULL_CONTEXT ) ).contains( failure );
+        assertThat( indexProvider.getPopulationFailure( descriptor, NULL_CONTEXT, immutable.empty() ) ).contains( failure );
     }
 
     @Test
@@ -55,7 +57,8 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup ), p ->
+        withPopulator( indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                   immutable.empty() ), p ->
         {
             String failure = "The contrived failure";
 
@@ -64,7 +67,7 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
             p.close( false, NULL_CONTEXT );
 
             // THEN
-            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL_CONTEXT ) );
+            assertEquals( FAILED, indexProvider.getInitialState( descriptor, NULL_CONTEXT, immutable.empty() ) );
         }, false );
     }
 
@@ -73,7 +76,8 @@ abstract class SpecialisedIndexPopulatorCompatibility extends SpecialisedIndexPr
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( config );
-        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup );
+        final IndexPopulator p = indexProvider.getPopulator( descriptor, indexSamplingConfig, heapBufferFactory( 1024 ), INSTANCE, tokenNameLookup,
+                                                             immutable.empty() );
         p.close( false, NULL_CONTEXT );
 
         // WHEN

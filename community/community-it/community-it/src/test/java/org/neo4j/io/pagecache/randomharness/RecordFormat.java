@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.randomharness;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Arrays;
 
@@ -48,7 +49,7 @@ public abstract class RecordFormat
 
     public final void writeRecord( Record record, StoreChannel channel ) throws IOException
     {
-        ByteBuffer buffer = ByteBuffers.allocate( getRecordSize(), INSTANCE );
+        ByteBuffer buffer = ByteBuffers.allocate( getRecordSize(), ByteOrder.LITTLE_ENDIAN, INSTANCE );
         StubPageCursor cursor = new StubPageCursor( 0, buffer );
         write( record, cursor );
         channel.writeAll( buffer );
@@ -113,7 +114,7 @@ public abstract class RecordFormat
         long pagesInFile = channel.size() / PAGE_SIZE;
         int recordsInPage = (PAGE_SIZE - reservedBytes) / recordSize;
         long recordsInFile = pagesInFile * recordsInPage;
-        ByteBuffer buffer = ByteBuffers.allocate( recordSize, INSTANCE );
+        ByteBuffer buffer = ByteBuffers.allocate( recordSize, ByteOrder.LITTLE_ENDIAN, INSTANCE );
         StubPageCursor cursor = new StubPageCursor( 0, buffer, 0 );
         int page = 0;
         for ( int i = 0; i < recordsInFile; i++ )
