@@ -20,15 +20,23 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.ContainerIndex
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.Or
+import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.UnstableIdentifier
@@ -104,10 +112,10 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE (:L)
    */
-  lazy val createLabels: Set[LabelName] =
-    createPatterns.flatMap(_.nodes.flatMap(_.labels)).toSet ++
-    mergeNodePatterns.flatMap(_.createNode.labels) ++
-    mergeRelationshipPatterns.flatMap(_.createNodes.flatMap(_.labels))
+  lazy val createLabels: Set[Set[LabelName]] =
+    createPatterns.flatMap(_.nodes).map(_.labels.toSet).toSet ++
+    mergeNodePatterns.map(_.createNode.labels.toSet) ++
+    mergeRelationshipPatterns.flatMap(_.createNodes).map(_.labels.toSet)
 
   /*
    * Finds all node properties being created with CREATE ({prop...})
@@ -181,6 +189,7 @@ trait UpdateGraph {
         foreachOverlap(readQg)
 
       val checkers = Seq(
+        // TODO: Update to use label expression overlap
         deleteOverlap(_),
         removeLabelOverlap(_),
         setLabelOverlap(_),
@@ -258,7 +267,9 @@ trait UpdateGraph {
       noLabelOrPropOverlap || //MATCH () CREATE/MERGE (...)?
           (!currentNode.isStable &&
             labelsOnCurrentNode.nonEmpty &&
-            (labelsOnCurrentNode subsetOf labelsToCreate)) || //MATCH (:A:B) CREATE (:A:B:C)?
+            ((labelsOnCurrentNode subsetOf labelsToCreate.flatten) ||
+            // MATCH (:!(A|B)&A) CREATE (:A)
+            labelExpressionsOverlap(qgWithInfo, labelsToCreate, currentNode.name))) || //MATCH (:A:B) CREATE (:A:B:C)?
           (!currentNode.isStable &&
             labelsOnCurrentNode.isEmpty &&
             propertiesOnCurrentNode.exists(propertiesToCreate.overlaps)) || //MATCH ({prop:42}) CREATE ({prop:...})
@@ -267,6 +278,51 @@ trait UpdateGraph {
           (labelsToRemove intersect labelsOnCurrentNode).nonEmpty
     }
   }
+
+  /*
+   * Uses an expression evaluator to figure out if we have a label overlap.
+   * For example, if we have `CREATE (:A:B)` we need to solve the predicates given labels A and B (and no other labels).
+   * For predicates which contains non label expressions we default to true.
+   *
+   * If we have multiple predicates, we will only have an overlap if all predicates are evaluated to true.
+   * For example, if we have `MATCH (n) WHERE n:A AND n:B CREATE (:A)` we don't need to insert an eager since the predicate `(n:B)` will be evaluated to false.
+   */
+  private def labelExpressionsOverlap(qgWithInfo: QgWithLeafInfo, labelsToCreate: Set[Set[LabelName]], currentNode: String): Boolean = {
+    qgWithInfo.queryGraph.selections.predicates.map(_.expr).forall { expression =>
+      labelsToCreate.exists(labelToCreate => labelExpressionOverlaps(currentNode, expression, labelToCreate.map(_.name)).getOrElse(true))
+    }
+  }
+
+  private def labelExpressionOverlaps(currentNode: String, expression: Expression, createdLabels: Set[String]): Option[Boolean] = {
+    expression match {
+      case HasLabels(Variable(node), labels) if node == currentNode => Some(createdLabels.exists(labels.map(_.name).contains))
+      case And(lhs, rhs) => evalBinFunc(currentNode, lhs, rhs, createdLabels, (lhs, rhs) => lhs && rhs)
+      case Or(lhs, rhs) => evalBinFunc(currentNode, lhs, rhs, createdLabels, (lhs, rhs) => lhs || rhs)
+      case Not(expr) => labelExpressionOverlaps(currentNode, expr, createdLabels).map(!_)
+      case Ors(exprs) =>
+        val evaluatedExprs = exprs.map(expr => labelExpressionOverlaps(currentNode, expr, createdLabels))
+        if (evaluatedExprs.contains(None)) {
+          None
+        } else {
+         Some(evaluatedExprs.flatten.contains(true))
+        }
+      case Ands(exprs) =>
+        val evaluatedExprs = exprs.map(expr => labelExpressionOverlaps(currentNode, expr, createdLabels))
+        if (evaluatedExprs.contains(None)) {
+          None
+        } else {
+          Some(!evaluatedExprs.flatten.contains(false))
+        }
+      case _ => None
+    }
+  }
+
+  private def evalBinFunc(name: String, a: Expression, b: Expression, labels: Set[String], op: (Boolean, Boolean) => Boolean): Option[Boolean] =
+    labelExpressionOverlaps(name, a, labels)
+      .flatMap(lhs =>
+        labelExpressionOverlaps(name, b, labels)
+          .map(rhs => op(lhs, rhs))
+      )
 
   //if we do match delete and merge we always need to be eager
   def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
