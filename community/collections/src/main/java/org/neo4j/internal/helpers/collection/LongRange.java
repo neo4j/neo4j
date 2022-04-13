@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import java.util.Objects;
 import java.util.stream.LongStream;
 
 import static java.lang.String.format;
@@ -122,5 +123,26 @@ public final class LongRange
     public long to()
     {
         return to;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        LongRange longRange = (LongRange) o;
+        return from == longRange.from && to == longRange.to;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( from, to );
     }
 }
