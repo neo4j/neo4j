@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -41,6 +42,7 @@ trait Anonymizer {
   def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String
   def label(name: String): String
   def relationshipType(name: String): String
+  def labelOrRelationshipType(name: String): String
   def propertyKey(name: String): String
   def parameter(name: String): String
   def literal(value: String): String
@@ -55,6 +57,7 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: UnaliasedReturnItem => UnaliasedReturnItem(x.expression, anonymizer.unaliasedReturnItemName(x.expression, x.inputText))(x.position)
     case x: LabelName => LabelName(anonymizer.label(x.name))(x.position)
     case x: RelTypeName => RelTypeName(anonymizer.relationshipType(x.name))(x.position)
+    case x: LabelOrRelTypeName => LabelOrRelTypeName(anonymizer.labelOrRelationshipType(x.name))(x.position)
     case x: PropertyKeyName => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
     case x: Parameter => Parameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
     case x: StringLiteral => StringLiteral(anonymizer.literal(x.value))(x.position)
