@@ -799,16 +799,32 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     }
 
     @Override
-    public NULL createDatabaseAlias( NULL p, boolean replace, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName,
-                                     boolean ifNotExists )
+    public NULL createLocalDatabaseAlias( NULL p, boolean replace, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName,
+                                          boolean ifNotExists )
     {
-        throw new UnsupportedOperationException( "createDatabaseAlias is not a literal" );
+        throw new UnsupportedOperationException( "createLocalDatabaseAlias is not a literal" );
     }
 
     @Override
-    public NULL alterDatabaseAlias( NULL p, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName, boolean ifExists )
+    public NULL createRemoteDatabaseAlias( NULL p, boolean replace, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName,
+                                           boolean ifNotExists, SimpleEither<String,Object> url, SimpleEither<String,Object> username, Object password,
+                                           SimpleEither<Map<String,Object>,Object> driverSettings )
     {
-        throw new UnsupportedOperationException( "alterDatabaseAlias is not a literal" );
+        throw new UnsupportedOperationException( "createRemoteDatabaseAlias is not a literal" );
+    }
+
+    @Override
+    public NULL alterLocalDatabaseAlias( NULL p, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName, boolean ifExists )
+    {
+        throw new UnsupportedOperationException( "alterLocalDatabaseAlias is not a literal" );
+    }
+
+    @Override
+    public NULL alterRemoteDatabaseAlias( NULL p, SimpleEither<String,Object> aliasName, SimpleEither<String,Object> targetName, boolean ifExists,
+                                          SimpleEither<String,Object> url, SimpleEither<String,Object> username, Object password,
+                                          SimpleEither<Map<String,Object>,Object> driverSettings )
+    {
+        throw new UnsupportedOperationException( "alterRemoteDatabaseAlias is not a literal" );
     }
 
     @Override
@@ -816,6 +832,12 @@ public class LiteralInterpreter implements ASTFactory<NULL,
     {
 
         throw new UnsupportedOperationException( "dropAlias is not a literal" );
+    }
+
+    @Override
+    public NULL showAliases( NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull )
+    {
+        throw new UnsupportedOperationException( "showAliases is not a literal" );
     }
 
     @Override

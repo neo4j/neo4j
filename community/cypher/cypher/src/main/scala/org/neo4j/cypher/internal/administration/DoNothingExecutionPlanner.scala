@@ -27,11 +27,9 @@ import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
-import org.neo4j.dbms.api.DatabaseManagementException
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.database.TopologyGraphDbmsModel.NAME_PROPERTY
-import org.neo4j.dbms.database.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -126,9 +124,9 @@ case class DoNothingExecutionPlanner(normalExecutionEngine: ExecutionEngine,
       normalExecutionEngine,
       securityAuthorizationHandler,
       s"""
-         |MATCH (:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`})-[:$TARGETS]->(d:$DATABASE) RETURN d.name
+         |MATCH (d:$DATABASE_NAME {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
          |UNION
-         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.name
+         |MATCH (d:$DATABASE {$NAME_PROPERTY: $$`${nameFields.nameKey}`}) RETURN d.$NAME_PROPERTY
         """.stripMargin,
       VirtualValues.map(Array(nameFields.nameKey), Array(nameFields.nameValue)),
       queryHandler,

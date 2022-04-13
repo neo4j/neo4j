@@ -323,6 +323,11 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration
             newBuilder( "unsupported.dbms.block_alter_database", BOOL, false ).build();
 
     @Internal
+    @Description( "Enable or disable the ability to use remote aliases." )
+    public static final Setting<Boolean> block_remote_alias =
+            newBuilder( "unsupported.dbms.block_remote_alias", BOOL, false ).build();
+
+    @Internal
     @Description( "Enable or disable the ability to execute the `dbms.upgrade` procedure." )
     public static final Setting<Boolean> block_upgrade_procedures =
             newBuilder( "unsupported.dbms.upgrade_restriction_enabled", BOOL, false ).build();

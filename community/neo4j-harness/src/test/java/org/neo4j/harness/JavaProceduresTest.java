@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.messages.MessageUtil.createNodeWithLabelsDenied;
-import static org.neo4j.messages.MessageUtil.overridenMode;
+import static org.neo4j.messages.MessageUtil.overriddenMode;
 import static org.neo4j.messages.MessageUtil.withUser;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -201,7 +201,7 @@ class JavaProceduresTest
             assertQueryGetsValue( server, "CALL makeNode(\\'Test\\')", 2L );
             assertQueryGetsValue( server, "CALL countNodes", 3L );
             assertQueryGetsError( server, "CALL willFail",
-                                  createNodeWithLabelsDenied( "", "neo4j", overridenMode( withUser( "", FULL.name() ), READ.name() ) ) );
+                                  createNodeWithLabelsDenied( "", "neo4j", overriddenMode( withUser( "", FULL.name() ), READ.name() ) ) );
         }
     }
 

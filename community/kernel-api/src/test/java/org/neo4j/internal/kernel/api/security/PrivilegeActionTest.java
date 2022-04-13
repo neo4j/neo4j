@@ -31,11 +31,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ACCESS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ADMIN;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALIAS_MANAGEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_ALIAS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ALTER_USER;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_PRIVILEGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.ASSIGN_ROLE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CONSTRAINT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ALIAS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.CREATE_ELEMENT;
@@ -49,6 +52,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_AC
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DATABASE_MANAGEMENT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DBMS_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DELETE_ELEMENT;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_ALIAS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.DROP_INDEX;
@@ -74,6 +78,7 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PASSWOR
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_PROPERTY;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_HOME_DATABASE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SET_USER_STATUS;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ALIAS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_CONSTRAINT;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_INDEX;
@@ -104,6 +109,7 @@ class PrivilegeActionTest
         expected.put( ALTER_USER, Set.of( SET_USER_STATUS, SET_PASSWORDS, SET_USER_HOME_DATABASE ) );
         expected.put( DATABASE_MANAGEMENT, Set.of( CREATE_DATABASE, DROP_DATABASE, ALTER_DATABASE ) );
         expected.put( ALTER_DATABASE, Set.of( SET_DATABASE_ACCESS ) );
+        expected.put( ALIAS_MANAGEMENT, Set.of( CREATE_ALIAS, DROP_ALIAS, ALTER_ALIAS, SHOW_ALIAS ) );
         expected.put( PRIVILEGE_MANAGEMENT, Set.of( SHOW_PRIVILEGE, ASSIGN_PRIVILEGE, REMOVE_PRIVILEGE ) );
         expected.put( WRITE, Set.of( SET_LABEL, REMOVE_LABEL, CREATE_ELEMENT, DELETE_ELEMENT, SET_PROPERTY ) );
         expected.put( GRAPH_ACTIONS, Set.of( TRAVERSE, READ, WRITE, MATCH ) );
@@ -113,7 +119,8 @@ class PrivilegeActionTest
         expected.put( CONSTRAINT, Set.of( CREATE_CONSTRAINT, DROP_CONSTRAINT, SHOW_CONSTRAINT ) );
         expected.put( TOKEN, Set.of( CREATE_LABEL, CREATE_RELTYPE, CREATE_PROPERTYKEY ) );
         expected.put( DATABASE_ACTIONS, Set.of( INDEX, CONSTRAINT, TOKEN, ACCESS ) );
-        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, PRIVILEGE_MANAGEMENT, EXECUTE_ADMIN, IMPERSONATE ) );
+        expected.put( DBMS_ACTIONS, Set.of( ROLE_MANAGEMENT, USER_MANAGEMENT, DATABASE_MANAGEMENT, ALIAS_MANAGEMENT, PRIVILEGE_MANAGEMENT,
+                EXECUTE_ADMIN, IMPERSONATE ) );
     }
 
     @Test

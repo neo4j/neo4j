@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ast.AccessDatabaseAction
 import org.neo4j.cypher.internal.ast.AdministrationAction
+import org.neo4j.cypher.internal.ast.AllAliasManagementActions
 import org.neo4j.cypher.internal.ast.AllConstraintActions
 import org.neo4j.cypher.internal.ast.AllDatabaseAction
 import org.neo4j.cypher.internal.ast.AllDatabaseManagementActions
@@ -32,10 +33,12 @@ import org.neo4j.cypher.internal.ast.AllRoleActions
 import org.neo4j.cypher.internal.ast.AllTokenActions
 import org.neo4j.cypher.internal.ast.AllTransactionActions
 import org.neo4j.cypher.internal.ast.AllUserActions
+import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
 import org.neo4j.cypher.internal.ast.AlterUserAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
+import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateConstraintAction
 import org.neo4j.cypher.internal.ast.CreateDatabaseAction
 import org.neo4j.cypher.internal.ast.CreateElementAction
@@ -46,6 +49,7 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRoleAction
 import org.neo4j.cypher.internal.ast.CreateUserAction
 import org.neo4j.cypher.internal.ast.DeleteElementAction
+import org.neo4j.cypher.internal.ast.DropAliasAction
 import org.neo4j.cypher.internal.ast.DropConstraintAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAction
 import org.neo4j.cypher.internal.ast.DropIndexAction
@@ -71,6 +75,7 @@ import org.neo4j.cypher.internal.ast.SetPasswordsAction
 import org.neo4j.cypher.internal.ast.SetPropertyAction
 import org.neo4j.cypher.internal.ast.SetUserHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetUserStatusAction
+import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.ShowConstraintAction
 import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
@@ -148,6 +153,12 @@ object ActionMapper {
     case DropDatabaseAction           => security.PrivilegeAction.DROP_DATABASE
     case AlterDatabaseAction          => security.PrivilegeAction.ALTER_DATABASE
     case SetDatabaseAccessAction      => security.PrivilegeAction.SET_DATABASE_ACCESS
+
+    case AllAliasManagementActions => security.PrivilegeAction.ALIAS_MANAGEMENT
+    case CreateAliasAction => security.PrivilegeAction.CREATE_ALIAS
+    case DropAliasAction => security.PrivilegeAction.DROP_ALIAS
+    case AlterAliasAction => security.PrivilegeAction.ALTER_ALIAS
+    case ShowAliasAction => security.PrivilegeAction.SHOW_ALIAS
 
     case AllPrivilegeActions   => security.PrivilegeAction.PRIVILEGE_MANAGEMENT
     case ShowPrivilegeAction   => security.PrivilegeAction.SHOW_PRIVILEGE

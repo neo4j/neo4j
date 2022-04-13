@@ -66,6 +66,11 @@ public enum PrivilegeAction
     DROP_DATABASE,
     SET_DATABASE_ACCESS,
 
+    CREATE_ALIAS,
+    DROP_ALIAS,
+    ALTER_ALIAS,
+    SHOW_ALIAS,
+
     SHOW_USER,
     CREATE_USER,
     RENAME_USER,
@@ -184,6 +189,24 @@ public enum PrivilegeAction
                     switch ( action )
                     {
                     case SET_DATABASE_ACCESS:
+                        return true;
+                    default:
+                        return this == action;
+                    }
+                }
+            },
+
+    ALIAS_MANAGEMENT
+            {
+                @Override
+                public boolean satisfies( PrivilegeAction action )
+                {
+                    switch ( action )
+                    {
+                    case CREATE_ALIAS:
+                    case DROP_ALIAS:
+                    case ALTER_ALIAS:
+                    case SHOW_ALIAS:
                         return true;
                     default:
                         return this == action;
@@ -375,6 +398,7 @@ public enum PrivilegeAction
                     return ROLE_MANAGEMENT.satisfies( action ) ||
                            USER_MANAGEMENT.satisfies( action ) ||
                            DATABASE_MANAGEMENT.satisfies( action ) ||
+                           ALIAS_MANAGEMENT.satisfies( action ) ||
                            PRIVILEGE_MANAGEMENT.satisfies( action ) ||
                            EXECUTE_ADMIN == action ||
                            IMPERSONATE == action ||

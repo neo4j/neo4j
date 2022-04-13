@@ -50,4 +50,12 @@ public interface ASTExceptionFactory
     {
         return String.format( "Index type %s is not defined for create index command.", got.description() );
     }
+
+    static String invalidDotsInRemoteAliasName( String name )
+    {
+        return String.format(
+                "'.' is not a valid character in the remote alias name '%s'. " +
+                "Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
+                name );
+    }
 }

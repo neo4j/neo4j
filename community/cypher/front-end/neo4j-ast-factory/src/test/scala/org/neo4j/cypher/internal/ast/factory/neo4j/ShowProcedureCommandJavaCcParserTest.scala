@@ -141,6 +141,8 @@ class ShowProcedureCommandJavaCcParserTest extends ParserComparisonTestBase with
   test("SHOW EXECUTABLE PROCEDURE") {
     assertJavaCCException(testName,
       """Invalid input 'EXECUTABLE': expected
+        |  "ALIAS"
+        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"

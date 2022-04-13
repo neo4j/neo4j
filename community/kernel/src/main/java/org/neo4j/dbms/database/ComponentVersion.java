@@ -73,5 +73,6 @@ public interface ComponentVersion
         public static final String VERSION_43D3 = "Neo4j 4.3.0-Drop03";
         public static final String VERSION_43D4 = "Neo4j 4.3.0-Drop04";
         public static final String VERSION_44 = "Neo4j 4.4";
+        public static final String VERSION_44P7 = "Neo4j 4.4.7";
     }
 }

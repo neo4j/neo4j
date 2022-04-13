@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.procs
 
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.ast.AdministrationAction
-import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan.buildMessage
-import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan.checkToPredicate
+import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan.buildMessage
+import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan.checkToPredicate
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED
 import org.neo4j.internal.kernel.api.security.PermissionState
@@ -30,15 +30,15 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.values.virtual.MapValue
 
-case class AuthorizationPredicateExecutionPlan(securityAuthorizationHandler: SecurityAuthorizationHandler,
-                                               check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
-                                               source: Option[ExecutionPlan] = None,
-                                               violationMessage: (PermissionState, Seq[AdministrationAction]) => String = (_,_) => PERMISSION_DENIED)
+case class AuthorizationAndPredicateExecutionPlan(securityAuthorizationHandler: SecurityAuthorizationHandler,
+                                                  check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],
+                                                  source: Option[ExecutionPlan] = None,
+                                                  violationMessage: (PermissionState, Seq[AdministrationAction]) => String = (_,_) => PERMISSION_DENIED)
   extends PredicateExecutionPlan(checkToPredicate(_,_, check),
     source,
     buildMessage(securityAuthorizationHandler, _, _, check, violationMessage))
 
-object AuthorizationPredicateExecutionPlan {
+object AuthorizationAndPredicateExecutionPlan {
   private def buildMessage(securityAuthorizationHandler: SecurityAuthorizationHandler,
                            params: MapValue, securityContext: SecurityContext,
                            check: (MapValue, SecurityContext) => Seq[(AdministrationAction, PermissionState)],

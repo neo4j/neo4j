@@ -129,6 +129,8 @@ import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AllowedNonAdministrationCommands
 import org.neo4j.cypher.internal.logical.plans.AlterDatabase
+import org.neo4j.cypher.internal.logical.plans.AlterLocalDatabaseAlias
+import org.neo4j.cypher.internal.logical.plans.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.Anti
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
@@ -139,7 +141,9 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
-import org.neo4j.cypher.internal.logical.plans.AssertNotBlocked
+import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedDatabaseManagement
+import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedDropAlias
+import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedRemoteAliasManagement
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
@@ -149,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateBtreeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
+import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
@@ -156,6 +161,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstr
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUniquePropertyConstraint
@@ -183,6 +189,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForLookupIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfNotExists
 import org.neo4j.cypher.internal.logical.plans.DropConstraintOnName
 import org.neo4j.cypher.internal.logical.plans.DropDatabase
+import org.neo4j.cypher.internal.logical.plans.DropDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.DropIndex
 import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.DropNodeKeyConstraint
@@ -284,6 +291,7 @@ import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.ShowAliases
 import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
 import org.neo4j.cypher.internal.logical.plans.ShowDatabase
@@ -1714,6 +1722,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(StopDatabase(privLhsLP, util.Left("db1")), 1.0), adminPlanDescription)
 
+    assertGood(attach(CreateLocalDatabaseAlias(privLhsLP, util.Left("alias1"), util.Left("db1"), replace = false), 1.0), adminPlanDescription)
+
+    assertGood(attach(CreateRemoteDatabaseAlias(privLhsLP, util.Left("alias1"), util.Left("db1"), replace = false, util.Left("url"), util.Left("user"), varFor("password"), None), 1.0), adminPlanDescription)
+
+    assertGood(attach(DropDatabaseAlias(privLhsLP, util.Left("alias1")), 1.0), adminPlanDescription)
+
+    assertGood(attach(AlterLocalDatabaseAlias(privLhsLP, util.Left("alias1"), util.Left("db2")), 1.0), adminPlanDescription)
+
+    assertGood(attach(AlterRemoteDatabaseAlias(privLhsLP, util.Left("alias1"), Some(util.Left("db2")), Some(util.Left("url")), Some(util.Left("user")), Some(varFor("password")), None), 1.0), adminPlanDescription)
+
+    assertGood(attach(ShowAliases(privLhsLP, verbose = false, List.empty, None, None), 1.0), adminPlanDescription)
+
     assertGood(attach(EnsureValidNonSystemDatabase(privLhsLP, util.Left("db1"), "action1"), 1.0), adminPlanDescription)
 
     assertGood(attach(EnsureValidNumberOfDatabases(CreateDatabase(privLhsLP, util.Left("db1"), NoOptions)), 1.0), adminPlanDescription)
@@ -1732,7 +1752,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(attach(AssertAllowedDatabaseAction(StopDatabaseAction, util.Left("db1"), None), 1.0), adminPlanDescription)
 
-    assertGood(attach(AssertNotBlocked(CreateDatabaseAction), 1.0), adminPlanDescription)
+    assertGood(attach(AssertNotBlockedDatabaseManagement(CreateDatabaseAction), 1.0), adminPlanDescription)
+
+    assertGood(attach(AssertNotBlockedRemoteAliasManagement(), 1.0), adminPlanDescription)
+
+    assertGood(attach(AssertNotBlockedDropAlias(util.Left("alias")), 1.0), adminPlanDescription)
 
     assertGood(attach(WaitForCompletion(
       StartDatabase(

@@ -22,6 +22,7 @@ package org.neo4j.messages;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -46,7 +47,7 @@ public class MessageUtilTest
     @Test
     void overridenMode()
     {
-        Assertions.assertThat( MessageUtil.overridenMode( "origin", "wrapping" ) )
+        Assertions.assertThat( MessageUtil.overriddenMode( "origin", "wrapping" ) )
                   .isEqualTo( "origin overridden by wrapping" );
     }
 
@@ -67,8 +68,60 @@ public class MessageUtilTest
     void StandardMode()
     {
         Assertions.assertThat( MessageUtil.standardMode( new HashSet<>() ) ).isEqualTo( "no roles" );
-        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1") ) ).isEqualTo( "roles [role1]" );
-        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1", "role2") ) ).isEqualTo( "roles [role1, role2]" );
-
+        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1" ) ) ).isEqualTo( "roles [role1]" );
+        Assertions.assertThat( MessageUtil.standardMode( Set.of( "role1", "role2" ) ) ).isEqualTo( "roles [role1, role2]" );
     }
+
+    //alias
+
+    @Test
+    void alterToLocalAlias()
+    {
+        Assertions.assertThat( MessageUtil.alterToLocalAlias( "name" ) )
+                  .isEqualTo( "Failed to alter the specified database alias 'name': alter a local alias to a remote alias is not supported." );
+    }
+
+    @Test
+    void failedToFindEncryptionKeyInKeystore()
+    {
+        Assertions.assertThat( MessageUtil.failedToFindEncryptionKeyInKeystore( "name" ) )
+                  .isEqualTo( "Failed to read the symmetric key from the configured keystore. The key 'name' was not found in the given keystore file." );
+    }
+
+    @Test
+    void failedToReadRemoteAliasEncryptionKey()
+    {
+        Assertions.assertThat( MessageUtil.failedToReadRemoteAliasEncryptionKey( "setting1", "setting2" ) )
+                  .isEqualTo(
+                          "Failed to read the symmetric key from the configured keystore. Please verify the keystore configurations: setting1, setting2." );
+    }
+
+    @Test
+    void failedToEncryptPassword()
+    {
+        Assertions.assertThat(MessageUtil.failedToEncryptPassword())
+              .isEqualTo( "Failed to encrypt remote user password." );
+    }
+
+    @Test
+    void failedToDecryptPassword()
+    {
+        Assertions.assertThat(MessageUtil.failedToDecryptPassword())
+                  .isEqualTo( "Failed to decrypt remote user password." );
+    }
+
+    @Test
+    void invalidScheme()
+    {
+        Assertions.assertThat(MessageUtil.invalidScheme( "url", Arrays.asList("scheme1", "scheme2")))
+                  .isEqualTo( "The provided url 'url' has an invalid scheme. Please use one of the following schemes: scheme1, scheme2." );
+    }
+
+    @Test
+    void insecureScheme()
+    {
+        Assertions.assertThat(MessageUtil.insecureScheme("url", Arrays.asList( "scheme1", "scheme2")))
+                  .isEqualTo( "The provided url 'url' is not a secure scheme. Please use one of the following schemes: scheme1, scheme2." );
+    }
+
 }

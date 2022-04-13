@@ -151,6 +151,8 @@ class ShowFunctionCommandJavaCcParserTest extends ParserComparisonTestBase with 
   test("SHOW EXECUTABLE FUNCTION") {
     assertJavaCCException(testName,
       """Invalid input 'EXECUTABLE': expected
+        |  "ALIAS"
+        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"

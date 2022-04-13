@@ -210,6 +210,6 @@ public class OverriddenAccessMode extends WrappedAccessMode
     @Override
     public String name()
     {
-        return MessageUtil.overridenMode( original.name(), wrapping.name() );
+        return MessageUtil.overriddenMode( original.name(), wrapping.name() );
     }
 }

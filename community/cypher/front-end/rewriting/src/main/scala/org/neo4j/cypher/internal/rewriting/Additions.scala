@@ -16,16 +16,20 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.AllAliasManagementActions
+import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabase
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
-import org.neo4j.cypher.internal.ast.AlterDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterLocalDatabaseAlias
+import org.neo4j.cypher.internal.ast.AlterRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.ConstraintVersion1
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
+import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.CreateBtreeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateBtreeRelationshipIndex
-import org.neo4j.cypher.internal.ast.CreateDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateFulltextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
@@ -34,11 +38,13 @@ import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUniquePropertyConstraint
 import org.neo4j.cypher.internal.ast.DbmsPrivilege
 import org.neo4j.cypher.internal.ast.DenyPrivilege
+import org.neo4j.cypher.internal.ast.DropAliasAction
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropDatabaseAlias
 import org.neo4j.cypher.internal.ast.DropIndexOnName
@@ -52,6 +58,8 @@ import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
+import org.neo4j.cypher.internal.ast.ShowAliasAction
+import org.neo4j.cypher.internal.ast.ShowAliases
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
@@ -293,13 +301,62 @@ object Additions {
         throw cypherExceptionFactory.syntaxException("`TERMINATE TRANSACTIONS` is not supported in this Cypher version.", c.position)
 
       // CREATE ALIAS [name] FOR DATABASE [name]
-      case c@CreateDatabaseAlias(_, _, _) => throw cypherExceptionFactory.syntaxException("Create alias is not supported in this Cypher version.", c.position)
+      case c: CreateLocalDatabaseAlias => throw cypherExceptionFactory.syntaxException("Create local alias is not supported in this Cypher version.", c.position)
+
+      // CREATE ALIAS [name] FOR DATABASE [name] AT [url] USER [name] PASSWORD [password]
+      case c: CreateRemoteDatabaseAlias => throw cypherExceptionFactory.syntaxException("Create remote alias is not supported in this Cypher version.", c.position)
 
       // ALTER ALIAS [name] FOR SET DATABASE TARGET [name]
-      case c@AlterDatabaseAlias(_, _, _) => throw cypherExceptionFactory.syntaxException("Alter alias is not supported in this Cypher version.", c.position)
+      case c: AlterLocalDatabaseAlias => throw cypherExceptionFactory.syntaxException("Alter alias is not supported in this Cypher version.", c.position)
+
+      // ALTER ALIAS [name] FOR SET DATABASE ...
+      case c: AlterRemoteDatabaseAlias => throw cypherExceptionFactory.syntaxException("Alter alias is not supported in this Cypher version.", c.position)
 
       // DROP ALIAS [name] FOR DATABASE
-      case c@DropDatabaseAlias(_, _) => throw cypherExceptionFactory.syntaxException("Drop alias is not supported in this Cypher version.", c.position)
+      case c: DropDatabaseAlias => throw cypherExceptionFactory.syntaxException("Drop alias is not supported in this Cypher version.", c.position)
+
+      // SHOW ALIAS[ES] FOR DATABASE
+      case c: ShowAliases => throw cypherExceptionFactory.syntaxException("Show aliases is not supported in this Cypher version.", c.position)
+
+      // GRANT/DENY/REVOKE ALIAS MANAGEMENT ...
+      case p@GrantPrivilege(DbmsPrivilege(AllAliasManagementActions), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("ALIAS MANAGEMENT privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(AllAliasManagementActions), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALIAS MANAGEMENT privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(AllAliasManagementActions), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALIAS MANAGEMENT privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE CREATE ALIAS ...
+      case p@GrantPrivilege(DbmsPrivilege(CreateAliasAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("CREATE ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(CreateAliasAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("CREATE ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(CreateAliasAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("CREATE ALIAS privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE DROP ALIAS ...
+      case p@GrantPrivilege(DbmsPrivilege(DropAliasAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("DROP ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(DropAliasAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("DROP ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(DropAliasAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("DROP ALIAS privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE ALTER ALIAS ...
+      case p@GrantPrivilege(DbmsPrivilege(AlterAliasAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("ALTER ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(AlterAliasAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALTER ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(AlterAliasAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("ALTER ALIAS privilege is not supported in this Cypher version.", p.position)
+
+      // GRANT/DENY/REVOKE SHOW ALIAS ...
+      case p@GrantPrivilege(DbmsPrivilege(ShowAliasAction), _, _, _)    =>
+        throw cypherExceptionFactory.syntaxException("SHOW ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@DenyPrivilege(DbmsPrivilege(ShowAliasAction), _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW ALIAS privilege is not supported in this Cypher version.", p.position)
+      case p@RevokePrivilege(DbmsPrivilege(ShowAliasAction), _, _, _, _) =>
+        throw cypherExceptionFactory.syntaxException("SHOW ALIAS privilege is not supported in this Cypher version.", p.position)
     }
 
     private def hasRangeOptions(options: Options): Boolean = options match {

@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
-
+import org.neo4j.cypher.internal.ast.AllAliasManagementActions
+import org.neo4j.cypher.internal.ast.AlterAliasAction
 import org.neo4j.cypher.internal.ast.AlterDatabaseAction
-
+import org.neo4j.cypher.internal.ast.CreateAliasAction
 import org.neo4j.cypher.internal.ast.DbmsAction
+import org.neo4j.cypher.internal.ast.DropAliasAction
 import org.neo4j.cypher.internal.ast.RevokeBothType
 import org.neo4j.cypher.internal.ast.RevokeDenyType
 import org.neo4j.cypher.internal.ast.RevokeGrantType
 import org.neo4j.cypher.internal.ast.SetDatabaseAccessAction
+import org.neo4j.cypher.internal.ast.ShowAliasAction
 import org.neo4j.cypher.internal.ast.factory.neo4j.ParserComparisonTestBase
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -88,7 +91,12 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
 
     val privilegesOnlySupportedInJavaCc = Seq(
       "ALTER DATABASE",
-      "SET DATABASE ACCESS"
+      "SET DATABASE ACCESS",
+      "ALIAS MANAGEMENT",
+      "CREATE ALIAS",
+      "DROP ALIAS",
+      "ALTER ALIAS",
+      "SHOW ALIAS"
     )
 
     privilegesSupportedInParboiled.foreach {
@@ -112,6 +120,46 @@ class DbmsPrivilegeAdministrationCommandJavaCcParserTest extends ParserCompariso
 
     test(s"$command SET DATABASE ACCESS ON DBMS $preposition role") {
       assertJavaCCAST(testName, privilegeFunc(SetDatabaseAccessAction, Seq(Left("role"))))
+    }
+
+    test(s"$command ALIAS MANAGEMENT ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(AllAliasManagementActions, Seq(Left("role"))))
+    }
+
+    test(s"$command DATABASE ALIAS MANAGEMENT ON DBMS $preposition role") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'ALIAS': expected")
+    }
+
+    test(s"$command CREATE ALIAS ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(CreateAliasAction, Seq(Left("role"))))
+    }
+
+    test(s"$command CREATE DATABASE ALIAS ON DBMS $preposition role") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'ALIAS': expected")
+    }
+
+    test(s"$command DROP ALIAS ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(DropAliasAction, Seq(Left("role"))))
+    }
+
+    test(s"$command DROP DATABASE ALIAS ON DBMS $preposition role") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'ALIAS': expected")
+    }
+
+    test(s"$command ALTER ALIAS ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(AlterAliasAction, Seq(Left("role"))))
+    }
+
+    test(s"$command ALTER DATABASE ALIAS ON DBMS $preposition role") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'ALIAS': expected")
+    }
+
+    test(s"$command SHOW ALIAS ON DBMS $preposition role") {
+      assertJavaCCAST(testName, privilegeFunc(ShowAliasAction, Seq(Left("role"))))
+    }
+
+    test(s"$command SHOW DATABASE ALIAS ON DBMS $preposition role") {
+      assertJavaCCExceptionStart(testName, "Invalid input 'DATABASE': expected")
     }
 
     (privilegesSupportedInParboiled ++ privilegesOnlySupportedInJavaCc).foreach {

@@ -48,6 +48,7 @@ import org.neo4j.cypher.internal.logical.plans.AlterUser
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
+import org.neo4j.cypher.internal.logical.plans.AssertAllowedOneOfDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
 import org.neo4j.cypher.internal.logical.plans.CreateUser
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfDatabaseExists
@@ -59,6 +60,7 @@ import org.neo4j.cypher.internal.logical.plans.EnsureNodeExists
 import org.neo4j.cypher.internal.logical.plans.LogSystemCommand
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NameValidator
+import org.neo4j.cypher.internal.logical.plans.PrivilegePlan
 import org.neo4j.cypher.internal.logical.plans.RenameUser
 import org.neo4j.cypher.internal.logical.plans.SetOwnPassword
 import org.neo4j.cypher.internal.logical.plans.ShowCurrentUser
@@ -66,7 +68,8 @@ import org.neo4j.cypher.internal.logical.plans.ShowDatabase
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SystemProcedureCall
 import org.neo4j.cypher.internal.procs.ActionMapper
-import org.neo4j.cypher.internal.procs.AuthorizationPredicateExecutionPlan
+import org.neo4j.cypher.internal.procs.AuthorizationAndPredicateExecutionPlan
+import org.neo4j.cypher.internal.procs.AuthorizationOrPredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.PredicateExecutionPlan
 import org.neo4j.cypher.internal.procs.SystemCommandExecutionPlan
 import org.neo4j.cypher.internal.util.Rewriter
@@ -132,29 +135,40 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
     case PermissionState.EXPLICIT_GRANT => ""
   }
 
-  private def checkAdminRightsForDBMSOrSelf (user: Either[String, Parameter], actions: Seq[DbmsAction]): AdministrationCommandRuntimeContext => ExecutionPlan = _ =>  {
-    def checkActions(securityContext: SecurityContext): Seq[(DbmsAction, PermissionState)] = actions.map( action =>
+  private def getSource(maybeSource: Option[PrivilegePlan], context: AdministrationCommandRuntimeContext): Option[ExecutionPlan] =
+    maybeSource match {
+      case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
+      case _ => None
+    }
+
+  private def checkActions(actions: Seq[DbmsAction], securityContext: SecurityContext): Seq[(DbmsAction, PermissionState)] =
+    actions.map { action =>
       (action, securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL)))
-    )
-    AuthorizationPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) => {
+    }
+
+  private def checkAdminRightsForDBMSOrSelf (user: Either[String, Parameter], actions: Seq[DbmsAction]): AdministrationCommandRuntimeContext => ExecutionPlan = _ =>  {
+    AuthorizationAndPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) => {
       if (securityContext.subject().hasUsername(runtimeStringValue(user, params))) Seq((null, PermissionState.EXPLICIT_GRANT))
-      else checkActions(securityContext)
+      else checkActions(actions, securityContext)
     }, violationMessage = adminActionErrorMessage)
   }
 
   def logicalToExecutable: PartialFunction[LogicalPlan, AdministrationCommandRuntimeContext => ExecutionPlan] = {
     // Check Admin Rights for DBMS commands
     case AssertAllowedDbmsActions(maybeSource, actions) => context =>
-      AuthorizationPredicateExecutionPlan(
+      AuthorizationAndPredicateExecutionPlan(
         securityAuthorizationHandler,
-        (_, securityContext) => actions.map { action =>
-          (action, securityContext.allowsAdminAction(new AdminActionOnResource(ActionMapper.asKernelAction(action), DatabaseScope.ALL, Segment.ALL)))
-        },
+        (_, securityContext) => checkActions(actions, securityContext),
         violationMessage = adminActionErrorMessage,
-        source = maybeSource match {
-          case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-          case _            => None
-        }
+        source = getSource(maybeSource, context)
+      )
+
+    case AssertAllowedOneOfDbmsActions(maybeSource, actions) => context =>
+      AuthorizationOrPredicateExecutionPlan(
+        securityAuthorizationHandler,
+        (_, securityContext) => checkActions(actions, securityContext),
+        violationMessage = adminActionErrorMessage,
+        source = getSource(maybeSource, context)
       )
 
     // Check Admin Rights for DBMS commands or self
@@ -169,14 +183,11 @@ case class CommunityAdministrationCommandRuntime(normalExecutionEngine: Executio
 
     // Check Admin Rights for some Database commands
     case AssertAllowedDatabaseAction(action, database, maybeSource) => context =>
-      AuthorizationPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) =>
+      AuthorizationAndPredicateExecutionPlan(securityAuthorizationHandler, (params, securityContext) =>
         Seq((action, securityContext.allowsAdminAction(
           new AdminActionOnResource(ActionMapper.asKernelAction(action), new DatabaseScope(runtimeStringValue(database, params)), Segment.ALL)))),
         violationMessage = adminActionErrorMessage,
-        source = maybeSource match {
-          case Some(source) => Some(fullLogicalToExecutable.applyOrElse(source, throwCantCompile).apply(context))
-          case _ => None
-        }
+        source = getSource(maybeSource, context)
       )
 
     // SHOW USERS

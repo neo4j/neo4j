@@ -451,6 +451,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   test("SHOW UNIQUENESS CONSTRAINTS") {
     assertJavaCCException(testName,
       """Invalid input 'UNIQUENESS': expected
+        |  "ALIAS"
+        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"
@@ -499,6 +501,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   test("SHOW NODES EXIST CONSTRAINTS") {
     assertJavaCCException(testName,
       """Invalid input 'NODES': expected
+        |  "ALIAS"
+        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"
@@ -547,6 +551,8 @@ class ShowSchemaCommandJavaCcParserTest extends ParserComparisonTestBase with Fu
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
     assertJavaCCException(testName,
       """Invalid input 'RELATIONSHIPS': expected
+        |  "ALIAS"
+        |  "ALIASES"
         |  "ALL"
         |  "BTREE"
         |  "BUILT"

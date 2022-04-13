@@ -104,6 +104,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   test("CATALOG SHOW ROLE") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
+         |  "ALIAS"
+         |  "ALIASES"
          |  "ALL"
          |  "BTREE"
          |  "BUILT"
@@ -162,6 +164,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   test("SHOW ROLE role") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
+         |  "ALIAS"
+         |  "ALIASES"
          |  "ALL"
          |  "BTREE"
          |  "BUILT"
@@ -204,6 +208,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   test("SHOW ROLE WITH USERS") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
+         |  "ALIAS"
+         |  "ALIASES"
          |  "ALL"
          |  "BTREE"
          |  "BUILT"
@@ -250,6 +256,8 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
   test("SHOW ROLE WITH USER") {
     val exceptionMessage =
       s"""Invalid input 'ROLE': expected
+         |  "ALIAS"
+         |  "ALIASES"
          |  "ALL"
          |  "BTREE"
          |  "BUILT"
@@ -698,6 +706,7 @@ class RoleAdministrationCommandJavaCcParserTest extends ParserComparisonTestBase
     assertJavaCCExceptionStart(testName,
       """Invalid input 'ROLES': expected
         |  "ACCESS"
+        |  "ALIAS"
         |  "ALL"
         |  "ALTER"
         |  "ASSIGN"
