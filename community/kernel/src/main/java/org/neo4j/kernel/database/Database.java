@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -422,6 +423,7 @@ public class Database extends LifecycleAdapter
 
             // Check the tail of transaction logs and validate version
             LogTailMetadata tailMetadata = getLogTail();
+            initialiseContextFactory( tailMetadata.getLastCommittedTransaction()::transactionId );
 
             boolean storageExists = storageEngineFactory.storageExists( fs, databaseLayout, databasePageCache );
             validateStoreAndTxLogs( tailMetadata, cursorContextFactory, storageExists );
@@ -438,9 +440,8 @@ public class Database extends LifecycleAdapter
             {
                 // recovery replayed logs and wrote some checkpoints as result we need to rescan log tail to get the latest info
                 tailMetadata = getLogTail();
+                initialiseContextFactory( tailMetadata.getLastCommittedTransaction()::transactionId );
             }
-            TransactionId lastCommittedTransaction = tailMetadata.getLastCommittedTransaction();
-            cursorContextFactory.init( lastCommittedTransaction::transactionId );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( internalLogProvider );
@@ -455,7 +456,7 @@ public class Database extends LifecycleAdapter
 
             MetadataProvider metadataProvider = storageEngine.metadataProvider();
             databaseDependencies.satisfyDependency( metadataProvider );
-            cursorContextFactory.init( metadataProvider::getLastClosedTransactionId );
+            initialiseContextFactory( metadataProvider::getLastClosedTransactionId );
             elementIdMapper = new DefaultElementIdMapperV1( storageEngine, namedDatabaseId );
 
             //Recreate the logFiles after storage engine to get access to dependencies
@@ -533,6 +534,11 @@ public class Database extends LifecycleAdapter
         {
             handleStartupFailure( e );
         }
+    }
+
+    private void initialiseContextFactory( LongSupplier longSupplier )
+    {
+        cursorContextFactory.init( longSupplier );
     }
 
     private void postStartupInit( boolean storageExists ) throws KernelException
@@ -1104,7 +1110,7 @@ public class Database extends LifecycleAdapter
     {
         if ( storageEngine != null )
         {
-            storageEngine.forceClose();
+            storageEngine.shutdown();
         }
     }
 

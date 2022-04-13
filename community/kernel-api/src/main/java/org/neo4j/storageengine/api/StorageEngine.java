@@ -160,10 +160,11 @@ public interface StorageEngine extends Lifecycle
     void dumpDiagnostics( InternalLog errorLog, DiagnosticsLogger diagnosticsLog );
 
     /**
-     * Force close all opened resources. This may be called during startup if there's a failure
-     * during recovery or similar.
+     * Close all opened resources. This may be called during startup if there's a failure
+     * during recovery or similar. That can happen outside of the owning lifecycle if any.
      */
-    void forceClose();
+    @Override
+    void shutdown();
 
     /**
      * Lists storage files into one of the two provided collections.

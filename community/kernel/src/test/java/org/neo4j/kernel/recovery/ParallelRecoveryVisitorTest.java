@@ -394,12 +394,6 @@ class ParallelRecoveryVisitorTest
         }
 
         @Override
-        public void forceClose()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable )
         {
             throw new UnsupportedOperationException();
@@ -439,6 +433,11 @@ class ParallelRecoveryVisitorTest
         public StoreEntityCounters storeEntityCounters()
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void shutdown()
+        {
         }
 
         @Override

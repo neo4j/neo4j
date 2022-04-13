@@ -162,6 +162,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
+    private volatile boolean closed;
 
     public RecordStorageEngine( RecordDatabaseLayout databaseLayout,
             Config config,
@@ -573,9 +574,23 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void shutdown() throws Exception
+    public void shutdown()
     {
-        executeAll( countsStore::close, groupDegreesStore::close, neoStores::close );
+        if ( !closed )
+        {
+            try
+            {
+                executeAll( countsStore::close, groupDegreesStore::close, neoStores::close );
+            }
+            catch ( Throwable e )
+            {
+                throw new RuntimeException( e );
+            }
+            finally
+            {
+                closed = true;
+            }
+        }
     }
 
     @Override
@@ -592,19 +607,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         DiagnosticsManager.dump( new NeoStoreIdUsage( neoStores ), errorLog, diagnosticsLog );
         DiagnosticsManager.dump( new NeoStoreRecords( neoStores ), errorLog, diagnosticsLog );
         DiagnosticsManager.dump( new NeoStoreVersions( neoStores ), errorLog, diagnosticsLog );
-    }
-
-    @Override
-    public void forceClose()
-    {
-        try
-        {
-            shutdown();
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     @Override
