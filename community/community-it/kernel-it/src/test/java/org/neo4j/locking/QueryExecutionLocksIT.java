@@ -95,7 +95,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.ValueMapper;
 
 @ImpermanentDbmsExtension
 class QueryExecutionLocksIT {
@@ -399,11 +398,6 @@ class QueryExecutionLocksIT {
             this.recordedLocks = recordedLocks;
             this.listeners = listeners;
             this.recordedLookupLocks = recordedLookupLocks;
-        }
-
-        @Override
-        public ValueMapper<Object> valueMapper() {
-            return delegate.valueMapper();
         }
 
         @Override

@@ -30,11 +30,8 @@ import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.ValueMapper;
 
 public interface TransactionalContext {
-    ValueMapper<Object> valueMapper();
-
     ExecutingQuery executingQuery();
 
     KernelTransaction kernelTransaction();

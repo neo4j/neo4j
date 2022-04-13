@@ -36,9 +36,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.ValueMapper;
 
 public class Neo4jTransactionalContext implements TransactionalContext {
     private final GraphDatabaseQueryService graph;
@@ -54,7 +52,6 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     private KernelStatement statement;
     private final ElementIdMapper elementIdMapper;
     private long transactionSequenceNumber;
-    private final ValueMapper<Object> valueMapper;
     private final KernelTransactionFactory transactionFactory;
 
     private final Runnable onClose;
@@ -96,16 +93,10 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         this.statement = initialStatement;
         this.elementIdMapper = transaction.elementIdMapper();
         this.transactionSequenceNumber = kernelTransaction.getTransactionSequenceNumber();
-        this.valueMapper = new DefaultValueMapper(transaction);
         this.transactionFactory = transactionFactory;
 
         this.statisticProvider = new TransactionalContextStatisticProvider(kernelTransaction.executionStatistics());
         this.onClose = onClose;
-    }
-
-    @Override
-    public ValueMapper<Object> valueMapper() {
-        return valueMapper;
     }
 
     @Override
