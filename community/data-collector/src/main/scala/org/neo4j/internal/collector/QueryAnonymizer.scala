@@ -90,6 +90,9 @@ class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.n
   override def relationshipType(name: String): String =
     tokenName("R", name, tokens.relationshipType(name))
 
+  override def labelOrRelationshipType(name: String): String =
+    tokenName("R", name, Seq(tokens.nodeLabel(name), tokens.relationshipType(name)).max)
+
   override def propertyKey(name: String): String =
     tokenName("p", name, tokens.propertyKey(name))
 
