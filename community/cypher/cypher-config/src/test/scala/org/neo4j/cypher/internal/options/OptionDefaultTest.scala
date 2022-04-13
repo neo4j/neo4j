@@ -21,27 +21,18 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.language.higherKinds
-
 class OptionDefaultTest extends CypherFunSuite {
 
+  case class MyOuter(inner: MyInner, someInt: Int)
+  case class MyInner(someString: String, anotherString: String)
+
+  implicit val defaultInt: OptionDefault[Int] = OptionDefault.create(123)
+  implicit val defaultString: OptionDefault[String] = OptionDefault.create("foo")
+  implicit val defaultInner: OptionDefault[MyInner] = OptionDefault.derive[MyInner]
+  implicit val defaultOuter: OptionDefault[MyOuter] = OptionDefault.derive[MyOuter]
+
   test("Can create default value for any case class") {
-    case class MyOuter(
-      inner: MyInner,
-      someInt: Int,
-    )
-    case class MyInner(
-      someString: String,
-      anotherString: String,
-    )
-
-    implicit val defaultInt: OptionDefault[Int] = OptionDefault.create(123)
-    implicit val defaultString: OptionDefault[String] = OptionDefault.create("foo")
-    implicit val defaultInner: OptionDefault[MyInner] = OptionDefault.derive[MyInner]
-    implicit val defaultOuter: OptionDefault[MyOuter] = OptionDefault.derive[MyOuter]
-
-    defaultOuter.default
-                .shouldEqual(MyOuter(MyInner("foo", "foo"), 123))
+    defaultOuter.default shouldEqual MyOuter(MyInner("foo", "foo"), 123)
   }
 
 }

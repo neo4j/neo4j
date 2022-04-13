@@ -21,27 +21,18 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.language.higherKinds
-
 class OptionRendererTest extends CypherFunSuite {
 
+  case class MyOuter(inner: MyInner, someInt: Int)
+  case class MyInner(someString: String, anotherString: String)
+
+  implicit val renderInts: OptionRenderer[Int] = OptionRenderer.create(value => s"the number $value")
+  implicit val renderStrings: OptionRenderer[String] = OptionRenderer.create(value => s"text $value")
+  implicit val renderInner: OptionRenderer[MyInner] = OptionRenderer.derive[MyInner]
+  implicit val renderOuter: OptionRenderer[MyOuter] = OptionRenderer.derive[MyOuter]
+
   test("Can render any case class") {
-    case class MyOuter(
-      inner: MyInner,
-      someInt: Int,
-    )
-    case class MyInner(
-      someString: String,
-      anotherString: String,
-    )
-
-    implicit val renderInts: OptionRenderer[Int] = OptionRenderer.create(value => s"the number $value")
-    implicit val renderStrings: OptionRenderer[String] = OptionRenderer.create(value => s"text $value")
-    implicit val renderInner: OptionRenderer[MyInner] = OptionRenderer.derive[MyInner]
-    implicit val renderOuter: OptionRenderer[MyOuter] = OptionRenderer.derive[MyOuter]
-
-    renderOuter.render(MyOuter(MyInner("abc", "foo"), 123))
-               .shouldEqual("text abc text foo the number 123")
+    renderOuter.render(MyOuter(MyInner("abc", "foo"), 123)) shouldEqual "text abc text foo the number 123"
   }
 
 }

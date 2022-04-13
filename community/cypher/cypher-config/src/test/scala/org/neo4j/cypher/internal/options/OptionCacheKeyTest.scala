@@ -21,27 +21,18 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.language.higherKinds
-
 class OptionCacheKeyTest extends CypherFunSuite {
 
+  case class MyOuter(inner: MyInner, someInt: Int)
+  case class MyInner(someString: String, anotherString: String)
+
+  implicit val cacheKeyInts: OptionCacheKey[Int] = OptionCacheKey.create(value => s"the number $value")
+  implicit val cacheKeyStrings: OptionCacheKey[String] = OptionCacheKey.create(value  => s"text $value")
+  implicit val cacheKeyInner: OptionCacheKey[MyInner] = OptionCacheKey.derive[MyInner]
+  implicit val cacheKeyOuter: OptionCacheKey[MyOuter] = OptionCacheKey.derive[MyOuter]
+
   test("Can create cache key for any case class") {
-    case class MyOuter(
-      inner: MyInner,
-      someInt: Int,
-    )
-    case class MyInner(
-      someString: String,
-      anotherString: String,
-    )
-
-    implicit val cacheKeyInts: OptionCacheKey[Int] = OptionCacheKey.create(value => s"the number $value")
-    implicit val cacheKeyStrings: OptionCacheKey[String] = OptionCacheKey.create(value  => s"text $value")
-    implicit val cacheKeyInner: OptionCacheKey[MyInner] = OptionCacheKey.derive[MyInner]
-    implicit val cacheKeyOuter: OptionCacheKey[MyOuter] = OptionCacheKey.derive[MyOuter]
-
-    cacheKeyOuter.cacheKey(MyOuter(MyInner("abc", "foo"), 123))
-               .shouldEqual("text abc text foo the number 123")
+    cacheKeyOuter.cacheKey(MyOuter(MyInner("abc", "foo"), 123)) shouldEqual "text abc text foo the number 123"
   }
 
 }
