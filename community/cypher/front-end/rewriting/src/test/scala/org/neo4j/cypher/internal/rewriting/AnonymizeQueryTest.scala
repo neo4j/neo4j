@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.rewriting
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
+import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -27,6 +28,7 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
   private val anonymizer = new Anonymizer {
     override def label(name: String): String = "x"+name
     override def relationshipType(name: String): String = "x"+name
+    override def labelOrRelationshipType(name: String): String = "x"+name
     override def propertyKey(name: String): String = "X"+name
     override def variable(name: String): String = "X"+name
     override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.expr(anonymizedExpression)
@@ -58,6 +60,35 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
     assertRewrite("MATCH ()-[:R*2..4]-() RETURN count(*)", "MATCH ()-[:xR*2..4]-() RETURN count(*)")
     assertRewrite("MATCH shortestPath(()-[:R*2..4]-()) RETURN count(*)", "MATCH shortestPath(()-[:xR*2..4]-()) RETURN count(*)")
     assertRewrite("MATCH ()-[r]-() SET r:TYPE", "MATCH ()-[Xr]-() SET Xr:xTYPE")
+  }
+
+  test("label or relationship type") {
+    assertRewrite(
+      "MATCH (n)-[r]->() UNWIND [n, r] AS x WITH x WHERE x:A RETURN n",
+      "MATCH (Xn)-[Xr]->() UNWIND [Xn, Xr] AS Xx WITH Xx WHERE Xx:xA RETURN Xn"
+    )
+    assertRewrite(
+      "MATCH (n)-[r]->() UNWIND [n, r] AS x WITH x WHERE x:A:B RETURN n",
+      "MATCH (Xn)-[Xr]->() UNWIND [Xn, Xr] AS Xx WITH Xx WHERE Xx:xA:xB RETURN Xn"
+    )
+  }
+
+  test("label expression") {
+    assertRewrite("MATCH (n:A&(B|!C)) RETURN n", "MATCH (Xn:xA&(xB|!xC)) RETURN Xn")
+    assertRewrite("MATCH (n) WHERE n:A&(B|!C) RETURN n", "MATCH (Xn) WHERE Xn:xA&(xB|!xC) RETURN Xn")
+  }
+
+  test("relationship type expression") {
+    val relationshipTypExpressionsImplemented = false
+
+    // This is to catch the eyes of relationship type expression implementers.
+    // When this test fails, keep only asserts in "else"-clause.
+    if (!relationshipTypExpressionsImplemented) {
+      assertThrows[SyntaxException](parseForRewriting("MATCH ()-[r:A&B]->() RETURN r"))
+    } else {
+      assertRewrite("MATCH ()-[r:A&(B|!C)]->() RETURN n", "MATCH ()-[Xr:xA&(xB|!xC)]->() RETURN Xr")
+      assertRewrite("MATCH ()-[r]->() WHERE r:A&(B|!C) RETURN r", "MATCH ()-[r]->() WHERE Xr:xA&(xB|!xC) RETURN Xr")
+    }
   }
 
   test("property key") {
