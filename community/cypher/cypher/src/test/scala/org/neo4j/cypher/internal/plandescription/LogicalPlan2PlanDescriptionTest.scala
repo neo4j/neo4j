@@ -3292,31 +3292,37 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(Eager(lhsLP, ListSet(EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar")))), 34.5),
+      attach(Eager(lhsLP, ListSet(EagernessReason.LabelReadRemoveConflict(label("Foo")))), 34.5),
       planDescription(
         id,
         "Eager",
         SingleChild(lhsPD),
-        Seq(details(Seq("overlapping remove labels: Foo, Bar"))),
+        Seq(details(Seq("read/remove conflict for label: Foo"))),
         Set("a")
       )
     )
 
     assertGood(
-      attach(Eager(lhsLP, ListSet(EagernessReason.OverlappingSetLabels(Seq("Foo", "Bar")))), 34.5),
-      planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("overlapping set labels: Foo, Bar"))), Set("a"))
+      attach(Eager(lhsLP, ListSet(EagernessReason.LabelReadSetConflict(label("Foo")))), 34.5),
+      planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("read/set conflict for label: Foo"))), Set("a"))
     )
 
     assertGood(
-      attach(Eager(lhsLP, ListSet(EagernessReason.DeleteOverlap(Seq("b")))), 34.5),
-      planDescription(id, "Eager", SingleChild(lhsPD), Seq(details(Seq("delete overlap: b"))), Set("a"))
+      attach(Eager(lhsLP, ListSet(EagernessReason.ReadDeleteConflict("b"))), 34.5),
+      planDescription(
+        id,
+        "Eager",
+        SingleChild(lhsPD),
+        Seq(details(Seq("read/delete conflict for variable: b"))),
+        Set("a")
+      )
     )
 
     assertGood(
       attach(
         Eager(
           lhsLP,
-          ListSet(EagernessReason.DeleteOverlap(Seq("b")), EagernessReason.OverlappingSetLabels(Seq("Foo")))
+          ListSet(EagernessReason.ReadDeleteConflict("b"), EagernessReason.LabelReadSetConflict(label("Foo")))
         ),
         34.5
       ),
@@ -3324,7 +3330,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "Eager",
         SingleChild(lhsPD),
-        Seq(details(Seq("delete overlap: b", "overlapping set labels: Foo"))),
+        Seq(details(Seq("read/delete conflict for variable: b", "read/set conflict for label: Foo"))),
         Set("a")
       )
     )

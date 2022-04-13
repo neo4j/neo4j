@@ -188,7 +188,9 @@ trait UpdateGraph {
         setLabelOverlap(_)
       )
 
-      val reasons = checkers.view.map(c => c(readQg)).collect { case Some(reason) => reason }.to(ListSet)
+      val reasons = checkers.view
+        .flatMap(c => c(readQg))
+        .to(ListSet)
 
       if (reasons.nonEmpty) {
         reasons
@@ -211,9 +213,9 @@ trait UpdateGraph {
     }
   }
 
-  def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Option[EagernessReason.Reason] = {
+  def writeOnlyHeadOverlaps(qgWithInfo: QgWithLeafInfo): Seq[EagernessReason.Reason] = {
     if (!containsUpdates) {
-      None
+      Seq.empty
     } else {
       val readQg =
         qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
@@ -223,9 +225,9 @@ trait UpdateGraph {
       if (overlap.nonEmpty) {
         overlap
       } else if (deleteOverlapWithMergeIn(qgWithInfo.queryGraph)) {
-        Some(EagernessReason.Unknown)
+        Seq(EagernessReason.Unknown)
       } else {
-        None
+        Seq.empty
       }
     }
   }
@@ -353,7 +355,7 @@ trait UpdateGraph {
    * and labels being updated with SET and MERGE here
    */
   def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
+  semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
     def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments(semanticTable)
       .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet))
@@ -362,11 +364,11 @@ trait UpdateGraph {
     }
 
     if (overlapWithKnownLabels.nonEmpty)
-      Some(EagernessReason.OverlappingSetLabels(overlapWithKnownLabels.toSeq.map(_.name)))
+      overlapWithKnownLabels.toSeq.map(EagernessReason.LabelReadSetConflict)
     else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
-      Some(EagernessReason.OverlappingSetLabels(Seq.empty))
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
     else
-      None
+      Seq.empty
   }
 
   /*
@@ -411,21 +413,21 @@ trait UpdateGraph {
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
-  def deleteOverlap(qgWithInfo: QgWithLeafInfo): Option[EagernessReason.Reason] = {
+  def deleteOverlap(qgWithInfo: QgWithLeafInfo): Seq[EagernessReason.Reason] = {
     // TODO:H FIXME qg.argumentIds here is not correct, but there is a unit test that depends on it
     val identifiersToRead = qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
       _.name
     ) ++ qgWithInfo.queryGraph.argumentIds
     val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
     if (overlaps.nonEmpty) {
-      Some(EagernessReason.DeleteOverlap(overlaps))
+      overlaps.map(EagernessReason.ReadDeleteConflict)
     } else {
-      None
+      Seq.empty
     }
   }
 
   def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
-  semanticTable: SemanticTable): Option[EagernessReason.Reason] = {
+  semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     lazy val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
     lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
@@ -442,9 +444,9 @@ trait UpdateGraph {
     }.flatten
 
     if (overlappingLabels.nonEmpty) {
-      Some(EagernessReason.OverlappingDeletedLabels(overlappingLabels.map(_.name)))
+      overlappingLabels.map(EagernessReason.LabelReadRemoveConflict)
     } else {
-      None
+      Seq.empty
     }
   }
 

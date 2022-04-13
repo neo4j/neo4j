@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.EagernessReason
-import org.neo4j.cypher.internal.ir.EagernessReason.OverlappingDeletedLabels
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -91,7 +91,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabel("a", "Label")))
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(OverlappingDeletedLabels(Vector("Label")))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(LabelReadRemoveConflict(labelName("Label")))
   }
 
   test("overlap when reading and creating the same label") {
@@ -254,7 +254,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.DeleteOverlap(Seq("a")))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.ReadDeleteConflict("a"))
   }
 
   test("overlap when reading and deleting with collections") {
@@ -266,7 +266,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       )
     )
 
-    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.DeleteOverlap(Seq("col")))
+    ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg)) shouldBe ListSet(EagernessReason.ReadDeleteConflict("col"))
   }
 
   test("overlap when reading and merging on the same label and property") {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -49,6 +50,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.Prober
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 import org.neo4j.graphdb.schema.IndexType
@@ -672,9 +674,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .eager(ListSet(EagernessReason.UpdateStrategyEager))
       .eager(ListSet(EagernessReason.Unknown))
       .eager(ListSet(
-        EagernessReason.DeleteOverlap(Seq("n", "m")),
-        EagernessReason.OverlappingSetLabels(Seq("X")),
-        EagernessReason.OverlappingDeletedLabels(Seq("Foo", "Bar"))
+        EagernessReason.ReadDeleteConflict("n"),
+        EagernessReason.LabelReadSetConflict(LabelName("X")(InputPosition.NONE)),
+        EagernessReason.LabelReadRemoveConflict(LabelName("Bar")(InputPosition.NONE))
       ))
       .argument()
       .build()
@@ -1798,11 +1800,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
+            |import org.neo4j.cypher.internal.expressions.LabelName
             |import org.neo4j.cypher.internal.logical.plans._
             |import org.neo4j.cypher.internal.logical.builder.TestException
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders
             |import org.neo4j.cypher.internal.ir.EagernessReason
+            |import org.neo4j.cypher.internal.util.InputPosition
             |import org.neo4j.graphdb.schema.IndexType
             |""".stripMargin
         )

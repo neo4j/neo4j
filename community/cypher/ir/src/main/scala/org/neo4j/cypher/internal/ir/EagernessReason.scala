@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.expressions.LabelName
+
 object EagernessReason {
 
   sealed trait Reason
@@ -27,8 +29,8 @@ object EagernessReason {
 
   case object UpdateStrategyEager extends Reason
 
-  case class OverlappingSetLabels(labels: Seq[String]) extends Reason
-  case class OverlappingDeletedLabels(labels: Seq[String]) extends Reason
+  case class LabelReadSetConflict(label: LabelName) extends Reason
+  case class LabelReadRemoveConflict(label: LabelName) extends Reason
 
-  case class DeleteOverlap(identifiers: Seq[String]) extends Reason
+  case class ReadDeleteConflict(identifier: String) extends Reason
 }

@@ -1227,12 +1227,12 @@ object LogicalPlanToPlanBuilderString {
     val suffix = reason match {
       case EagernessReason.Unknown             => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
-      case EagernessReason.OverlappingSetLabels(labels) =>
-        s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
-      case EagernessReason.OverlappingDeletedLabels(labels) =>
-        s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
-      case EagernessReason.DeleteOverlap(identifiers) =>
-        s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
+      case EagernessReason.LabelReadSetConflict(label) =>
+        s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
+      case EagernessReason.LabelReadRemoveConflict(label) =>
+        s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE))"
+      case EagernessReason.ReadDeleteConflict(identifier) =>
+        s"${objectName(EagernessReason.ReadDeleteConflict)}(${wrapInQuotations(identifier)})"
     }
     s"$prefix.$suffix"
   }

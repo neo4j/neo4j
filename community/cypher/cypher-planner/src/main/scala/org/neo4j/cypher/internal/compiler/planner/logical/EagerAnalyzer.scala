@@ -419,14 +419,14 @@ class EagerAnalyzer(context: LogicalPlanningContext) {
   private def writeReadConflictInHeadRecursive(
     head: SinglePlannerQuery,
     tail: SinglePlannerQuery
-  ): Option[EagernessReason.Reason] = {
+  ): Seq[EagernessReason.Reason] = {
     // TODO:H Refactor: This is same as writeReadConflictInTail, but with different overlaps method. Pass as a parameter
     if (!tail.queryGraph.writeOnly)
       // NOTE: Here we do not check writeOnlyHeadOverlapsHorizon, because we do not know of any case where a
       // write-only head could cause problems with reads in future horizons
       head.queryGraph writeOnlyHeadOverlaps qgWithNoStableIdentifierAndOnlyLeaves(tail.queryGraph)
     else if (tail.tail.isEmpty)
-      None
+      Seq.empty
     else
       writeReadConflictInHeadRecursive(head, tail.tail.get)
   }

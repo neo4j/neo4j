@@ -2171,14 +2171,14 @@ case class LogicalPlan2PlanDescription(
   }
 
   private def eagernessReasonInfo(reasons: ListSet[EagernessReason.Reason]): Seq[PrettyString] = {
-    reasons.toSeq.collect {
-      case _ @EagernessReason.UpdateStrategyEager => pretty"updateStrategy=eager"
-      case _ @EagernessReason.OverlappingSetLabels(labels) =>
-        pretty"overlapping set labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
-      case _ @EagernessReason.OverlappingDeletedLabels(labels) =>
-        pretty"overlapping remove labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
-      case _ @EagernessReason.DeleteOverlap(identifiers) =>
-        pretty"delete overlap: ${identifiers.map(asPrettyString(_)).mkPrettyString(", ")}"
+    reasons.toSeq.filterNot(_ == EagernessReason.Unknown).map {
+      case EagernessReason.UpdateStrategyEager => pretty"updateStrategy=eager"
+      case EagernessReason.LabelReadSetConflict(label) =>
+        pretty"read/set conflict for label: ${asPrettyString(label)}"
+      case EagernessReason.LabelReadRemoveConflict(label) =>
+        pretty"read/remove conflict for label: ${asPrettyString(label)}"
+      case EagernessReason.ReadDeleteConflict(identifier) =>
+        pretty"read/delete conflict for variable: ${asPrettyString(identifier)}"
     }
   }
 
