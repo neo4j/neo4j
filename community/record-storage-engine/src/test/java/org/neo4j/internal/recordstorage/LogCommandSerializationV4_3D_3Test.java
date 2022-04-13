@@ -29,8 +29,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.RandomSupport;
-import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,18 +36,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith( RandomExtension.class )
 class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 {
-    @Inject
-    private RandomSupport random;
-
     @Test
     void shouldReadAndWriteMetaDataCommand() throws IOException
     {
         // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         MetaDataRecord before = new MetaDataRecord();
         MetaDataRecord after = new MetaDataRecord();
         after.initialize( true, 999 );
-        new Command.MetaDataCommand( writer(), before, after ).serialize( channel );
+
+        byte[] bytes = new byte[]{ 19, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, 3, -25 };
+        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
 
         // When
         CommandReader reader = createReader();
@@ -66,15 +62,18 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
     void shouldReadRelationshipGroupCommandIncludingExternalDegrees() throws Throwable
     {
         // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, 3, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( random.nextBoolean() );
-        after.setHasExternalDegreesIn( random.nextBoolean() );
-        after.setHasExternalDegreesLoop( random.nextBoolean() );
+        after.setHasExternalDegreesOut( true );
+        after.setHasExternalDegreesIn( false );
+        after.setHasExternalDegreesLoop( true );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        byte[] bytes =
+                new byte[]{9, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                           -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -95, 0, 3, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0,
+                           0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7};
+        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
 
         // When
         CommandReader reader = createReader();
@@ -91,15 +90,18 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
     void shouldReadRelationshipGroupExtendedCommandIncludingExternalDegrees() throws Throwable
     {
         // Given
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipGroupRecord before = new RelationshipGroupRecord( 42 ).initialize( false, 3, NULL_REF, NULL_REF, NULL_REF, NULL_REF, NULL_REF );
         RelationshipGroupRecord after = new RelationshipGroupRecord( 42 ).initialize( true, (1 << Short.SIZE) + 10, 4, 5, 6, 7, 8 );
-        after.setHasExternalDegreesOut( random.nextBoolean() );
-        after.setHasExternalDegreesIn( random.nextBoolean() );
-        after.setHasExternalDegreesLoop( random.nextBoolean() );
+        after.setHasExternalDegreesOut( false );
+        after.setHasExternalDegreesIn( true );
+        after.setHasExternalDegreesLoop( false );
         after.setCreated();
 
-        new Command.RelationshipGroupCommand( writer(), before, after ).serialize( channel );
+        byte[] bytes =
+                new byte[]{21, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 3, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                           -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 65, 0, 10, 1, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 4, 0,
+                           0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 7};
+        InMemoryClosableChannel channel = new InMemoryClosableChannel( bytes, true, true );
 
         // When
         CommandReader reader = createReader();
@@ -116,11 +118,5 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
     protected CommandReader createReader()
     {
         return new LogCommandSerializationV4_3_D3();
-    }
-
-    @Override
-    protected LogCommandSerialization writer()
-    {
-        return LogCommandSerializationV4_3_D3.INSTANCE;
     }
 }

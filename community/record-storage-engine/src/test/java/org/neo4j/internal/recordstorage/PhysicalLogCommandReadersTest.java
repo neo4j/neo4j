@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -42,25 +43,27 @@ class PhysicalLogCommandReadersTest
 {
     private static final long ID = 42;
     private static final byte IN_USE_FLAG = Record.IN_USE.byteValue();
-    private static final short TYPE = (short) (Short.MAX_VALUE + 42);
-    private static final int TYPE_AS_INT = TYPE & 0xFFFF;
-    private static final long NEXT = 42;
-    private static final long FIRST_OUT = 42;
-    private static final long FIRST_IN = 42;
-    private static final long FIRST_LOOP = 42;
-    private static final long OWNING_NODE = 42;
+    private static final int TYPE_AS_INT = Short.MAX_VALUE + 42;
+    private static final long NEXT = 43;
+    private static final long FIRST_OUT = 44;
+    private static final long FIRST_IN = 45;
+    private static final long FIRST_LOOP = 46;
+    private static final long OWNING_NODE = 47;
 
     @ParameterizedTest
     @ValueSource( classes = {LogCommandSerializationV4_2.class, LogCommandSerializationV4_3_D3.class} )
-    void readRelGroupWithHugeType( Class<CommandReader> readerClass )
+    void readRelGroupWithHugeTypeBefore5_0( Class<CommandReader> readerClass )
             throws IOException, IllegalAccessException, InstantiationException, NoSuchMethodException, InvocationTargetException
     {
-        assertCanReadRelGroup( readerClass.getDeclaredConstructor().newInstance() );
+        CommandReader reader = readerClass.getDeclaredConstructor().newInstance();
+        StorageCommand command = reader.read( channelWithExtendedRelGroupRecordBefore5_0() );
+        assertValidRelGroupCommand( command );
     }
 
-    private static void assertCanReadRelGroup( CommandReader reader ) throws IOException
+    @Test
+    void readRelGroupWithHugeType() throws IOException
     {
-        StorageCommand command = reader.read( channelWithRelGroupRecord() );
+        StorageCommand command = LogCommandSerializationV5_0.INSTANCE.read( channelWithRelGroupRecord() );
         assertValidRelGroupCommand( command );
     }
 
@@ -87,24 +90,38 @@ class PhysicalLogCommandReadersTest
         assertEquals( NEXT, record.getNext() );
         assertEquals( FIRST_OUT, record.getFirstOut() );
         assertEquals( FIRST_IN, record.getFirstIn() );
-        assertEquals( FIRST_LOOP, record.getNext() );
+        assertEquals( FIRST_LOOP, record.getFirstLoop() );
         assertEquals( OWNING_NODE, record.getOwningNode() );
+    }
+
+    private static ReadableChannel channelWithExtendedRelGroupRecordBefore5_0() throws IOException
+    {
+        ReadableChannel channel = mock( ReadableChannel.class );
+
+        // Mock for both before and after state
+        when( channel.get() ).thenReturn( NeoCommandType.REL_GROUP_EXTENDED_COMMAND ).thenReturn( IN_USE_FLAG )
+                .thenReturn( (byte) (TYPE_AS_INT >>> Short.SIZE) ).thenReturn( IN_USE_FLAG )
+                .thenReturn( (byte) (TYPE_AS_INT >>> Short.SIZE) );
+        when( channel.getLong() ).thenReturn( ID ).thenReturn( NEXT ).thenReturn( FIRST_OUT ).thenReturn( FIRST_IN )
+                .thenReturn( FIRST_LOOP ).thenReturn( OWNING_NODE )
+                .thenReturn( NEXT ).thenReturn( FIRST_OUT ).thenReturn( FIRST_IN )
+                .thenReturn( FIRST_LOOP ).thenReturn( OWNING_NODE );
+        when( channel.getShort() ).thenReturn( (short) TYPE_AS_INT );
+
+        return channel;
     }
 
     private static ReadableChannel channelWithRelGroupRecord() throws IOException
     {
-        return channelWithRelGroupRecord( ID, IN_USE_FLAG, TYPE, NEXT, FIRST_OUT, FIRST_IN, FIRST_LOOP, OWNING_NODE );
-    }
-
-    private static ReadableChannel channelWithRelGroupRecord( long id, byte inUse, short type, long next,
-            long firstOut, long firstIn, long firstLoop, long owningNode ) throws IOException
-    {
         ReadableChannel channel = mock( ReadableChannel.class );
 
-        when( channel.get() ).thenReturn( NeoCommandType.REL_GROUP_COMMAND ).thenReturn( inUse );
-        when( channel.getLong() ).thenReturn( id ).thenReturn( next ).thenReturn( firstOut ).thenReturn( firstIn )
-                .thenReturn( firstLoop ).thenReturn( owningNode );
-        when( channel.getShort() ).thenReturn( type );
+        // Mock for both before and after state
+        when( channel.get() ).thenReturn( NeoCommandType.REL_GROUP_COMMAND ).thenReturn( IN_USE_FLAG );
+        when( channel.getLong() ).thenReturn( ID ).thenReturn( NEXT ).thenReturn( FIRST_OUT ).thenReturn( FIRST_IN )
+                .thenReturn( FIRST_LOOP ).thenReturn( OWNING_NODE )
+                .thenReturn( NEXT ).thenReturn( FIRST_OUT ).thenReturn( FIRST_IN )
+                .thenReturn( FIRST_LOOP ).thenReturn( OWNING_NODE );
+        when( channel.getInt() ).thenReturn( TYPE_AS_INT );
 
         return channel;
     }

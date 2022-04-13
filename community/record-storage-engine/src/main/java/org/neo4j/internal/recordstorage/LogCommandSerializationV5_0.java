@@ -20,6 +20,11 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +32,14 @@ import java.util.function.Consumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaRuleMapifier;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -42,7 +49,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.util.Bits.bitFlag;
@@ -284,6 +294,208 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
             channel.put( schemaFlags );
             channel.putLong( record.getNextProp() );
         }
+    }
+
+    private static void writeSchemaRule( WritableChannel channel, SchemaRule schemaRule ) throws IOException
+    {
+        Map<String,Value> ruleMap = SchemaRuleMapifier.mapifySchemaRule( schemaRule );
+        writeStringValueMap( channel, ruleMap );
+    }
+
+    /**
+     * @see LogCommandSerializationV4_2#readStringValueMap(ReadableChannel)
+     */
+    private static void writeStringValueMap( WritableChannel channel, Map<String,Value> ruleMap ) throws IOException
+    {
+        channel.putInt( ruleMap.size() );
+        for ( Map.Entry<String,Value> entry : ruleMap.entrySet() )
+        {
+            writeMapKeyByteArray( channel, UTF8.encode( entry.getKey() ) );
+            writeMapValue( channel, entry.getValue() );
+        }
+    }
+
+    private static void writeMapKeyByteArray( WritableChannel channel, byte[] bytes ) throws IOException
+    {
+        channel.putInt( bytes.length );
+        channel.put( bytes, bytes.length );
+    }
+
+    private static void writeMapValue( WritableChannel channel, Value value ) throws IOException
+    {
+        value.writeTo( new ValueWriter<IOException>()
+        {
+            private boolean arrayContext;
+
+            @Override
+            public void writeNull() throws IOException
+            {
+                throw new IOException( "Cannot write null entry value in schema record map representation." );
+            }
+
+            @Override
+            public void writeBoolean( boolean value ) throws IOException
+            {
+                if ( value )
+                {
+                    channel.put( SchemaMapValueType.BOOL_LITERAL_TRUE.type() );
+                }
+                else
+                {
+                    channel.put( SchemaMapValueType.BOOL_LITERAL_FALSE.type() );
+                }
+            }
+
+            @Override
+            public void writeInteger( byte value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.BYTE.type() );
+                }
+                channel.put( value );
+            }
+
+            @Override
+            public void writeInteger( short value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.SHORT.type() );
+                }
+                channel.putShort( value );
+            }
+
+            @Override
+            public void writeInteger( int value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.INT.type() );
+                }
+                channel.putInt( value );
+            }
+
+            @Override
+            public void writeInteger( long value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.LONG.type() );
+                }
+                channel.putLong( value );
+            }
+
+            @Override
+            public void writeFloatingPoint( float value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.FLOAT.type() );
+                }
+                channel.putFloat( value );
+            }
+
+            @Override
+            public void writeFloatingPoint( double value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.DOUBLE.type() );
+                }
+                channel.putDouble( value );
+            }
+
+            @Override
+            public void writeString( String value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.STRING.type() );
+                }
+                byte[] bytes = UTF8.encode( value );
+                channel.putInt( bytes.length );
+                channel.put( bytes, bytes.length );
+            }
+
+            @Override
+            public void writeString( char value ) throws IOException
+            {
+                if ( !arrayContext )
+                {
+                    channel.put( SchemaMapValueType.CHAR.type() );
+                }
+                channel.putInt( value );
+            }
+
+            @Override
+            public void beginArray( int size, ValueWriter.ArrayType arrayType ) throws IOException
+            {
+                arrayContext = true;
+                channel.put( SchemaMapValueType.ARRAY.type() );
+                channel.putInt( size );
+                channel.put( SchemaMapValueType.map( arrayType ).type() );
+            }
+
+            @Override
+            public void endArray()
+            {
+                arrayContext = false;
+            }
+
+            @Override
+            public void writeByteArray( byte[] value ) throws IOException
+            {
+                beginArray( value.length, ArrayType.BYTE );
+                for ( byte b : value )
+                {
+                    writeInteger( b );
+                }
+                endArray();
+            }
+
+            @Override
+            public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
+            {
+                throw new IOException( "Point is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
+            {
+                throw new IOException( "Duration is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeDate( LocalDate localDate ) throws IOException
+            {
+                throw new IOException( "Date is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeLocalTime( LocalTime localTime ) throws IOException
+            {
+                throw new IOException( "LocalTime is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeTime( OffsetTime offsetTime ) throws IOException
+            {
+                throw new IOException( "OffsetTime is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
+            {
+                throw new IOException( "LocalDateTime is not a supported schema map value type." );
+            }
+
+            @Override
+            public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
+            {
+                throw new IOException( "DateTime is not a supported schema map value type." );
+            }
+        } );
     }
 
     @Override
@@ -708,6 +920,48 @@ class LogCommandSerializationV5_0 extends LogCommandSerializationV4_4
     {
         // 5.0 serialization doesn't write "extended" group command and therefore doesn't support reading it
         throw unsupportedInThisVersionException();
+    }
+
+    @Override
+    public void writeMetaDataCommand( WritableChannel channel, Command.MetaDataCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.META_DATA_COMMAND );
+        channel.putLong( command.getKey() );
+        writeMetaDataRecord( channel, command.getBefore() );
+        writeMetaDataRecord( channel, command.getAfter() );
+    }
+
+    private static void writeMetaDataRecord( WritableChannel channel, MetaDataRecord record ) throws IOException
+    {
+        byte flags = bitFlag( record.inUse(), Record.IN_USE.byteValue() );
+        channel.put( flags );
+        channel.putLong( record.getValue() );
+    }
+
+    @Override
+    public void writeGroupDegreeCommand( WritableChannel channel, Command.GroupDegreeCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND );
+        channel.putLong( command.getKey() );
+        channel.putLong( command.delta() );
+    }
+
+    @Override
+    public void writeNodeCountsCommand( WritableChannel channel, Command.NodeCountsCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.UPDATE_NODE_COUNTS_COMMAND );
+        channel.putInt( command.labelId() )
+                .putLong( command.delta() );
+    }
+
+    @Override
+    public void writeRelationshipCountsCommand( WritableChannel channel, Command.RelationshipCountsCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND );
+        channel.putInt( command.startLabelId() )
+                .putInt( command.typeId() )
+                .putInt( command.endLabelId() )
+                .putLong( command.delta() );
     }
 
     private static void writeDynamicRecords( WritableChannel channel, List<DynamicRecord> records ) throws IOException
