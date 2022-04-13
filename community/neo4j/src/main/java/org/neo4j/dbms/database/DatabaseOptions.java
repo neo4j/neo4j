@@ -26,7 +26,8 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 
-public class DatabaseOptions
+public record DatabaseOptions(Map<Setting<?>,Object> settings,
+                              TopologyGraphDbmsModel.HostedOnMode mode)
 {
     public static final DatabaseOptions RAFT = empty( TopologyGraphDbmsModel.HostedOnMode.raft );
     public static final DatabaseOptions SINGLE = empty( TopologyGraphDbmsModel.HostedOnMode.single );
@@ -35,9 +36,6 @@ public class DatabaseOptions
     {
         return new DatabaseOptions( new HashMap<>(), mode );
     }
-
-    private final TopologyGraphDbmsModel.HostedOnMode mode;
-    private final Map<Setting<?>,Object> settings;
 
     public static DatabaseOptions fromProperties( Map<String,Object> allProperties, TopologyGraphDbmsModel.HostedOnMode mode )
     {
@@ -56,30 +54,5 @@ public class DatabaseOptions
         }
 
         return new DatabaseOptions( settings, mode );
-    }
-
-    public DatabaseOptions( Map<Setting<?>,Object> settings, TopologyGraphDbmsModel.HostedOnMode mode )
-    {
-        this.mode = mode;
-        this.settings = settings;
-    }
-
-    public Map<Setting<?>,Object> settings()
-    {
-        return settings;
-    }
-
-    public TopologyGraphDbmsModel.HostedOnMode mode()
-    {
-        return mode;
-    }
-
-    @Override
-    public String toString()
-    {
-        return "DatabaseOptions{" +
-               "mode=" + mode +
-               ", settings=" + settings +
-               '}';
     }
 }
