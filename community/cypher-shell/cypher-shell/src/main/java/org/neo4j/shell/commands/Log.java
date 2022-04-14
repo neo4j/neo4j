@@ -73,7 +73,7 @@ public record Log( CypherShell shell ) implements Command
         {
             var help = "Enables or disables logging to the standard error output stream.";
             var levels = stream( Logger.Level.values() ).map( l -> l.name().toLowerCase() ).collect( joining( ", " ) );
-            var usage = "<level>` where <level> is one of " + levels + ", defaults to debug if level is not specified.";
+            var usage = "<level>\n\nwhere <level> is one of " + levels + ". Defaults to debug if level is not specified.";
 
             return new Metadata( ":log", "Enable logging", usage, help, List.of() );
         }
