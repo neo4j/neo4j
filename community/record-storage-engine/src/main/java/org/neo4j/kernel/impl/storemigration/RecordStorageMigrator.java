@@ -23,9 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Sets;
 
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,7 +106,6 @@ import org.neo4j.token.api.TokenHolder;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
-import static org.apache.commons.io.IOUtils.lineIterator;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.readOnly;
@@ -140,7 +136,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
     public static final String NAME = "Store files";
 
-    private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
     private static final String RECORD_STORAGE_MIGRATION_TAG = "recordStorageMigration";
     private static final String NODE_CHUNK_MIGRATION_TAG = "nodeChunkMigration";
     private static final String RELATIONSHIP_CHUNK_MIGRATION_TAG = "relationshipChunkMigration";
@@ -198,9 +193,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             TransactionId lastTxInfo = tailMetadata.getLastCommittedTransaction();
             LogPosition lastTxLogPosition = tailMetadata.getLastTransactionLogPosition();
             long checkpointLogVersion = tailMetadata.getCheckpointLogVersion();
-            // Write the tx checksum to file in migrationStructure, because we need it later when moving files into storeDir
-            writeLastTxInformation( migrationLayout, lastTxInfo );
-            writeLastTxLogPosition( migrationLayout, lastTxLogPosition );
 
             // The FORMAT capability also includes the format family so this comparison is enough
             if ( !oldFormat.hasCompatibleCapabilities( newFormat, CapabilityType.FORMAT ) )
@@ -296,69 +288,6 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     {
         MetaDataRecord recordByCursor = oldMetadataStore.getRecordByCursor( id, record, RecordLoad.FORCE, pageCursor );
         return recordByCursor.inUse() ? recordByCursor.getValue() : -1;
-    }
-
-    void writeLastTxInformation( DatabaseLayout migrationStructure, TransactionId txInfo ) throws IOException
-    {
-        writeTxLogCounters( fileSystem, lastTxInformationFile( migrationStructure ),
-                txInfo.transactionId(), txInfo.checksum(), txInfo.commitTimestamp() );
-    }
-
-    void writeLastTxLogPosition( DatabaseLayout migrationStructure, LogPosition lastTxLogPosition ) throws IOException
-    {
-        writeTxLogCounters( fileSystem, lastTxLogPositionFile( migrationStructure ),
-                lastTxLogPosition.getLogVersion(), lastTxLogPosition.getByteOffset() );
-    }
-
-    TransactionId readLastTxInformation( DatabaseLayout migrationStructure ) throws IOException
-    {
-        long[] counters = readTxLogCounters( fileSystem, lastTxInformationFile( migrationStructure ), 3 );
-        return new TransactionId( counters[0], (int) counters[1], counters[2] );
-    }
-
-    LogPosition readLastTxLogPosition( DatabaseLayout migrationStructure ) throws IOException
-    {
-        long[] counters = readTxLogCounters( fileSystem, lastTxLogPositionFile( migrationStructure ), 2 );
-        return new LogPosition( counters[0], counters[1] );
-    }
-
-    private static void writeTxLogCounters( FileSystemAbstraction fs, Path path, long... counters ) throws IOException
-    {
-        try ( Writer writer = fs.openAsWriter( path, StandardCharsets.UTF_8, false ) )
-        {
-            writer.write( StringUtils.join( counters, TX_LOG_COUNTERS_SEPARATOR ) );
-        }
-    }
-
-    private static long[] readTxLogCounters( FileSystemAbstraction fs, Path path, int numberOfCounters )
-            throws IOException
-    {
-        try ( var reader = fs.openAsReader( path, StandardCharsets.UTF_8 ) )
-        {
-            String line = lineIterator( reader ).next();
-            String[] split = StringUtils.split( line, TX_LOG_COUNTERS_SEPARATOR );
-            if ( split.length != numberOfCounters )
-            {
-                throw new IllegalArgumentException( "Unexpected number of tx counters '" + numberOfCounters +
-                                                    "', file contains: '" + line + "'" );
-            }
-            long[] counters = new long[numberOfCounters];
-            for ( int i = 0; i < split.length; i++ )
-            {
-                counters[i] = Long.parseLong( split[i] );
-            }
-            return counters;
-        }
-    }
-
-    private static Path lastTxInformationFile( DatabaseLayout migrationStructure )
-    {
-        return migrationStructure.file( "lastxinformation" );
-    }
-
-    private static Path lastTxLogPositionFile( DatabaseLayout migrationStructure )
-    {
-        return migrationStructure.file( "lastxlogposition" );
     }
 
     private void migrateWithBatchImporter( RecordDatabaseLayout sourceDirectoryStructure, RecordDatabaseLayout migrationDirectoryStructure, long lastTxId,

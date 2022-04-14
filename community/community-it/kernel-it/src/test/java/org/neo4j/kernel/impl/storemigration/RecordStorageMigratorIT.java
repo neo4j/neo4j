@@ -23,7 +23,6 @@ import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,7 +32,6 @@ import java.io.UncheckedIOException;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.configuration.Config;
@@ -66,7 +64,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_3;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.LogTailExtractor;
@@ -83,14 +80,11 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
-import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
-import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
-import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.tags.MultiVersionedTag;
@@ -98,7 +92,6 @@ import org.neo4j.test.utils.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
@@ -114,7 +107,6 @@ import static org.neo4j.storageengine.migration.MigrationProgressMonitor.SILENT;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
-@ExtendWith( RandomExtension.class )
 @MultiVersionedTag
 class RecordStorageMigratorIT
 {
@@ -128,8 +120,6 @@ class RecordStorageMigratorIT
     private PageCache pageCache;
     @Inject
     private RecordDatabaseLayout databaseLayout;
-    @Inject
-    private RandomSupport randomRule;
 
     private DatabaseLayout migrationLayout;
     private BatchImporterFactory batchImporterFactory;
@@ -140,11 +130,7 @@ class RecordStorageMigratorIT
 
     private static Stream<Arguments> versions()
     {
-        return Stream.of(
-            Arguments.of(
-                StandardV4_3.STORE_VERSION,
-                new LogPosition( 3, 1630 ),
-                txInfoAcceptanceOnIdAndTimestamp( TX_ID, 1637241954791L ) ) );
+        return Stream.of( Arguments.of( StandardV4_3.STORE_VERSION ) );
     }
 
     @BeforeEach
@@ -164,7 +150,7 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void shouldBeAbleToResumeMigrationOnMoving( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator )
+    void shouldBeAbleToResumeMigrationOnMoving( String version )
         throws Exception
     {
         // GIVEN a legacy database
@@ -198,7 +184,7 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void keepExternalIdAndDatabaseIdOnMigration( String version, LogPosition expectedLogPosition, Function<TransactionId,Boolean> txIdComparator )
+    void keepExternalIdAndDatabaseIdOnMigration( String version )
             throws IOException, KernelException
     {
         Path prepare = testDirectory.directory( "prepare" );
@@ -320,7 +306,7 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void shouldBeAbleToMigrateWithoutErrors( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator ) throws Exception
+    void shouldBeAbleToMigrateWithoutErrors( String version ) throws Exception
     {
         // GIVEN a legacy database
 
@@ -399,7 +385,7 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void shouldBeAbleToResumeMigrationOnRebuildingCounts( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator )
+    void shouldBeAbleToResumeMigrationOnRebuildingCounts( String version )
         throws Exception
     {
         // GIVEN a legacy database
@@ -433,70 +419,7 @@ class RecordStorageMigratorIT
 
     @ParameterizedTest
     @MethodSource( "versions" )
-    void shouldComputeTheLastTxLogPositionCorrectly( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator )
-        throws Throwable
-    {
-        // GIVEN a legacy database
-
-        Path prepare = testDirectory.directory( "prepare" );
-        var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
-        // and a state of the migration saying that it has done the actual migration
-        LogService logService = NullLogService.getInstance();
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = SILENT;
-        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
-
-        // WHEN migrating
-        var logTailMetadata = loadLogTail( databaseLayout, CONFIG, StorageEngineFactory.defaultStorageEngine() );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( getVersionToMigrateTo() ),
-                EMPTY, logTailMetadata );
-
-        // THEN it should compute the correct last tx log position
-        assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldComputeTheLastTxInfoCorrectly( String version, LogPosition expectedLogPosition, Function<TransactionId, Boolean> txIdComparator )
-        throws Exception
-    {
-        // given
-
-        Path prepare = testDirectory.directory( "prepare" );
-        var fs = testDirectory.getFileSystem();
-        MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, databaseLayout, prepare );
-        // and a state of the migration saying that it has done the actual migration
-        LogService logService = NullLogService.getInstance();
-        RecordStoreVersionCheck check = getVersionCheck( pageCache, databaseLayout );
-
-        String versionToMigrateFrom = getVersionToMigrateFrom( check );
-        MigrationProgressMonitor progressMonitor = SILENT;
-        PageCacheTracer cacheTracer = PageCacheTracer.NULL;
-        var contextFactory = new CursorContextFactory( cacheTracer, EmptyVersionContextSupplier.EMPTY );
-        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, cacheTracer, CONFIG, logService, jobScheduler, contextFactory,
-                batchImporterFactory, INSTANCE );
-
-        // when
-        var logTailMetadata = loadLogTail( databaseLayout, CONFIG, StorageEngineFactory.defaultStorageEngine() );
-        migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), getStoreVersion( versionToMigrateFrom ),
-                getStoreVersion( getVersionToMigrateTo() ),
-                EMPTY, logTailMetadata );
-
-        // then
-        assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
-    }
-
-    @ParameterizedTest
-    @MethodSource( "versions" )
-    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration( String version, LogPosition expectedLogPosition,
-            Function<TransactionId,Boolean> txIdComparator ) throws Exception
+    void shouldStartCheckpointLogVersionFromZeroIfMissingBeforeMigration( String version ) throws Exception
     {
         // given
         Path prepare = testDirectory.directory( "prepare" );
@@ -553,10 +476,5 @@ class RecordStorageMigratorIT
     private LogTailMetadata loadLogTail( DatabaseLayout layout, Config config, StorageEngineFactory engineFactory ) throws IOException
     {
         return new LogTailExtractor( fileSystem, pageCache, config, engineFactory, DatabaseTracers.EMPTY ).getTailMetadata( layout, INSTANCE );
-    }
-
-    private static Function<TransactionId,Boolean> txInfoAcceptanceOnIdAndTimestamp( long id, long timestamp )
-    {
-        return txInfo -> txInfo.transactionId() == id && txInfo.commitTimestamp() == timestamp;
     }
 }
