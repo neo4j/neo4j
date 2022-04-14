@@ -734,6 +734,8 @@ public class Config implements Configuration
 
         try
         {
+            validateSettingName( setting );
+
             Object defaultValue;
             if ( overriddenDefaultObjects.containsKey( key ) ) // Map default value
             {
@@ -783,6 +785,30 @@ public class Config implements Configuration
         {
             String msg = format( "Error evaluating value for setting '%s'. %s", setting.name(), exception.getMessage() );
             throw new IllegalArgumentException( msg, exception );
+        }
+    }
+
+    private void validateSettingName( SettingImpl<Object> setting )
+    {
+        validateInternalNamespace( setting );
+    }
+
+    private void validateInternalNamespace( SettingImpl<Object> setting )
+    {
+        if ( setting.internal() )
+        {
+            if ( !setting.name().startsWith( "internal." ) )
+            {
+                throw new IllegalArgumentException(
+                        format( "Setting: '%s' is internal but does not reside in the correct internal settings namespace.", setting.name() ) );
+            }
+        }
+        else
+        {
+            if ( setting.name().contains( "internal" ) || setting.name().contains( "unsupported" ) )
+            {
+                throw new IllegalArgumentException( format( "Setting: '%s' is not internal but using internal settings namespace.", setting.name() ) );
+            }
         }
     }
 

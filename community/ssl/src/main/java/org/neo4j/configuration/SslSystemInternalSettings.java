@@ -30,5 +30,5 @@ public class SslSystemInternalSettings implements SettingsDeclaration
     @Internal
     @Description( "Don't try and read dot-prefixed files or dot-prefixed directories in ssl policy directories" )
     public static final Setting<Boolean> ignore_dotfiles =
-            SettingImpl.newBuilder( "unsupported.dbms.ssl.system.ignore_dot_files", BOOL, false ).build();
+            SettingImpl.newBuilder( "internal.dbms.ssl.system.ignore_dot_files", BOOL, false ).build();
 }

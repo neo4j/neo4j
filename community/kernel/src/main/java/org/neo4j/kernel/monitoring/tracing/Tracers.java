@@ -53,11 +53,11 @@ import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACER
  *     components to distribute throughout the database instance.
  * </p>
  * <p>
- *     The tracing implementation is determined by the {@code unsupported.dbms.tracer} setting. Two built-in implementations
+ *     The tracing implementation is determined by the {@code internal.dbms.tracer} setting. Two built-in implementations
  *     exist: {@code default} and {@code null}. Alternative implementations can be loaded from the
  *     classpath by referencing their {@link org.neo4j.kernel.monitoring.tracing.TracerFactory} in a
  *     {@code META-INF/services/org.neo4j.kernel.monitoring.tracing.TracerFactory}, and setting
- *     {@code unsupported.dbms.tracer} to the appropriate value.
+ *     {@code internal.dbms.tracer} to the appropriate value.
  * </p>
  * <h2>Designing and implementing tracers</h2>
  * <p>

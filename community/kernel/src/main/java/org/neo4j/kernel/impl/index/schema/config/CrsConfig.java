@@ -38,7 +38,7 @@ import static org.neo4j.configuration.SettingValueParsers.listOf;
 @ServiceProvider
 public class CrsConfig implements GroupSetting
 {
-    private static final String PREFIX = "unsupported.dbms.db.spatial.crs";
+    private static final String PREFIX = "internal.dbms.db.spatial.crs";
 
     public final Setting<List<Double>> min;
     public final Setting<List<Double>> max;

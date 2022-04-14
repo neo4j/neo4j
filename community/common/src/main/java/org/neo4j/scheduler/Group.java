@@ -59,7 +59,7 @@ public enum Group
      * as well as other tasks for completing an index after the store scan.
      * As it stands this group should not have a limit on its own because of how tasks are scheduled during population
      * and is instead effectively limited by number of ongoing index populations times number of workers per index population,
-     * i.e. settings unsupported.dbms.index_population.parallelism * unsupported.dbms.index_population.workers
+     * i.e. settings internal.dbms.index_population.parallelism * internal.dbms.index_population.workers
      */
     INDEX_POPULATION_WORK( "IndexPopulationWork", ExecutorServiceFactory.cached() ),
     /** Background index sampling */

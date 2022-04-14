@@ -35,11 +35,11 @@ public class FabricSettings implements SettingsDeclaration
 {
     @Description( "Batch size used when requesting records from local Cypher engine." )
     @Internal
-    public static final Setting<Integer> batch_size_setting = newBuilder( "fabric.stream.batch_size", INT, 50 )
+    public static final Setting<Integer> batch_size_setting = newBuilder( "internal.fabric.stream.batch_size", INT, 50 )
             .addConstraint( min(1) )
             .build();
 
     @Internal
     @Description( "Toggle if fabric is enabled by default" )
-    public static final Setting<Boolean> enabled_by_default = newBuilder( "fabric.enabled_by_default", BOOL, true ).build();
+    public static final Setting<Boolean> enabled_by_default = newBuilder( "internal.fabric.enabled_by_default", BOOL, true ).build();
 }

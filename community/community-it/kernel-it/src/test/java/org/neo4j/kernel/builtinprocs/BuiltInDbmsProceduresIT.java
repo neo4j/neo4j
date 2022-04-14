@@ -78,9 +78,9 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 
         assertThat( names ).contains( GraphDatabaseSettings.record_format.name() );
 
-        // Should not contain "unsupported.*" configs
+        // Should not contain "internal.*" configs
         assertEquals( 0, names.stream()
-                .filter( n -> n.startsWith( "unsupported" ) )
+                .filter( n -> n.startsWith( "internal" ) )
                 .count() );
     }
 

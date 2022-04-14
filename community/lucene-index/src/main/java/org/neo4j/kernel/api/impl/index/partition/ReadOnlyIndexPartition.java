@@ -48,8 +48,7 @@ public class ReadOnlyIndexPartition extends AbstractIndexPartition
     @Override
     public IndexWriter getIndexWriter()
     {
-        throw new UnsupportedOperationException( "Retrieving index writer from read only index partition is " +
-                                                 "unsupported." );
+        throw new UnsupportedOperationException( "Retrieving index writer from read only index partition is unsupported." );
     }
 
     /**

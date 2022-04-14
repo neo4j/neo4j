@@ -67,7 +67,7 @@ public class ExecutorBoltSchedulerProvider extends LifecycleAdapter implements B
                     new ExecutorBoltScheduler( BoltConnector.NAME, executorFactory, scheduler, logService, config.get( BoltConnector.thread_pool_min_size ),
                                                config.get( BoltConnector.thread_pool_max_size ), config.get( BoltConnector.thread_pool_keep_alive ),
                                                config.get( BoltConnectorInternalSettings.unsupported_thread_pool_queue_size ), forkJoinThreadPool,
-                                               config.get( BoltConnector.thread_pool_shutdown_wait_time ),
+                                               config.get( BoltConnectorInternalSettings.thread_pool_shutdown_wait_time ),
                                                config.get( BoltConnector.connection_keep_alive_type ),
                                                config.get( BoltConnector.connection_keep_alive_streaming_scheduling_interval ) );
             this.boltScheduler.init();

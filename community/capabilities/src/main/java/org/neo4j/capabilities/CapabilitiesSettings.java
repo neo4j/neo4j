@@ -45,5 +45,5 @@ public class CapabilitiesSettings implements SettingsDeclaration
                   "Note that capability names comply with the regular expression '^\\w+(.\\w+)*$' (a word followed " +
                   "by any number of words, each separated by '.'." )
     public static final Setting<List<String>> dbms_capabilities_blocked =
-            newBuilder( "dbms.capabilities.blocked", listOf( STRING ), Collections.emptyList() ).dynamic().build();
+            newBuilder( "internal.dbms.capabilities.blocked", listOf( STRING ), Collections.emptyList() ).dynamic().build();
 }

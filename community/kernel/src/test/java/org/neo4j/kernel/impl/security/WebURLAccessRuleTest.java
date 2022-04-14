@@ -54,7 +54,7 @@ class WebURLAccessRuleTest
                     URLAccessRules.webAccess().validate( config, url ) );
 
             //assert that the validation fails
-            assertThat( error.getMessage() ).contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
+            assertThat( error.getMessage() ).contains( "blocked via the configuration property internal.dbms.cypher_ip_blocklist" );
         }
     }
 
@@ -92,7 +92,7 @@ class WebURLAccessRuleTest
                 URLAccessRules.webAccess().validate( config, url ) );
 
         //assert that the validation fails
-        assertThat( error.getMessage() ).contains( "blocked via the configuration property unsupported.dbms.cypher_ip_blocklist" );
+        assertThat( error.getMessage() ).contains( "blocked via the configuration property internal.dbms.cypher_ip_blocklist" );
     }
 
     @Test

@@ -117,6 +117,34 @@ class ConfigTest
     }
 
     @Test
+    void failToBuildConfigForInternalSettingInWrongNamespace()
+    {
+        var e = assertThrows( IllegalArgumentException.class, () -> Config.newBuilder().addSettingsClass( InternalWrongNamespaceSettings.class ).build() );
+        assertThat( e ).hasMessageContaining(
+                "Setting: 'setting.not_really.internal' is internal but does not reside in the correct internal settings namespace." );
+    }
+
+    @Test
+    void failToBuildConfigForPublicSettingInInternalNamespace()
+    {
+        var e = assertThrows( IllegalArgumentException.class, () ->
+        {
+            Config.newBuilder().addSettingsClass( PublicWrongNamespaceSettings.class ).build();
+        } );
+        assertThat( e ).hasMessageContaining( "Setting: 'setting.not_really.internal' is not internal but using internal settings namespace." );
+    }
+
+    @Test
+    void failToBuildConfigForPublicSettingInLegacyUnsupportedNamespace()
+    {
+        var e = assertThrows( IllegalArgumentException.class, () ->
+        {
+            Config.newBuilder().addSettingsClass( LegacyUnsupportedNamespaceSettings.class ).build();
+        } );
+        assertThat( e ).hasMessageContaining( " Setting: 'setting.unsupported_or_not_really' is not internal but using internal settings namespace." );
+    }
+
+    @Test
     void testFetchAbsentSetting()
     {
         Config config = Config.newBuilder().addSettingsClass( TestSettings.class ).build();
@@ -1379,6 +1407,22 @@ class ConfigTest
                 .addConstraint( max( 3 ) ).dynamic().build();
         static final Setting<List<Integer>> intListSetting = newBuilder( "test.setting.integerlist", listOf( INT ), List.of( 1 ) ).build();
         static final Setting<Boolean> boolSetting = newBuilder( "test.setting.bool", BOOL, null ).immutable().build();
+    }
+
+    private static final class InternalWrongNamespaceSettings implements SettingsDeclaration
+    {
+        @Internal
+        static final Setting<String> wrongInternalSetting = newBuilder( "setting.not_really.internal", STRING, "hello" ).build();
+    }
+
+    private static final class PublicWrongNamespaceSettings implements SettingsDeclaration
+    {
+        static final Setting<String> wrongPublicSetting = newBuilder( "setting.not_really.internal", STRING, "hello" ).build();
+    }
+
+    private static final class LegacyUnsupportedNamespaceSettings implements SettingsDeclaration
+    {
+        static final Setting<String> wrongPublicSetting = newBuilder( "setting.unsupported_or_not_really", STRING, "hello" ).build();
     }
 
     private static final class CircularConstraints implements SettingsDeclaration

@@ -78,7 +78,7 @@ public final class SettingMigrators
     @ServiceProvider
     public static class CrsConfigMigrator implements SettingMigrator
     {
-        private static final String PREFIX = "unsupported.dbms.db.spatial.crs";
+        private static final String PREFIX = "internal.dbms.db.spatial.crs";
         private static final Pattern oldConnector = Pattern.compile( "^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
 
         @Override

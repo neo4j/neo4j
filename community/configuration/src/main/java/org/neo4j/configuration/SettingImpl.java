@@ -58,7 +58,6 @@ public final class SettingImpl<T> implements Setting<T>
         this.defaultValue = defaultValue;
         this.dynamic = dynamic;
         this.immutable = immutable;
-        this.internal = name != null && name.contains( "unsupported." );
     }
 
     public static <T> SettingBuilder<T> newBuilder( String name, SettingValueParser<T> parser, T defaultValue )

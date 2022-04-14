@@ -83,7 +83,7 @@
       -Dlog4j2.disable.jmx=true
       -Dio.netty.tryReflectionSetAccessible=true
       "-XX:HeapDumpPath=target/test data"
-      -Dunsupported.dbms.multiversioned.store.override=${multiversion.store}
+      -Dinternal.dbms.multiversioned.store.override=${multiversion.store}
       -Dorg.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer.CHECK_REPORTED_COUNTERS=${cursor.counters.check}
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.DIRTY_MEMORY=true
       -Dorg.neo4j.internal.unsafe.UnsafeUtil.CHECK_NATIVE_ACCESS=true
@@ -952,7 +952,7 @@
       <activation>
         <activeByDefault>false</activeByDefault>
         <property>
-          <name>unsupported.dbms.multiversioned.store.override</name>
+          <name>internal.dbms.multiversioned.store.override</name>
         </property>
       </activation>
       <properties>

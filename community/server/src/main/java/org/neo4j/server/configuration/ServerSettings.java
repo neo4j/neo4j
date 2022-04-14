@@ -62,12 +62,12 @@ public class ServerSettings implements SettingsDeclaration
     @Description( "Maximum request header size" )
     @Internal
     public static final Setting<Integer> maximum_request_header_size =
-            newBuilder( "unsupported.dbms.max_http_request_header_size", INT, 20480 ).build();
+            newBuilder( "internal.dbms.max_http_request_header_size", INT, 20480 ).build();
 
     @Description( "Maximum response header size" )
     @Internal
     public static final Setting<Integer> maximum_response_header_size =
-            newBuilder( "unsupported.dbms.max_http_response_header_size", INT, 20480 ).build();
+            newBuilder( "internal.dbms.max_http_response_header_size", INT, 20480 ).build();
 
     @Description( "Number of Neo4j worker threads. This setting is only valid for REST, and does not influence bolt-server. " +
             "It sets the amount of worker threads for the Jetty server used by neo4j-server. " +
@@ -84,7 +84,7 @@ public class ServerSettings implements SettingsDeclaration
     @Internal
     @Deprecated
     public static final Setting<Duration> webserver_limit_execution_time =
-            newBuilder( "unsupported.dbms.executiontime_limit.time", DURATION, null ).build();
+            newBuilder( "internal.dbms.executiontime_limit.time", DURATION, null ).build();
 
     private static final SettingValueParser<ThirdPartyJaxRsPackage> MOUNT_POINTS = new SettingValueParser<>()
     {
@@ -160,7 +160,7 @@ public class ServerSettings implements SettingsDeclaration
     @Internal
     @Description( "Defines a blacklist of http paths that should not be accessed." )
     public static final Setting<List<String>> http_paths_blacklist =
-            newBuilder( "unsupported.dbms.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
+            newBuilder( "internal.dbms.http_paths_blacklist", listOf( STRING ), emptyList() ).build();
 
     @Description( "Defines the set of modules loaded into the Neo4j web server. " +
                   "Options include TRANSACTIONAL_ENDPOINTS, BROWSER, UNMANAGED_EXTENSIONS and ENTERPRISE_MANAGEMENT_ENDPOINTS (if applicable)." )
@@ -174,14 +174,14 @@ public class ServerSettings implements SettingsDeclaration
             "connector, but this allows manually overriding that default." )
     @DocumentedDefaultValue( "Defaults to a bolt://-schemed version of the advertised address of the first found bolt connector." )
     public static final Setting<URI> bolt_discoverable_address =
-            newBuilder( "unsupported.dbms.discoverable_bolt_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
+            newBuilder( "internal.dbms.discoverable_bolt_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
 
     @Internal
     @Description( "Publicly discoverable neo4j:// URI to use for Neo4j Drivers wanting to access a cluster or a single instance." )
     @DocumentedDefaultValue( "Defaults to empty on any deployment that is not a causal cluster core, and a " +
             "neo4j://-schemed URI of the advertised address of the bolt connector." )
     public static final Setting<URI> bolt_routing_discoverable_address =
-            newBuilder( "unsupported.dbms.discoverable_bolt_routing_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
+            newBuilder( "internal.dbms.discoverable_bolt_routing_address", SettingValueParsers.URI, SettingValueParsers.URI.parse( "" ) ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
@@ -201,30 +201,30 @@ public class ServerSettings implements SettingsDeclaration
     @Internal
     @Description( "The legacy data endpoint. This is kept for back-compatibility purpose." )
     public static final Setting<URI> rest_api_path =
-            newBuilder( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/data" ) ).build();
+            newBuilder( "internal.dbms.uris.rest", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/data" ) ).build();
 
     @Internal
     @Description( "The legacy manage endpoint. This is kept for back-compatibility purpose." )
     public static final Setting<URI> management_api_path =
-            newBuilder( "unsupported.dbms.uris.management", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/manage" ) ).build();
+            newBuilder( "internal.dbms.uris.management", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db/manage" ) ).build();
 
     @Internal
     @Description( "The start endpoint of database api." )
     public static final Setting<URI> db_api_path =
-            newBuilder( "unsupported.dbms.uris.db", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
+            newBuilder( "internal.dbms.uris.db", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/db" ) ).build();
 
     @Internal
     @Description( "The start endpoint of the dbms api." )
     public static final Setting<URI> dbms_api_path =
-            newBuilder( "unsupported.dbms.uris.dbms", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/dbms" ) ).build();
+            newBuilder( "internal.dbms.uris.dbms", NORMALIZED_RELATIVE_URI, NORMALIZED_RELATIVE_URI.parse( "/dbms" ) ).build();
 
     @Internal
     @Description( "URI to the browser home page" )
     public static final Setting<URI> browser_path =
-            newBuilder( "unsupported.dbms.uris.browser", SettingValueParsers.URI, SettingValueParsers.URI.parse( "/browser/" ) ).build();
+            newBuilder( "internal.dbms.uris.browser", SettingValueParsers.URI, SettingValueParsers.URI.parse( "/browser/" ) ).build();
 
     @Internal
     @Description( "Toggle WADL generation. Matching the underlying jersey server config" )
     public static final Setting<Boolean> wadl_enabled =
-            newBuilder( "unsupported.dbms.wadl_generation_enabled", BOOL, false ).build();
+            newBuilder( "internal.dbms.wadl_generation_enabled", BOOL, false ).build();
 }

@@ -39,38 +39,38 @@ public class LuceneSettings implements SettingsDeclaration
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
     public static final Setting<Integer> lucene_writer_max_buffered_docs =
-            newBuilder( "unsupported.dbms.index.lucene.writer_max_buffered_docs", INT, 100000 ).build();
+            newBuilder( "internal.dbms.index.lucene.writer_max_buffered_docs", INT, 100000 ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
     public static final Setting<Integer> lucene_population_max_buffered_docs =
-            newBuilder( "unsupported.dbms.index.lucene.population_max_buffered_docs", INT, IndexWriterConfig.DISABLE_AUTO_FLUSH ).build();
+            newBuilder( "internal.dbms.index.lucene.population_max_buffered_docs", INT, IndexWriterConfig.DISABLE_AUTO_FLUSH ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
-    public static final Setting<Integer> lucene_merge_factor = newBuilder( "unsupported.dbms.index.lucene.merge_factor", INT, 2 ).build();
+    public static final Setting<Integer> lucene_merge_factor = newBuilder( "internal.dbms.index.lucene.merge_factor", INT, 2 ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
-    public static final Setting<Double> lucene_nocfs_ratio = newBuilder( "unsupported.dbms.index.lucene.nocfs.ratio", DOUBLE, 1.0 ).build();
+    public static final Setting<Double> lucene_nocfs_ratio = newBuilder( "internal.dbms.index.lucene.nocfs.ratio", DOUBLE, 1.0 ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
-    public static final Setting<Double> lucene_min_merge = newBuilder( "unsupported.dbms.index.lucene.min_merge", DOUBLE, 0.1 ).build();
+    public static final Setting<Double> lucene_min_merge = newBuilder( "internal.dbms.index.lucene.min_merge", DOUBLE, 0.1 ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
     public static final Setting<Double> lucene_standard_ram_buffer_size =
-            newBuilder( "unsupported.dbms.index.lucene.standard_ram_buffer_size", DOUBLE, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB ).build();
+            newBuilder( "internal.dbms.index.lucene.standard_ram_buffer_size", DOUBLE, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config" )
     public static final Setting<Double> lucene_population_ram_buffer_size =
-            newBuilder( "unsupported.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D ).build();
+            newBuilder( "internal.dbms.index.lucene.population_ram_buffer_size", DOUBLE, 50D ).build();
 
     @Internal
     @Description( "Setting for the matching lucene IndexWriterConfig config. Used for set up of lucene indexes population. " +
                   "If 'false' separate threads will be used for merge, if 'true' the merges will be done sequentially by the current thread." )
     public static final Setting<Boolean> lucene_population_serial_merge_scheduler =
-            newBuilder( "unsupported.dbms.index.lucene.population_serial_merge_scheduler", BOOL, TRUE ).build();
+            newBuilder( "internal.dbms.index.lucene.population_serial_merge_scheduler", BOOL, TRUE ).build();
 }

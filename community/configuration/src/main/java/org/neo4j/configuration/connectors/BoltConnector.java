@@ -25,6 +25,7 @@ import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -110,10 +111,6 @@ public final class BoltConnector implements SettingsDeclaration
     @Description( "The maximum time an idle thread in the thread pool bound to this connector will wait for new tasks." )
     public static final Setting<Duration> thread_pool_keep_alive =
             newBuilder( "dbms.connector.bolt.thread_pool_keep_alive", DURATION, ofMinutes( 5 ) ).build();
-
-    @Description( "The maximum time to wait for the thread pool to finish processing its pending jobs and shutdown" )
-    public static final Setting<Duration> thread_pool_shutdown_wait_time =
-            newBuilder( "dbms.connector.bolt.unsupported_thread_pool_shutdown_wait_time", DURATION, ofSeconds( 5 ) ).build();
 
     public enum EncryptionLevel
     {

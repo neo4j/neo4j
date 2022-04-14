@@ -363,7 +363,7 @@ class SettingMigratorsTest
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
                 "Use of deprecated setting unsupported.consistency_checker.experimental.fail_fast. " +
-                        "It is replaced by unsupported.consistency_checker.fail_fast_threshold" );
+                        "It is replaced by internal.consistency_checker.fail_fast_threshold" );
 
         assertEquals( 1, config.get( GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold ) );
     }

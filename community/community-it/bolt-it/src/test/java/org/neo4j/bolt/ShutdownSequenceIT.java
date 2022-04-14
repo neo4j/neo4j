@@ -41,6 +41,7 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -227,7 +228,7 @@ public class ShutdownSequenceIT
             settings.put( BoltConnector.listen_address, new SocketAddress( "localhost", 0 ) );
             settings.put( BoltConnector.thread_pool_min_size, 0 );
             settings.put( BoltConnector.thread_pool_max_size, 2 );
-            settings.put( BoltConnector.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME );
+            settings.put( BoltConnectorInternalSettings.thread_pool_shutdown_wait_time, THREAD_POOL_SHUTDOWN_WAIT_TIME );
         };
     }
 

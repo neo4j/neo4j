@@ -50,7 +50,7 @@ public interface PageCache extends AutoCloseable
     /**
      * Page reserved bytes
      */
-    int RESERVED_BYTES = Boolean.getBoolean( "unsupported.dbms.multiversioned.store.override" ) ? Long.BYTES * 3 : 0;
+    int RESERVED_BYTES = Boolean.getBoolean( "internal.dbms.multiversioned.store.override" ) ? Long.BYTES * 3 : 0;
 
     /**
      * Ask for a handle to a paged file, backed by an empty set of file open options.

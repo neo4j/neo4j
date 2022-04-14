@@ -40,7 +40,7 @@ public class SpatialIndexSettings implements SettingsDeclaration
             "This setting will cause the algorithm to search deeper, reducing false positives." )
     @Internal
     public static final Setting<Integer> space_filling_curve_extra_levels =
-            newBuilder( "unsupported.dbms.index.spatial.curve.extra_levels", INT, 1 ).build();
+            newBuilder( "internal.dbms.index.spatial.curve.extra_levels", INT, 1 ).build();
 
     @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +
             "underlying 1D space filling curve index. There is a balance to be made between many small 1D ranges that have few false " +
@@ -56,7 +56,7 @@ public class SpatialIndexSettings implements SettingsDeclaration
             "curve index. Setting this value to zero turns off this feature." )
     @Internal
     public static final Setting<Double> space_filling_curve_top_threshold =
-            newBuilder( "unsupported.dbms.index.spatial.curve.top_threshold", DOUBLE, 0.0 ).build();
+            newBuilder( "internal.dbms.index.spatial.curve.top_threshold", DOUBLE, 0.0 ).build();
 
     @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +
             "underlying 1D space filling curve index. There is a balance to be made between many small 1D ranges that have few false " +
@@ -72,5 +72,5 @@ public class SpatialIndexSettings implements SettingsDeclaration
             "curve index. Setting this value to zero turns off this feature." )
     @Internal
     public static final Setting<Double> space_filling_curve_bottom_threshold =
-            newBuilder( "unsupported.dbms.index.spatial.curve.bottom_threshold", DOUBLE, 0.0 ).build();
+            newBuilder( "internal.dbms.index.spatial.curve.bottom_threshold", DOUBLE, 0.0 ).build();
 }

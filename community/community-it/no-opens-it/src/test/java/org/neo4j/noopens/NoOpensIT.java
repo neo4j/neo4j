@@ -76,7 +76,7 @@ public class NoOpensIT
     void warningFromManagedNetworkBuffers()
     {
         runTest( GraphDatabaseInternalSettings.managed_network_buffers, true,
-                 "unsupported.dbms.memory.managed_network_buffers is set to true but unsafe access to java.nio.DirectByteBuffer is not available. " +
+                 "internal.dbms.memory.managed_network_buffers is set to true but unsafe access to java.nio.DirectByteBuffer is not available. " +
                  "Managed network buffers are not enabled." );
     }
 

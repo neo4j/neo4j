@@ -44,7 +44,7 @@ public class BootloaderSettings implements SettingsDeclaration
     @Internal
     @Description( "Path of the lib directory" )
     public static final Setting<Path> windows_tools_directory =
-            newBuilder( "unsupported.dbms.directories.windows_tools", PATH, Path.of( "bin", "tools" ) ).setDependency( neo4j_home ).immutable().build();
+            newBuilder( "internal.dbms.directories.windows_tools", PATH, Path.of( "bin", "tools" ) ).setDependency( neo4j_home ).immutable().build();
 
     @Description( "Additional JVM arguments. Argument order can be significant. To use a Java commercial feature, the argument to unlock " +
             "commercial features must precede the argument to enable the specific feature in the config value string. For example, " +
@@ -79,7 +79,7 @@ public class BootloaderSettings implements SettingsDeclaration
     @Internal
     @Description( "Path of the pid file." )
     public static final Setting<Path> pid_file =
-            newBuilder( "unsupported.dbms.directories.pid_file", PATH, Path.of( "neo4j.pid" ) ).setDependency( run_directory ).immutable().build();
+            newBuilder( "internal.dbms.directories.pid_file", PATH, Path.of( "neo4j.pid" ) ).setDependency( run_directory ).immutable().build();
 
     @Description( "Path of the lib directory" )
     public static final Setting<Path> lib_directory =

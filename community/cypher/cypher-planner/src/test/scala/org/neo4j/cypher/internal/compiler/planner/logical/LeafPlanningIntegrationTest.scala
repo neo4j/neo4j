@@ -1044,7 +1044,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   //---------------------------------------------------------------------------
   // Test expand order with multiple configurations and
-  // unsupported.cypher.plan_with_minimum_cardinality_estimates setting
+  // internal.cypher.plan_with_minimum_cardinality_estimates setting
   //
   // To succeed this test assumes:
   // *  (:A) should have lower cardinality than (:B) and (:C) so it is selected as starting point
