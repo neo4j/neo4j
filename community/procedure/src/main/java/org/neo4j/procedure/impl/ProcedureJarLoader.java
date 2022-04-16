@@ -82,7 +82,7 @@ class ProcedureJarLoader
             throw new ZipException( String.format( "Some jar procedure files (%s) are invalid, see log for details.", String.join( ", ", failedJarFiles ) ) );
         }
 
-        if ( jarFiles.size() == 0 )
+        if ( jarFiles.isEmpty() )
         {
             return Callables.empty();
         }

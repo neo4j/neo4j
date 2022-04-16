@@ -81,7 +81,7 @@ public abstract class KnownCommunitySecurityComponentVersion extends KnownSystem
         // The set-initial-password command should only take effect if the only existing user is the default user with the default password.
         ResourceIterator<Node> nodes = tx.findNodes( USER_LABEL );
         List<Node> users = nodes.stream().collect( Collectors.toList() );
-        if ( users.size() == 0 )
+        if ( users.isEmpty() )
         {
             securityLog.warn( String.format( "Unable to update missing initial user password from `auth.ini` file: %s", initialUser.name() ) );
         }
