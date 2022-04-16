@@ -78,7 +78,7 @@ public final class BoltConditions
 
     public static Condition<RecordedBoltResponse> containsNoRecord()
     {
-        return new Condition<>( response -> response.records().size() == 0, " without record" );
+        return new Condition<>( response -> response.records().isEmpty(), " without record" );
     }
 
     public static Condition<RecordedBoltResponse> containsRecord( final Object... values )

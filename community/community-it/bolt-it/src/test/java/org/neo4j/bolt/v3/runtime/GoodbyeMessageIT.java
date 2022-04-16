@@ -188,7 +188,7 @@ public class GoodbyeMessageIT extends BoltV3TransportBase
     {
         return new Condition<>( server ->
         {
-            BooleanSupplier condition = () -> getActiveTransactions( server ).size() == 0;
+            BooleanSupplier condition = () -> getActiveTransactions(server).isEmpty();
             try
             {
                 Predicates.await( condition, 2, TimeUnit.SECONDS );
