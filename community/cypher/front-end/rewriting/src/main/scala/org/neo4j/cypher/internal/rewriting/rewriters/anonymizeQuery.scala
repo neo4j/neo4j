@@ -16,6 +16,10 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.CreateConstraint
+import org.neo4j.cypher.internal.ast.CreateIndex
+import org.neo4j.cypher.internal.ast.DropConstraintOnName
+import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -46,6 +50,8 @@ trait Anonymizer {
   def propertyKey(name: String): String
   def parameter(name: String): String
   def literal(value: String): String
+  def indexName(name: String): String
+  def constraintName(name: String): String
 }
 
 case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
@@ -61,5 +67,9 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: PropertyKeyName => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
     case x: Parameter => Parameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
     case x: StringLiteral => StringLiteral(anonymizer.literal(x.value))(x.position)
+    case x: CreateIndex => x.withName(x.name.map(anonymizer.indexName))
+    case x: DropIndexOnName => x.copy(name = anonymizer.indexName(x.name))(x.position)
+    case x: CreateConstraint => x.withName(x.name.map(anonymizer.constraintName))
+    case x: DropConstraintOnName => x.copy(name = anonymizer.constraintName(x.name))(x.position)
   })
 }

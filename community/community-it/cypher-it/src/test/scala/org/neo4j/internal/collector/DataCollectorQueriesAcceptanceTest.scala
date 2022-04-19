@@ -514,6 +514,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
 
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH (n:User) WHERE n:User RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
 
     // when
@@ -522,6 +523,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
+      querySection("MATCH (var0:L0) WHERE var0:LoR0 RETURN 1"),
       querySection("MATCH ({p1: 42}), ({p0: 43}) RETURN 1")
     )
   }
@@ -565,6 +567,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
   test("[retrieveAllAnonymized] should anonymize unknown tokens inside queries") {
     // given
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH (n:User) USING SCAN n:User RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
 
     // when
@@ -573,6 +576,7 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:UNKNOWN0)-[:UNKNOWN1]->(:UNKNOWN2)-[:UNKNOWN3]->(:UNKNOWN4) RETURN 1"),
+      querySection("MATCH (var0:UNKNOWN0) USING SCAN var0:UNKNOWN0 RETURN 1"),
       querySection("MATCH ({UNKNOWN0: 42}), ({UNKNOWN1: 43}) RETURN 1")
     )
   }
@@ -639,6 +643,36 @@ class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
           )
         )
       )
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize tokens and names inside index commands") {
+    // given
+    execute("CREATE INDEX name0 FOR (n:Label) ON (n.prop)")
+    execute("DROP INDEX name0")
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("CREATE INDEX index0 FOR (var0:L0) ON (var0.p0)"),
+      querySection("DROP INDEX index0")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize tokens and names inside constraint commands") {
+    // given (community constraint, this test doesn't allow the enterprise constraints)
+    execute("CREATE CONSTRAINT name ON (n:Label) ASSERT (n.prop) IS UNIQUE")
+    execute("DROP CONSTRAINT name")
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("CREATE CONSTRAINT constraint0 ON (var0:L0) ASSERT (var0.p0) IS UNIQUE"),
+      querySection("DROP CONSTRAINT constraint0")
     )
   }
 
