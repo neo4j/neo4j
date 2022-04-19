@@ -24,28 +24,46 @@ abstract class AnonymizerTestBase extends CypherFunSuite with RewriteTest {
   def anonymizer: Anonymizer
 
   test("repeatable variable") {
-    assertRename(Set("cat", "bob", "fish", "colly_flower11"), anonymizer.variable)
+    assertRename(anonymizer.variable)
   }
 
   test("repeatable label") {
-    assertRename(Set("cat", "bob", "fish", "colly_flower11"), anonymizer.label)
+    assertRename(anonymizer.label)
   }
 
   test("repeatable relationshipType") {
-    assertRename(Set("cat", "bob", "fish", "colly_flower11"), anonymizer.relationshipType)
+    assertRename(anonymizer.relationshipType)
+  }
+
+  test("repeatable labelOrRelationshipType") {
+    assertRename(anonymizer.labelOrRelationshipType)
   }
 
   test("repeatable propertyKey") {
-    assertRename(Set("cat", "bob", "fish", "colly_flower11"), anonymizer.propertyKey)
+    assertRename(anonymizer.propertyKey)
   }
 
   test("repeatable parameter") {
-    assertRename(Set("cat", "bob", "fish", "colly_flower11"), anonymizer.parameter)
+    assertRename(anonymizer.parameter)
   }
 
-  private def assertRename(names: Set[String], rename: String => String): Unit = {
+  test("repeatable literal") {
+    assertRename(anonymizer.literal)
+  }
+
+  test("repeatable indexName") {
+    assertRename(anonymizer.indexName)
+  }
+
+  test("repeatable constraintName") {
+    assertRename(anonymizer.constraintName)
+  }
+
+  // Assert that we get the same names when calling the anonymizer twice on same input
+  private def assertRename(rename: String => String): Unit = {
+    val names = Set("cat", "bob", "fish", "colly_flower11")
     val anons = names.map(rename)
-    anons.size should be(4)
+    anons.size should be(names.size)
     anons should be(names.map(rename))
   }
 }
