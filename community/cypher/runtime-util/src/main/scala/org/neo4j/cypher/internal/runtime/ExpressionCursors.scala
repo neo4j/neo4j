@@ -41,7 +41,7 @@ import org.neo4j.memory.MemoryTracker
 class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
                         private[this] var cursorContext: CursorContext,
                         memoryTracker: MemoryTracker)
-  extends DefaultCloseListenable {
+  extends DefaultCloseListenable with ResourceManagedCursorPool {
 
   private[this] var _nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
   private[this] var _relationshipScanCursor: RelationshipScanCursor = cursorFactory.allocateRelationshipScanCursor(cursorContext)
@@ -91,6 +91,13 @@ class ExpressionCursors(private[this] var cursorFactory: CursorFactory,
     nodeCursor.setTracer(tracer)
     relationshipScanCursor.setTracer(tracer)
     propertyCursor.setTracer(tracer)
+  }
+
+  override def closeCursors(): Unit = closeInternal()
+
+  override def setCursorFactoryAndContext(cursorFactory: CursorFactory, cursorContext: CursorContext): Unit = {
+    this.cursorFactory = cursorFactory
+    this.cursorContext = cursorContext
   }
 
   private def notReturnedToPool(cursor: Cursor): Boolean = {
