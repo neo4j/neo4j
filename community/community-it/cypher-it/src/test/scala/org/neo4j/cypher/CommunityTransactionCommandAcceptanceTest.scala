@@ -1060,16 +1060,18 @@ class CommunityTransactionCommandAcceptanceTest extends ExecutionEngineFunSuite 
       val unwindTransactionId = getTransactionIdExecutingQuery(unwindQuery)
       val matchTransactionId = getTransactionIdExecutingQuery(matchQuery)
       val createTransactionId = getTransactionIdExecutingQuery(createQuery)
+
+      // By ordering DESC we should skip the createQuery, then filtering out the matchQuery in the WHERE clause
       val result = execute(
         s"""TERMINATE TRANSACTIONS '$matchTransactionId', '$unwindTransactionId', '$createTransactionId'
            |YIELD transactionId AS txId, username
-           |ORDER BY txId SKIP 1 LIMIT 5
+           |ORDER BY txId DESC SKIP 1 LIMIT 5
            |WHERE username = '$username'
            |RETURN txId""".stripMargin).toList
 
       // THEN
       result should have size 1
-      result.head("txId") should (be(unwindTransactionId) or be(createTransactionId)) // we don't know which query will get skipped
+      result.head("txId") should be(unwindTransactionId)
       // Check that either the transactions are gone or at least marked as terminated,
       // Terminated with reason: Status.Code[Neo.TransientError.Transaction.Terminated]
       execute(s"SHOW TRANSACTIONS '$unwindTransactionId', '$matchTransactionId', '$createTransactionId' WHERE NOT status STARTS WITH 'Terminated'") should be(empty)
