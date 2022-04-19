@@ -214,8 +214,8 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
 
   test("relationship 'type' function") {
     val (startNode, endNode) = given {
-      val startNode = nodeValue(1, Values.stringArray(), MapValue.EMPTY)
-      val endNode = nodeValue(2, Values.stringArray(), MapValue.EMPTY)
+      val startNode = nodeValue(1, "1", Values.stringArray(), MapValue.EMPTY)
+      val endNode = nodeValue(2, "2", Values.stringArray(), MapValue.EMPTY)
       (startNode, endNode)
     }
 
@@ -266,7 +266,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
         Values.stringArray(label)
       }
 
-    nodeValue(id, labelValue, convertProperties(properties))
+    nodeValue(id, "n", labelValue, convertProperties(properties))
   }
 
   private def createNode(id: Long): NodeValue = {
@@ -280,7 +280,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
     relType: String,
     properties: Map[String, Any]
   ): RelationshipValue = {
-    relationshipValue(id, startNode, endNode, Values.stringValue(relType), convertProperties(properties))
+    relationshipValue(id, "r", startNode, endNode, Values.stringValue(relType), convertProperties(properties))
   }
 
   private def convertProperties(properties: Map[String, Any]): MapValue = {
