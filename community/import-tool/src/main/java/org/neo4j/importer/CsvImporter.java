@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogInitializer;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.PrefixedLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -189,7 +190,7 @@ class CsvImporter implements Importer
                     fileSystem,
                     pageCacheTracer,
                     importConfig,
-                    new SimpleLogService( NullLogProvider.getInstance(), logProvider ),
+                    new SimpleLogService( NullLogProvider.getInstance(), new PrefixedLogProvider( logProvider, databaseLayout.getDatabaseName() ) ),
                     stdOut,
                     verbose, AdditionalInitialIds.EMPTY,
                     databaseConfig,

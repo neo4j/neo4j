@@ -76,7 +76,7 @@ class CsvImporterTest
         Config config = Config.defaults( GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath() );
 
         CsvImporter csvImporter = CsvImporter.builder()
-            .withDatabaseLayout( databaseLayout )
+            .withDatabaseLayout( databaseLayout.getNeo4jLayout().databaseLayout( "foodb" ) )
             .withDatabaseConfig( config )
             .withReportFile( reportLocation.toAbsolutePath() )
             .withCsvConfig( Configuration.TABS )
@@ -87,6 +87,7 @@ class CsvImporterTest
         csvImporter.doImport();
 
         assertTrue( Files.exists( reportLocation ) );
+        assertThat( Files.readString( logDir.resolve( "debug.log" ) ) ).contains( "[foodb] Import starting" );
     }
 
     @Test
@@ -99,7 +100,7 @@ class CsvImporterTest
         Path reportLocation = testDir.file( "the_report" );
 
         CsvImporter.Builder csvImporterBuilder = CsvImporter.builder()
-                                                            .withDatabaseConfig( Config.defaults() )
+                                                            .withDatabaseConfig( Config.defaults( GraphDatabaseSettings.neo4j_home, testDir.homePath() ) )
                                                             .withDatabaseLayout( databaseLayout )
                                                             .withCsvConfig( Configuration.TABS )
                                                             .withFileSystem( testDir.getFileSystem() )
