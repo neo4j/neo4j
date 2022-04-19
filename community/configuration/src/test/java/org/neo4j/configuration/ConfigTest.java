@@ -686,6 +686,16 @@ class ConfigTest
     }
 
     @Test
+    void canReadEscapedCharsInPathsUnescapedFromFile() throws IOException
+    {
+        Path confFile = testDirectory.file( "test.conf" );
+        Files.writeString( confFile, GraphDatabaseSettings.data_directory.name() + "=\\test\folder" );
+
+        Config conf = buildWithoutErrorsOrWarnings( Config.newBuilder().fromFile( confFile )::build );
+        assertEquals( Path.of( "/test/folder" ).toAbsolutePath(), conf.get( GraphDatabaseSettings.data_directory ).toAbsolutePath() );
+    }
+
+    @Test
     void canReadConfigDir() throws IOException
     {
         Path confDir = testDirectory.directory( "test.conf" );

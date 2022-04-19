@@ -402,6 +402,7 @@ class SettingTest
         var setting = (SettingImpl<Path>) setting( "setting", PATH );
         assertEquals( Path.of( "/absolute/path" ), setting.parse( "/absolute/path" ) );
         assertEquals( Path.of( "/absolute/path" ), setting.parse( "/absolute/wrong/../path" ) );
+        assertEquals( Path.of( "/test/escaped/chars/r/n/dir" ), setting.parse( "\test\\escaped\\chars\r\n\\\\dir" ) );
     }
 
     @Test

@@ -22,6 +22,7 @@ package org.neo4j.configuration;
 import inet.ipaddr.AddressStringException;
 import inet.ipaddr.IPAddressString;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -789,9 +790,8 @@ public final class SettingValueParsers
         @Override
         public Path parse( String value )
         {
-            return Path.of( fixSeparatorsInPath( value ) ).normalize();
+            return Path.of( fixSeparatorsInPath( StringEscapeUtils.escapeJava( value ) ) ).normalize();
         }
-
         @Override
         public String getDescription()
         {
