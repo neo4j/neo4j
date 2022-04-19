@@ -37,6 +37,8 @@ public abstract class NodeValue extends VirtualNodeValue {
 
     public abstract MapValue properties();
 
+    public abstract String elementId();
+
     @Override
     public <E extends Exception> void writeTo(AnyValueWriter<E> writer) throws E {
         if (writer.entityMode() == REFERENCE) {
@@ -106,6 +108,7 @@ public abstract class NodeValue extends VirtualNodeValue {
             return isDeleted;
         }
 
+        @Override
         public String elementId() {
             return elementId;
         }

@@ -92,6 +92,8 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
 
     public abstract MapValue properties();
 
+    public abstract String elementId();
+
     public VirtualNodeValue otherNode(VirtualNodeValue node) {
         return node.equals(startNode()) ? endNode() : startNode();
     }
@@ -183,6 +185,7 @@ public abstract class RelationshipValue extends VirtualRelationshipValue impleme
             return isDeleted;
         }
 
+        @Override
         public String elementId() {
             return elementId;
         }

@@ -261,6 +261,11 @@ public class RelationshipEntityWrappingValue extends RelationshipValue implement
     }
 
     @Override
+    public String elementId() {
+        return relationship.getElementId();
+    }
+
+    @Override
     public Relationship getEntity() {
         return relationship;
     }

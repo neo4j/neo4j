@@ -249,7 +249,7 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
                     throw unableToTagError(value);
                 }
             } else if (value instanceof VirtualRelationshipValue) {
-                if (value instanceof RelationshipValue.DirectRelationshipValue rel) {
+                if (value instanceof RelationshipValue rel) {
                     return withTaggedId(rel);
                 } else {
                     throw unableToTagError(value);
@@ -265,24 +265,18 @@ public interface QuerySubject extends QuerySubscriber, Publisher<Record> {
             }
         }
 
-        private NodeValue withTaggedId(NodeValue nodeValue) {
-            if (nodeValue instanceof NodeValue.DirectNodeValue n) {
-                return VirtualValues.nodeValue(tag(n.id()), n.elementId(), n.labels(), n.properties());
-            }
-            throw unableToTagError(nodeValue);
+        private NodeValue withTaggedId(NodeValue n) {
+            return VirtualValues.nodeValue(tag(n.id()), n.elementId(), n.labels(), n.properties());
         }
 
-        private RelationshipValue withTaggedId(RelationshipValue relationshipValue) {
-            if (relationshipValue instanceof RelationshipValue.DirectRelationshipValue r) {
-                return VirtualValues.relationshipValue(
-                        tag(r.id()),
-                        r.elementId(),
-                        VirtualValues.node(tag(r.startNodeId())),
-                        VirtualValues.node(tag(r.endNodeId())),
-                        r.type(),
-                        r.properties());
-            }
-            throw unableToTagError(relationshipValue);
+        private RelationshipValue withTaggedId(RelationshipValue r) {
+            return VirtualValues.relationshipValue(
+                    tag(r.id()),
+                    r.elementId(),
+                    VirtualValues.node(tag(r.startNodeId())),
+                    VirtualValues.node(tag(r.endNodeId())),
+                    r.type(),
+                    r.properties());
         }
 
         private PathValue withTaggedId(PathValue pathValue) {

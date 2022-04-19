@@ -158,6 +158,11 @@ public class NodeEntityWrappingNodeValue extends NodeValue implements WrappingEn
         return m;
     }
 
+    @Override
+    public String elementId() {
+        return node.getElementId();
+    }
+
     public MapValue properties(NodeCursor nodeCursor, PropertyCursor propertyCursor) {
         MapValue m = properties;
         if (m == null) {
