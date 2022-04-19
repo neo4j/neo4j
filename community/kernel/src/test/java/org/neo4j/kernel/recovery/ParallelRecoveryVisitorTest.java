@@ -62,7 +62,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -400,7 +400,7 @@ class ParallelRecoveryVisitorTest
         }
 
         @Override
-        public StoreId getStoreId()
+        public LegacyStoreId getStoreId()
         {
             throw new UnsupportedOperationException();
         }

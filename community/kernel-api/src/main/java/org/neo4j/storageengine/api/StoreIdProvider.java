@@ -23,7 +23,7 @@ import java.util.Optional;
 
 public interface StoreIdProvider
 {
-    StoreId getStoreId();
+    LegacyStoreId getStoreId();
 
     Optional<ExternalStoreId> getExternalStoreId();
 }

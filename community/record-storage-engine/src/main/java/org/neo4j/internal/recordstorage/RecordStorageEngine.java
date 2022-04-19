@@ -106,7 +106,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -116,7 +116,6 @@ import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
 import org.neo4j.token.TokenHolders;
-import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
@@ -646,7 +645,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
         return neoStores.getMetaDataStore().getStoreId();
     }

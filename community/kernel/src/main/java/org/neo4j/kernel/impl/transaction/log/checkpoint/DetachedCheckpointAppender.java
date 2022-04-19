@@ -48,7 +48,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static java.util.Objects.requireNonNull;
@@ -64,7 +64,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final TransactionLogFilesContext context;
     private final Health databaseHealth;
     private final LogRotation logRotation;
-    private StoreId storeId;
+    private LegacyStoreId storeId;
     private PositionAwarePhysicalFlushableChecksumChannel writer;
     private DetachedCheckpointLogEntryWriter checkpointWriter;
     private NativeScopedBuffer buffer;

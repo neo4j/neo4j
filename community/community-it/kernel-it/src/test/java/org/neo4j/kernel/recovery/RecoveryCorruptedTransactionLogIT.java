@@ -96,7 +96,7 @@ import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreIdProvider;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.RandomSupport;
@@ -365,7 +365,7 @@ class RecoveryCorruptedTransactionLogIT
                 "Fail to recover all transactions. Any later transactions after position LogPosition{logVersion=0, " +
                         "byteOffset=" + txOffsetAfterStart + "} are unreadable and will be truncated." );
 
-        logFiles = buildDefaultLogFiles( StoreId.UNKNOWN );
+        logFiles = buildDefaultLogFiles( LegacyStoreId.UNKNOWN );
         assertEquals( 0, logFiles.getLogFile().getHighestLogVersion() );
         if ( NativeAccessProvider.getNativeAccess().isAvailable() )
         {
@@ -871,7 +871,7 @@ class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private static StoreId getStoreId( GraphDatabaseAPI database )
+    private static LegacyStoreId getStoreId( GraphDatabaseAPI database )
     {
         return database.getDependencyResolver().resolveDependency( StoreIdProvider.class ).getStoreId();
     }
@@ -1090,7 +1090,7 @@ class RecoveryCorruptedTransactionLogIT
         LogFiles internalLogFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( versionRepository )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .withStorageEngineFactory( StorageEngineFactory.defaultStorageEngine() )
                 .build();
         try ( Lifespan lifespan = new Lifespan( internalLogFiles ) )
@@ -1115,7 +1115,7 @@ class RecoveryCorruptedTransactionLogIT
         return metaDataStore.getLastClosedTransaction().logPosition().getByteOffset();
     }
 
-    private LogFiles buildDefaultLogFiles( StoreId storeId ) throws IOException
+    private LogFiles buildDefaultLogFiles( LegacyStoreId storeId ) throws IOException
     {
         return LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )

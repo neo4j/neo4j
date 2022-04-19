@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -47,7 +46,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.util.concurrent.Futures;
@@ -125,7 +124,7 @@ public class Runner implements Callable<Long>
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
     }
 }

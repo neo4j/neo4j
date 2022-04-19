@@ -35,8 +35,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
 
@@ -283,7 +282,7 @@ class TransactionLogFilesTest
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         files.init();
         return files;

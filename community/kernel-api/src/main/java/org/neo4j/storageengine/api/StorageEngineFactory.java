@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 
-import java.awt.desktop.OpenFilesEvent;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -94,6 +93,12 @@ public interface StorageEngineFactory
     String name();
 
     /**
+     * Retrieves the store ID of the store represented by the submitted layout.
+     */
+    StoreId retrieveStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext )
+            throws IOException;
+
+    /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
      * and means of checking upgradability between them.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
@@ -103,7 +108,7 @@ public interface StorageEngineFactory
 
     StoreVersion versionInformation( String storeVersion );
 
-    StoreVersion versionInformation( StoreId storeId );
+    StoreVersion versionInformation( LegacyStoreId storeId );
 
     StoreVersion defaultStoreVersion();
 
@@ -170,10 +175,11 @@ public interface StorageEngineFactory
     MetadataProvider transactionMetaDataStore( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             DatabaseReadOnlyChecker readOnlyChecker, CursorContextFactory contextFactory, LogTailMetadata logTailMetadata ) throws IOException;
 
-    StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
+    @Deprecated
+    LegacyStoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException;
 
     void resetMetadata( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, CursorContextFactory contextFactory,
-            StoreId storeId, UUID externalStoreId ) throws IOException;
+            LegacyStoreId storeId, UUID externalStoreId ) throws IOException;
 
     Optional<UUID> databaseIdUuid( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext );
 

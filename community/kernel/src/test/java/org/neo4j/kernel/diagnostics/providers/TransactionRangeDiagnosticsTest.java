@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointInfoFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static org.mockito.Mockito.mock;
@@ -117,7 +117,7 @@ class TransactionRangeDiagnosticsTest
         long txLogHighVersion = 10;
         long checkpointLogLowVersion = 0;
         long checkpointLogHighVersion = 3;
-        StoreId storeId = new StoreId( 12345 );
+        LegacyStoreId storeId = new LegacyStoreId( 12345 );
         LogPosition checkpointLogPosition = new LogPosition( checkpointLogHighVersion, 34 );
         LogPosition afterCheckpointLogPosition = new LogPosition( checkpointLogHighVersion, 36 );
         LogPosition readerPostPosition = new LogPosition( checkpointLogHighVersion, 36 );

@@ -171,7 +171,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -961,7 +961,7 @@ public class Database extends LifecycleAdapter
         return internalLogProvider;
     }
 
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
         return storageEngine.getStoreId();
     }

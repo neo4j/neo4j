@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.factory.Sets;
 
 import java.io.IOException;
@@ -93,7 +92,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogFilesInitializer;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -215,7 +214,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, idGeneratorFactory );
                 StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, srcIdGeneratorFactory );
 
-                StoreId storeId;
+                LegacyStoreId storeId;
                 UUID externalId;
                 KernelVersion kernelVersion;
                 UUID databaseId;
@@ -239,7 +238,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         long databaseMostBits = getValueOrDefault( oldMetadataStore, 20, record, pageCursor );
                         long databaseLeastBits = getValueOrDefault( oldMetadataStore, 21, record, pageCursor );
 
-                        storeId = new StoreId( creationTime, random, storeVersion );
+                        storeId = new LegacyStoreId( creationTime, random, storeVersion );
                         externalId = new UUID( externalMostBits, externalLeastBits );
                         kernelVersion = KernelVersion.getForVersion( Numbers.safeCastLongToByte( kernelVersionBits ) );
                         databaseId = new UUID( databaseMostBits, databaseLeastBits );

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class CheckpointInfo
@@ -30,11 +30,11 @@ public class CheckpointInfo
     private final LogPosition channelPositionAfterCheckpoint;
     private final LogPosition checkpointFilePostReadPosition;
     private final KernelVersion version;
-    private final StoreId storeId;
+    private final LegacyStoreId storeId;
     private final TransactionId transactionId;
     private final String reason;
 
-    public CheckpointInfo( LogPosition transactionLogPosition, StoreId storeId, LogPosition checkpointEntryPosition,
+    public CheckpointInfo( LogPosition transactionLogPosition, LegacyStoreId storeId, LogPosition checkpointEntryPosition,
             LogPosition channelPositionAfterCheckpoint, LogPosition checkpointFilePostReadPosition, KernelVersion version, TransactionId transactionId,
             String reason )
     {
@@ -63,7 +63,7 @@ public class CheckpointInfo
         return channelPositionAfterCheckpoint;
     }
 
-    public StoreId storeId()
+    public LegacyStoreId storeId()
     {
         return storeId;
     }

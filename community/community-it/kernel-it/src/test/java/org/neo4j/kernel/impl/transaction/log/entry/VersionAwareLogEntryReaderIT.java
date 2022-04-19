@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
 
@@ -86,7 +86,7 @@ class VersionAwareLogEntryReaderIT
                 .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
@@ -106,7 +106,7 @@ class VersionAwareLogEntryReaderIT
                 .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {
@@ -126,7 +126,7 @@ class VersionAwareLogEntryReaderIT
                 .withStorageEngineFactory( storageEngineFactory )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         try ( Lifespan lifespan = new Lifespan( logFiles ) )
         {

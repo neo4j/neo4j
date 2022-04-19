@@ -54,7 +54,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -66,7 +66,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
 @Neo4jLayoutExtension
 @ExtendWith( LifeExtension.class )
@@ -249,7 +248,7 @@ class QueueTransactionAppenderTestIT
     {
         return LogFilesBuilder.builder( databaseLayout, fileSystem ).withLogVersionRepository( logVersionRepository ).withRotationThreshold(
                 ByteUnit.mebiBytes( 1 ) ).withTransactionIdStore( transactionIdStore ).withCommandReaderFactory( new TestCommandReaderFactory() ).withStoreId(
-                StoreId.UNKNOWN ).build();
+                LegacyStoreId.UNKNOWN ).build();
     }
 
     private enum EventType

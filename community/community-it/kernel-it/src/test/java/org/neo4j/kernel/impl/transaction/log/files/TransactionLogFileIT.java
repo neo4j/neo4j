@@ -41,7 +41,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -73,7 +73,7 @@ class TransactionLogFileIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         life.start();
@@ -111,7 +111,7 @@ class TransactionLogFileIT
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .withMemoryTracker( memoryTracker )
                 .build();
 

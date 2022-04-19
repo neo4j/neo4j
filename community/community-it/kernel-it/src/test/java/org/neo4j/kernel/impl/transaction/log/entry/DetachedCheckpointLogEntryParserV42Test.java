@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpoin
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -74,7 +74,7 @@ class DetachedCheckpointLogEntryParserV42Test
     void parseDetachedCheckpointRecord() throws IOException
     {
         KernelVersion version = KernelVersion.V4_3_D4;
-        var storeId = new StoreId( 4, 5, 6 );
+        var storeId = new LegacyStoreId( 4, 5, 6 );
         var channel = new InMemoryClosableChannel();
         int checkpointMillis = 3;
         String checkpointDescription = "checkpoint";
@@ -130,14 +130,14 @@ class DetachedCheckpointLogEntryParserV42Test
 
     private static void writeCheckpoint( WritableChecksumChannel channel, KernelVersion kernelVersion, String reason ) throws IOException
     {
-        var storeId = new StoreId( 3, 4, 5 );
+        var storeId = new LegacyStoreId( 3, 4, 5 );
         var logPosition = new LogPosition( 1, 2 );
 
         writeCheckPointEntry(channel, kernelVersion, logPosition, Instant.ofEpochMilli( 1 ), storeId, reason );
     }
 
     private static void writeCheckPointEntry( WritableChecksumChannel channel, KernelVersion kernelVersion,
-            LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason ) throws IOException
+            LogPosition logPosition, Instant checkpointTime, LegacyStoreId storeId, String reason ) throws IOException
     {
         channel.beginChecksum();
         writeLogEntryHeader( kernelVersion, DETACHED_CHECK_POINT, channel );

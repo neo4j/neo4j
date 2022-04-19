@@ -91,7 +91,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -181,7 +181,7 @@ public class NeoStoresTest
         //Given
         RecordStorageEngineFactory sef = new RecordStorageEngineFactory();
         StoreFactory sf = getStoreFactory( Config.defaults(), databaseLayout, fs, NullLogProvider.getInstance() );
-        sef.resetMetadata( fs, databaseLayout, Config.defaults(), pageCache, CONTEXT_FACTORY, new StoreId( 123 ), new UUID( 2, 3 ) );
+        sef.resetMetadata( fs, databaseLayout, Config.defaults(), pageCache, CONTEXT_FACTORY, new LegacyStoreId( 123 ), new UUID( 2, 3 ) );
 
         //When
         Assertions.assertThatCode( () -> sf.openAllNeoStores( true ) ).isInstanceOf( IllegalArgumentException.class );

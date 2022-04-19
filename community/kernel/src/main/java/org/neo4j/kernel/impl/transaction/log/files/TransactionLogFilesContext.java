@@ -31,14 +31,13 @@ import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 public class TransactionLogFilesContext
 {
@@ -56,7 +55,7 @@ public class TransactionLogFilesContext
     private final MemoryTracker memoryTracker;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
-    private final Supplier<StoreId> storeId;
+    private final Supplier<LegacyStoreId> storeId;
     private final DatabaseHealth databaseHealth;
     private final KernelVersionRepository kernelVersionRepository;
     private final Clock clock;
@@ -69,7 +68,7 @@ public class TransactionLogFilesContext
             LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier, LongSupplier committingTransactionIdSupplier,
             LastClosedPositionProvider lastClosedPositionProvider,
             LogVersionRepositoryProvider logVersionRepositoryProvider, FileSystemAbstraction fileSystem, InternalLogProvider logProvider,
-            DatabaseTracers databaseTracers, Supplier<StoreId> storeId, NativeAccess nativeAccess,
+            DatabaseTracers databaseTracers, Supplier<LegacyStoreId> storeId, NativeAccess nativeAccess,
             MemoryTracker memoryTracker, Monitors monitors, boolean failOnCorruptedLogFiles, DatabaseHealth databaseHealth,
             KernelVersionRepository kernelVersionRepository, Clock clock, String databaseName, Config config, LogTailMetadata externalTailInfo,
             DbmsRuntimeRepository dbmsRuntimeRepository )
@@ -153,7 +152,7 @@ public class TransactionLogFilesContext
         return databaseTracers;
     }
 
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
         return storeId.get();
     }

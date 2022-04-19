@@ -23,14 +23,14 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.internal.Version;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 public class VersionDiagnostics extends NamedDiagnosticsProvider
 {
     private final DbmsInfo dbmsInfo;
-    private final StoreId storeId;
+    private final LegacyStoreId storeId;
 
-    VersionDiagnostics( DbmsInfo dbmsInfo, StoreId storeId )
+    VersionDiagnostics( DbmsInfo dbmsInfo, LegacyStoreId storeId )
     {
         super( "Version" );
         this.dbmsInfo = dbmsInfo;

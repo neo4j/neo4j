@@ -24,7 +24,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class LogTailInformation implements LogTailMetadata
@@ -35,18 +35,18 @@ public class LogTailInformation implements LogTailMetadata
     public final long currentLogVersion;
     public final byte latestLogEntryVersion;
     private final boolean recordAfterCheckpoint;
-    private final StoreId storeId;
+    private final LegacyStoreId storeId;
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
 
     public LogTailInformation( boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound, long currentLogVersion,
             byte latestLogEntryVersion, DbmsRuntimeRepository dbmsRuntimeRepository )
     {
-        this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, filesNotFound, currentLogVersion, latestLogEntryVersion, StoreId.UNKNOWN,
+        this( null, recordAfterCheckpoint, firstTxIdAfterLastCheckPoint, filesNotFound, currentLogVersion, latestLogEntryVersion, LegacyStoreId.UNKNOWN,
                 dbmsRuntimeRepository );
     }
 
     public LogTailInformation( CheckpointInfo lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint, boolean filesNotFound,
-            long currentLogVersion, byte latestLogEntryVersion, StoreId storeId, DbmsRuntimeRepository dbmsRuntimeRepository )
+            long currentLogVersion, byte latestLogEntryVersion, LegacyStoreId storeId, DbmsRuntimeRepository dbmsRuntimeRepository )
     {
         this.lastCheckPoint = lastCheckPoint;
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
@@ -82,7 +82,7 @@ public class LogTailInformation implements LogTailMetadata
     }
 
     @Override
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
         return storeId;
     }

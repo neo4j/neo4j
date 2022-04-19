@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -49,7 +49,7 @@ public class DetachedCheckpointLogEntryParserV4_2 extends LogEntryParser
         long logVersion = channel.getLong();
         long byteOffset = channel.getLong();
         long checkpointTimeMillis = channel.getLong();
-        StoreId storeId = new StoreId( channel.getLong(), channel.getLong(), channel.getLong() );
+        LegacyStoreId storeId = new LegacyStoreId( channel.getLong(), channel.getLong(), channel.getLong() );
         channel.getLong(); // legacy upgrade time
         channel.getLong(); // legacy upgrade tx id
         short reasonBytesLength = channel.getShort();

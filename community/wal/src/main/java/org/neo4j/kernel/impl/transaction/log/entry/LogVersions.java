@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 public class LogVersions
 {
@@ -44,7 +44,7 @@ public class LogVersions
      * Total 64 bytes
      * - 8 bytes version
      * - 8 bytes last committed tx id
-     * - 40 bytes {@link StoreId}
+     * - 40 bytes {@link LegacyStoreId}
      * - 8 bytes reserved
      * <pre>
      *   |<-                      LOG_HEADER_SIZE                  ->|
@@ -59,7 +59,7 @@ public class LogVersions
      * Total 64 bytes
      * - 8 bytes version
      * - 8 bytes last committed tx id
-     * - 24 bytes {@link StoreId}
+     * - 24 bytes {@link LegacyStoreId}
      * - 24 bytes reserved
      * <pre>
      *   |<-                      LOG_HEADER_SIZE                  ->|

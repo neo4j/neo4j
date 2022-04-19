@@ -25,7 +25,7 @@ import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 
@@ -54,7 +54,7 @@ public class LogHeaderWriter
     {
         channel.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
         channel.putLong( logHeader.getLastCommittedTxId() );
-        StoreId storeId = logHeader.getStoreId();
+        LegacyStoreId storeId = logHeader.getStoreId();
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
         channel.putLong( storeId.getStoreVersion() );
@@ -70,7 +70,7 @@ public class LogHeaderWriter
             var buffer = scopedBuffer.getBuffer();
             buffer.putLong( encodeLogVersion( logHeader.getLogVersion(), logHeader.getLogFormatVersion() ) );
             buffer.putLong( logHeader.getLastCommittedTxId() );
-            StoreId storeId = logHeader.getStoreId();
+            LegacyStoreId storeId = logHeader.getStoreId();
             buffer.putLong( storeId.getCreationTime() );
             buffer.putLong( storeId.getRandomId() );
             buffer.putLong( storeId.getStoreVersion() );

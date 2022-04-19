@@ -65,7 +65,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -309,7 +309,7 @@ class PhysicalLogicalTransactionStoreTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
     }
 

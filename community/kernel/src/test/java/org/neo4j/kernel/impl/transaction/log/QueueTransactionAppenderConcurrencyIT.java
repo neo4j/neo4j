@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -62,7 +62,6 @@ import org.neo4j.util.concurrent.Futures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.monitoring.PanicEventGenerator.NO_OP;
 
 @Neo4jLayoutExtension
@@ -210,7 +209,7 @@ class QueueTransactionAppenderConcurrencyIT
         return LogFilesBuilder.builder( databaseLayout, fileSystem ).withLogVersionRepository( logVersionRepository )
                               .withRotationThreshold( ByteUnit.mebiBytes( 1 ) ).withTransactionIdStore( transactionIdStore )
                               .withCommandReaderFactory( new TestCommandReaderFactory() )
-                              .withStoreId( StoreId.UNKNOWN ).build();
+                              .withStoreId( LegacyStoreId.UNKNOWN ).build();
     }
 
     private static FutureStatistic processFutures( List<Future<?>> futures )

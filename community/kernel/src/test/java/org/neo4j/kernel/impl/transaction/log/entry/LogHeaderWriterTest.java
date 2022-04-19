@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -61,7 +61,7 @@ class LogHeaderWriterTest
 
     private long expectedLogVersion;
     private long expectedTxId;
-    private StoreId expectedStoreId;
+    private LegacyStoreId expectedStoreId;
     private LogHeader logHeader;
 
     @BeforeEach
@@ -69,7 +69,7 @@ class LogHeaderWriterTest
     {
         expectedLogVersion = random.nextLong( 0, LOG_VERSION_MASK );
         expectedTxId = random.nextLong( 0, Long.MAX_VALUE );
-        expectedStoreId = new StoreId( random.nextLong(), random.nextLong(), random.nextLong() );
+        expectedStoreId = new LegacyStoreId( random.nextLong(), random.nextLong(), random.nextLong() );
         logHeader = new LogHeader( expectedLogVersion, expectedTxId, expectedStoreId );
     }
 
@@ -95,7 +95,7 @@ class LogHeaderWriterTest
         long txId = channel.getLong();
         assertEquals( expectedTxId, txId );
 
-        StoreId storeId = new StoreId( channel.getLong(), channel.getLong(), channel.getLong() );
+        LegacyStoreId storeId = new LegacyStoreId( channel.getLong(), channel.getLong(), channel.getLong() );
         assertEquals( expectedStoreId, storeId );
     }
 
@@ -132,7 +132,7 @@ class LogHeaderWriterTest
         long txId = result.getLong();
         assertEquals( expectedTxId, txId );
 
-        StoreId storeId = new StoreId( result.getLong(), result.getLong(), result.getLong() );
+        LegacyStoreId storeId = new LegacyStoreId( result.getLong(), result.getLong(), result.getLong() );
         assertEquals( expectedStoreId, storeId );
     }
 }

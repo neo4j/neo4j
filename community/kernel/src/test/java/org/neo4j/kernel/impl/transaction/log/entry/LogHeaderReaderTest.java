@@ -34,7 +34,7 @@ import java.nio.file.Path;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -69,14 +69,14 @@ class LogHeaderReaderTest
 
     private long expectedLogVersion;
     private long expectedTxId;
-    private StoreId expectedStoreId;
+    private LegacyStoreId expectedStoreId;
 
     @BeforeEach
     void setUp()
     {
         expectedLogVersion = random.nextLong( 0, LOG_VERSION_MASK );
         expectedTxId = random.nextLong();
-        expectedStoreId = new StoreId( random.nextLong(), random.nextLong(), random.nextLong() );
+        expectedStoreId = new LegacyStoreId( random.nextLong(), random.nextLong(), random.nextLong() );
     }
 
     @Test

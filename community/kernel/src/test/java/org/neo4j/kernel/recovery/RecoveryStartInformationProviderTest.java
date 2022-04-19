@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +61,7 @@ class RecoveryStartInformationProviderTest
     @BeforeEach
     void setUp() throws IOException
     {
-        var logHeader = new LogHeader( 0, 1, StoreId.UNKNOWN );
+        var logHeader = new LogHeader( 0, 1, LegacyStoreId.UNKNOWN );
         when( logFile.extractHeader( 0 ) ).thenReturn( logHeader );
         when( logFiles.getLogFile() ).thenReturn( logFile );
     }
@@ -94,9 +94,9 @@ class RecoveryStartInformationProviderTest
         LogPosition readerPostPosition = new LogPosition( 5, 9 );
         TransactionId transactionId = new TransactionId( 4L, 2, 5L );
         when( logFiles.getTailMetadata() ).thenReturn(
-                new LogTailInformation( new CheckpointInfo( txPosition, StoreId.UNKNOWN, checkpointPosition, afterCheckpointPosition, readerPostPosition,
+                new LogTailInformation( new CheckpointInfo( txPosition, LegacyStoreId.UNKNOWN, checkpointPosition, afterCheckpointPosition, readerPostPosition,
                         LATEST, transactionId, "test" ),
-                        true, 10L, false, currentLogVersion, LATEST.version(), StoreId.UNKNOWN, dbmsRepo ) );
+                        true, 10L, false, currentLogVersion, LATEST.version(), LegacyStoreId.UNKNOWN, dbmsRepo ) );
 
         // when
         RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( logFiles, monitor ).get();

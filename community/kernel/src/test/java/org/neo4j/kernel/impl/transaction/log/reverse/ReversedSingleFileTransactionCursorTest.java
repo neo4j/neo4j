@@ -52,7 +52,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -100,7 +100,7 @@ class ReversedSingleFileTransactionCursorTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         logFile = logFiles.getLogFile();

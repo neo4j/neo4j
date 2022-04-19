@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -41,7 +41,7 @@ public interface LogTailMetadata
 
     long getLogVersion();
 
-    StoreId getStoreId();
+    LegacyStoreId getStoreId();
 
     boolean logsMissing();
 

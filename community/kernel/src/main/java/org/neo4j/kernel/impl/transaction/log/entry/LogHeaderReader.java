@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
@@ -113,7 +113,7 @@ public final class LogHeaderReader
                 return null;
             }
             long previousCommittedTx = buffer.getLong();
-            StoreId storeId = new StoreId( buffer.getLong(), buffer.getLong(), buffer.getLong() );
+            LegacyStoreId storeId = new LegacyStoreId( buffer.getLong(), buffer.getLong(), buffer.getLong() );
             buffer.getLong(); // legacy upgrade time
             buffer.getLong(); // legacy upgrade tx id
             buffer.getLong(); // reserved
@@ -128,7 +128,7 @@ public final class LogHeaderReader
             long previousCommittedTx = buffer.getLong();
             long creationTime = buffer.getLong();
             long randomId = buffer.getLong();
-            StoreId storeId = new StoreId( creationTime, randomId, buffer.getLong() );
+            LegacyStoreId storeId = new LegacyStoreId( creationTime, randomId, buffer.getLong() );
             buffer.getLong(); // reserved
             buffer.getLong(); // reserved
             buffer.getLong(); // reserved

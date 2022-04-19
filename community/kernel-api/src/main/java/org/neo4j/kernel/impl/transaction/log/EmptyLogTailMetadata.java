@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
@@ -55,9 +55,9 @@ public class EmptyLogTailMetadata implements LogTailMetadata
     }
 
     @Override
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
-        return StoreId.UNKNOWN;
+        return LegacyStoreId.UNKNOWN;
     }
 
     @Override

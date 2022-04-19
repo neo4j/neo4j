@@ -174,9 +174,9 @@ public interface StorageEngine extends Lifecycle
     void listStorageFiles( Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable );
 
     /**
-     * @return the {@link StoreId} of the underlying store.
+     * @return the {@link LegacyStoreId} of the underlying store.
      */
-    StoreId getStoreId();
+    LegacyStoreId getStoreId();
 
     /**
      * The life cycle that is used for initialising the token holders, and filling the schema cache.

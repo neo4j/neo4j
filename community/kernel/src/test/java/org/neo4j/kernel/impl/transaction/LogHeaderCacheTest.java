@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -50,7 +50,7 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.UNKNOWN ) );
+        cache.putHeader( 5, new LogHeader( 1, 3, LegacyStoreId.UNKNOWN ) );
         final LogHeader logHeader = cache.getLogHeader( 5 );
 
         // then
@@ -64,7 +64,7 @@ class LogHeaderCacheTest
         final LogHeaderCache cache = new LogHeaderCache( 2 );
 
         // when
-        cache.putHeader( 5, new LogHeader( 1, 3, StoreId.UNKNOWN ) );
+        cache.putHeader( 5, new LogHeader( 1, 3, LegacyStoreId.UNKNOWN ) );
         cache.clear();
         final LogHeader logHeader = cache.getLogHeader( 5 );
 

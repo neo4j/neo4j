@@ -69,7 +69,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.Race;
@@ -151,7 +151,7 @@ public class TransactionAppenderConcurrencyTest
                 .withTransactionIdStore( transactionIdStore )
                 .withDatabaseHealth( databaseHealth )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         var appender = life.add( createTransactionAppender( databaseHealth, logFiles, jobScheduler ) );
@@ -195,7 +195,7 @@ public class TransactionAppenderConcurrencyTest
                 .withTransactionIdStore( transactionIdStore )
                 .withDatabaseHealth( databaseHealth )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
         life.add( logFiles );
         var appender = life.add( createTransactionAppender( databaseHealth, logFiles, jobScheduler ) );

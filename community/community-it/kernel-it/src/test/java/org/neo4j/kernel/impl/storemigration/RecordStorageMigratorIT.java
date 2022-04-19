@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -52,7 +50,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -77,7 +74,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -243,7 +240,7 @@ class RecordStorageMigratorIT
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            StoreId storeId = metaDataStore.getStoreId();
+            LegacyStoreId storeId = metaDataStore.getStoreId();
             assertNotEquals( 1155255428148939479L, storeId.getRandomId() );
             assertEquals( Standard.LATEST_STORE_VERSION, StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
         }
@@ -252,7 +249,7 @@ class RecordStorageMigratorIT
     @Test
     void keepIdsOnUpgrade() throws IOException, KernelException
     {
-        StoreId storeId;
+        LegacyStoreId storeId;
         ExternalStoreId externalStoreId;
         UUID databaseUUID = UUID.randomUUID();
         DatabaseManagementService dbms = new TestDatabaseManagementServiceBuilder( databaseLayout ).build();
@@ -295,7 +292,7 @@ class RecordStorageMigratorIT
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             MetaDataStore metaDataStore = neoStores.getMetaDataStore();
-            StoreId newStoreId = metaDataStore.getStoreId();
+            LegacyStoreId newStoreId = metaDataStore.getStoreId();
             // Store version should be updated, and the rest should be as before
             assertEquals( toFormat.storeVersion(), StoreVersion.versionLongToString( newStoreId.getStoreVersion() ) );
             assertEquals( storeId.getRandomId(), newStoreId.getRandomId() );

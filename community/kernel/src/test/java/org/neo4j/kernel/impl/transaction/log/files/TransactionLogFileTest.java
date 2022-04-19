@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,8 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.neo4j.internal.nativeimpl.ErrorTranslator;
 import org.neo4j.internal.nativeimpl.NativeAccess;
@@ -64,9 +61,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.LifeExtension;
@@ -85,7 +81,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -161,7 +156,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .withNativeAccess( capturingNativeAccess )
                 .build();
 
@@ -696,7 +691,7 @@ class TransactionLogFileTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( logVersionRepository )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .build();
     }
 
@@ -716,7 +711,7 @@ class TransactionLogFileTest
                             .withTransactionIdStore( transactionIdStore )
                             .withLogVersionRepository( logVersionRepository )
                             .withCommandReaderFactory( new TestCommandReaderFactory() )
-                            .withStoreId( StoreId.UNKNOWN )
+                            .withStoreId( LegacyStoreId.UNKNOWN )
                             .withNativeAccess( capturingNativeAccess ).build();
 
         lifeSupport.add( logFiles );
@@ -730,7 +725,7 @@ class TransactionLogFileTest
         var filesHelper = new TransactionLogFilesHelper( fileSystem, filePath );
         try ( StoreChannel storeChannel = fileSystem.write( filesHelper.getLogFileForVersion( version ) ) )
         {
-            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, lastCommittedTxId, StoreId.UNKNOWN ), INSTANCE );
+            LogHeaderWriter.writeLogHeader( storeChannel, new LogHeader( version, lastCommittedTxId, LegacyStoreId.UNKNOWN ), INSTANCE );
         }
     }
 

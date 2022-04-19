@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store;
 
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.eclipse.collections.impl.factory.Sets;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -53,7 +52,7 @@ import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
 import org.neo4j.storageengine.api.MetadataProvider;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.util.HighestTransactionId;
@@ -161,7 +160,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     protected void initialiseNewStoreFile( CursorContext cursorContext ) throws IOException
     {
         super.initialiseNewStoreFile( cursorContext );
-        StoreId storeId = new StoreId( StoreVersion.versionStringToLong( storeVersion ) );
+        LegacyStoreId storeId = new LegacyStoreId( StoreVersion.versionStringToLong( storeVersion ) );
         generateMetadataFile( storeId, UUID.randomUUID(), NOT_INITIALIZED_UUID, cursorContext );
     }
 
@@ -331,7 +330,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public void regenerateMetadata( StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext )
+    public void regenerateMetadata( LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext )
     {
         generateMetadataFile( storeId, externalStoreUUID, NOT_INITIALIZED_UUID, cursorContext );
         readMetadataFile( cursorContext );
@@ -369,9 +368,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     }
 
     @Override
-    public StoreId getStoreId()
+    public LegacyStoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
+        return new LegacyStoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
     }
 
     @Override
@@ -382,9 +381,9 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return isNotInitializedUUID( externalStoreUUID ) ? Optional.empty() : Optional.of( new ExternalStoreId( externalStoreUUID ) );
     }
 
-    public static StoreId getStoreId( PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext ) throws IOException
+    public static LegacyStoreId getStoreId( PageCache pageCache, Path neoStore, String databaseName, CursorContext cursorContext ) throws IOException
     {
-        return new StoreId(
+        return new LegacyStoreId(
                 getRecord( pageCache, neoStore, Position.TIME, databaseName, cursorContext ),
                 getRecord( pageCache, neoStore, Position.RANDOM_NUMBER, databaseName, cursorContext ),
                 getRecord( pageCache, neoStore, Position.STORE_VERSION, databaseName, cursorContext )
@@ -559,7 +558,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    private void generateMetadataFile( StoreId storeId, UUID externalStoreUUID, UUID databaseUUID, CursorContext cursorContext )
+    private void generateMetadataFile( LegacyStoreId storeId, UUID externalStoreUUID, UUID databaseUUID, CursorContext cursorContext )
     {
         try ( var cursor = openPageCursorForWriting( 0, cursorContext ) )
         {
@@ -603,7 +602,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         {
             if ( cursor.next() )
             {
-                StoreId metadataStoreId;
+                LegacyStoreId metadataStoreId;
                 UUID metadataExternalUUID;
                 UUID metadataDatabaseUUID;
                 do
@@ -612,7 +611,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                     metadataExternalUUID = new UUID( readLongRecord( cursor ), readLongRecord( cursor ) );
                     metadataDatabaseUUID = new UUID( readLongRecord( cursor ), readLongRecord( cursor ) );
                     long storeVersion = readLongRecord( cursor );
-                    metadataStoreId = new StoreId( readLongRecord( cursor ), readLongRecord( cursor ), storeVersion );
+                    metadataStoreId = new LegacyStoreId( readLongRecord( cursor ), readLongRecord( cursor ), storeVersion );
                 }
                 while ( cursor.shouldRetry() );
 

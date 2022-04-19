@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpoin
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -62,7 +62,7 @@ class CheckpointInfoFactoryTest
     void checkpointInfoOfDetachedCheckpoint42Entry() throws IOException, URISyntaxException
     {
         var logPosition = new LogPosition( 0, 48820 );
-        var storeId = new StoreId( 1645458406002L, 3689108786886031620L, 3471768636287762695L );
+        var storeId = new LegacyStoreId( 1645458406002L, 3689108786886031620L, 3471768636287762695L );
         LogPosition position = new LogPosition( 0, 448 );
         LogPosition positionAfterCheckpoint = new LogPosition( 0, 640 );
         LogPosition postReaderPosition = new LogPosition( 0, 640 );
@@ -88,7 +88,7 @@ class CheckpointInfoFactoryTest
     void checkpointInfoOfDetachedCheckpoint50Entry()
     {
         var logPosition = new LogPosition( 0, 1 );
-        var storeId = new StoreId( 3, 4, 5 );
+        var storeId = new LegacyStoreId( 3, 4, 5 );
         LogPosition position = new LogPosition( 1, 2 );
         LogPosition positionAfterCheckpoint = new LogPosition( 3, 4 );
         LogPosition postReaderPosition = new LogPosition( 5, 6 );

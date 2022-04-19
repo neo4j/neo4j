@@ -55,7 +55,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.monitoring.PanicEventGenerator;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -224,7 +224,7 @@ class TransactionLogChannelAllocatorIT
     {
         return new TransactionLogFilesContext( new AtomicLong( rotationThreshold ), new AtomicBoolean( true ),
                 new TestCommandReaderFactory(), any -> 1L, () -> 1L, any -> new LogPosition( 0, 1 ),
-                any -> new SimpleLogVersionRepository(), fileSystem, logProvider, DatabaseTracers.EMPTY, () -> StoreId.UNKNOWN, nativeAccess, INSTANCE,
+                any -> new SimpleLogVersionRepository(), fileSystem, logProvider, DatabaseTracers.EMPTY, () -> LegacyStoreId.UNKNOWN, nativeAccess, INSTANCE,
                 new Monitors(), true, new DatabaseHealth( PanicEventGenerator.NO_OP, NullLog.getInstance() ), () -> KernelVersion.LATEST, Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME, config, null, null );
     }

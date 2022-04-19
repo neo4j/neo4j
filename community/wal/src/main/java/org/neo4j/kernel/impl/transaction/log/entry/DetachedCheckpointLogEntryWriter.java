@@ -27,7 +27,7 @@ import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.KernelVersionRepository;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 import static java.lang.Math.min;
@@ -47,7 +47,7 @@ public class DetachedCheckpointLogEntryWriter
         this.kernelVersionProvider = kernelVersionProvider;
     }
 
-    public void writeCheckPointEntry( TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, StoreId storeId, String reason )
+    public void writeCheckPointEntry( TransactionId transactionId, LogPosition logPosition, Instant checkpointTime, LegacyStoreId storeId, String reason )
             throws IOException
     {
         channel.beginChecksum();

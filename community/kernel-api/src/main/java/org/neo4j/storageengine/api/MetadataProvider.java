@@ -29,5 +29,5 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 public interface MetadataProvider extends DatabaseIdStore, TransactionIdStore, LogVersionRepository, StoreIdProvider, KernelVersionRepository, Closeable
 {
-    void regenerateMetadata( StoreId storeId, UUID externalStoreUUID, CursorContext cursorContext );
+    void regenerateMetadata( LegacyStoreId storeId, UUID externalStoreUUID, CursorContext cursorContext );
 }

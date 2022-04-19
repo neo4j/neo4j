@@ -77,7 +77,7 @@ import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -621,7 +621,7 @@ class TransactionLogsRecoveryTest
               PositionAwarePhysicalFlushableChecksumChannel writableLogChannel =
                       new PositionAwarePhysicalFlushableChecksumChannel( versionedStoreChannel, new HeapScopedBuffer( 1, KibiByte, INSTANCE ) ) )
         {
-            writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, StoreId.UNKNOWN ) );
+            writeLogHeader( writableLogChannel, new LogHeader( logVersion, 2L, LegacyStoreId.UNKNOWN ) );
             writableLogChannel.beginChecksum();
             Consumer<LogPositionMarker> consumer = marker ->
             {
@@ -645,7 +645,7 @@ class TransactionLogsRecoveryTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withCommandReaderFactory( new TestCommandReaderFactory() )
-                .withStoreId( StoreId.UNKNOWN )
+                .withStoreId( LegacyStoreId.UNKNOWN )
                 .withConfig( Config.newBuilder().set( GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false ).build() )
                 .build();
     }

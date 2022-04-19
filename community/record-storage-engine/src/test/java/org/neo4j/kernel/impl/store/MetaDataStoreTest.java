@@ -66,7 +66,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.StoreFileClosedException;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.ExternalStoreId;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -620,7 +620,7 @@ class MetaDataStoreTest
         int randomId = 2;
         long storeVersion = versionStringToLong( defaultFormat().storeVersion() );
 
-        StoreId storeId = new StoreId( creationTime, randomId, storeVersion );
+        LegacyStoreId storeId = new LegacyStoreId( creationTime, randomId, storeVersion );
         UUID externalStoreUUID = UUID.randomUUID();
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -725,7 +725,7 @@ class MetaDataStoreTest
         var cursorContext = contextFactory.create( "tracePageCacheAssessOnSetStoreId" );
         try ( var metaDataStore = newMetaDataStore() )
         {
-            var storeId = new StoreId( 1, 2, 3 );
+            var storeId = new LegacyStoreId( 1, 2, 3 );
             metaDataStore.regenerateMetadata( storeId, metaDataStore.getExternalStoreId().orElseThrow().getId(), cursorContext );
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat( cursorTracer.pins() ).isEqualTo( 2 );

@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 
 import static java.lang.Math.min;
 import static java.lang.Math.subtractExact;
@@ -175,8 +175,8 @@ public class DetachedLogTailScanner
             return false;
         }
         LogHeader logHeader = logFile.extractHeader( logVersion );
-        StoreId headerStoreId = logHeader.getStoreId();
-        return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringVersion( checkpointInfo.storeId() );
+        LegacyStoreId headerStoreId = logHeader.getStoreId();
+        return LegacyStoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringVersion( checkpointInfo.storeId() );
     }
 
     private StartCommitEntries getFirstTransactionIdAfterCheckpoint( LogFile logFile, LogPosition logPosition ) throws IOException

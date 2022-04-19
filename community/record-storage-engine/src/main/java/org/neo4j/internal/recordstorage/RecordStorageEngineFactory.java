@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
 
 import java.io.IOException;
@@ -74,7 +73,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -93,6 +91,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -120,9 +119,10 @@ import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageFilesState;
-import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.LegacyStoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.format.Index44Compatibility;
@@ -146,6 +146,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.layout.recordstorage.RecordDatabaseLayout.convert;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
@@ -165,6 +166,33 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
+    public StoreId retrieveStoreId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache,
+            CursorContext cursorContext ) throws IOException
+    {
+        long version = MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), STORE_VERSION, databaseLayout.getDatabaseName(), cursorContext );
+        assertMetaDataFieldPresent( version, databaseLayout );
+        String versionString = StoreVersion.versionLongToString( version );
+        RecordFormats recordFormat = RecordFormatSelector.selectForVersion( versionString );
+
+        long creationTime = MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.TIME, databaseLayout.getDatabaseName(),
+                cursorContext );
+        assertMetaDataFieldPresent( creationTime, databaseLayout );
+        long random = MetaDataStore.getRecord( pageCache, databaseLayout.metadataStore(), MetaDataStore.Position.RANDOM_NUMBER,
+                databaseLayout.getDatabaseName(), cursorContext );
+        assertMetaDataFieldPresent( random, databaseLayout );
+
+        return new StoreId( creationTime, random, NAME, recordFormat.getFormatFamily().name(), recordFormat.majorVersion(), recordFormat.minorVersion() );
+    }
+
+    private void assertMetaDataFieldPresent( long value, DatabaseLayout databaseLayout )
+    {
+        if ( value == MetaDataRecordFormat.FIELD_NOT_PRESENT )
+        {
+            throw new IllegalStateException( "Uninitialized version field in " + databaseLayout.metadataStore() );
+        }
+    }
+
+    @Override
     public StoreVersionCheck versionCheck( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache,
             LogService logService, CursorContextFactory contextFactory )
     {
@@ -178,7 +206,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreVersion versionInformation( StoreId storeId )
+    public StoreVersion versionInformation( LegacyStoreId storeId )
     {
         return versionInformation( StoreVersion.versionLongToString( storeId.getStoreVersion() ) );
     }
@@ -264,14 +292,14 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
+    public LegacyStoreId storeId( FileSystemAbstraction fs, DatabaseLayout databaseLayout, PageCache pageCache, CursorContext cursorContext ) throws IOException
     {
         return MetaDataStore.getStoreId( pageCache, convert( databaseLayout ).metadataStore(), databaseLayout.getDatabaseName(), cursorContext );
     }
 
     @Override
     public void resetMetadata( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config, PageCache pageCache, CursorContextFactory contextFactory,
-            StoreId storeId, UUID externalStoreId ) throws IOException
+            LegacyStoreId storeId, UUID externalStoreId ) throws IOException
     {
         try ( var metadataProvider = transactionMetaDataStore( fs, databaseLayout, config, pageCache, writable(), contextFactory, EMPTY_LOG_TAIL );
                 var cursorContext = contextFactory.create( "resetMetadata" ) )
