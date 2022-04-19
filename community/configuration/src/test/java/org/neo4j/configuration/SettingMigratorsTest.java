@@ -100,7 +100,7 @@ class SettingMigratorsTest
         );
         sources.forEach( ( setting, source ) ->
         {
-            tests.add( dynamicTest( String.format( "Test migration of SslPolicy for source %s", source.name() ), () ->
+            tests.add( dynamicTest( String.format( "Test migration of SslPolicy for source '%s'.", source.name() ), () ->
                     testMigrateSslPolicy( setting, SslPolicyConfig.forScope( source ) ) ) );
         } );
 
@@ -124,7 +124,7 @@ class SettingMigratorsTest
         {
             assertThat( logProvider ).forClass( Config.class )
                     .forLevel( WARN )
-                    .containsMessageWithArguments( "Use of deprecated setting %s. Legacy ssl policy is no longer supported.", setting );
+                    .containsMessageWithArguments( "Use of deprecated setting '%s'. Legacy ssl policy is no longer supported.", setting );
         }
 
     }
@@ -143,7 +143,8 @@ class SettingMigratorsTest
             config.setLogger( log );
 
             assertEquals( "foo", config.get( GraphDatabaseSettings.default_database ) );
-            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
+            verify( log ).warn( "Use of deprecated setting '%s'. It is replaced by '%s'.", "dbms.active_database",
+                    GraphDatabaseSettings.default_database.name() );
         }
         {
             Config config = Config.newBuilder()
@@ -154,7 +155,8 @@ class SettingMigratorsTest
             config.setLogger( log );
 
             assertEquals( "bar", config.get( GraphDatabaseSettings.default_database ) );
-            verify( log ).warn( "Use of deprecated setting %s. It is replaced by %s", "dbms.active_database", GraphDatabaseSettings.default_database.name() );
+            verify( log ).warn( "Use of deprecated setting '%s'. It is replaced by '%s'.", "dbms.active_database",
+                    GraphDatabaseSettings.default_database.name() );
         }
     }
 
@@ -197,7 +199,7 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
-                "Setting dbms.procedures.kill_query_verbose is removed. It's no longer possible to disable verbose kill query logging." );
+                "Setting 'dbms.procedures.kill_query_verbose' is removed. It's no longer possible to disable verbose kill query logging." );
     }
 
     @Test
@@ -211,8 +213,23 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessages( "Setting unsupported.dbms.multi_threaded_schema_index_population_enabled is removed. " +
+                .containsMessages( "Setting 'unsupported.dbms.multi_threaded_schema_index_population_enabled' is removed. " +
                         "It's no longer possible to disable multi-threaded index population." );
+    }
+
+    @Test
+    void warnOnLegacyUnsupportedSettingUsage() throws IOException
+    {
+        Path confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile, List.of( "unsupported.tools.batch_inserter.batch_size=42" ) );
+
+        Config config = Config.newBuilder().fromFile( confFile ).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger( logProvider.getLog( Config.class ) );
+
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessages( "Use of deprecated setting 'unsupported.tools.batch_inserter.batch_size'. " +
+                        "It is replaced by 'internal.tools.batch_inserter.batch_size'." );
     }
 
     @Test
@@ -229,11 +246,11 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.tx_state.max_off_heap_memory", tx_state_max_off_heap_memory.name() )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.tx_state.off_heap.max_cacheable_block_size", tx_state_off_heap_max_cacheable_block_size.name() )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.tx_state.off_heap.block_cache_size", tx_state_off_heap_block_cache_size.name() );
 
         assertEquals( BYTES.parse( "6g" ), config.get( tx_state_max_off_heap_memory ) );
@@ -311,9 +328,9 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.memory.pagecache.warmup.preload.whitelist", pagecache_warmup_prefetch_allowlist.name() )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.security.procedures.whitelist", procedure_allowlist.name() );
 
         assertEquals( "a", config.get( pagecache_warmup_prefetch_allowlist ) );
@@ -331,7 +348,7 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                                 .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                                 .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                                                                 "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name() );
 
         assertEquals( 1073741824L, config.get( memory_transaction_database_max_size ) );
@@ -347,8 +364,9 @@ class SettingMigratorsTest
         var logProvider = new AssertableLogProvider();
         config.setLogger( logProvider.getLog( Config.class ) );
 
-        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
-                "Setting unsupported.consistency_checker.experimental is removed. There is no longer multiple different consistency checkers to choose from." );
+        assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
+                .containsMessages( "Setting 'unsupported.consistency_checker.experimental' is removed. " +
+                        "There is no longer multiple different consistency checkers to choose from." );
     }
 
     @Test
@@ -362,8 +380,8 @@ class SettingMigratorsTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
-                "Use of deprecated setting unsupported.consistency_checker.experimental.fail_fast. " +
-                        "It is replaced by internal.consistency_checker.fail_fast_threshold" );
+                "Use of deprecated setting 'unsupported.consistency_checker.experimental.fail_fast'. " +
+                        "It is replaced by 'internal.consistency_checker.fail_fast_threshold'" );
 
         assertEquals( 1, config.get( GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold ) );
     }
@@ -396,7 +414,7 @@ class SettingMigratorsTest
         assertThat( config.get( read_only_database_default ) ).isTrue();
         assertThat( Config.defaults().get( read_only_database_default  ) ).isFalse();
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN ).containsMessages(
-                "Use of deprecated setting dbms.read_only. It is replaced by dbms.databases.default_to_read_only" );
+                "Use of deprecated setting 'dbms.read_only'. It is replaced by 'dbms.databases.default_to_read_only'" );
     }
 
     @Test
@@ -411,7 +429,7 @@ class SettingMigratorsTest
         assertThat( logProvider )
                 .forClass( Config.class )
                 .forLevel( WARN )
-                .containsMessages( "Use of deprecated setting unsupported.dbms.logs.format" );
+                .containsMessages( "Use of deprecated setting 'unsupported.dbms.logs.format'" );
         assertThat( config.get( GraphDatabaseSettings.store_internal_log_format ) ).isEqualTo( FormattedLogFormat.JSON );
         assertThat( config.get( GraphDatabaseSettings.store_user_log_format ) ).isEqualTo( FormattedLogFormat.JSON );
         assertThat( config.get( GraphDatabaseSettings.log_query_format ) ).isEqualTo( FormattedLogFormat.JSON );
@@ -423,7 +441,7 @@ class SettingMigratorsTest
         assertThat( logProvider )
                 .forClass( Config.class )
                 .forLevel( WARN )
-                .containsMessages( "Unrecognized value for unsupported.dbms.logs.format. Was FOO" );
+                .containsMessages( "Unrecognized value for 'unsupported.dbms.logs.format'. Was FOO" );
     }
 
     private static void testQueryLogMigration( Boolean oldValue, LogQueryLevel newValue )
@@ -490,8 +508,8 @@ class SettingMigratorsTest
         assertTrue( config.get( policyConfig.trust_all ) );
 
         assertThat( logProvider ).forLevel( WARN ).forClass( Config.class )
-                .containsMessageWithArguments( "Use of deprecated setting %s.", oldGroupnameSetting )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldFormatSetting, policyConfig.trust_all.name() );
+                .containsMessageWithArguments( "Use of deprecated setting '%s'.", oldGroupnameSetting )
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldFormatSetting, policyConfig.trust_all.name() );
     }
 
     private static void shouldRemoveAllowKeyGeneration( String toRemove, String value )

@@ -317,8 +317,9 @@ class GraphDatabaseSettingsTest
         assertEquals( new SocketAddress( "bar" ), config.get( default_advertised_address) );
 
         var messageMatcher = assertThat( logProvider ).forClass( Config.class ).forLevel( WARN );
-        messageMatcher.containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldDefaultListen, default_listen_address.name() )
-                      .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s", oldDefaultAdvertised,
+        messageMatcher.containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldDefaultListen,
+                default_listen_address.name() )
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.", oldDefaultAdvertised,
                 default_advertised_address.name() );
 
     }

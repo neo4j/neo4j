@@ -49,6 +49,7 @@ public final class SettingImpl<T> implements Setting<T>
             List<SettingConstraint<T>> constraints,
             boolean dynamic,
             boolean immutable,
+            boolean internal,
             SettingImpl<T> dependency )
     {
         this.name = name;
@@ -57,6 +58,7 @@ public final class SettingImpl<T> implements Setting<T>
         this.constraints = constraints;
         this.defaultValue = defaultValue;
         this.dynamic = dynamic;
+        this.internal = internal;
         this.immutable = immutable;
     }
 
@@ -241,6 +243,7 @@ public final class SettingImpl<T> implements Setting<T>
         private final T defaultValue;
         private boolean dynamic;
         private boolean immutable;
+        private boolean internal;
         private SettingImpl<T> dependency;
 
         Builder( String name, SettingValueParser<T> parser, T defaultValue )
@@ -261,6 +264,12 @@ public final class SettingImpl<T> implements Setting<T>
         public Builder<T> immutable()
         {
             this.immutable = true;
+            return this;
+        }
+
+        public Builder<T> internal()
+        {
+            this.internal = true;
             return this;
         }
 
@@ -291,7 +300,7 @@ public final class SettingImpl<T> implements Setting<T>
                 throw new IllegalArgumentException( "Setting can only have immutable dependency" );
             }
 
-            return new SettingImpl<>( name, parser, defaultValue, constraints, dynamic, immutable, dependency );
+            return new SettingImpl<>( name, parser, defaultValue, constraints, dynamic, immutable, internal, dependency );
         }
     }
 }

@@ -111,36 +111,26 @@ public class IndexSettingUtil
 
     public static IndexSetting spatialMinSettingForCrs( CoordinateReferenceSystem crs )
     {
-        switch ( crs.getName() )
-        {
-        case "cartesian":
-            return SPATIAL_CARTESIAN_MIN;
-        case "cartesian-3d":
-            return SPATIAL_CARTESIAN_3D_MIN;
-        case "wgs-84":
-            return SPATIAL_WGS84_MIN;
-        case "wgs-84-3d":
-            return SPATIAL_WGS84_3D_MIN;
-        default:
-            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
-        }
+        return switch ( crs.getName() )
+                {
+                    case "cartesian" -> SPATIAL_CARTESIAN_MIN;
+                    case "cartesian-3d" -> SPATIAL_CARTESIAN_3D_MIN;
+                    case "wgs-84" -> SPATIAL_WGS84_MIN;
+                    case "wgs-84-3d" -> SPATIAL_WGS84_3D_MIN;
+                    default -> throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
+                };
     }
 
     public static IndexSetting spatialMaxSettingForCrs( CoordinateReferenceSystem crs )
     {
-        switch ( crs.getName() )
-        {
-        case "cartesian":
-            return SPATIAL_CARTESIAN_MAX;
-        case "cartesian-3d":
-            return SPATIAL_CARTESIAN_3D_MAX;
-        case "wgs-84":
-            return SPATIAL_WGS84_MAX;
-        case "wgs-84-3d":
-            return SPATIAL_WGS84_3D_MAX;
-        default:
-            throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
-        }
+        return switch ( crs.getName() )
+                {
+                    case "cartesian" -> SPATIAL_CARTESIAN_MAX;
+                    case "cartesian-3d" -> SPATIAL_CARTESIAN_3D_MAX;
+                    case "wgs-84" -> SPATIAL_WGS84_MAX;
+                    case "wgs-84-3d" -> SPATIAL_WGS84_3D_MAX;
+                    default -> throw new IllegalArgumentException( "Unrecognized coordinate reference system " + crs );
+                };
     }
 
     /**

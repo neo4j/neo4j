@@ -56,6 +56,13 @@ public interface SettingBuilder<T>
     SettingBuilder<T> immutable();
 
     /**
+     * Make this setting internal.
+     *
+     * @return The builder.
+     */
+    SettingBuilder<T> internal();
+
+    /**
      * Set the parent setting. The parent setting must be immutable. The value from the parent will be available
      * in the {@link SettingValueParser#solveDependency(Object, Object)} callback.
      *

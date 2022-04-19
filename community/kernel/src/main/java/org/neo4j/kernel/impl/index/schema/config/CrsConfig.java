@@ -55,8 +55,8 @@ public class CrsConfig implements GroupSetting
         this.name = name;
         crs = CoordinateReferenceSystem.byName( name );
         List<Double> defaultValue = new ArrayList<>( Collections.nCopies( crs.getDimension(), Double.NaN ) );
-        min = getBuilder( "min", listOf( DOUBLE ), defaultValue ).addConstraint( size( crs.getDimension() ) ).build();
-        max = getBuilder( "max", listOf( DOUBLE ), defaultValue ).addConstraint( size( crs.getDimension() ) ).build();
+        min = getBuilder( "min", listOf( DOUBLE ), defaultValue ).internal().addConstraint( size( crs.getDimension() ) ).build();
+        max = getBuilder( "max", listOf( DOUBLE ), defaultValue ).internal().addConstraint( size( crs.getDimension() ) ).build();
     }
 
     public CrsConfig()

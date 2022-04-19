@@ -54,7 +54,7 @@ class ServerSettingsMigratorTest
         config.setLogger( logProvider.getLog( Config.class ) );
 
         assertThat( logProvider ).forClass( Config.class ).forLevel( WARN )
-                .containsMessageWithArguments( "Use of deprecated setting %s. It is replaced by %s",
+                .containsMessageWithArguments( "Use of deprecated setting '%s'. It is replaced by '%s'.",
                         "dbms.security.http_auth_whitelist", http_auth_allowlist.name() );
 
         assertEquals( List.of( "a", "b"), config.get( http_auth_allowlist ) );
