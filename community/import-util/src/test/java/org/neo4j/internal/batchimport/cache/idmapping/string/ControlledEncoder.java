@@ -40,13 +40,6 @@ public class ControlledEncoder implements Encoder
     @Override
     public long encode( Object value )
     {
-        try
-        {
-            return actual.encode( overrideId != null ? overrideId : value );
-        }
-        finally
-        {
-            overrideId = null;
-        }
+        return actual.encode( overrideId );
     }
 }

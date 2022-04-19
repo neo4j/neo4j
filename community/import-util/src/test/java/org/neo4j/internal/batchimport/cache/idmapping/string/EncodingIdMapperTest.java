@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.Stream;
 
@@ -385,7 +385,7 @@ public class EncodingIdMapperTest
     public void shouldDetectCorrectDuplicateInputIdsWhereManyAccidentalInManyGroups( int processors )
     {
         // GIVEN
-        final ControlledEncoder encoder = new ControlledEncoder( new LongEncoder() );
+        final var encoder = new ControlledEncoder( new LongEncoder() );
         final int idsPerGroup = 20;
         int groupCount = 5;
         for ( int i = 0; i < groupCount; i++ )
@@ -394,16 +394,10 @@ public class EncodingIdMapperTest
         }
         IdMapper mapper = mapper( encoder, Radix.LONG, EncodingIdMapper.NO_MONITOR, ParallelSort.DEFAULT,
                                   numberOfCollisions -> new LongCollisionValues( NumberArrayFactories.HEAP, numberOfCollisions, INSTANCE ), processors );
-        final AtomicReference<Group> group = new AtomicReference<>();
+        Function<Long, Integer> nodeIdToGroupId = nodeId -> toIntExact( nodeId / idsPerGroup );
         PropertyValueLookup ids = nodeId ->
         {
-            int groupId = toIntExact( nodeId / idsPerGroup );
-            if ( groupId == groupCount )
-            {
-                return null;
-            }
-            group.set( groups.get( groupId ) );
-
+            int groupId = nodeIdToGroupId.apply( nodeId );
             // Let the first 10% in each group be accidental collisions with each other
             // i.e. all first 10% in each group collides with all other first 10% in each group
             if ( nodeId % idsPerGroup < 2 )
@@ -414,7 +408,7 @@ public class EncodingIdMapperTest
             }
 
             // The other 90% will be accidental collisions for something else
-            encoder.useThisIdToEncodeNoMatterWhatComesIn( (long) (123456 - group.get().id()) );
+            encoder.useThisIdToEncodeNoMatterWhatComesIn( (long) (123456 - groupId) );
             return nodeId;
         };
 
@@ -422,7 +416,9 @@ public class EncodingIdMapperTest
         int count = idsPerGroup * groupCount;
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            mapper.put( ids.lookupProperty( nodeId ), nodeId, group.get() );
+            var groupId = nodeIdToGroupId.apply( nodeId );
+            var inputId = ids.lookupProperty( nodeId );
+            mapper.put( inputId, nodeId, groups.get( groupId ) );
         }
         Collector collector = mock( Collector.class );
 
@@ -432,7 +428,9 @@ public class EncodingIdMapperTest
         verifyNoMoreInteractions( collector );
         for ( long nodeId = 0; nodeId < count; nodeId++ )
         {
-            assertEquals( nodeId, mapper.get( ids.lookupProperty( nodeId ), group.get() ) );
+            var groupId = nodeIdToGroupId.apply( nodeId );
+            var inputId = ids.lookupProperty( nodeId );
+            assertEquals( nodeId, mapper.get( inputId, groups.get( groupId ) ) );
         }
         verifyNoMoreInteractions( collector );
         assertFalse( mapper.leftOverDuplicateNodesIds().hasNext() );
