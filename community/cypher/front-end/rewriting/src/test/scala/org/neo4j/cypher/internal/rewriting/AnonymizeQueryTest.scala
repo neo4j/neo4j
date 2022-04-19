@@ -21,11 +21,10 @@ import org.neo4j.cypher.internal.rewriting.rewriters.Anonymizer
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
+class AnonymizeQueryTest extends AnonymizerTestBase {
 
-  private val anonymizer = new Anonymizer {
+  val anonymizer: Anonymizer = new Anonymizer {
     override def label(name: String): String = "x"+name
     override def relationshipType(name: String): String = "x"+name
     override def labelOrRelationshipType(name: String): String = "x"+name
@@ -34,6 +33,8 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
     override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.expr(anonymizedExpression)
     override def parameter(name: String): String = "X"+name
     override def literal(value: String): String = s"string[$value]"
+    override def indexName(name: String): String = "X"+name
+    override def constraintName(name: String): String = "X"+name
   }
 
   val rewriterUnderTest: Rewriter = anonymizeQuery(anonymizer)
@@ -86,5 +87,33 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
   test("literals") {
     assertRewrite("RETURN \"hello\"", "RETURN \"string[hello]\"")
 
+  }
+
+  test("index commands") {
+    // create btree
+    assertRewrite("CREATE INDEX name FOR (n:Label) ON (n.prop1, n.prop2)", "CREATE INDEX Xname FOR (Xn:xLabel) ON (Xn.Xprop1, Xn.Xprop2)")
+    assertRewrite("CREATE INDEX name FOR ()-[r:TYPE]-() ON (r.prop)", "CREATE INDEX Xname FOR ()-[Xr:xTYPE]-() ON (Xr.Xprop)")
+
+    // create fulltext
+    assertRewrite("CREATE FULLTEXT INDEX name FOR (n:Label1|Label2) ON EACH [n.prop]", "CREATE FULLTEXT INDEX Xname FOR (Xn:xLabel1|xLabel2) ON EACH [Xn.Xprop]")
+    assertRewrite("CREATE FULLTEXT INDEX name FOR ()-[r:TYPE]-() ON EACH [r.prop]", "CREATE FULLTEXT INDEX Xname FOR ()-[Xr:xTYPE]-() ON EACH [Xr.Xprop]")
+
+    // create token lookup
+    assertRewrite("CREATE LOOKUP INDEX name FOR (n) ON EACH labels(n)", "CREATE LOOKUP INDEX Xname FOR (Xn) ON EACH labels(Xn)")
+    assertRewrite("CREATE LOOKUP INDEX name FOR ()-[r]-() ON EACH type(r)", "CREATE LOOKUP INDEX Xname FOR ()-[Xr]-() ON EACH type(Xr)")
+
+    // drop
+    assertRewrite("DROP INDEX name", "DROP INDEX Xname")
+  }
+
+  test("constraint commands") {
+    // create
+    assertRewrite("CREATE CONSTRAINT name ON (n:Label) ASSERT (n.prop1, n.prop2) IS NODE KEY", "CREATE CONSTRAINT Xname ON (Xn:xLabel) ASSERT (Xn.Xprop1, Xn.Xprop2) IS NODE KEY")
+    assertRewrite("CREATE CONSTRAINT name ON (n:Label) ASSERT (n.prop) IS UNIQUE", "CREATE CONSTRAINT Xname ON (Xn:xLabel) ASSERT (Xn.Xprop) IS UNIQUE")
+    assertRewrite("CREATE CONSTRAINT name ON (n:Label) ASSERT (n.prop) IS NOT NULL", "CREATE CONSTRAINT Xname ON (Xn:xLabel) ASSERT (Xn.Xprop) IS NOT NULL")
+    assertRewrite("CREATE CONSTRAINT name ON ()-[r:TYPE]-() ASSERT (r.prop) IS NOT NULL", "CREATE CONSTRAINT Xname ON ()-[Xr:xTYPE]-() ASSERT (Xr.Xprop) IS NOT NULL")
+
+    // drop
+    assertRewrite("DROP CONSTRAINT name", "DROP CONSTRAINT Xname")
   }
 }
