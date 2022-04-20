@@ -234,7 +234,7 @@ object Neo4jExceptionToExecutionFailed {
       CREATING_VAR_LENGTH
     else if (
       msg.matches(semanticError(
-        "Parameter maps cannot be used in ((MATCH)|(MERGE)) patterns \\(use a literal map instead, eg. \"\\{id: \\{param\\}\\.id\\}\"\\)"
+        "Parameter maps cannot be used in `((MATCH)|(MERGE))` patterns \\(use a literal map instead, e.g. `\\{id: \\$.+\\.id\\}`\\)"
       ))
     )
       INVALID_PARAMETER_USE

@@ -75,9 +75,25 @@ class SemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuite
     expectErrorMessagesFrom(query, Set("Multiple result columns with the same name are not supported"))
   }
 
-  test("Should not allow duplicate variable name") {
-    val query = "CREATE (n),(n) RETURN 1 as one"
+  test("Should not allow duplicate variable name in CREATE") {
+    val query = "CREATE (n), (n) RETURN 1 as one"
     expectErrorMessagesFrom(query, Set("Variable `n` already declared"))
+  }
+
+  test("Should not allow parameter maps in MATCH") {
+    val query = "MATCH (n $foo) RETURN 1"
+    expectErrorMessagesFrom(
+      query,
+      Set("Parameter maps cannot be used in `MATCH` patterns (use a literal map instead, e.g. `{id: $foo.id}`)")
+    )
+  }
+
+  test("Should not allow parameter maps in MERGE") {
+    val query = "MERGE (n $foo) RETURN 1"
+    expectErrorMessagesFrom(
+      query,
+      Set("Parameter maps cannot be used in `MERGE` patterns (use a literal map instead, e.g. `{id: $foo.id}`)")
+    )
   }
 
   test("Should allow parameter as valid predicate in FilteringExpression") {

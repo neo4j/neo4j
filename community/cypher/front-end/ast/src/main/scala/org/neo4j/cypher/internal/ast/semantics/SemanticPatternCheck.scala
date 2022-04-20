@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Create
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
+import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Merge
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -495,14 +496,9 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 object checkNoParamMapsWhenMatching {
 
   def apply(properties: Option[Expression], ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
-    case (Some(e: Parameter), SemanticContext.Match) =>
+    case (Some(e: Parameter), ctx) if ctx == Match || ctx == Merge =>
       SemanticError(
-        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
-        e.position
-      )
-    case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError(
-        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        s"Parameter maps cannot be used in `${ctx.name}` patterns (use a literal map instead, e.g. `{id: $$${e.name}.id}`)",
         e.position
       )
     case _ =>

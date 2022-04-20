@@ -49,7 +49,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
       val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(n => Variable(n)(null))
       val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs)] = e match {
         // MATCH (a)-[r]-(b) WHERE id(r) IN expr
-        // MATCH a WHERE id(a) IN {param}
+        // MATCH a WHERE id(a) IN $param
         case predicate @ AsIdSeekable(seekable)
           if seekable.args.dependencies.forall(arguments) && !arguments(seekable.ident) =>
           Some((predicate, seekable.ident, seekable.args))
