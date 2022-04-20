@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 /**
  * Marker trait for all Apply plans. These are plans that execute their rhs
- * once for every lhs row, and pass the lhs as the argument to the rhs.
+ * at least once for every lhs row, and pass the lhs as the argument to the rhs.
  */
 trait ApplyPlan extends LogicalBinaryPlan
 
