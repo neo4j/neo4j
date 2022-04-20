@@ -22,7 +22,6 @@ package org.neo4j.configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.DynamicTest.dynamicTest;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
@@ -39,18 +38,10 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestFactory;
 import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
-import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.graphdb.config.Setting;
@@ -64,39 +55,6 @@ import org.neo4j.test.utils.TestDirectory;
 class SettingMigratorsTest {
     @Inject
     private TestDirectory testDirectory;
-
-    @Test
-    void testConnectorOldFormatMigration() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(
-                confFile,
-                Arrays.asList(
-                        "dbms.connector.bolt.enabled=true",
-                        "dbms.connector.bolt.type=BOLT",
-                        "dbms.connector.http.enabled=true",
-                        "dbms.connector.https.enabled=true",
-                        "dbms.connector.bolt2.type=bolt",
-                        "dbms.connector.bolt2.listen_address=:1234"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertTrue(config.get(BoltConnector.enabled));
-        assertTrue(config.get(HttpConnector.enabled));
-        assertTrue(config.get(HttpsConnector.enabled));
-
-        var warnConfigMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
-        warnConfigMatcher
-                .containsMessageWithArguments(
-                        "Use of deprecated setting %s. Type is no longer required", "dbms.connector.bolt.type")
-                .containsMessageWithArguments(
-                        "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
-                        "dbms.connector.bolt2.type")
-                .containsMessageWithArguments(
-                        "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
-                        "dbms.connector.bolt2.listen_address");
-    }
 
     @Test
     void warnOnLegacyUnsupportedSettingUsage() throws IOException {
@@ -182,21 +140,6 @@ class SettingMigratorsTest {
                                 + "precedence and the value of cypher.query_max_allocations, %s, will be ignored.",
                         memory_transaction_max_size.name(), memory_transaction_max_size.name(), "6g");
         assertEquals(BYTES.parse("7g"), config.get(memory_transaction_max_size));
-    }
-
-    @TestFactory
-    Collection<DynamicTest> testConnectorAddressMigration() {
-        Collection<DynamicTest> tests = new ArrayList<>();
-        tests.add(dynamicTest(
-                "Test bolt connector address migration",
-                () -> testAddrMigration(BoltConnector.listen_address, BoltConnector.advertised_address)));
-        tests.add(dynamicTest(
-                "Test http connector address migration",
-                () -> testAddrMigration(HttpConnector.listen_address, HttpConnector.advertised_address)));
-        tests.add(dynamicTest(
-                "Test https connector address migration",
-                () -> testAddrMigration(HttpsConnector.listen_address, HttpsConnector.advertised_address)));
-        return tests;
     }
 
     @Test

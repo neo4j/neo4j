@@ -272,6 +272,34 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
     protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);
 
+    protected static Map<String, String> connectorsOnRandomPortsConfig() {
+        return stringMap(
+                HttpConnector.listen_address.name(), "localhost:0",
+                HttpConnector.advertised_address.name(), ":0",
+                HttpConnector.enabled.name(), SettingValueParsers.TRUE,
+                HttpsConnector.listen_address.name(), "localhost:0",
+                HttpsConnector.advertised_address.name(), ":0",
+                HttpsConnector.enabled.name(), FALSE,
+                BoltConnector.listen_address.name(), "localhost:0",
+                BoltConnector.advertised_address.name(), ":0",
+                BoltConnector.encryption_level.name(), "DISABLED",
+                BoltConnector.enabled.name(), SettingValueParsers.TRUE);
+    }
+
+    protected static String configOption(Setting<?> setting, String value) {
+        return setting.name() + "=" + value;
+    }
+
+    protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
+        Stream<String> configs = Stream.of(otherConfigs);
+
+        Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .flatMap(config -> Stream.of("-c", config));
+
+        return Stream.concat(configs, connectorsConfig).toArray(String[]::new);
+    }
+
     private void testStartupWithConnectors(boolean httpEnabled, boolean httpsEnabled, boolean boltEnabled) {
         SslPolicyConfig httpsPolicy = SslPolicyConfig.forScope(SslPolicyScope.HTTPS);
         if (httpsEnabled) {
@@ -293,13 +321,19 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
             "-c",
             HttpConnector.listen_address.name() + "=localhost:0",
             "-c",
+            HttpConnector.advertised_address.name() + "=:0",
+            "-c",
             HttpsConnector.enabled.name() + "=" + httpsEnabled,
             "-c",
             HttpsConnector.listen_address.name() + "=localhost:0",
             "-c",
+            HttpsConnector.advertised_address.name() + "=:0",
+            "-c",
             BoltConnector.enabled.name() + "=" + boltEnabled,
             "-c",
-            BoltConnector.listen_address.name() + "=localhost:0"
+            BoltConnector.listen_address.name() + "=localhost:0",
+            "-c",
+            BoltConnector.advertised_address.name() + "=:0",
         };
         var allConfigOptions = ArrayUtils.addAll(config, getAdditionalArguments());
         int resultCode = NeoBootstrapper.start(bootstrapper, allConfigOptions);
@@ -311,31 +345,6 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         verifyConnector(db(), HttpConnector.NAME, httpEnabled);
         verifyConnector(db(), HttpsConnector.NAME, httpsEnabled);
         verifyConnector(db(), BoltConnector.NAME, boltEnabled);
-    }
-
-    protected static String configOption(Setting<?> setting, String value) {
-        return setting.name() + "=" + value;
-    }
-
-    protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
-        Stream<String> configs = Stream.of(otherConfigs);
-
-        Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .flatMap(config -> Stream.of("-c", config));
-
-        return Stream.concat(configs, connectorsConfig).toArray(String[]::new);
-    }
-
-    protected static Map<String, String> connectorsOnRandomPortsConfig() {
-        return stringMap(
-                HttpConnector.listen_address.name(), "localhost:0",
-                HttpConnector.enabled.name(), SettingValueParsers.TRUE,
-                HttpsConnector.listen_address.name(), "localhost:0",
-                HttpsConnector.enabled.name(), FALSE,
-                BoltConnector.listen_address.name(), "localhost:0",
-                BoltConnector.encryption_level.name(), "DISABLED",
-                BoltConnector.enabled.name(), SettingValueParsers.TRUE);
     }
 
     private void assertDbAccessibleAsEmbedded() {

@@ -85,13 +85,16 @@ class StartupLoggingIT extends ExclusiveWebContainerTestBase {
                 testDirectory.homePath().toString());
 
         properties.put(HttpConnector.listen_address.name(), "localhost:0");
+        properties.put(HttpConnector.advertised_address.name(), ":0");
         properties.put(HttpConnector.enabled.name(), TRUE);
 
         properties.put(HttpsConnector.listen_address.name(), "localhost:0");
+        properties.put(HttpsConnector.advertised_address.name(), ":0");
         properties.put(HttpsConnector.enabled.name(), FALSE);
 
         properties.put(BoltConnector.enabled.name(), TRUE);
         properties.put(BoltConnector.listen_address.name(), "localhost:0");
+        properties.put(BoltConnector.advertised_address.name(), ":0");
         properties.put(BoltConnector.encryption_level.name(), "DISABLED");
 
         properties.put(

@@ -129,6 +129,7 @@ class HTTPLoggingIT extends ExclusiveWebContainerTestBase {
                         GraphDatabaseSettings.logs_directory.name(),
                         logDirectory.toAbsolutePath().toString())
                 .withProperty(BoltConnector.listen_address.name(), ":0")
+                .withProperty(BoltConnector.advertised_address.name(), ":0")
                 .usingDataDir(testDirectory
                         .directory(directoryPrefix + "-dbdir")
                         .toAbsolutePath()

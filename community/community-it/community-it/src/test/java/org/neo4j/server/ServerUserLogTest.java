@@ -170,6 +170,12 @@ class ServerUserLogTest {
                 "localhost:0",
                 HttpsConnector.listen_address.name(),
                 "localhost:0",
+                HttpConnector.advertised_address.name(),
+                ":0",
+                BoltConnector.advertised_address.name(),
+                ":0",
+                HttpsConnector.advertised_address.name(),
+                ":0",
                 GraphDatabaseSettings.preallocate_logical_logs.name(),
                 FALSE);
     }

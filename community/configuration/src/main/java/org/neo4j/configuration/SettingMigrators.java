@@ -20,8 +20,6 @@
 package org.neo4j.configuration;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
@@ -30,96 +28,18 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_d
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
-import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.connectors.BoltConnector;
-import org.neo4j.configuration.connectors.HttpConnector;
-import org.neo4j.configuration.connectors.HttpsConnector;
-import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
 
 public final class SettingMigrators {
     private SettingMigrators() {}
-
-    @ServiceProvider
-    public static class ConnectorMigrator implements SettingMigrator {
-        private static final Pattern oldConnector = Pattern.compile("^dbms\\.connector\\.([^.]+)\\.([^.]+)$");
-        private static final String ANY_CONNECTOR = "bolt|http|https";
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateOldConnectors(values, log);
-            migrateConnectorAddresses(values, defaultValues, log);
-        }
-
-        private static void migrateOldConnectors(Map<String, String> values, InternalLog log) {
-            Map<String, Matcher> oldConnectors = new HashMap<>();
-            values.forEach((setting, value) -> {
-                Matcher matcher = oldConnector.matcher(setting);
-                if (matcher.find()) {
-                    oldConnectors.put(setting, matcher);
-                }
-            });
-
-            oldConnectors.forEach((setting, matcher) -> {
-                String settingName = matcher.group(2);
-                String id = matcher.group(1);
-                if (id.matches(ANY_CONNECTOR)) {
-                    if (Objects.equals("type", settingName)) {
-                        values.remove(setting);
-                        log.warn("Use of deprecated setting %s. Type is no longer required", setting);
-                    }
-                } else {
-                    values.remove(setting);
-                    log.warn(
-                            "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
-                            setting);
-                }
-            });
-        }
-
-        private static void migrateConnectorAddresses(
-                Map<String, String> values, Map<String, String> defValues, InternalLog log) {
-            migrateAdvertisedAddressInheritanceChange(
-                    values,
-                    defValues,
-                    log,
-                    BoltConnector.listen_address.name(),
-                    BoltConnector.advertised_address.name());
-            migrateAdvertisedAddressInheritanceChange(
-                    values,
-                    defValues,
-                    log,
-                    HttpConnector.listen_address.name(),
-                    HttpConnector.advertised_address.name());
-            migrateAdvertisedAddressInheritanceChange(
-                    values,
-                    defValues,
-                    log,
-                    HttpsConnector.listen_address.name(),
-                    HttpsConnector.advertised_address.name());
-        }
-    }
-
-    @ServiceProvider
-    public static class DefaultAddressMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.connectors.default_listen_address", default_listen_address);
-            migrateSettingNameChange(
-                    values, log, "dbms.connectors.default_advertised_address", default_advertised_address);
-        }
-    }
 
     @ServiceProvider
     public static class DatabaseMemoryMigrator implements SettingMigrator {
@@ -195,53 +115,6 @@ public final class SettingMigrators {
                         read_only_database_default.name());
             }
             migrateSettingNameChange(values, log, refuseToBeLeader, read_only_database_default);
-        }
-    }
-
-    public static void migrateAdvertisedAddressInheritanceChange(
-            Map<String, String> values,
-            Map<String, String> defaultValues,
-            InternalLog log,
-            String listenAddress,
-            String advertisedAddress) {
-        String listenValue = values.get(listenAddress);
-        if (isNotBlank(listenValue)) {
-            String advertisedValue = values.get(advertisedAddress);
-            boolean advertisedAlreadyHasPort = false;
-            try {
-                if (isNotBlank(advertisedValue)) {
-                    advertisedAlreadyHasPort =
-                            SOCKET_ADDRESS.parse(advertisedValue).getPort() >= 0;
-                }
-            } catch (RuntimeException e) {
-                // If we cant parse the advertised address we act as if it has no port specified
-                // If invalid hostname config will report the error
-            }
-
-            if (!advertisedAlreadyHasPort) {
-                try {
-                    int port = SOCKET_ADDRESS.parse(listenValue).getPort();
-                    if (port >= 0) // valid port on listen, and none on advertised, migrate!
-                    {
-                        SocketAddress newAdvertised = new SocketAddress(advertisedValue, port);
-                        String msg =
-                                "Note that since you did not explicitly set the port in %s Neo4j automatically set it to %s to match %s."
-                                        + " This behavior may change in the future and we recommend you to explicitly set it.";
-                        if (isNotBlank(advertisedValue)) {
-                            // If advertised has an address set (not inherited or default value we treat this as a
-                            // warning, since is is likely to be used.
-                            log.warn(msg, advertisedAddress, port, listenAddress);
-                        } else {
-                            // No value was set, likely the user does not care or won't use this. Just provide the info
-                            log.info(msg, advertisedAddress, port, listenAddress);
-                        }
-                        defaultValues.put(advertisedAddress, newAdvertised.toString());
-                    }
-                } catch (RuntimeException e) {
-                    // If we cant parse the listen address we have no information on how to proceed with the migration
-                    // The config will handle the error later
-                }
-            }
         }
     }
 

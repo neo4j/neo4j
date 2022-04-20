@@ -32,7 +32,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.SettingValueParsers.DURATION;
 import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
@@ -54,7 +53,6 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -312,33 +310,6 @@ class GraphDatabaseSettingsTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> Config.defaults(default_advertised_address, new SocketAddress(456)));
-    }
-
-    @Test
-    void testDefaultAddressMigration() {
-        String oldDefaultListen = "dbms.connectors.default_listen_address";
-        String oldDefaultAdvertised = "dbms.connectors.default_advertised_address";
-
-        var config = Config.newBuilder()
-                .setRaw(Map.of(oldDefaultListen, "foo", oldDefaultAdvertised, "bar"))
-                .build();
-
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThrows(IllegalArgumentException.class, () -> config.getSetting(oldDefaultListen));
-        assertThrows(IllegalArgumentException.class, () -> config.getSetting(oldDefaultAdvertised));
-        assertEquals(new SocketAddress("foo"), config.get(default_listen_address));
-        assertEquals(new SocketAddress("bar"), config.get(default_advertised_address));
-
-        var messageMatcher = assertThat(logProvider).forClass(Config.class).forLevel(WARN);
-        messageMatcher
-                .containsMessageWithArguments(
-                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                        oldDefaultListen, default_listen_address.name())
-                .containsMessageWithArguments(
-                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                        oldDefaultAdvertised, default_advertised_address.name());
     }
 
     @Test

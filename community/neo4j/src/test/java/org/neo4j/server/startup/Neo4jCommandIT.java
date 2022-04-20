@@ -63,6 +63,7 @@ public class Neo4jCommandIT extends Neo4jCommandTestBase {
         // Connectors
         addConf(HttpConnector.enabled, "true");
         addConf(HttpConnector.listen_address, "localhost:0");
+        addConf(HttpConnector.advertised_address, ":0");
         addConf(HttpsConnector.enabled, "false");
         addConf(BoltConnector.enabled, "false");
 
