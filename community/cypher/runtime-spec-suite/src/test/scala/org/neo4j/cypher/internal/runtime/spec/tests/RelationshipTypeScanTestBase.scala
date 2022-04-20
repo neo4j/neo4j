@@ -292,6 +292,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   // TODO: These tests should live in ProfileRowsTestBase but lives here instead because they rely on typescans being enabled
   test("should profile dbHits of directed relationship type scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
@@ -314,6 +315,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of undirected relationship type scan") {
+    assume(!(isParallel && runOnlySafeScenarios))
     // given
     given { circleGraph(sizeHint) }
 
