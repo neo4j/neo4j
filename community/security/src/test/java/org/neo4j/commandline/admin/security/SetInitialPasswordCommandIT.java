@@ -58,6 +58,9 @@ class SetInitialPasswordCommandIT
     private PrintStream out;
     private PrintStream err;
 
+    private static final String successMessage = "Changed password for user 'neo4j'. " +
+                                                 "IMPORTANT: this change will only take effect if performed before the database is started for the first time.";
+
     @BeforeEach
     void setup()
     {
@@ -80,7 +83,7 @@ class SetInitialPasswordCommandIT
         executeCommand( "abc" );
         assertAuthIniFile( "abc", false );
 
-        verify( out ).println( "Changed password for user 'neo4j'." );
+        verify( out ).println( successMessage );
     }
 
     @Test
@@ -89,7 +92,7 @@ class SetInitialPasswordCommandIT
         executeCommand( "abc", "--require-password-change" );
         assertAuthIniFile( "abc", true );
 
-        verify( out ).println( "Changed password for user 'neo4j'." );
+        verify( out ).println( successMessage );
     }
 
     @Test
@@ -98,7 +101,7 @@ class SetInitialPasswordCommandIT
         executeCommand( "--require-password-change", "abc" );
         assertAuthIniFile( "abc", true );
 
-        verify( out ).println( "Changed password for user 'neo4j'." );
+        verify( out ).println( successMessage );
     }
 
     @Test
@@ -109,7 +112,7 @@ class SetInitialPasswordCommandIT
         executeCommand( "muchBetter" );
         assertAuthIniFile( "muchBetter", false );
 
-        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
+        verify( out, times( 2 ) ).println( successMessage );
     }
 
     @Test
@@ -120,7 +123,7 @@ class SetInitialPasswordCommandIT
         executeCommand( "neo4j" );
         assertAuthIniFile( "neo4j", false );
 
-        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
+        verify( out, times( 2 ) ).println( successMessage );
     }
 
     @Test
@@ -174,7 +177,7 @@ class SetInitialPasswordCommandIT
 
         // Then
         assertNoAuthIniFile();
-        verify( out ).println( "Changed password for user 'neo4j'." ); // This is from the initial setup
+        verify( out ).println( successMessage ); // This is from the initial setup
     }
 
     @Test
@@ -192,7 +195,7 @@ class SetInitialPasswordCommandIT
 
         // Then
         assertAuthIniFile( "should-not-be-ignored", false );
-        verify( out, times( 2 ) ).println( "Changed password for user 'neo4j'." );
+        verify( out, times( 2 ) ).println( successMessage );
     }
 
     private void assertAuthIniFile( String password, boolean passwordChangeRequired ) throws Throwable
