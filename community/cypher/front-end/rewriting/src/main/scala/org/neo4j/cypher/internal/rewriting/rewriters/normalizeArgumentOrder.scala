@@ -39,7 +39,7 @@ case object ArgumentOrderInComparisonsNormalized extends StepSequencer.Condition
 case object normalizeArgumentOrder extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    containsNoNodesOfType[NotEquals] // NotEquals must have been rewritten to Equals
+    containsNoNodesOfType[NotEquals]() // NotEquals must have been rewritten to Equals
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

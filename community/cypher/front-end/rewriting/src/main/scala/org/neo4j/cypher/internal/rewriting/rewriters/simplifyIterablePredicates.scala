@@ -22,7 +22,6 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.In
-import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
@@ -38,7 +37,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 case object IterablePredicatesRewrittenToIn extends StepSequencer.Condition
 
 /**
- * Rewrites [[IterablePredicateExpression]]s to IN expressions when possible.
+ * Rewrites [[org.neo4j.cypher.internal.expressions.IterablePredicateExpression]]s to IN expressions when possible.
  *
  * For example:
  * any(x IN list WHERE x = 1) ==> 1 IN x

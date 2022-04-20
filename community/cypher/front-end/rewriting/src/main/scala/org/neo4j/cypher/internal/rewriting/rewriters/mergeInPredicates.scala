@@ -72,7 +72,7 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
         rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
       else if (containNots(lhs, rhs))
       //Look for a `NOT IN [...] AND a NOT IN [...]` and compute the union of lists
-        rewriteBinaryOperator(and, (a, b) => a union b, (l, r) => and.copy(l, r)(and.position))
+        rewriteBinaryOperator(and, (a, b) => a concat b, (l, r) => and.copy(l, r)(and.position))
       else
       // In case only one of lhs and rhs includes a NOT we cannot rewrite
         and
@@ -80,7 +80,7 @@ case object mergeInPredicates extends Rewriter with Step with PreparatoryRewriti
     case or@Or(lhs, rhs) if containNoAnds(lhs, rhs) && containIns(lhs, rhs) =>
       if (containNoNots(lhs, rhs))
       //Look for `a IN [...] OR a IN [...]` and compute union of lists
-        rewriteBinaryOperator(or, (a, b) => a union b, (l, r) => or.copy(l, r)(or.position))
+        rewriteBinaryOperator(or, (a, b) => a concat b, (l, r) => or.copy(l, r)(or.position))
       else if (containNots(lhs, rhs))
       //Look for a `NOT IN [...] OR a NOT IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(or, (a, b) => a intersect b, (l, r) => or.copy(l, r)(or.position))

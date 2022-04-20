@@ -61,7 +61,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
   }
 
   private def spoilVariableIfNotAliased(variable: LogicalVariable, context: InliningContext): InliningContext =
-    if (context.isAliasedVarible(variable)) context
+    if (context.isAliasedVariable(variable)) context
     else context.spoilVariable(variable)
 
   private def aliasedReturnItems(items: Seq[ast.ReturnItem]): Map[LogicalVariable, Expression] =

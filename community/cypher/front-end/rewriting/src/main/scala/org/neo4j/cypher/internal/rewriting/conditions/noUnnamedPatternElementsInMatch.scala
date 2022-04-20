@@ -23,19 +23,19 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 case object noUnnamedPatternElementsInMatch extends ValidatingCondition {
   def apply(that: Any): Seq[String] = {
-    val into = collectNodesOfType[Match].apply(that).map(_.pattern)
+    val into = collectNodesOfType[Match]().apply(that).map(_.pattern)
     into.flatMap(unnamedNodePatterns) ++ into.flatMap(unnamedRelationshipPatterns)
   }
 
   private def unnamedRelationshipPatterns(that: Any): Seq[String] = {
-    collectNodesOfType[RelationshipPattern].apply(that).collect {
+    collectNodesOfType[RelationshipPattern]().apply(that).collect {
       case rel@RelationshipPattern(None, _, _, _, _, _, _) =>
         s"RelationshipPattern at ${rel.position} is unnamed"
     }
   }
 
   private def unnamedNodePatterns(that: Any): Seq[String] = {
-    collectNodesOfType[NodePattern].apply(that).collect {
+    collectNodesOfType[NodePattern]().apply(that).collect {
       case node@NodePattern(None, _, _, _) =>
         s"NodePattern at ${node.position} is unnamed"
     }

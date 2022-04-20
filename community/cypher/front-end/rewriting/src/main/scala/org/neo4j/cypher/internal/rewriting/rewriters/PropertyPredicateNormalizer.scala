@@ -37,7 +37,7 @@ case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: Anonymous
     case RelationshipPattern(Some(id), _, None, Some(props), _, _, _) if !isParameter(props) =>
       propertyPredicates(id, props)
 
-    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _, _, _) if !isParameter(props) =>
+    case RelationshipPattern(Some(id), _, Some(_), Some(props), _, _, _) if !isParameter(props) =>
       Vector(varLengthPropertyPredicates(id, props))
   }
 
@@ -67,13 +67,13 @@ case class PropertyPredicateNormalizer(anonymousVariableNameGenerator: Anonymous
     val idName = anonymousVariableNameGenerator.nextName
     val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
-    val conjunction = conjunct(expressions)
+    val conjunction = conjunct(expressions.toList)
     AllIterablePredicate(newId, id.copyId, Some(conjunction))(props.position)
   }
 
-  private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
+  private def conjunct(exprs: List[Expression]): Expression = exprs match {
     case Nil           => throw new IllegalArgumentException("There should be at least one predicate to be rewritten")
-    case expr +: Nil   => expr
-    case expr +: tail  => And(expr, conjunct(tail))(expr.position)
+    case expr :: Nil   => expr
+    case expr :: tail  => And(expr, conjunct(tail))(expr.position)
   }
 }

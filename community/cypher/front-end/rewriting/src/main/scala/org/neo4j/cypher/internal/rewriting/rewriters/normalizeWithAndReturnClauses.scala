@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.OrderBy
+import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.QueryPart
@@ -113,6 +114,7 @@ case class normalizeWithAndReturnClauses(cypherExceptionFactory: CypherException
     case sq:SingleQuery => rewriteTopLevelSingleQuery(sq)
     case union@UnionAll(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
     case union@UnionDistinct(part, query) => union.copy(part = rewriteTopLevelQueryPart(part), query = rewriteTopLevelSingleQuery(query))(union.position)
+    case _: ProjectingUnion => throw new IllegalStateException("Didn't expect ProjectingUnion, only SingleQuery, UnionAll, or UnionDistinct.")
   }
 
   /**

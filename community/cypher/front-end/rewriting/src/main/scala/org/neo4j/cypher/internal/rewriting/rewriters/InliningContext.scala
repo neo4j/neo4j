@@ -32,13 +32,13 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
                            seenVariables: Set[LogicalVariable] = Set.empty,
                            usageCount: Map[LogicalVariable, Int] = Map.empty) {
 
-  def trackUsageOfVariable(id: Variable) =
+  def trackUsageOfVariable(id: Variable): InliningContext =
     copy(usageCount = usageCount + (id -> (usageCount.withDefaultValue(0)(id) + 1)))
 
   def enterQueryPart(newProjections: Map[LogicalVariable, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](variableRewriter)
     val containsAggregation = newProjections.values.exists(containsAggregate)
-    val shadowing = newProjections.filterKeys(seenVariables.contains).filter {
+    val shadowing = newProjections.view.filterKeys(seenVariables.contains).filter {
       case (_, _: PathExpression) => false
       case (key, value) => key != value
     }
@@ -48,7 +48,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
     val resultProjections = if (containsAggregation) {
       projections
     } else {
-      projections ++ newProjections.mapValues(inlineExpressions)
+      projections ++ newProjections.view.mapValues(inlineExpressions)
     }
     copy(projections = resultProjections, seenVariables = seenVariables ++ newProjections.keys)
   }
@@ -61,7 +61,9 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       projections.get(variable).map(_.endoRewrite(copyVariables)).getOrElse(variable.copyId)
   })
 
-  def okToRewrite(i: LogicalVariable) =
+  //noinspection DfaConstantConditions
+  // Intellij seems to think this method always returns false, added the noinspection to not warn for it
+  def okToRewrite(i: LogicalVariable): Boolean =
     projections.contains(i) &&
       usageCount.withDefaultValue(0)(i) < INLINING_THRESHOLD
 
@@ -78,7 +80,7 @@ case class InliningContext(projections: Map[LogicalVariable, Expression] = Map.e
       }
   })
 
-  def isAliasedVarible(variable: LogicalVariable) = alias(variable).nonEmpty
+  def isAliasedVariable(variable: LogicalVariable): Boolean = alias(variable).nonEmpty
 
   def alias(variable: LogicalVariable): Option[LogicalVariable] = projections.get(variable) match {
     case Some(other: Variable) => Some(other.copyId)

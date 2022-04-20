@@ -34,7 +34,7 @@ case object normalizeNotEquals extends Rewriter with StepSequencer.Step with AST
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[NotEquals])
+  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[NotEquals]())
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
