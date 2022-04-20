@@ -47,7 +47,8 @@ import static picocli.CommandLine.Parameters;
 @Command(
         name = "set-initial-password",
         description = "Sets the initial password of the initial admin user ('" + INITIAL_USER_NAME + "'). " +
-                      "And removes the requirement to change password on first login."
+                      "And removes the requirement to change password on first login. " +
+                      "IMPORTANT: this change will only take effect if performed before the database is started for the first time."
 )
 public class SetInitialPasswordCommand extends AbstractCommand implements PasswordCommand
 {
@@ -98,7 +99,8 @@ public class SetInitialPasswordCommand extends AbstractCommand implements Passwo
             {
                 throw new RuntimeException( e );
             }
-            ctx.out().println( "Changed password for user '" + INITIAL_USER_NAME + "'." );
+            ctx.out().println( "Changed password for user '" + INITIAL_USER_NAME + "'. " +
+                           "IMPORTANT: this change will only take effect if performed before the database is started for the first time." );
         }
     }
 
