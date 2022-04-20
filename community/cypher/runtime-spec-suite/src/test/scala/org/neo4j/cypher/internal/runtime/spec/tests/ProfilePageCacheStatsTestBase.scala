@@ -130,7 +130,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](canFuseO
       .|.apply()
       .|.|.aggregation(Seq("n AS n"), Seq("count(*) AS c"))
       .|.|.argument("n")
-      .|.nodeIndexOperator("n:M(prop = 1)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("n:M(prop = 1)")
       .nodeByLabelScan("n", "N", IndexOrderNone)
       .build()
 
@@ -261,7 +261,7 @@ trait UpdatingProfilePageCacheStatsTestBase [CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a") // Populates results, thus can have page cache hits & misses
       .create(createNode("a", "A"))
-      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .nodeIndexOperator("m:M(prop > 0)", argumentIds = Set("a"))
       .build()
 
     val runtimeResult: RecordingRuntimeResult = profile(logicalQuery, runtime)

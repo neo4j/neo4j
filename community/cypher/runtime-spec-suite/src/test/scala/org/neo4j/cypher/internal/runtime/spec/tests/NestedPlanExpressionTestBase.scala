@@ -207,7 +207,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .nestedPlanExistsExpressionProjection("x")
       .|.expand("(b)<--(a)")
-      .|.nodeIndexOperator(s"b:B(prop > 0)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator(s"b:B(prop > 0)")
       .argument()
       .build()
 
@@ -344,8 +344,8 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
       .nestedPlanExistsExpressionProjection("x")
       .|.expandInto("(a)-->(b)")
       .|.cartesianProduct()
-      .|.|.nodeIndexOperator("b:B(p=1)", indexType = IndexType.BTREE)
-      .|.nodeIndexOperator("a:A(p=1)", indexType = IndexType.BTREE)
+      .|.|.nodeIndexOperator("b:B(p=1)")
+      .|.nodeIndexOperator("a:A(p=1)")
       .argument()
       .build()
 

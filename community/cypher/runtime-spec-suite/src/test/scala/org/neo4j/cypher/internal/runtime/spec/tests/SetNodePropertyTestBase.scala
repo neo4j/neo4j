@@ -406,7 +406,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
       .projection("n.prop as p1", "n.other as p2")
       .setNodeProperty("n", "prop", "n.prop")
       .setNodeProperty("n", "other", "n.prop")
-      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
       .build(readOnly = false)
 
     // then
@@ -431,7 +431,7 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
       .projection("n.prop as p1", "n.other as p2")
       .setNodeProperty("n", "prop", "n.prop + 1")
       .setNodeProperty("n", "other", "n.prop+ 1")
-      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
       .build(readOnly = false)
 
     // then

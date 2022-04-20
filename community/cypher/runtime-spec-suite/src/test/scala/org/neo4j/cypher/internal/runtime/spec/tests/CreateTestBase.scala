@@ -817,7 +817,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .create(createNode("o", "A", "B", "C"))
-      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until size).map(i => literalInt(i)):_*)), indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop IN ???)", paramExpr = Some(listOf((0 until size).map(i => literalInt(i)):_*)))
       .build(readOnly = false)
 
     // then

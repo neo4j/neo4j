@@ -515,10 +515,10 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   // INDEXES
 
   /**
-   * Creates a BTREE index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a RANGE index and restarts the transaction. This should be called before any data creation operation.
    */
   def nodeIndex(label: String, properties: String*): Unit =
-    nodeIndex(IndexType.BTREE, label, properties:_*)
+    nodeIndex(IndexType.RANGE, label, properties:_*)
 
   /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
@@ -536,10 +536,10 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates a BTREE index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a RANGE index and restarts the transaction. This should be called before any data creation operation.
    */
   def relationshipIndex(relType: String, properties: String*): Unit =
-    relationshipIndex(IndexType.BTREE, relType, properties:_*)
+    relationshipIndex(IndexType.RANGE, relType, properties:_*)
 
   /**
    * Creates an index and restarts the transaction. This should be called before any data creation operation.
@@ -566,11 +566,11 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   /**
-   * Creates a (b-tree backed) unique index and restarts the transaction. This should be called before any data creation operation.
+   * Creates a unique index and restarts the transaction. This should be called before any data creation operation.
    */
   def uniqueIndex(label: String, properties: String*): Unit = {
     try {
-      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.BTREE)) {
+      val creator = properties.foldLeft(runtimeTestSupport.tx.schema().constraintFor(Label.label(label)).withIndexType(IndexType.RANGE)) {
         case (acc, prop) => acc.assertPropertyIsUnique(prop)
       }
       creator.create()

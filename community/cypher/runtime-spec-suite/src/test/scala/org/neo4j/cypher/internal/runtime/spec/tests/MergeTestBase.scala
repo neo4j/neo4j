@@ -200,7 +200,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop)")
       .build(readOnly = false)
 
     // then
@@ -219,7 +219,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop)")
       .build(readOnly = false)
 
     // then
@@ -241,7 +241,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 42}")))
-      .nodeIndexOperator("n:L(prop=42)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop=42)")
       .build(readOnly = false)
 
     // then
@@ -262,7 +262,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
       .merge(nodes = Seq(createNodeWithProperties("n", Seq("L"), "{prop: 'hello'}")))
-      .nodeIndexOperator("n:L(prop = 'hello')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop = 'hello')")
       .build(readOnly = false)
 
     // then
@@ -287,7 +287,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
               relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:42}"))))
-      .relationshipIndexOperator("(n)-[r:R(prop=42)]->(m)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(n)-[r:R(prop=42)]->(m)")
       .build(readOnly = false)
 
     // then
@@ -311,7 +311,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop:'hello'}"))))
-      .relationshipIndexOperator("(n)-[r:R(prop='hello')]->(m)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(n)-[r:R(prop='hello')]->(m)")
       .build(readOnly = false)
 
     // then
@@ -336,7 +336,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "R", "m")))
-      .relationshipIndexOperator("(n)-[r:R(prop)]->(m)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
       .build(readOnly = false)
 
     // then
@@ -356,7 +356,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .merge(nodes = Seq(createNode("n"), createNode("m")),
         relationships = Seq(createRelationship("r", "n", "S", "m")))
-      .relationshipIndexOperator("(n)-[r:S(prop)]->(m)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(n)-[r:S(prop)]->(m)")
       .build(readOnly = false)
 
     // then
@@ -1360,8 +1360,8 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
         )
       )
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("d:Drunk(prop=42)", indexType = IndexType.BTREE),
-        _.nodeIndexSeek("c:Child(prop=42)", indexType = IndexType.BTREE)
+        _.nodeIndexSeek("d:Drunk(prop=42)"),
+        _.nodeIndexSeek("c:Child(prop=42)")
       )
       .build(readOnly = false)
 
@@ -1390,8 +1390,8 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
         )
       )
       .multiNodeIndexSeekOperator(
-        _.nodeIndexSeek("d:Drunk(prop='hello')", indexType = IndexType.BTREE),
-        _.nodeIndexSeek("c:Child(prop='hello')", indexType = IndexType.BTREE)
+        _.nodeIndexSeek("d:Drunk(prop='hello')"),
+        _.nodeIndexSeek("c:Child(prop='hello')")
       )
       .build(readOnly = false)
 

@@ -53,7 +53,7 @@ abstract class RelationshipIndexScanConcurrencyStressTestBase[CONTEXT <: Runtime
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("nId", "rId", "mId")
       .projection("id(n) AS nId", "id(r) AS rId", "id(m) AS mId")
-      .relationshipIndexOperator(pattern, indexType = IndexType.BTREE)
+      .relationshipIndexOperator(pattern)
       .build()
 
     executeWithConcurrentDeletes(rels, logicalQuery)

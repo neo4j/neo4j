@@ -208,7 +208,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq:_*)), indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq:_*)))
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -231,7 +231,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Language(difficulty >= ${sizeHint / 2}, usefulness >= ${sizeHint / 2})", indexType = IndexType.BTREE)
+      .nodeIndexOperator(s"x:Language(difficulty >= ${sizeHint / 2}, usefulness >= ${sizeHint / 2})")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -260,23 +260,23 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile dbHits of node index contains") {
     given {
-      nodeIndex("Language", "difficulty")
+      nodeIndex(IndexType.TEXT, "Language", "difficulty")
       nodePropertyGraph(sizeHint, {
         case i => Map("difficulty" -> s"x${i % 2}")
       }, "Language")
     }
 
     // when
-    val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')")
+    val seekProfile = profileIndexSeek(s"x:Language(difficulty CONTAINS '1')", IndexType.TEXT)
     // then
     seekProfile.operatorProfile(1).dbHits() shouldBe (sizeHint / 2 + 1) // node index contains
   }
 
-  private def profileIndexSeek(indexSeekString: String): QueryProfile = {
+  private def profileIndexSeek(indexSeekString: String, indexType: IndexType = IndexType.RANGE): QueryProfile = {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(indexSeekString, indexType = IndexType.BTREE)
+      .nodeIndexOperator(indexSeekString, indexType = indexType)
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -298,7 +298,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]->(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -322,7 +322,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty >= ${sizeHint / 2})]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty >= ${sizeHint / 2})]->(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -345,7 +345,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]->(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -368,7 +368,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3)]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -392,7 +392,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty >= ${sizeHint / 2})]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty >= ${sizeHint / 2})]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -415,7 +415,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty = 3 OR 4)]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -438,7 +438,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]->(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -461,7 +461,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator(s"(x)-[r:R(difficulty)]-(y)")
       .build()
 
     val result = profile(logicalQuery, runtime)
@@ -989,7 +989,7 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq: _*)), unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Language(difficulty IN ???)", paramExpr = Some(listOfInt(difficulties.toSeq: _*)), unique = true)
       .build(readOnly = false)
 
     val result = profile(logicalQuery, runtime)

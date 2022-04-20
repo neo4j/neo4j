@@ -53,7 +53,7 @@ abstract class RelationshipIndexSeekConcurrencyStressTestBase[CONTEXT <: Runtime
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("nId", "rId", "mId")
       .projection("id(n) AS nId", "id(r) AS rId", "id(m) AS mId")
-      .relationshipIndexOperator(pattern, paramExpr = Some(toExpression(propValue)), indexType = IndexType.BTREE)
+      .relationshipIndexOperator(pattern, paramExpr = Some(toExpression(propValue)))
       .build()
 
     // then

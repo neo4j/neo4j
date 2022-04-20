@@ -61,7 +61,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     testNode(builder =>
       builder
-        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND)), indexType = IndexType.BTREE))
+        .|.nodeIndexOperator(s"$NODE:$LABEL($PROP_KEY = ???)", paramExpr = Some(varFor(VAR_TO_FIND))))
   }
 
   test("typescan + filter") {
@@ -78,7 +78,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
 
     testRelationship(builder =>
       builder
-        .|.relationshipIndexOperator(s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",  paramExpr = Some(varFor(VAR_TO_FIND)), indexType = IndexType.BTREE))
+        .|.relationshipIndexOperator(s"($NODE)-[$REL:$TYPE($PROP_KEY = ???)]->($NODE)",  paramExpr = Some(varFor(VAR_TO_FIND))))
   }
 
   private def testNode(operator: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {

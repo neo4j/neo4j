@@ -41,7 +41,7 @@ abstract class RelationshipIndexEndsWithScanConcurrencyStressTestBase[CONTEXT <:
 
   private def executeWithConcurrentDeletes(directed: Boolean): Unit = {
     val rels = given {
-      relationshipIndex("R", "text")
+      relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(SIZE_HINT)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("text", "CASE")
@@ -55,7 +55,7 @@ abstract class RelationshipIndexEndsWithScanConcurrencyStressTestBase[CONTEXT <:
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("nId", "rId", "mId")
       .projection("id(n) AS nId", "id(r) AS rId", "id(m) AS mId")
-      .relationshipIndexOperator(pattern, indexType = IndexType.BTREE)
+      .relationshipIndexOperator(pattern, indexType = IndexType.TEXT)
       .build()
 
     executeWithConcurrentDeletes(rels, logicalQuery)

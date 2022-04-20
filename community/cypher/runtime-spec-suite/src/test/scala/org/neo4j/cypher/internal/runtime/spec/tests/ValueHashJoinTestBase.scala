@@ -385,7 +385,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](edition: Edition
       .|.|.nodeByLabelScan("c", "A", IndexOrderNone)
       .|.nodeByLabelScan("b", "A", IndexOrderNone)
       .filter("a.row < 1")
-      .nodeIndexOperator("a:A(row)", indexOrder = IndexOrderNone, getValue = _ => GetValue, indexType = IndexType.BTREE)
+      .nodeIndexOperator("a:A(row)", indexOrder = IndexOrderNone, getValue = _ => GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

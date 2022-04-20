@@ -659,7 +659,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
       .produceResults("p1", "p2")
       .projection("n.prop as p1", "n.other as p2")
       .setNodePropertiesFromMap("n", "{other: n.prop, prop: n.prop}", removeOtherProps = true)
-      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
       .build(readOnly = false)
 
     // then
@@ -683,7 +683,7 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
       .produceResults("p1", "p2")
       .projection("n.prop as p1", "n.other as p2")
       .setNodePropertiesFromMap("n", "{other: n.prop + 1, prop: n.prop + 1}", removeOtherProps = true)
-      .nodeIndexOperator("n:L(prop = 1)", unique = true, indexType = IndexType.BTREE)
+      .nodeIndexOperator("n:L(prop = 1)", unique = true)
       .build(readOnly = false)
 
     // then

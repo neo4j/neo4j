@@ -378,7 +378,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -413,7 +413,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

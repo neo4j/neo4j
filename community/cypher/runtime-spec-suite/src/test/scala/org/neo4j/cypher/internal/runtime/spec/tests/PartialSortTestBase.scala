@@ -295,7 +295,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -329,7 +329,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.partialSort(Seq(Ascending("x")), Seq(Ascending("y")), skip)
       .|.projection("b.x AS x", "b.y AS y")
-      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

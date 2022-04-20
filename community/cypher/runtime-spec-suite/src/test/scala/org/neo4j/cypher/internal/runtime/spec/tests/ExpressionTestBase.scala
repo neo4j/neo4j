@@ -80,7 +80,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasLabel")
       .projection("x:Other AS hasLabel")
-      .nodeIndexOperator("x:Label(prop)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(prop)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -192,7 +192,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("prop")
       .projection("x.prop AS prop")
-      .nodeIndexOperator("x:Label(prop)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(prop)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -259,7 +259,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("hasProp")
       .projection("x.prop IS NOT NULL AS hasProp")
-      .nodeIndexOperator("x:Label(other)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:Label(other)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

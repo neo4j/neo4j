@@ -395,7 +395,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.orderedAggregation(Seq("b AS b"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
-      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 
@@ -447,7 +447,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.orderedAggregation(Seq("b AS b", "number AS n"), Seq("count(number) AS c"), Seq("b"))
       .|.unwind("range(1, b.prop) AS number")
-      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"), indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("b:B(prop >= 0)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
 

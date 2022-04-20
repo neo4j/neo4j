@@ -258,7 +258,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("b")
       .transactionApply(1)
       .|.create(createNodeWithProperties("b", Seq("Label"), "{prop: 2}"))
-      .|.nodeIndexOperator("a:Label(prop=2)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("a:Label(prop=2)")
       .input(variables = Seq("x"))
       .build(readOnly = false)
 

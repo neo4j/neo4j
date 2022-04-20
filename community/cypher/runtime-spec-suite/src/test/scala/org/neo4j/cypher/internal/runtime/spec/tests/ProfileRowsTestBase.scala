@@ -1106,7 +1106,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:A(prop)")
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1131,7 +1131,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop=42)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:A(prop=42)")
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1159,7 +1159,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop = 42 OR 1337)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:A(prop = 42 OR 1337)")
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1176,7 +1176,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // given
     val nodesPerLabel = 100
     given {
-      nodeIndex("A", "prop")
+      nodeIndex(IndexType.TEXT, "A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
     }
@@ -1185,7 +1185,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
       .produceResults("x")
       .expandInto("(x)-[r]->(y)")
       .expandAll("(x)-->(y)")
-      .nodeIndexOperator("x:A(prop ENDS WITH 'lo')", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:A(prop ENDS WITH 'lo')", indexType = IndexType.TEXT)
       .build()
     val runtimeResult = profile(logicalQuery, runtime)
     consume(runtimeResult)
@@ -1651,7 +1651,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:L1(prop = 20)", indexType = IndexType.BTREE)
+      .nodeIndexOperator("x:L1(prop = 20)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1676,7 +1676,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]->(y)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1701,7 +1701,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop = 20)]-(y)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1726,7 +1726,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]->(y)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
@@ -1751,7 +1751,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](edition: Edition[C
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)", indexType = IndexType.BTREE)
+      .relationshipIndexOperator("(x)-[r:R(prop)]-(y)")
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)

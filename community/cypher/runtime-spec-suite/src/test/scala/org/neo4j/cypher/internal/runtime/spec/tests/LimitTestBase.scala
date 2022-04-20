@@ -789,7 +789,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:A(prop)")
       .allNodeScan("a1")
       .build()
 
@@ -814,7 +814,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop = 42)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:A(prop = 42)")
       .allNodeScan("a1")
       .build()
 
@@ -839,7 +839,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop = 42 OR 76)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:A(prop = 42 OR 76)")
       .allNodeScan("a1")
       .build()
 
@@ -864,7 +864,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT
       .produceResults("a1")
       .apply()
       .|.limit(limit)
-      .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)", indexType = IndexType.BTREE)
+      .|.nodeIndexOperator("x:A(prop1 = 42, prop2 = 1337)")
       .allNodeScan("a1")
       .build()
 
