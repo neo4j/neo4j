@@ -767,12 +767,12 @@ public final class CypherFunctions {
     public static TextValue elementId(AnyValue entity, ElementIdMapper idMapper) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
-        if (entity instanceof NodeValue.DirectNodeValue node) {
+        if (entity instanceof NodeValue node) {
             // Needed to get correct ids in certain fabric queries.
             return stringValue(node.elementId());
         } else if (entity instanceof VirtualNodeValue node) {
             return stringValue(idMapper.nodeElementId(node.id()));
-        } else if (entity instanceof RelationshipValue.DirectRelationshipValue relationship) {
+        } else if (entity instanceof RelationshipValue relationship) {
             // Needed to get correct ids in certain fabric queries.
             return stringValue(relationship.elementId());
         } else if (entity instanceof VirtualRelationshipValue relationship) {
