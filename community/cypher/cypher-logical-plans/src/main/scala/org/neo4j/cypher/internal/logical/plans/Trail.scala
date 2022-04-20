@@ -54,7 +54,7 @@ case class Trail(override val left: LogicalPlan,
   extends LogicalBinaryPlan(idGen) with ApplyPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
+  override val availableSymbols: Set[String] = (left.availableSymbols ++ right.availableSymbols ++ end) + start
 }
 
 case class Repetitions(min: Int, max: UpperBound)
