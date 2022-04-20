@@ -222,4 +222,20 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <configuration>
+                    <scala>
+                        <excludes>
+                            <!-- Bug in Scalafmt prevents us from formatting this file -->
+                            <exclude>src/test/scala/org/neo4j/cypher/internal/compiler/planner/logical/cardinality/ABCDECardinalityData.scala</exclude>
+                        </excludes>
+                    </scala>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

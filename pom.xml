@@ -142,7 +142,6 @@
     <slf4j.version>1.7.30</slf4j.version>
     <neo4j-java-driver.version>4.4.5</neo4j-java-driver.version>
     <skip-scalastyle>false</skip-scalastyle>
-    <spotless.check.skip>true</spotless.check.skip>
   </properties>
 
   <modules>
@@ -571,44 +570,6 @@
           </executions>
         </plugin>
 
-        <!-- Default scala style settings -->
-        <plugin>
-          <groupId>org.neo4j</groupId>
-          <artifactId>scalastyle-maven-plugin</artifactId>
-          <version>1.1.1</version>
-          <configuration>
-            <verbose>false</verbose>
-            <failOnViolation>true</failOnViolation>
-            <includeTestSourceDirectory>true</includeTestSourceDirectory>
-            <failOnWarning>false</failOnWarning>
-            <sourceDirectory>${project.basedir}/src/main/scala</sourceDirectory>
-            <testSourceDirectory>${project.basedir}/src/test/scala</testSourceDirectory>
-            <configLocation>checkstyle/scalastyle_config.xml</configLocation>
-            <skip>${skip-scalastyle}</skip>
-            <inputEncoding>UTF-8</inputEncoding>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.scalastyle</groupId>
-              <artifactId>scalastyle-maven-plugin</artifactId>
-              <version>1.0.0</version>
-            </dependency>
-            <dependency>
-              <groupId>org.neo4j.build</groupId>
-              <artifactId>build-resources</artifactId>
-              <version>${project.version}</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>scala-style-check</id>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
         <!-- Enforce naming if packages -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -765,49 +726,27 @@
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
-      <!-- Checkstyle is always validated -->
+      <!-- Spotless is used for checkstyle and automatic code formatting -->
       <plugin>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.2</version>
-        <configuration>
-          <configLocation>checkstyle/checkstyle.xml</configLocation>
-          <consoleOutput>true</consoleOutput>
-          <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>10.1</version>
-          </dependency>
-          <dependency>
-            <groupId>org.neo4j.build</groupId>
-            <artifactId>build-resources</artifactId>
-            <version>${project.version}</version>
-          </dependency>
-        </dependencies>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>2.21.0</version>
         <executions>
           <execution>
-            <id>validate</id>
-            <phase>validate</phase>
             <goals>
               <goal>check</goal>
             </goals>
           </execution>
         </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>com.diffplug.spotless</groupId>
-        <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.21.0</version>
         <configuration>
           <java>
             <palantirJavaFormat />
           </java>
+          <scala>
+            <scalafmt>
+              <file>public/build-resources/src/main/resources/scalafmt/scalafmt.conf</file>
+            </scalafmt>
+          </scala>
         </configuration>
       </plugin>
 
