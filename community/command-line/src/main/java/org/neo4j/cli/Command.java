@@ -37,6 +37,7 @@ public interface Command extends Callable<Integer>
         SET_OPERATOR_PASSWORD,
         DUMP,
         LOAD,
+        MIGRATE_STORE,
         ONLINE_BACKUP,
         ONLINE_BACKUP_NEXT,
         RESTORE_DB,
