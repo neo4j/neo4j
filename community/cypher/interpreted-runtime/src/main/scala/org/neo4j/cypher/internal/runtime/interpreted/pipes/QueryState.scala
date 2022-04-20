@@ -255,28 +255,23 @@ object QueryState {
 
   def createDefaultInCache(): InLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = inCacheMaxSize)
 
-  def createConcurrentInCache(): InLRUCache[Any, InCheckContainer] =
-    new ConcurrentLRUCache(maxSizePerThread = inCacheMaxSize)
-
-  def apply(
-    query: QueryContext,
-    resources: ExternalCSVResource,
-    params: Array[AnyValue],
-    cursors: ExpressionCursors,
-    queryIndexes: Array[IndexReadSession],
-    nodeLabelTokenReadSession: Option[TokenReadSession],
-    relTypeTokenReadSession: Option[TokenReadSession],
-    expressionVariables: Array[AnyValue],
-    subscriber: QuerySubscriber,
-    memoryTrackingController: MemoryTrackingController,
-    doProfile: Boolean,
-    decorator: PipeDecorator,
-    initialContext: Option[CypherRow],
-    cachedIn: InLRUCache[Any, InCheckContainer],
-    lenientCreateRelationship: Boolean,
-    prePopulateResults: Boolean,
-    input: InputDataStream
-  ): QueryState = {
+  def apply(query: QueryContext,
+            resources: ExternalCSVResource,
+            params: Array[AnyValue],
+            cursors: ExpressionCursors,
+            queryIndexes: Array[IndexReadSession],
+            nodeLabelTokenReadSession: Option[TokenReadSession],
+            relTypeTokenReadSession: Option[TokenReadSession],
+            expressionVariables: Array[AnyValue],
+            subscriber: QuerySubscriber,
+            memoryTrackingController: MemoryTrackingController,
+            doProfile: Boolean,
+            decorator: PipeDecorator,
+            initialContext: Option[CypherRow],
+            cachedIn: InLRUCache[Any, InCheckContainer],
+            lenientCreateRelationship: Boolean,
+            prePopulateResults: Boolean,
+            input: InputDataStream): QueryState = {
     val queryHeapHighWatermarkTracker = QueryMemoryTracker(memoryTrackingController.memoryTracking(doProfile))
     apply(
       query,
