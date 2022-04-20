@@ -81,7 +81,8 @@ class SetInitialPasswordCommandTest
                         "                     [--verbose] <password>%n" +
                         "%n" + "DESCRIPTION%n" + "%n" +
                         "Sets the initial password of the initial admin user ('neo4j'). And removes the%n" +
-                        "requirement to change password on first login.%n" +
+                        "requirement to change password on first login. IMPORTANT: this change will only%n" +
+                        "take effect if performed before the database is started for the first time.%n" +
                         "%n" + "PARAMETERS%n" + "%n" +
                         "      <password>%n" + "%n" + "OPTIONS%n" + "%n" +
                         "      --verbose           Enable verbose output.%n" +
