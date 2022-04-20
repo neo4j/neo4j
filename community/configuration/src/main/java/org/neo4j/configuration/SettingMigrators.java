@@ -19,11 +19,8 @@
  */
 package org.neo4j.configuration;
 
-import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
-import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
@@ -33,79 +30,26 @@ import static org.neo4j.configuration.GraphDatabaseSettings.read_only_database_d
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
-import static org.neo4j.configuration.SettingValueParsers.LIST_SEPARATOR;
 import static org.neo4j.configuration.SettingValueParsers.SOCKET_ADDRESS;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.GraphDatabaseSettings.LogQueryLevel;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.InternalLog;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public final class SettingMigrators {
     private SettingMigrators() {}
-
-    @ServiceProvider
-    public static class ActiveDatabaseMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingNameChange(values, log, "dbms.active_database", default_database);
-        }
-    }
-
-    @ServiceProvider
-    public static class CrsConfigMigrator implements SettingMigrator {
-        private static final String PREFIX = "internal.dbms.db.spatial.crs";
-        private static final Pattern oldConnector =
-                Pattern.compile("^unsupported\\.dbms\\.db\\.spatial\\.crs\\.([^.]+)\\.(min|max)\\.([xyz])$");
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            List<String> oldCrs = new ArrayList<>();
-            Map<String, List<String>> crsValues = new HashMap<>();
-            values.forEach((setting, value) -> {
-                Matcher matcher = oldConnector.matcher(setting);
-                if (matcher.find()) {
-                    String crsName = matcher.group(1);
-                    String crsPlusSetting = format("%s.%s", crsName, matcher.group(2));
-                    CoordinateReferenceSystem crs = CoordinateReferenceSystem.byName(crsName);
-                    List<String> valueList = crsValues.computeIfAbsent(
-                            crsPlusSetting,
-                            s -> new ArrayList<>(Collections.nCopies(crs.getDimension(), Double.toString(Double.NaN))));
-                    valueList.set(matcher.group(3).charAt(0) - 'x', value);
-                    oldCrs.add(setting);
-                }
-            });
-
-            oldCrs.forEach(setting -> {
-                values.remove(setting);
-                log.warn("Use of deprecated setting %s.", setting);
-            });
-            crsValues.forEach((name, valueList) -> {
-                String setting = format("%s.%s", PREFIX, name);
-                String value = String.join(LIST_SEPARATOR, valueList);
-                values.putIfAbsent(setting, value);
-                log.warn("Settings migrated to %s = %s", setting, value);
-            });
-        }
-    }
 
     @ServiceProvider
     public static class ConnectorMigrator implements SettingMigrator {
@@ -174,135 +118,6 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "dbms.connectors.default_listen_address", default_listen_address);
             migrateSettingNameChange(
                     values, log, "dbms.connectors.default_advertised_address", default_advertised_address);
-        }
-    }
-
-    @ServiceProvider
-    public static class SslPolicyMigrator implements SettingMigrator {
-        private static final Pattern pattern = Pattern.compile("^(dbms\\.ssl\\.policy\\.)([^.]+)(\\.[^.]+)$");
-        private static final Map<String, SslPolicyScope> settingScopeMap = Map.of(
-                "bolt.ssl_policy", SslPolicyScope.BOLT,
-                "https.ssl_policy", SslPolicyScope.HTTPS,
-                "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
-                "cluster.ssl_policy", SslPolicyScope.CLUSTER);
-
-        private static final List<String> legacySettings = List.of(
-                "dbms.directories.certificates",
-                "unsupported.dbms.security.tls_certificate_file",
-                "unsupported.dbms.security.tls_key_file");
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migratePolicies(values, log);
-            warnUseOfLegacyPolicy(values, log);
-        }
-
-        private static void migratePolicies(Map<String, String> values, InternalLog log) {
-            Map<String, String> valueCopy = new HashMap<>(values);
-            Map<String, SslPolicyScope> oldNameToScope = new HashMap<>();
-            valueCopy.forEach((setting, value) -> {
-                if (settingScopeMap.containsKey(setting)) {
-                    log.warn("Use of deprecated setting '%s'.", setting);
-                    SslPolicyScope scope = settingScopeMap.get(setting);
-                    oldNameToScope.put(value, scope);
-                    values.put(SslPolicyConfig.forScope(scope).enabled.name(), Boolean.TRUE.toString());
-                    values.remove(setting);
-                }
-            });
-
-            valueCopy.forEach((setting, value) -> {
-                var matcher = pattern.matcher(setting);
-                if (matcher.find()) {
-                    String groupName = matcher.group(2);
-                    if (oldNameToScope.containsKey(groupName)) {
-                        String newGroupName =
-                                oldNameToScope.get(groupName).name().toLowerCase();
-                        if (!Objects.equals(groupName, newGroupName)) {
-                            String prefix = matcher.group(1);
-                            String suffix = matcher.group(3);
-                            String newSetting = prefix + newGroupName + suffix;
-
-                            log.warn("Use of deprecated setting '%s'. It is replaced by '%s'.", setting, newSetting);
-                            values.remove(setting);
-                            values.put(newSetting, value);
-                        }
-                    }
-                }
-            });
-        }
-
-        private static void warnUseOfLegacyPolicy(Map<String, String> values, InternalLog log) {
-            for (String legacySetting : legacySettings) {
-                if (values.remove(legacySetting) != null) {
-                    log.warn(
-                            "Use of deprecated setting '%s'. Legacy ssl policy is no longer supported.", legacySetting);
-                }
-            }
-        }
-    }
-
-    @ServiceProvider
-    public static class AllowKeyGenerationMigrator implements SettingMigrator {
-        private static final Pattern pattern =
-                Pattern.compile("^dbms\\.ssl\\.policy\\.([^.]+)\\.allow_key_generation$");
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            var toRemove = new HashSet<String>();
-
-            for (var setting : values.keySet()) {
-                var matcher = pattern.matcher(setting);
-                if (matcher.find()) {
-                    log.warn(
-                            "Setting %s is removed. A valid key and certificate are required"
-                                    + " to be present in the key and certificate path configured in this ssl policy.",
-                            setting);
-                    toRemove.add(setting);
-                }
-            }
-
-            values.keySet().removeAll(toRemove);
-        }
-    }
-
-    @ServiceProvider
-    public static class KillQueryVerboseMigrator implements SettingMigrator {
-        private static final String settingName = "dbms.procedures.kill_query_verbose";
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingRemoval(
-                    values, log, settingName, "It's no longer possible to disable verbose kill query logging");
-        }
-    }
-
-    @ServiceProvider
-    public static class MultiThreadedSchemaIndexPopulationEnabledMigrator implements SettingMigrator {
-        private static final String settingName = "unsupported.dbms.multi_threaded_schema_index_population_enabled";
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingRemoval(
-                    values, log, settingName, "It's no longer possible to disable multi-threaded index population");
-        }
-    }
-
-    @ServiceProvider
-    public static class QueryLoggerMigrator implements SettingMigrator {
-        private static final String deprecationMessage =
-                "Use of deprecated setting value %s=%s. It is replaced by %s=%s";
-        private static final String settingName = GraphDatabaseSettings.log_queries.name();
-
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            String value = values.get(settingName);
-            if (SettingValueParsers.TRUE.equalsIgnoreCase(value)) {
-                log.warn(deprecationMessage, settingName, value, settingName, LogQueryLevel.INFO.name());
-                values.put(settingName, LogQueryLevel.INFO.name());
-            } else if (SettingValueParsers.FALSE.equalsIgnoreCase(value)) {
-                log.warn(deprecationMessage, settingName, value, settingName, LogQueryLevel.OFF.name());
-                values.put(settingName, LogQueryLevel.OFF.name());
-            }
         }
     }
 
@@ -431,23 +246,6 @@ public final class SettingMigrators {
     }
 
     @ServiceProvider
-    public static class ConsistencyCheckerSettingsMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            migrateSettingRemoval(
-                    values,
-                    log,
-                    "unsupported.consistency_checker.experimental",
-                    "There is no longer multiple different consistency checkers to choose from");
-            migrateSettingNameChange(
-                    values,
-                    log,
-                    "unsupported.consistency_checker.experimental.fail_fast",
-                    consistency_checker_fail_fast_threshold);
-        }
-    }
-
-    @ServiceProvider
     public static class ConnectorKeepAliveSettingsMigrator implements SettingMigrator {
         @Override
         public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
@@ -475,18 +273,6 @@ public final class SettingMigrators {
                             "Unrecognized value for 'unsupported.dbms.logs.format'. Was %s but expected STANDARD_FORMAT or JSON_FORMAT.",
                             value);
                 }
-            }
-        }
-    }
-
-    @ServiceProvider
-    public static class ForsetiMigrator implements SettingMigrator {
-        @Override
-        public void migrate(Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
-            String value = values.remove("unsupported.dbms.locks.forseti_deadlock_resolution_strategy");
-            if (isNotBlank(value)) {
-                log.warn(
-                        "'unsupported.dbms.locks.forseti_deadlock_resolution_strategy' no longer exists. Value have no effect.");
             }
         }
     }

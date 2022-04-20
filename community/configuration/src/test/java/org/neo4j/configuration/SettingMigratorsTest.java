@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_max_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_warmup_prefetch_allowlist;
@@ -34,8 +32,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_hea
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
-import static org.neo4j.configuration.SettingValueParsers.FALSE;
-import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.AssertableLogProvider.Level.WARN;
 import static org.neo4j.logging.LogAssertions.assertThat;
@@ -57,11 +53,9 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.ssl.SslPolicyConfig;
-import org.neo4j.configuration.ssl.SslPolicyScope;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.FormattedLogFormat;
-import org.neo4j.logging.InternalLog;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -70,88 +64,6 @@ import org.neo4j.test.utils.TestDirectory;
 class SettingMigratorsTest {
     @Inject
     private TestDirectory testDirectory;
-
-    @Test
-    void shouldRemoveAllowKeyGenerationFrom35ConfigFormat() {
-        shouldRemoveAllowKeyGeneration("dbms.ssl.policy.default.allow_key_generation", TRUE);
-        shouldRemoveAllowKeyGeneration("dbms.ssl.policy.default.allow_key_generation", FALSE);
-    }
-
-    @Test
-    void shouldRemoveAllowKeyGeneration() {
-        shouldRemoveAllowKeyGeneration("dbms.ssl.policy.default.allow_key_generation", TRUE);
-        shouldRemoveAllowKeyGeneration("dbms.ssl.policy.default.allow_key_generation", FALSE);
-    }
-
-    @TestFactory
-    Collection<DynamicTest> shouldMigrateSslPolicySettingToActualPolicyGroupName() {
-        Collection<DynamicTest> tests = new ArrayList<>();
-        Map<String, SslPolicyScope> sources = Map.of(
-                "bolt.ssl_policy", SslPolicyScope.BOLT,
-                "https.ssl_policy", SslPolicyScope.HTTPS,
-                "dbms.backup.ssl_policy", SslPolicyScope.BACKUP,
-                "cluster.ssl_policy", SslPolicyScope.CLUSTER);
-        sources.forEach((setting, source) -> {
-            tests.add(dynamicTest(
-                    String.format("Test migration of SslPolicy for source '%s'.", source.name()),
-                    () -> testMigrateSslPolicy(setting, SslPolicyConfig.forScope(source))));
-        });
-
-        return tests;
-    }
-
-    @Test
-    void shouldWarnWhenUsingLegacySslPolicySettings() {
-        Map<String, String> legacySettings = Map.of(
-                "dbms.directories.certificates", "/cert/dir/",
-                "unsupported.dbms.security.tls_certificate_file", "public.crt",
-                "unsupported.dbms.security.tls_key_file", "private.key");
-
-        var config = Config.newBuilder().setRaw(legacySettings).build();
-
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        for (String setting : legacySettings.keySet()) {
-            assertThat(logProvider)
-                    .forClass(Config.class)
-                    .forLevel(WARN)
-                    .containsMessageWithArguments(
-                            "Use of deprecated setting '%s'. Legacy ssl policy is no longer supported.", setting);
-        }
-    }
-
-    @Test
-    void testDefaultDatabaseMigrator() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("dbms.active_database=foo"));
-
-        {
-            Config config = Config.newBuilder().fromFile(confFile).build();
-            InternalLog log = mock(InternalLog.class);
-            config.setLogger(log);
-
-            assertEquals("foo", config.get(GraphDatabaseSettings.default_database));
-            verify(log)
-                    .warn(
-                            "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                            "dbms.active_database", GraphDatabaseSettings.default_database.name());
-        }
-        {
-            Config config = Config.newBuilder()
-                    .fromFile(confFile)
-                    .set(GraphDatabaseSettings.default_database, "bar")
-                    .build();
-            InternalLog log = mock(InternalLog.class);
-            config.setLogger(log);
-
-            assertEquals("bar", config.get(GraphDatabaseSettings.default_database));
-            verify(log)
-                    .warn(
-                            "Use of deprecated setting '%s'. It is replaced by '%s'.",
-                            "dbms.active_database", GraphDatabaseSettings.default_database.name());
-        }
-    }
 
     @Test
     void testConnectorOldFormatMigration() throws IOException {
@@ -184,39 +96,6 @@ class SettingMigratorsTest {
                 .containsMessageWithArguments(
                         "Use of deprecated setting %s. No longer supports multiple connectors. Setting discarded.",
                         "dbms.connector.bolt2.listen_address");
-    }
-
-    @Test
-    void testKillQueryVerbose() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("dbms.procedures.kill_query_verbose=false"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages(
-                        "Setting 'dbms.procedures.kill_query_verbose' is removed. It's no longer possible to disable verbose kill query logging.");
-    }
-
-    @Test
-    void testMultiThreadedSchemaIndexPopulationEnabled() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("unsupported.dbms.multi_threaded_schema_index_population_enabled=false"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages(
-                        "Setting 'unsupported.dbms.multi_threaded_schema_index_population_enabled' is removed. "
-                                + "It's no longer possible to disable multi-threaded index population.");
     }
 
     @Test
@@ -320,16 +199,6 @@ class SettingMigratorsTest {
         return tests;
     }
 
-    @TestFactory
-    Collection<DynamicTest> testQueryLogMigration() {
-        Collection<DynamicTest> tests = new ArrayList<>();
-        tests.add(dynamicTest(
-                "Test query log migration, disabled", () -> testQueryLogMigration(false, LogQueryLevel.OFF)));
-        tests.add(dynamicTest(
-                "Test query log migration, enabled", () -> testQueryLogMigration(true, LogQueryLevel.INFO)));
-        return tests;
-    }
-
     @Test
     void testWhitelistRename() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
@@ -372,40 +241,6 @@ class SettingMigratorsTest {
                         "dbms.memory.transaction.datababase_max_size", memory_transaction_database_max_size.name());
 
         assertEquals(1073741824L, config.get(memory_transaction_database_max_size));
-    }
-
-    @Test
-    void testExperimentalConsistencyCheckerRemoval() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("unsupported.consistency_checker.experimental=true"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages("Setting 'unsupported.consistency_checker.experimental' is removed. "
-                        + "There is no longer multiple different consistency checkers to choose from.");
-    }
-
-    @Test
-    void testConsistencyCheckerFailFastRename() throws IOException {
-        Path confFile = testDirectory.createFile("test.conf");
-        Files.write(confFile, List.of("unsupported.consistency_checker.experimental.fail_fast=1"));
-
-        Config config = Config.newBuilder().fromFile(confFile).build();
-        var logProvider = new AssertableLogProvider();
-        config.setLogger(logProvider.getLog(Config.class));
-
-        assertThat(logProvider)
-                .forClass(Config.class)
-                .forLevel(WARN)
-                .containsMessages("Use of deprecated setting 'unsupported.consistency_checker.experimental.fail_fast'. "
-                        + "It is replaced by 'internal.consistency_checker.fail_fast_threshold'");
-
-        assertEquals(1, config.get(GraphDatabaseInternalSettings.consistency_checker_fail_fast_threshold));
     }
 
     @Test
