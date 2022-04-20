@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.ConcurrentLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InCheckContainer
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.InLRUCache
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.SingleThreadedLRUCache

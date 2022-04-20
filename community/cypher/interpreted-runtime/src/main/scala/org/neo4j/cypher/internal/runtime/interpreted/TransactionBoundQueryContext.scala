@@ -112,7 +112,6 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
-import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
