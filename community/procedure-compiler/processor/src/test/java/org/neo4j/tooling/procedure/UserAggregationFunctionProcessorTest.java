@@ -52,7 +52,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase {
                 .withErrorContaining(
                         "@UserAggregationFunction usage error: method should be public, non-static and without parameters.")
                 .in(function)
-                .onLine(31);
+                .onLine(30);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class UserAggregationFunctionProcessorTest extends ExtensionTestBase {
                 .withErrorCount(1)
                 .withErrorContaining("Unsupported return type <void> of aggregation function.")
                 .in(function)
-                .onLine(27);
+                .onLine(26);
     }
 
     @Test

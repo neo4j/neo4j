@@ -54,26 +54,26 @@ public abstract class ExtensionTestBase {
                         "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonStatic should be public, "
                                 + "non-static and non-final")
                 .in(sproc)
-                .onLine(35);
+                .onLine(34);
 
         unsuccessfulCompilationClause
                 .withErrorContaining(
                         "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBeNonFinal should be public, "
                                 + "non-static and non-final")
                 .in(sproc)
-                .onLine(38);
+                .onLine(39);
 
         unsuccessfulCompilationClause
                 .withErrorContaining(
                         "@org.neo4j.procedure.Context usage error: field BadContextFields#shouldBePublic should be public, "
                                 + "non-static and non-final")
                 .in(sproc)
-                .onLine(42);
+                .onLine(45);
 
         unsuccessfulCompilationClause
                 .withErrorContaining("Field BadContextFields#shouldBeStatic should be static")
                 .in(sproc)
-                .onLine(43);
+                .onLine(47);
     }
 
     @Test
@@ -93,7 +93,7 @@ public abstract class ExtensionTestBase {
                                 + "  The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n"
                                 + "  You can ignore this warning by passing the option -AIgnoreContextWarnings to the Java compiler")
                 .in(sproc)
-                .onLine(35);
+                .onLine(34);
     }
 
     @Test
@@ -131,6 +131,6 @@ public abstract class ExtensionTestBase {
                                 + ">, <" + Transaction.class.getName()
                                 + ">")
                 .in(sproc)
-                .onLine(33);
+                .onLine(32);
     }
 }

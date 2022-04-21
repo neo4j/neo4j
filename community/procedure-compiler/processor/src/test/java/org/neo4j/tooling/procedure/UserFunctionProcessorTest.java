@@ -54,12 +54,12 @@ public class UserFunctionProcessorTest extends ExtensionTestBase {
         compilation
                 .withErrorContaining("@org.neo4j.procedure.Name usage error: missing on parameter <parameter>")
                 .in(function)
-                .onLine(28);
+                .onLine(27);
 
         compilation
                 .withErrorContaining("@org.neo4j.procedure.Name usage error: missing on parameter <otherParam>")
                 .in(function)
-                .onLine(28);
+                .onLine(27);
     }
 
     @Test
@@ -77,7 +77,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase {
                         "Unsupported return type <java.util.stream.Stream<java.lang.Long>> of function defined in "
                                 + "<org.neo4j.tooling.procedure.procedures.invalid.bad_return_type.BadReturnTypeUserFunction#wrongReturnTypeFunction>")
                 .in(function)
-                .onLine(36);
+                .onLine(34);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class UserFunctionProcessorTest extends ExtensionTestBase {
                 .withErrorContaining(
                         "Unsupported parameter type <short> of procedure|function BadPrimitiveInputUserFunction#doSomething")
                 .in(function)
-                .onLine(32);
+                .onLine(31);
     }
 
     @Test
@@ -114,26 +114,26 @@ public class UserFunctionProcessorTest extends ExtensionTestBase {
                         + "<java.util.List<java.util.List<java.util.Map<java.lang.String,java.lang.Thread>>>>"
                         + " of procedure|function BadGenericInputUserFunction#doSomething")
                 .in(function)
-                .onLine(36);
+                .onLine(34);
 
         compilation
                 .withErrorContaining("Unsupported parameter type "
                         + "<java.util.Map<java.lang.String,java.util.List<java.util.concurrent.ExecutorService>>>"
                         + " of procedure|function BadGenericInputUserFunction#doSomething2")
                 .in(function)
-                .onLine(42);
+                .onLine(39);
 
         compilation
                 .withErrorContaining(
                         "Unsupported parameter type <java.util.Map> of procedure|function BadGenericInputUserFunction#doSomething3")
                 .in(function)
-                .onLine(48);
+                .onLine(44);
 
         compilation
                 .withErrorContaining(
                         "Unsupported parameter type <java.lang.String[]> of procedure|function BadGenericInputUserFunction#doSomething4")
                 .in(function)
-                .onLine(54);
+                .onLine(49);
     }
 
     @Test
