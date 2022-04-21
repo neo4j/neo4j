@@ -677,7 +677,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
     public static final Setting<Boolean> log_queries_parameter_full_entities =
             newBuilder( "dbms.logs.query.parameter_full_entities", BOOL, false ).dynamic().build();
 
-    @Description( "Log detailed time information for the executed queries being logged. Requires `dbms.track_query_cpu_time=true`" )
+    @Description( "Log detailed time information for the executed queries being logged, such as `(planning: 92, waiting: 0)`." )
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
             newBuilder( "dbms.logs.query.time_logging_enabled", BOOL, false ).dynamic().build();
 
