@@ -595,7 +595,7 @@ public class IndexedIdGenerator implements IdGenerator
 
     private void checkRefillCache( CursorContext cursorContext )
     {
-        if ( cache.size() <= cacheOptimisticRefillThreshold && !readOnlyChecker.isReadOnly() )
+        if ( cache.size() <= cacheOptimisticRefillThreshold )
         {
             // We're just helping other allocation requests and avoiding unwanted sliding of highId here
             scanner.tryLoadFreeIdsIntoCache( false, cursorContext );
