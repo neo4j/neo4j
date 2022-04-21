@@ -222,6 +222,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -312,6 +313,18 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "NodeByLabelScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities
+        )
+
+      case UnionNodeByLabelsScan(idName, labels, _, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${labels.map(l => asPrettyString(l.name)).mkPrettyString("|")}"
+        PlanDescriptionImpl(
+          id,
+          "UnionNodeByLabelsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

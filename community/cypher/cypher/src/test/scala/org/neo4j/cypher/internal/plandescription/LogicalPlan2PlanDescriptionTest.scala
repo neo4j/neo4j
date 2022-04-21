@@ -315,6 +315,7 @@ import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.Uniqueness
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
@@ -529,6 +530,24 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(NodeByLabelScan("  UNNAMED123", label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details(s"${anonVar("123")}:X")), Set(anonVar("123")))
+    )
+  }
+
+  test("UnionNodeByLabelScan") {
+    assertGood(
+      attach(UnionNodeByLabelsScan("node", Seq(label("X"), label("Y"), label("Z")), Set.empty), 33.0),
+      planDescription(id, "UnionNodeByLabelsScan", NoChildren, Seq(details("node:X|Y|Z")), Set("node"))
+    )
+
+    assertGood(
+      attach(UnionNodeByLabelsScan("  UNNAMED123", Seq(label("X"), label("Y"), label("Z")), Set.empty), 33.0),
+      planDescription(
+        id,
+        "UnionNodeByLabelsScan",
+        NoChildren,
+        Seq(details(s"${anonVar("123")}:X|Y|Z")),
+        Set(anonVar("123"))
+      )
     )
   }
 

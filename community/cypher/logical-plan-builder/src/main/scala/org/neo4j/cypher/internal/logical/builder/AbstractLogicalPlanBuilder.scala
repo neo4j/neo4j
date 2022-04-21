@@ -199,6 +199,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
@@ -781,6 +782,17 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(
       n,
       labelName(label),
+      args.map(VariableParser.unescaped).toSet,
+      indexOrder
+    )(_)))
+  }
+
+  def unionNodeByLabelsScan(node: String, labels: Seq[String], indexOrder: IndexOrder, args: String*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(UnionNodeByLabelsScan(
+      n,
+      labels.map(labelName),
       args.map(VariableParser.unescaped).toSet,
       indexOrder
     )(_)))
