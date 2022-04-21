@@ -226,11 +226,13 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   ): IndexedSeq[Array[AnyValue]] =
     runtimeTestSupport.executeAndConsumeTransactionally(logicalQuery, runtime, parameters, profileAssertion)
 
-  override def executeAndConsumeTransactionallyNonRecording(logicalQuery: LogicalQuery,
-                                                            runtime: CypherRuntime[CONTEXT],
-                                                            parameters: Map[String, Any] = Map.empty,
-                                                            profileAssertion: Option[QueryProfile => Unit] = None
-                                                           ): Long = runtimeTestSupport.executeAndConsumeTransactionallyNonRecording(logicalQuery, runtime, parameters, profileAssertion)
+  override def executeAndConsumeTransactionallyNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    parameters: Map[String, Any] = Map.empty,
+    profileAssertion: Option[QueryProfile => Unit] = None
+  ): Long =
+    runtimeTestSupport.executeAndConsumeTransactionallyNonRecording(logicalQuery, runtime, parameters, profileAssertion)
 
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult =
     runtimeTestSupport.execute(executablePlan, readOnly, implicitTx)
@@ -270,22 +272,33 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   ): RuntimeResult =
     runtimeTestSupport.profileWithSubscriber(logicalQuery, runtime, subscriber, inputDataStream)
 
-  override def executeAndContext(logicalQuery: LogicalQuery,
-                                 runtime: CypherRuntime[CONTEXT],
-                                 input: InputValues
-                                ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
+  override def executeAndContext(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContext(logicalQuery, runtime, input)
 
-  override def executeAndContextNonRecording(logicalQuery: LogicalQuery,
-                                             runtime: CypherRuntime[CONTEXT],
-                                             input: InputValues
-                                            ): (NonRecordingRuntimeResult, CONTEXT) = runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input)
+  override def executeAndContextNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (NonRecordingRuntimeResult, CONTEXT) =
+    runtimeTestSupport.executeAndContextNonRecording(logicalQuery, runtime, input)
 
-  override def executeAndExplain(logicalQuery: LogicalQuery,
-                                 runtime: CypherRuntime[CONTEXT],
-                                 input: InputValues
-                                ): (RecordingRuntimeResult, InternalPlanDescription) = runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
+  override def executeAndExplain(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (RecordingRuntimeResult, InternalPlanDescription) =
+    runtimeTestSupport.executeAndExplain(logicalQuery, runtime, input)
 
-  def printQueryProfile(fileName: String, maxAllocatedMemory: Long, logToStdOut: Boolean, lastAllocation: Long, stackTrace: Option[String]): Unit = {
+  def printQueryProfile(
+    fileName: String,
+    maxAllocatedMemory: Long,
+    logToStdOut: Boolean,
+    lastAllocation: Long,
+    stackTrace: Option[String]
+  ): Unit = {
     val pw = new PrintWriter(new File(fileName))
     val logString = new StringBuilder("Estimation of max allocated memory: ")
     logString.append(maxAllocatedMemory)

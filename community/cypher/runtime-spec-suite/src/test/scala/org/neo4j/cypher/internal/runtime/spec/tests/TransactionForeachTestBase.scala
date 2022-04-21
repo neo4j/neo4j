@@ -47,16 +47,25 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
-                                                         edition: Edition[CONTEXT],
-                                                         runtime: CypherRuntime[CONTEXT],
-                                                         sizeHint: Int
-                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT],
+  sizeHint: Int
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) with SideEffectingInputStream[CONTEXT] {
 
-  override protected def createRuntimeTestSupport(graphDb: GraphDatabaseService,
-                                                  edition: Edition[CONTEXT],
-                                                  workloadMode: Boolean,
-                                                  logProvider: InternalLogProvider): RuntimeTestSupport[CONTEXT] = {
-    new RuntimeTestSupport[CONTEXT](graphDb, edition, workloadMode, logProvider, debugOptions, defaultTransactionType = Type.IMPLICIT)
+  override protected def createRuntimeTestSupport(
+    graphDb: GraphDatabaseService,
+    edition: Edition[CONTEXT],
+    workloadMode: Boolean,
+    logProvider: InternalLogProvider
+  ): RuntimeTestSupport[CONTEXT] = {
+    new RuntimeTestSupport[CONTEXT](
+      graphDb,
+      edition,
+      workloadMode,
+      logProvider,
+      debugOptions,
+      defaultTransactionType = Type.IMPLICIT
+    )
   }
 
   test("batchSize 0") {

@@ -51,8 +51,10 @@ import org.neo4j.values.ElementIdMapper
 
 import java.net.URL
 
-class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalContext,
-                                          private[this] val threadSafeCursors: CursorFactory) extends TransactionalContextWrapper {
+class ParallelTransactionalContextWrapper(
+  private[this] val tc: TransactionalContext,
+  private[this] val threadSafeCursors: CursorFactory
+) extends TransactionalContextWrapper {
   // TODO: Make parallel transaction use safe.
   //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = tc.kernelTransaction.createExecutionContext()
@@ -104,7 +106,12 @@ class ParallelTransactionalContextWrapper(private[this] val tc: TransactionalCon
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s thread=%s", this.getClass.getSimpleName, this, Thread.currentThread().getName)
+      DebugSupport.TRANSACTIONAL_CONTEXT.log(
+        "%s.close(): %s thread=%s",
+        this.getClass.getSimpleName,
+        this,
+        Thread.currentThread().getName
+      )
     }
     kernelExecutionContext.complete()
     kernelExecutionContext.close()

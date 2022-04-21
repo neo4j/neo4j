@@ -26,7 +26,8 @@ import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Path
 
-abstract sealed class BaseExpander() extends Expander {
+sealed abstract class BaseExpander() extends Expander {
+
   override def addRelationshipFilter(newFilter: KernelPredicate[Entity]): Expander =
     newWith(newRelFilters = relFilters :+ newFilter)
 

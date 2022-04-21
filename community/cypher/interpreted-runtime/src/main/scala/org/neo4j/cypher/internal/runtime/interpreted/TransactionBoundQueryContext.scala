@@ -489,7 +489,7 @@ private[internal] class TransactionBoundReadQueryContext(
     new ParallelTransactionBoundQueryContext(newTransactionalContext, newResourceManager)(indexSearchMonitor)
   }
 
-  //We cannot assign to value because of periodic commit
+  // We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
 
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor(transactionalContext.cursorContext)

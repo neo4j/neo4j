@@ -126,7 +126,12 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close(): %s thread=%s", this.getClass.getSimpleName, this, Thread.currentThread().getName)
+      DebugSupport.TRANSACTIONAL_CONTEXT.log(
+        "%s.close(): %s thread=%s",
+        this.getClass.getSimpleName,
+        this,
+        Thread.currentThread().getName
+      )
     }
     tc.close()
   }
@@ -167,7 +172,12 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext, thread
     require(threadSafeCursors != null)
     val parallelContext = new ParallelTransactionalContextWrapper(kernelTransactionalContext, threadSafeCursors)
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.createParallelTransactionalContext(): %s thread=%s", this.getClass.getSimpleName, parallelContext, Thread.currentThread().getName)
+      DebugSupport.TRANSACTIONAL_CONTEXT.log(
+        "%s.createParallelTransactionalContext(): %s thread=%s",
+        this.getClass.getSimpleName,
+        parallelContext,
+        Thread.currentThread().getName
+      )
     }
     parallelContext
   }

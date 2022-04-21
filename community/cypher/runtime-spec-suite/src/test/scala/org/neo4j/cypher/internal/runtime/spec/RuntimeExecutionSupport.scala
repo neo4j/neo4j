@@ -117,11 +117,12 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   /**
    * Execute a logical query in its own transaction without recording the result. Return the non-recorded result.
    */
-  def executeAndConsumeTransactionallyNonRecording(logicalQuery: LogicalQuery,
-                                                   runtime: CypherRuntime[CONTEXT],
-                                                   parameters: Map[String, Any] = Map.empty,
-                                                   profileAssertion: Option[QueryProfile => Unit] = None
-                                                  ): Long
+  def executeAndConsumeTransactionallyNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    parameters: Map[String, Any] = Map.empty,
+    profileAssertion: Option[QueryProfile => Unit] = None
+  ): Long
 
   /**
    * Execute a Logical query with some input. Return the result and the context.
@@ -135,10 +136,11 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   /**
    * Execute a Logical query with some input without recording the results. Return the non-recording result and the context.
    */
-  def executeAndContextNonRecording(logicalQuery: LogicalQuery,
-                                    runtime: CypherRuntime[CONTEXT],
-                                    input: InputValues
-                                   ): (NonRecordingRuntimeResult, CONTEXT)
+  def executeAndContextNonRecording(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    input: InputValues
+  ): (NonRecordingRuntimeResult, CONTEXT)
 
   /**
    * Execute a Logical query with some input. Return the result and the execution plan description

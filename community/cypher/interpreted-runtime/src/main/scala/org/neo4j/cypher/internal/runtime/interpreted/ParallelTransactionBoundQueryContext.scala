@@ -57,7 +57,11 @@ sealed class ParallelTransactionBoundQueryContext(
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
-      DebugSupport.TRANSACTIONAL_CONTEXT.log("%s.close() thread=%s", this.getClass.getSimpleName, Thread.currentThread().getName)
+      DebugSupport.TRANSACTIONAL_CONTEXT.log(
+        "%s.close() thread=%s",
+        this.getClass.getSimpleName,
+        Thread.currentThread().getName
+      )
     }
     try {
       super.close()
